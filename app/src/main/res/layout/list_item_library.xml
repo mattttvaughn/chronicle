@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="library"
+            type="io.github.mattpvaughn.chronicle.features.chooselibrary.LibraryModel" />
+
+        <variable
+            name="clickListener"
+            type="io.github.mattpvaughn.chronicle.features.chooselibrary.LibraryClickListener" />
+
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:onClick="@{() -> clickListener.onClick(library)}"
+        android:layout_height="@dimen/list_item_height"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/library_type"
+            android:layout_width="@dimen/list_icon_size"
+            android:layout_height="@dimen/list_icon_size"
+            android:layout_marginLeft="@dimen/screen_horizontal_padding"
+            android:contentDescription="@string/audio_server"
+            android:src="@drawable/ic_library_music"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/library_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/keyline_x_offset"
+            android:text="@{ library.name }"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Audiobooks" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

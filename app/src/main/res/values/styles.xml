@@ -1,0 +1,63 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.MaterialComponents.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:fontFamily">@font/lato</item>
+    </style>
+
+    <style name="TextAppearance.Title" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="fontFamily">@font/lato_bold</item>
+    </style>
+
+    <style name="TextAppearance.Body1" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textColor">@color/textPrimary</item>
+    </style>
+
+    <style name="TextAppearance.Body2" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:textColor">@color/textSecondary</item>
+    </style>
+
+    <style name="TextAppearance.TrackItemText" parent="TextAppearance.Body1">
+        <item name="android:fontFamily">@font/lato_bold</item>
+    </style>
+
+    <style name="TextAppearance.TrackItemText.Listened" parent="TextAppearance.TrackItemText">
+        <item name="android:textColor">@color/textSecondary</item>
+    </style>
+
+    <style name="TextAppearance.TrackItemNumber" parent="TextAppearance.Body2">
+        <item name="android:textAllCaps">true</item>
+        <item name="android:fontFamily">@font/lato_bold</item>
+    </style>
+
+    <style name="TextAppearance.Subtitle.Settings" parent="TextAppearance.MaterialComponents.Subtitle2">
+        <item name="android:textColor">@color/colorAccent</item>
+        <item name="fontFamily">@font/lato_bold</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
+
+
+    <!-- Searchbar style courtesy of: https://stackoverflow.com/questions/30369246/implementing-searchview-as-per-the-material-design-guidelines -->
+    <style name="SearchViewTheme" parent="Widget.AppCompat.SearchView.ActionBar">
+        <item name="layout">@layout/toolbar_search_view</item>
+        <item name="colorControlNormal">@color/material_light_active_icon</item>
+        <item name="colorControlHighlight">@color/material_ripple_light</item>
+        <item name="android:maxWidth">9999dp</item>
+    </style>
+
+    <style name="ToolbarTheme" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="searchViewStyle">@style/SearchViewTheme</item>
+    </style>
+
+    <!-- Bottom Navigation -->
+    <style name="Widget.BottomNavigationView" parent="Widget.Design.BottomNavigationView">
+        <item name="fontFamily">@font/lato_bold</item>
+    </style>
+
+</resources>

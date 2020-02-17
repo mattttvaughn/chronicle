@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="track"
+            type="io.github.mattpvaughn.chronicle.data.model.MediaItemTrack" />
+
+        <variable
+            name="activeTrackId"
+            type="Integer" />
+
+        <variable
+            name="clickListener"
+            type="io.github.mattpvaughn.chronicle.features.bookdetails.TrackClickListener" />
+
+        <import type="android.view.View" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/track_list_item_height"
+        android:onClick="@{() -> clickListener.onClick(track)}">
+
+        <FrameLayout
+            android:id="@+id/track_number_wrapper"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/screen_horizontal_padding"
+            android:layout_marginEnd="@dimen/margin_normal"
+            app:layout_constraintBottom_toBottomOf="@id/track_name"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@id/track_name">
+
+            <TextView
+                android:id="@+id/track_number"
+                style="@style/TextAppearance.TrackItemNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:lines="1"
+                android:text="@{track.paddedIndex(2)}"
+                android:textAllCaps="true"
+                android:textColor="@{track.cached ? @color/textActive : @color/textPrimary}"
+                android:visibility="@{track.id == activeTrackId ? View.GONE: View.VISIBLE}"
+                tools:text="01" />
+
+            <ImageView
+                android:layout_width="@dimen/track_list_item_indicator_size"
+                android:layout_height="@dimen/track_list_item_indicator_size"
+                android:tint="@{track.cached ? @color/iconActive : @color/icon}"
+                android:src="@drawable/ic_playing"
+                android:scaleType="centerInside"
+                android:visibility="@{track.id == activeTrackId ? View.VISIBLE : View.GONE}" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/track_name"
+            style="@style/TextAppearance.TrackItemText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/margin_normal"
+            android:layout_marginLeft="@dimen/keyline_x_offset"
+            android:layout_marginRight="@dimen/screen_horizontal_padding"
+            android:layout_marginBottom="@dimen/margin_normal"
+            android:lines="1"
+            android:text="@{track.title}"
+            android:textColor="@{track.finished ? @color/textSecondary : @color/textPrimary}"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Track name but it's very long with a lot of text so it overflows" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

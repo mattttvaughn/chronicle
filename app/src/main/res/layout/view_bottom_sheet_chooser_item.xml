@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <data>
+
+        <variable
+            name="isChosen"
+            type="Boolean" />
+
+        <variable
+            name="option"
+            type="String" />
+
+        <variable
+            name="listener"
+            type="io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener" />
+    </data>
+
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:onClick="@{() -> listener.onItemSelected(option)}"
+        android:paddingTop="@dimen/margin_normal"
+        android:paddingBottom="@dimen/margin_normal">
+
+        <TextView
+            style="@style/TextAppearance.Body1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="@dimen/screen_horizontal_padding"
+            android:text="@{option}"
+            android:textColor="@{isChosen ? @color/textActive : @color/textPrimary}"
+            tools:text="Bottom sheet chooser item" />
+
+
+    </FrameLayout>
+</layout>

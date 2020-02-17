@@ -1,0 +1,180 @@
+apply plugin: "com.android.application"
+apply plugin: "kotlin-android"
+apply plugin: "kotlin-kapt"
+apply plugin: "kotlin-android-extensions"
+apply plugin: "com.google.android.gms.oss-licenses-plugin"
+apply plugin: "androidx.navigation.safeargs.kotlin"
+
+android {
+    compileSdkVersion 28
+    buildToolsVersion "29.0.1"
+    defaultConfig {
+        applicationId "io.github.mattpvaughn.chronicle"
+        minSdkVersion 21
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+    }
+    dataBinding {
+        enabled = true
+    }
+    configurations {
+        all {
+            exclude module: 'xpp3'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
+    }
+    // Shared code b/w test and androidTest: mocks 'n' stuff
+    sourceSets {
+        final String SHARED_TEST_DIR = "src/testShared/java"
+        test {
+            java.srcDirs += SHARED_TEST_DIR
+        }
+        androidTest {
+            java.srcDirs += SHARED_TEST_DIR
+        }
+    }
+    kapt {
+        arguments {
+            arg("room.schemaLocation", "$projectDir/schemas".toString())
+            arg("room.incremental", "true")
+            arg("room.expandProjection", "true")
+        }
+    }
+    // TODO: probably bad! See if you can get around using this
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ["*.jar"], dir: "libs")
+
+    // Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+
+    // Material components
+    implementation "com.google.android.material:material:$materialLibVersion"
+    implementation "androidx.appcompat:appcompat:$supportlibVersion"
+    implementation "androidx.constraintlayout:constraintlayout:2.0.0-beta4"
+
+    // Navigation component
+    implementation "androidx.navigation:navigation-fragment-ktx:$navVersion"
+    implementation "androidx.navigation:navigation-ui-ktx:$navVersion"
+
+    // AndroidX
+    implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
+    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion"
+
+    // Retrofit
+    implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    implementation "com.squareup.retrofit2:converter-simplexml:$simpleXmlConverterVersion"
+
+    // Kotlin coroutines
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
+
+    // OkHttp
+    implementation "com.squareup.okhttp3:okhttp:$okhttpVersion"
+    implementation "com.squareup.okhttp3:logging-interceptor:$okhttpVersion"
+
+    // Room DB manager
+    implementation "androidx.room:room-runtime:$roomVersion"
+    implementation "androidx.room:room-ktx:$roomVersion"
+    kapt "androidx.room:room-compiler:$roomVersion"
+
+    // Dagger dependency injection
+    implementation "com.google.dagger:dagger:$daggerVersion"
+    kapt "com.google.dagger:dagger-compiler:$daggerVersion"
+
+    // Glide
+    implementation "com.github.bumptech.glide:glide:$glideVersion"
+    kapt "com.github.bumptech.glide:compiler:$glideVersion"
+
+    // LocalBroadcastManager
+    implementation "androidx.localbroadcastmanager:localbroadcastmanager:$localBroadcastManagerVersion"
+
+    // Exoplayer
+    // From the [UAMP project](https://github.com/android/uamp/blob/bffac196050a6453f82ee6ad6297a7056603cb82/common/build.gradle)
+    //
+    // This allows UAMP to utilize a local version of ExoPlayer, which is particularly
+    // useful for extending the MediaSession extension, as well as for testing and
+    // customization. If the ":exoplayer-library-core" project is included, we assume
+    // the others are included as well.
+    if (findProject(":exoplayer-library-core") != null) {
+        implementation project(":exoplayer-library-core")
+        implementation project(":exoplayer-library-ui")
+        implementation project(":exoplayer-extension-mediasession")
+    } else {
+        implementation "com.google.android.exoplayer:exoplayer-core:$exoplayerVersion"
+        implementation "com.google.android.exoplayer:exoplayer-ui:$exoplayerVersion"
+        implementation "com.google.android.exoplayer:extension-mediasession:$exoplayerVersion"
+    }
+
+    // WorkManager helps coordinate background syncing of local data w.r.t. network conditions
+    implementation "androidx.work:work-runtime-ktx:$workVersion"
+
+    // Android team's license displayer:
+    implementation "com.google.android.gms:play-services-oss-licenses:$ossLicenseActivityVersion"
+
+    /* ~~~~~~~~~~~~ Local Tests ~~~~~~~~~~ */
+    testImplementation "junit:junit:$junitVersion"
+
+    // AndroidX Test - JVM testing
+    testImplementation "androidx.test.ext:junit-ktx:$androidXTestExtKotlinRunnerVersion"
+    testImplementation "androidx.test:core-ktx:$androidXTestCoreVersion"
+    testImplementation "org.robolectric:robolectric:$robolectricVersion"
+
+    // Room testing
+    testImplementation "androidx.room:room-testing:$roomVersion"
+
+    // AndroidX Arch Testing- for testing LiveData
+    testImplementation "androidx.arch.core:core-testing:$archTestingVersion"
+
+    // Coroutines tests
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
+
+    // Hamcrest readable assertions
+    testImplementation "org.hamcrest:hamcrest-all:$hamcrestVersion"
+
+    // MockK- Kotlin mocking library
+    testImplementation "io.mockk:mockk:$mockKVersion"
+
+
+    /* ~~~~~~~~~~~~ Instrumented tests ~~~~~~~~~~ */
+
+    androidTestImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test:runner:$androidxTestRunnerVersion"
+    androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidXTestExtKotlinRunnerVersion"
+    androidTestImplementation "androidx.test.ext:junit-ktx:$androidXTestExtKotlinRunnerVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$espressoVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-intents:$espressoVersion"
+    androidTestImplementation "io.mockk:mockk:$mockKVersion"
+
+    androidTestImplementation "androidx.navigation:navigation-testing:$navVersion"
+    androidTestImplementation "androidx.fragment:fragment-testing:$fragmentVersion"
+
+    androidTestImplementation "com.google.dagger:dagger:$daggerVersion"
+    kaptAndroidTest "com.google.dagger:dagger-compiler:$daggerVersion"
+
+}

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="audiobook"
+            type="io.github.mattpvaughn.chronicle.data.model.Audiobook" />
+
+        <variable
+            name="serverConnected"
+            type="Boolean" />
+
+        <variable
+            name="searchResultClick"
+            type="io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick" />
+
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:onClick="@{() -> searchResultClick.onClick(audiobook)}"
+        android:paddingLeft="@dimen/screen_horizontal_padding"
+        android:paddingTop="@dimen/margin_small"
+        android:paddingRight="@dimen/screen_horizontal_padding"
+        android:paddingBottom="@dimen/margin_small">
+
+        <ImageView
+            android:id="@+id/book_cover_img"
+            srcRounded="@{audiobook.thumb}"
+            lastUpdated="@{audiobook.updatedAt}"
+            serverConnected="@{serverConnected}"
+            android:layout_width="@dimen/list_icon_size"
+            android:layout_height="@dimen/list_icon_size"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:src="@drawable/example_cover"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/title"
+            style="@style/TextAppearance.Body1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_normal"
+            android:lines="1"
+            android:text="@{audiobook.title}"
+            app:layout_constraintBottom_toTopOf="@id/author"
+            app:layout_constraintLeft_toRightOf="@id/book_cover_img"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed"
+            tools:text="Book title" />
+
+        <TextView
+            android:id="@+id/author"
+            style="@style/TextAppearance.Body2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_normal"
+            android:lines="1"
+            android:text="@{audiobook.author}"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/book_cover_img"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/title"
+            tools:text="Author name" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

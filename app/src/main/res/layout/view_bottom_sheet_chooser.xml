@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="title"
+            type="String" />
+
+        <variable
+            name="options"
+            type="java.util.List&lt;String&gt;" />
+
+        <variable
+            name="listener"
+            type="io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener" />
+
+        <import type="android.view.View" />
+    </data>
+
+    <FrameLayout
+        android:id="@+id/bottom_sheet"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:id="@+id/tap_to_close"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0"
+            android:background="@color/bottomSheetOverlayColor"
+            android:contentDescription="@string/tap_to_close_opened_menu"
+            android:elevation="-1dp"
+            android:visibility="gone" />
+
+
+        <LinearLayout
+            android:id="@+id/bottom_sheet_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:translationY="-9999dp">
+
+            <FrameLayout
+                android:id="@+id/bottom_sheet_handle"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/bottom_sheet_handle_height"
+                android:background="@color/colorPrimary"
+                app:boxCornerRadiusTopEnd="@dimen/audiobook_item_radius"
+                app:boxCornerRadiusTopStart="@dimen/audiobook_item_radius">
+
+                <TextView
+                    style="@style/TextAppearance.Subtitle.Settings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginLeft="@dimen/screen_horizontal_padding"
+                    android:text="@{title}"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="16sp"
+                    tools:text="Chooser title" />
+            </FrameLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/bottom_sheet_options"
+                listener="@{listener}"
+                options="@{options}"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:itemCount="5"
+                tools:listitem="@layout/view_bottom_sheet_chooser_item" />
+
+        </LinearLayout>
+    </FrameLayout>
+</layout>

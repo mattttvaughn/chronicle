@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common dimensions -->
+    <dimen name="margin_normal">16dp</dimen>
+    <dimen name="margin_small">8dp</dimen>
+    <dimen name="margin_large">32dp</dimen> <!-- aka large_marge -->
+    <dimen name="spacing_normal">8dp</dimen>
+    <dimen name="spacing_micro">4dp</dimen>
+
+    <!-- RecyclerView list item defaults -->
+    <dimen name="list_icon_size">32dp</dimen>
+    <dimen name="list_item_height">56dp</dimen>
+    <dimen name="keyline_x_offset">64dp</dimen>
+
+    <!-- Style -->
+    <dimen name="app_bar_height">72dp</dimen>
+    <dimen name="reverse_app_bar_height">-72dp</dimen>
+    <dimen name="top_level_icon">32dp</dimen>
+
+    <!-- Bottom navigation bar -->
+    <dimen name="bottom_nav_bar_height">64dp</dimen>
+
+
+    <dimen name="bottom_nav_bar_height_plus_handle_height">136dp</dimen>
+
+    <!-- From material guidelines-->
+    <!-- <dimen name="bottom_sheet_elevation">8dp</dimen>-->
+    <!-- <dimen name="bottom_sheet_corner_radius">16dp</dimen>-->
+
+    <!-- Bottom sheet chooser -->
+    <dimen name="bottom_sheet_handle_height">72dp</dimen>
+    <dimen name="bottom_sheet_radius">8dp</dimen>
+
+    <!-- Audiobook item -->
+    <dimen name="audiobook_match_parent">-1dp</dimen>
+    <dimen name="audiobook_item_width">128dp</dimen>
+    <dimen name="audiobook_item_radius">8dp</dimen>
+    <dimen name="audiobook_listened_indicator_size">16dp</dimen>
+    <dimen name="audiobook_image_height">96dp</dimen>
+
+    <!-- Track list item -->
+    <dimen name="track_list_item_height">48dp</dimen>
+    <dimen name="track_list_item_indicator_size">24dp</dimen>
+
+    <!-- Details screen -->
+    <dimen name="details_artwork_size">196dp</dimen>
+    <dimen name="details_play_button">64dp</dimen>
+
+    <!-- Device dependent -->
+    <dimen name="screen_horizontal_padding">16dp</dimen>
+    <dimen name="screen_vertical_padding">16dp</dimen>
+
+</resources>

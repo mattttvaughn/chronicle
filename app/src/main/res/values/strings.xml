@@ -1,0 +1,54 @@
+<resources>
+    <string name="app_name">Chronicle Audiobook Player</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_library">Library</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Login page -->
+    <string name="title_activity_login">Sign in</string>
+    <string name="prompt_username">Email/Username</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="welcome">"Welcome!"</string>
+    <string name="invalid_username">Not a valid username</string>
+    <string name="invalid_password">Password must be >5 characters</string>
+    <string name="login_failed">"Login failed"</string>
+    <string name="login_succeeded">Successfully logged in!</string>
+    <string name="plex_login">Plex Login</string>
+    <string name="audio_server">Audio Server</string>
+    <string name="choose_server">Choose Server</string>
+    <string name="choose_library">Choose Library</string>
+    <string name="unknown_library_name">Unknown</string>
+    <string name="no_libraries_found">No libraries found</string>
+    <string name="no_servers_found">No servers found</string>
+    <string name="library_title">Library</string>
+    <string name="filter">Filter</string>
+    <string name="download_all">Download all</string>
+    <string name="search">Search</string>
+    <string name="no_books_found">No books found</string>
+    <string name="no_downloaded_books_found">No downloaded books found</string>
+    <string name="audiobook_info">Audiobook info</string>
+    <string name="chromecast">Chromecast</string>
+    <string name="chapters">Chapters</string>
+    <string name="more">More</string>
+    <string name="less">Less</string>
+    <string name="refresh_list">Refresh list</string>
+    <string name="no_tracks_found">No tracks found</string>
+    <string name="home">Home</string>
+    <string name="recently_listened">Recently listened</string>
+    <string name="recently_added">Recently added</string>
+    <string name="notification_channel">Now playing</string>
+    <string name="notification_channel_description">Shows currently playing music</string>
+    <string name="notification_skip_to_previous">Skip to previous track</string>
+    <string name="notification_play">Play</string>
+    <string name="notification_pause">Pause</string>
+    <string name="notification_skip_forwards">Skip forwards 30 seconds</string>
+    <string name="notification_skip_backwards">Skip backwards 10 seconds</string>
+    <string name="search_hint">Search</string>
+    <string name="settings_category_sync">Sync</string>
+    <string name="tap_to_close_opened_menu">Tap to close opened menu</string>
+    <string name="not_connected">No network connection</string>
+    <string name="available_offline">Available offline</string>
+    <string name="disable_offline_mode">Disable offline mode</string>
+    <string name="pause_play_button">Pause/Play button</string>
+</resources>

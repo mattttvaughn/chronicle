@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/bottom_nav_graph.xml"
+    app:startDestination="@id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="io.github.mattpvaughn.chronicle.features.home.HomeFragment"
+        tools:layout="@layout/fragment_home"
+        android:label="@string/tab_home" >
+        <action
+            android:id="@+id/action_nav_home_to_audiobookDetailsFragment2"
+            app:destination="@id/audiobookDetailsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_library"
+        tools:layout="@layout/fragment_library"
+        android:name="io.github.mattpvaughn.chronicle.features.library.LibraryFragment"
+        android:label="@string/tab_library" >
+        <action
+            android:id="@+id/action_nav_library_to_audiobookDetailsFragment"
+            app:destination="@id/audiobookDetailsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_settings"
+        tools:layout="@layout/fragment_settings"
+        android:name="io.github.mattpvaughn.chronicle.features.settings.SettingsFragment"
+        android:label="@string/tab_settings" />
+    <fragment
+        android:id="@+id/audiobookDetailsFragment"
+        tools:layout="@layout/fragment_audiobook_details"
+        android:name="io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment"
+        android:label="AudiobookDetailsFragment" >
+        <argument
+            android:name="isAudiobookCached"
+            app:argType="boolean"
+            android:defaultValue="false" />
+        <argument
+            android:name="audiobookId"
+            app:argType="integer" />
+    </fragment>
+
+</navigation>

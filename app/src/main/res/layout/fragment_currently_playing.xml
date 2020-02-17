@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingViewModel" />
+
+        <import type="android.view.View" />
+    </data>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimaryDark">
+
+        <io.github.mattpvaughn.chronicle.views.BottomSheetChooser
+            android:id="@+id/bottom_sheet_chooser"
+            bottomSheetTitle="@{viewModel.bottomSheetTitle}"
+            options="@{viewModel.bottomSheetOptions}"
+            optionsListener="@{viewModel.bottomOptionsListener}"
+            show="@{viewModel.showBottomSheet}"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:elevation="1dp"
+            tools:layout="@layout/view_bottom_sheet_chooser" />
+
+        <io.github.mattpvaughn.chronicle.views.BottomSheetChooser
+            android:id="@+id/sleep_timer_chooser"
+            bottomSheetTitle="@{viewModel.sleepTimerTitle}"
+            options="@{viewModel.sleepTimerOptions}"
+            optionsListener="@{viewModel.sleepTimerListener}"
+            show="@{viewModel.showSleepTimer}"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:elevation="1dp"
+            tools:layout="@layout/view_bottom_sheet_chooser" />
+
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                android:clickable="true"
+                android:focusable="true"
+                tools:context="io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment">
+
+                <ImageView
+                    android:id="@+id/details_artwork"
+                    lastUpdated="@{viewModel.audiobook.updatedAt}"
+                    serverConnected="@{!viewModel.isLoading()}"
+                    srcRounded="@{viewModel.audiobook.thumb}"
+                    android:layout_width="@dimen/details_artwork_size"
+                    android:layout_height="@dimen/details_artwork_size"
+                    android:layout_marginTop="@dimen/app_bar_height"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:src="@drawable/example_cover" />
+
+                <TextView
+                    android:id="@+id/progress"
+                    style="@style/TextAppearance.Body2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@{viewModel.bookProgressString + '/' + viewModel.bookDurationString}"
+                    app:layout_constraintRight_toRightOf="@id/details_artwork"
+                    app:layout_constraintTop_toBottomOf="@id/details_artwork"
+                    tools:text="1:21/3:52" />
+
+                <SeekBar
+                    android:id="@+id/chapter_progress_seekbar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/margin_normal"
+                    android:layout_marginTop="@dimen/margin_normal"
+                    android:layout_marginRight="@dimen/margin_normal"
+                    android:max="@{(int) viewModel.currentTrack.duration}"
+                    android:progress="@{(int) viewModel.currentTrack.progress}"
+                    app:layout_constraintLeft_toLeftOf="@id/left_gutter"
+                    app:layout_constraintRight_toRightOf="@id/right_gutter"
+                    app:layout_constraintTop_toBottomOf="@id/progress" />
+
+                <TextView
+                    android:id="@+id/chapter_progress"
+                    style="@style/TextAppearance.Body2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@{viewModel.chapterProgress}"
+                    app:layout_constraintLeft_toLeftOf="@id/chapter_progress_seekbar"
+                    app:layout_constraintTop_toBottomOf="@id/chapter_progress_seekbar"
+                    tools:text="0:01" />
+
+                <TextView
+                    android:id="@+id/chapter_duration"
+                    style="@style/TextAppearance.Body2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@{viewModel.chapterDuration}"
+                    app:layout_constraintRight_toRightOf="@id/chapter_progress_seekbar"
+                    app:layout_constraintTop_toBottomOf="@id/chapter_progress_seekbar"
+                    tools:text="34:50" />
+
+                <TextView
+                    android:id="@+id/chapter_title"
+                    style="@style/TextAppearance.Body1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/margin_normal"
+                    android:lines="1"
+                    android:text="@{viewModel.currentTrack.title}"
+                    android:textAlignment="center"
+                    app:layout_constraintLeft_toLeftOf="@id/left_gutter"
+                    app:layout_constraintRight_toRightOf="@id/right_gutter"
+                    app:layout_constraintTop_toBottomOf="@id/chapter_progress"
+                    app:layout_goneMarginTop="@dimen/margin_normal"
+                    tools:text="Book title but it's very long so it overflows past the edge of the screen" />
+
+                <TextView
+                    android:id="@+id/book_title"
+                    style="@style/TextAppearance.Body2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:lines="1"
+                    android:text="@{viewModel.audiobook.title}"
+                    android:textAlignment="center"
+                    app:layout_constraintLeft_toLeftOf="@id/left_gutter"
+                    app:layout_constraintRight_toRightOf="@id/right_gutter"
+                    app:layout_constraintTop_toBottomOf="@id/chapter_title"
+                    tools:text="Author name won't overflow" />
+
+                <ImageView
+                    android:id="@+id/change_speed_button"
+                    android:layout_width="@dimen/list_icon_size"
+                    android:layout_height="@dimen/list_icon_size"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:onClick="@{() -> viewModel.showSpeedChooser()}"
+                    app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                    app:layout_constraintLeft_toLeftOf="@id/left_gutter"
+                    app:layout_constraintRight_toLeftOf="@id/rewind_button"
+                    app:layout_constraintTop_toTopOf="@id/details_pause_play"
+                    app:playbackSpeed="@{viewModel.speed}"
+                    tools:src="@drawable/ic_speed_up_1_0x" />
+
+                <ImageView
+                    android:id="@+id/rewind_button"
+                    android:layout_width="@dimen/list_icon_size"
+                    android:layout_height="@dimen/list_icon_size"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:onClick="@{() -> viewModel.skipBackwards()}"
+                    android:src="@drawable/ic_replay_10_white"
+                    app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                    app:layout_constraintLeft_toRightOf="@id/change_speed_button"
+                    app:layout_constraintRight_toLeftOf="@id/details_pause_play"
+                    app:layout_constraintTop_toTopOf="@id/details_pause_play" />
+
+                <ImageView
+                    android:id="@+id/details_pause_play"
+                    android:layout_width="@dimen/details_play_button"
+                    android:layout_height="@dimen/details_play_button"
+                    android:layout_marginTop="@dimen/margin_normal"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:onClick="@{() -> viewModel.play()}"
+                    android:src="@{viewModel.isPlaying() ? @drawable/ic_pause_button_large_colored : @drawable/ic_play_button_large_colored}"
+                    app:layout_constraintLeft_toRightOf="@id/rewind_button"
+                    app:layout_constraintRight_toLeftOf="@id/skip_forward_button"
+                    app:layout_constraintTop_toBottomOf="@id/book_title"
+                    tools:src="@drawable/ic_pause_button_large_colored" />
+
+                <ImageView
+                    android:id="@+id/skip_forward_button"
+                    android:layout_width="@dimen/list_icon_size"
+                    android:layout_height="@dimen/list_icon_size"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:onClick="@{() -> viewModel.skipForwards()}"
+                    android:src="@drawable/ic_forward_30_white"
+                    app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                    app:layout_constraintLeft_toRightOf="@id/details_pause_play"
+                    app:layout_constraintRight_toLeftOf="@id/sleep_timer_button"
+                    app:layout_constraintTop_toTopOf="@id/details_pause_play" />
+
+                <ImageView
+                    android:id="@+id/sleep_timer_button"
+                    android:layout_width="@dimen/list_icon_size"
+                    android:layout_height="@dimen/list_icon_size"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:onClick="@{() -> viewModel.showSleepTimerOptions()()}"
+                    android:src="@drawable/ic_sleep_timer"
+                    android:tint="@{viewModel.isSleepTimerActive() ? @color/iconActive : @color/icon}"
+                    app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                    app:layout_constraintLeft_toRightOf="@id/skip_forward_button"
+                    app:layout_constraintRight_toRightOf="@id/right_gutter"
+                    app:layout_constraintTop_toTopOf="@id/details_pause_play" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/tracks"
+                    activeTrackId="@{viewModel.activeTrackId}"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/margin_normal"
+                    android:visibility="@{viewModel.isLoadingTracks() ? View.GONE : View.VISIBLE}"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/details_pause_play"
+                    app:trackList="@{viewModel.tracks}"
+                    tools:itemCount="10"
+                    tools:listitem="@layout/list_item_audiobook_track" />
+
+
+                <TextView
+                    style="@style/TextAppearance.Body1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawableTop="@drawable/ic_error_outline_white"
+                    android:text="@string/no_tracks_found"
+                    android:visibility="@{(viewModel.tracks.isEmpty() &amp;&amp; !viewModel.isLoadingTracks()) ? View.VISIBLE : View.GONE}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/details_pause_play"
+                    tools:visibility="gone" />
+
+                <ProgressBar
+                    android:id="@+id/loading_tracks_spinner"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/margin_normal"
+                    android:visibility="@{viewModel.isLoadingTracks() ? View.VISIBLE : View.GONE}"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tracks" />
+
+
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/left_gutter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    app:layout_constraintGuide_begin="@dimen/screen_horizontal_padding" />
+
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/right_gutter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </ScrollView>
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/details_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:navigationIcon="@drawable/ic_close_white" />
+
+    </FrameLayout>
+</layout>

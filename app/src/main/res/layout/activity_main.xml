@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="io.github.mattpvaughn.chronicle.application.MainActivityViewModel" />
+
+        <import type="android.view.View" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        bottomSheetState="@{viewModel.currentlyPlayingLayoutState}"
+        tools:context=".application.MainActivity">
+
+<!--        <TextView-->
+<!--            android:id="@+id/no_connection_message"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:background="@color/colorPrimaryDark"-->
+<!--            android:paddingTop="@dimen/margin_small"-->
+<!--            android:paddingBottom="@dimen/margin_small"-->
+<!--            android:text="@string/not_connected"-->
+<!--            android:textAlignment="center"-->
+<!--            android:textColor="@color/textError"-->
+<!--            android:elevation="8dp"-->
+<!--            android:visibility="@{viewModel.showConnectionError ? View.VISIBLE : View.GONE}"-->
+<!--            app:layout_constraintLeft_toLeftOf="parent"-->
+<!--            app:layout_constraintRight_toRightOf="parent"-->
+<!--            app:layout_constraintTop_toTopOf="parent" />-->
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_nav"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/bottom_nav_bar_height"
+            android:background="@color/colorPrimary"
+            android:elevation="4dp"
+            android:theme="@style/Widget.BottomNavigationView"
+            app:itemIconTint="@color/icon"
+            app:itemTextColor="@color/icon"
+            app:labelVisibilityMode="selected"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:menu="@menu/bottom_nav_menu" />
+
+        <fragment
+            android:id="@+id/fragNavHost"
+            android:name="androidx.navigation.fragment.NavHostFragment"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:defaultNavHost="true"
+            app:layout_constraintBottom_toTopOf="@id/currently_playing_container"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:navGraph="@navigation/graph" />
+
+        <FrameLayout
+            android:id="@+id/currently_playing_container"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="@id/bottom_nav">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/currently_playing_handle"
+                android:layout_width="match_parent"
+                android:layout_gravity="top"
+                android:layout_height="@dimen/bottom_sheet_handle_height"
+                android:background="@color/colorPrimaryDark"
+                android:elevation="1dp">
+
+                <ImageView
+                    android:id="@+id/currently_playing_thumb"
+                    lastUpdated="@{viewModel.lastUpdated}"
+                    serverConnected="@{!viewModel.isLoading()}"
+                    srcRounded="@{viewModel.thumb}"
+                    android:layout_width="@dimen/app_bar_height"
+                    android:layout_height="@dimen/app_bar_height"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:src="@drawable/example_cover" />
+
+                <TextView
+                    android:id="@+id/chapter_title"
+                    style="@style/TextAppearance.Body1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/margin_normal"
+                    android:lines="1"
+                    android:text="@{viewModel.currentTrackTitle}"
+                    app:layout_constraintBottom_toTopOf="@id/book_title"
+                    app:layout_constraintLeft_toRightOf="@id/currently_playing_thumb"
+                    app:layout_constraintRight_toLeftOf="@id/pause_play_button"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_chainStyle="packed"
+                    tools:text="Chapter title" />
+
+                <TextView
+                    android:id="@+id/book_title"
+                    style="@style/TextAppearance.Body2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:lines="1"
+                    android:text="@{viewModel.bookTitle}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintLeft_toLeftOf="@id/chapter_title"
+                    app:layout_constraintRight_toLeftOf="@id/pause_play_button"
+                    app:layout_constraintTop_toBottomOf="@id/chapter_title"
+                    app:layout_constraintVertical_chainStyle="packed"
+                    tools:text="Book title" />
+
+                <ImageView
+                    android:id="@+id/pause_play_button"
+                    android:layout_width="@dimen/app_bar_height"
+                    android:layout_height="@dimen/app_bar_height"
+                    android:onClick="@{() -> viewModel.pausePlayButtonClicked()}"
+                    android:padding="@dimen/margin_normal"
+                    android:src="@{viewModel.isPlaying() ? @drawable/ic_notification_icon_paused : @drawable/ic_notification_icon_playing}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:src="@drawable/ic_notification_icon_paused"
+                    android:contentDescription="@string/pause_play_button" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <FrameLayout
+                android:id="@+id/currently_playing_fragment_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:layout="@layout/fragment_currently_playing" />
+
+        </FrameLayout>
+
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/currently_playing_collapsed_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintGuide_end="@dimen/bottom_nav_bar_height_plus_handle_height" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

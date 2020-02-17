@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="model"
+            type="io.github.mattpvaughn.chronicle.features.settings.PreferenceModel" />
+
+    </data>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/list_item_height">
+    <TextView
+        android:id="@+id/preference_title"
+        android:layout_width="wrap_content"
+        android:layout_gravity="left|center_vertical"
+        android:layout_marginLeft="@dimen/screen_horizontal_padding"
+        android:layout_marginRight="@dimen/screen_horizontal_padding"
+        android:text="@{model.title}"
+        style="@style/TextAppearance.Subtitle.Settings"
+        android:layout_height="wrap_content"
+        tools:text="Preference Title" />
+    </FrameLayout>
+
+</layout>
