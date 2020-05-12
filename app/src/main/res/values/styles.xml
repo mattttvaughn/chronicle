@@ -42,6 +42,15 @@
         <item name="android:textAllCaps">true</item>
     </style>
 
+    <style name="TextAppearance.RoundedRectInput" parent="Widget.AppCompat.EditText">
+        <item name="android:paddingLeft">@dimen/rounded_input_padding_horizontal</item>
+        <item name="android:paddingRight">@dimen/rounded_input_padding_horizontal</item>
+        <item name="android:paddingTop">@dimen/rounded_input_padding_vertical</item>
+        <item name="android:paddingBottom">@dimen/rounded_input_padding_vertical</item>
+        <item name="android:background">@drawable/rounded_rect_form</item>
+        <item name="android:minEms">15</item>
+    </style>
+
 
     <!-- Searchbar style courtesy of: https://stackoverflow.com/questions/30369246/implementing-searchview-as-per-the-material-design-guidelines -->
     <style name="SearchViewTheme" parent="Widget.AppCompat.SearchView.ActionBar">

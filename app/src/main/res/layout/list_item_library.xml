@@ -6,11 +6,11 @@
 
         <variable
             name="library"
-            type="io.github.mattpvaughn.chronicle.features.chooselibrary.LibraryModel" />
+            type="io.github.mattpvaughn.chronicle.data.model.Library" />
 
         <variable
             name="clickListener"
-            type="io.github.mattpvaughn.chronicle.features.chooselibrary.LibraryClickListener" />
+            type="io.github.mattpvaughn.chronicle.features.login.LibraryClickListener" />
 
     </data>
 

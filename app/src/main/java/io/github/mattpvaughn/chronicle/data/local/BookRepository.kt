@@ -4,11 +4,10 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexMediaApi
-import io.github.mattpvaughn.chronicle.data.plex.PlexRequestSingleton.libraryId
+import io.github.mattpvaughn.chronicle.data.plex.PlexMediaService
+import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.data.plex.model.asAudiobooks
 import io.github.mattpvaughn.chronicle.data.plex.model.getDuration
-import io.github.mattpvaughn.chronicle.features.settings.PrefsRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -99,7 +98,9 @@ interface IBookRepository {
 @Singleton
 class BookRepository @Inject constructor(
     private val bookDao: BookDao,
-    private val prefsRepo: PrefsRepo
+    private val prefsRepo: PrefsRepo,
+    private val plexPrefsRepo: PlexPrefsRepo,
+    private val plexMediaService: PlexMediaService
 ) : IBookRepository {
 
     /** TODO: observe prefsRepo.offlineMode? */
@@ -121,7 +122,7 @@ class BookRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val networkBooks =
-                    PlexMediaApi.retrofitService.retrieveAllAlbums(libraryId).asAudiobooks()
+                    plexMediaService.retrieveAllAlbums(plexPrefsRepo.getLibrary()!!.id).mediaContainer.asAudiobooks()
                 val localBooks = bookDao.getAudiobooks()
                 /**
                  * Keep the network or local copy with the most recent [Audiobook.lastViewedAt]
@@ -139,6 +140,7 @@ class BookRepository @Inject constructor(
                         return@map networkBook
                     }
                 }
+                Log.i(APP_NAME, "Loaded books: $mergedBooks")
                 bookDao.insertAll(mergedBooks)
             } catch (e: Error) {
                 Log.e(APP_NAME, "Failed to refresh audiobook library: $e")

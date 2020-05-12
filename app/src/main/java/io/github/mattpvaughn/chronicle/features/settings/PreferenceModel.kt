@@ -9,9 +9,12 @@ data class PreferenceModel(
         override fun onClick() {
             // Do nothing by default
         }
-
     }
-)
+) {
+    fun hasExplanation(): Boolean {
+        return explanation.isNotEmpty()
+    }
+}
 
 interface PreferenceClick {
     fun onClick()

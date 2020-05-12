@@ -8,11 +8,12 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.Headers
+import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.signature.ObjectKey
 import io.github.mattpvaughn.chronicle.R
-import io.github.mattpvaughn.chronicle.data.plex.PlexRequestSingleton
+import io.github.mattpvaughn.chronicle.application.Injector
 import java.net.URL
 
 
@@ -27,20 +28,19 @@ fun bindImageRounded(
         return
     }
     val radiusPx = imageView.resources.getDimension(R.dimen.audiobook_item_radius).toInt()
-    val imageSize = imageView.resources.getDimension(R.dimen.audiobook_image_height).toInt()
+    val imageSize = imageView.resources.getDimension(R.dimen.audiobook_image_width).toInt()
     val url =
-        URL(PlexRequestSingleton.toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$src"))
-    val glideUrl = GlideUrlRelativeCacheKey(
-        url,
-        PlexRequestSingleton.makeGlideHeaders()
-    )
+        URL(
+            Injector.get().plexConfig()
+                .toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$src")
+        )
+    val glideUrl = GlideUrlRelativeCacheKey(url, Injector.get().plexConfig().makeGlideHeaders())
 
     Glide.with(imageView)
         .load(glideUrl)
-        .centerCrop()
         .placeholder(R.drawable.ic_image_white)
         .transition(DrawableTransitionOptions.withCrossFade())
-        .transform(RoundedCorners(radiusPx))
+        .transform(CenterCrop(), RoundedCorners(radiusPx))
         .error(R.drawable.ic_broken_image)
         .diskCacheStrategy(DiskCacheStrategy.ALL)
         .signature(ObjectKey(lastUpdated))

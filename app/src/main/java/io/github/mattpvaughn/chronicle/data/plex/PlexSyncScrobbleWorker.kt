@@ -4,11 +4,9 @@ import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.util.Log
 import androidx.work.*
+import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
-import io.github.mattpvaughn.chronicle.data.local.TrackRepository
-import io.github.mattpvaughn.chronicle.data.local.getTrackDatabase
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.features.settings.SharedPreferencesPrefsRepo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -23,15 +21,17 @@ class PlexSyncScrobbleWorker(
 ) : Worker(context, workerParameters) {
 
     val library = SharedPreferencesPlexPrefsRepo(context.getSharedPreferences(APP_NAME, MODE_PRIVATE)).getLibrary()
-    private val trackRepository = TrackRepository(
-        getTrackDatabase(context).trackDao,
-        SharedPreferencesPrefsRepo(context.getSharedPreferences(APP_NAME, MODE_PRIVATE))
-    )
+    val trackRepository = Injector.get().trackRepo()
+    val plexConfig = Injector.get().plexConfig()
 
     private var workerJob = Job()
     private val coroutineScope = CoroutineScope(workerJob + Dispatchers.Main)
 
     override fun doWork(): Result {
+        // Ensure user is logged in before trying to sync scrobble data
+        if (Injector.get().plexPrefs().getAuthToken() == "") {
+            return Result.failure()
+        }
         val trackId = inputData.getIntRequireExists(TRACK_ID_ARG)
         val state = inputData.getStringRequireExists(TRACK_STATE_ARG)
         val position = inputData.getLongRequireExists(TRACK_POSITION_ARG)
@@ -45,7 +45,7 @@ class PlexSyncScrobbleWorker(
                     throw Exception("Track not found! $trackId")
                 }
                 Log.i(APP_NAME, "Updating remote progress: state = $state, track = ${track?.copy(lastViewedAt = playbackTimeStamp, progress = position)}")
-                val call = PlexMediaApi.retrofitService.progress(
+                val call = Injector.get().plexMediaService().progress(
                     ratingKey = trackId.toString(),
                     offset = position.toString(),
                     playbackTime = 0L,

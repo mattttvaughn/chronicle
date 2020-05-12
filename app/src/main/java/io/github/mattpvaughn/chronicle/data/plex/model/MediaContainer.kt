@@ -1,54 +1,31 @@
-/*
- * Copyright (C) 2016 Simon Norberg
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.github.mattpvaughn.chronicle.data.plex.model
 
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import org.simpleframework.xml.Attribute
-import org.simpleframework.xml.ElementList
-import org.simpleframework.xml.Root
 
-@Root(strict = false)
-data class MediaContainer @JvmOverloads constructor(
-    @field:Attribute(required = false)
-    var playQueueSelectedItemID: Long? = null,
-    @field:ElementList(inline = true, required = false, entry = "Directory")
-    var directories: List<Directory> = ArrayList(),
-    @field:ElementList(inline = true, required = false, entry = "Track")
-    var tracks: List<TrackPlexModel> = ArrayList(),
-    @field:ElementList(inline = true, required = false, entry = "Device")
-    var devices: List<Device>? = null,
-    @field:Attribute(required = false)
-    var size: Long? = 0
+@JsonClass(generateAdapter = true)
+data class MediaContainerWrapper(@Json(name = "MediaContainer") val mediaContainer: MediaContainer)
+
+@JsonClass(generateAdapter = true)
+data class MediaContainer(
+    val playQueueSelectedItemID: Long = -1,
+    @Json(name = "Directory")
+    val directories: List<Directory> = mutableListOf(),
+    @Json(name = "Metadata")
+    val metadata: List<Directory> = mutableListOf(),
+    val devices: List<Server> = mutableListOf(),
+    val size: Long = 0
 )
 
-@Root(strict = false)
-data class Genre @JvmOverloads constructor(
-    @field:Attribute(required = false)
-    var tag: String = ""
-) {
-    override fun toString(): String {
-        return tag
-    }
-}
+@JsonClass(generateAdapter = true)
+data class Genre(val tag: String = "")
 
 fun MediaContainer.asAudiobooks(): List<Audiobook> {
-    return directories.map { Audiobook.from(it) }
+    return metadata.map { Audiobook.from(it) }
 }
 
 fun MediaContainer.asTrackList(): List<MediaItemTrack> {
-    return tracks.asMediaItemTracks()
+    return metadata.asMediaItemTracks()
 }

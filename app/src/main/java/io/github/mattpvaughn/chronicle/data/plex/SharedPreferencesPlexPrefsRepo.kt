@@ -1,11 +1,11 @@
 package io.github.mattpvaughn.chronicle.data.plex
 
 import android.content.SharedPreferences
+import io.github.mattpvaughn.chronicle.data.model.Library
+import io.github.mattpvaughn.chronicle.data.model.ServerModel
 import io.github.mattpvaughn.chronicle.data.plex.model.Connection
 import io.github.mattpvaughn.chronicle.data.plex.model.MediaType
-import io.github.mattpvaughn.chronicle.features.chooselibrary.LibraryModel
-import io.github.mattpvaughn.chronicle.features.chooseserver.ServerModel
-import java.lang.IllegalStateException
+import javax.inject.Inject
 
 /**
  * A interface for Plex exclusive preferences
@@ -20,25 +20,25 @@ interface PlexPrefsRepo {
     fun removeAuthToken()
 
     // The active plex library
-    fun getLibrary(): LibraryModel?
-    fun putLibrary(value: LibraryModel)
+    fun getLibrary(): Library?
+    fun putLibrary(value: Library)
     fun removeLibraryName()
 
     // Reference to the connected server
     fun putServer(serverModel: ServerModel)
-
     fun getServer(): ServerModel?
     fun removeServer()
 
-    // Gets the connection used by the most recent successful connection
-    fun getLastSuccessfulConnection(): Connection?
-    fun putSuccessfulConnection(connection: Connection)
+    // Clear all preferences which are handled by PrefsRepo
+    fun clear()
 }
 
 /**
  * An implementation of [PlexPrefsRepo] wrapping [SharedPreferences]
  */
-class SharedPreferencesPlexPrefsRepo(private val prefs: SharedPreferences) : PlexPrefsRepo {
+class SharedPreferencesPlexPrefsRepo @Inject constructor(private val prefs: SharedPreferences) :
+    PlexPrefsRepo {
+
     private val PREFS_AUTH_TOKEN_KEY = "auth_token"
     private val PREFS_LIBRARY_NAME_KEY = "library_name"
     private val PREFS_LIBRARY_ID_KEY = "library_id"
@@ -61,16 +61,20 @@ class SharedPreferencesPlexPrefsRepo(private val prefs: SharedPreferences) : Ple
         prefs.edit().remove(PREFS_AUTH_TOKEN_KEY).apply()
     }
 
-    override fun getLibrary(): LibraryModel? {
+    override fun getLibrary(): Library? {
         val name = getString(PREFS_LIBRARY_NAME_KEY)
         val id = getString(PREFS_LIBRARY_ID_KEY)
         if (name.isEmpty() || id.isEmpty()) {
             return null
         }
-        return LibraryModel(name, MediaType.ARTIST, id)
+        return Library(
+            name,
+            MediaType.ARTIST,
+            id
+        )
     }
 
-    override fun putLibrary(value: LibraryModel) {
+    override fun putLibrary(value: Library) {
         putString(PREFS_LIBRARY_NAME_KEY, value.name)
         putString(PREFS_LIBRARY_ID_KEY, value.id)
     }
@@ -94,7 +98,11 @@ class SharedPreferencesPlexPrefsRepo(private val prefs: SharedPreferences) : Ple
             return null
         }
 
-        return ServerModel(name, connections, id)
+        return ServerModel(
+            name,
+            connections,
+            id
+        )
     }
 
     private fun getServerConnections(): List<Connection> {
@@ -119,32 +127,20 @@ class SharedPreferencesPlexPrefsRepo(private val prefs: SharedPreferences) : Ple
             .apply()
     }
 
-    override fun getLastSuccessfulConnection(): Connection? {
-        if (!prefs.contains(PREFS_MOST_RECENT_SUCCESSFUL_SERVER_CONNECTION_KEY)) {
-            return null
-        }
-        val connection = getString(PREFS_MOST_RECENT_SUCCESSFUL_SERVER_CONNECTION_KEY).split('|')
-        if (connection.size != 2) {
-            throw IllegalStateException("Retrieved malformed connected: $connection")
-        }
-        return Connection(
-            uri = connection[1],
-            local = connection[0].toInt()
-        )
-    }
-
-    override fun putSuccessfulConnection(connection: Connection) {
-        putString(PREFS_MOST_RECENT_SUCCESSFUL_SERVER_CONNECTION_KEY, "${connection.local}|${connection.uri}")
+    override fun clear() {
+        removeServer()
+        removeAuthToken()
+        removeLibraryName()
     }
 
     private fun putConnections(connections: List<Connection>) {
         prefs.edit().putStringSet(
             PREFS_LOCAL_SERVER_CONNECTIONS_KEY,
-            connections.filter { it.local != 0 }.map { connection -> connection.uri }.toSet()
+            connections.map { connection -> connection.uri }.toSet()
         ).apply()
         prefs.edit().putStringSet(
             PREFS_REMOTE_SERVER_CONNECTIONS_KEY,
-            connections.filter { it.local == 0 }.map { connection -> connection.uri }.toSet()
+            connections.map { connection -> connection.uri }.toSet()
         ).apply()
     }
 

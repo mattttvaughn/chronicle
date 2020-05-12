@@ -1,206 +1,45 @@
 package io.github.mattpvaughn.chronicle.data.plex
 
-import android.app.DownloadManager
-import android.net.Uri
-import android.os.Build
-import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import com.bumptech.glide.load.model.LazyHeaders
-import io.github.mattpvaughn.chronicle.BuildConfig
-import io.github.mattpvaughn.chronicle.application.LOG_NETWORK_REQUESTS
-import io.github.mattpvaughn.chronicle.data.plex.model.Connection
-import io.github.mattpvaughn.chronicle.data.plex.model.MediaContainer
-import io.github.mattpvaughn.chronicle.data.plex.model.MediaType
-import io.github.mattpvaughn.chronicle.data.plex.model.User
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
+import io.github.mattpvaughn.chronicle.data.plex.model.*
 import okhttp3.ResponseBody
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
-import retrofit2.Retrofit
-import retrofit2.converter.simplexml.SimpleXmlConverterFactory
 import retrofit2.http.*
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 
 const val PLEX_LOGIN_SERVICE_URL = "https://plex.tv"
-
-private val loggingInterceptor =
-    if (BuildConfig.DEBUG && LOG_NETWORK_REQUESTS) {
-        HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
-    } else {
-        HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.NONE)
-    }
-
-object PlexRequestSingleton {
-    private var _url = PLEX_LOGIN_SERVICE_URL
-    var url: String
-        get() = _url
-        set(value) {
-            _url = value
-            _observableUrl.postValue(value)
-        }
-
-    fun isUrlSet(): Boolean {
-        return url.isNotEmpty() && url != PLEX_LOGIN_SERVICE_URL
-    }
-
-    private var _observableUrl = MutableLiveData<String>()
-    val observableUrl: LiveData<String>
-        get() = _observableUrl
-
-    val connectionSet = mutableSetOf<Connection>()
-    var libraryId = ""
-
-    private var _authToken = ""
-    var authToken: String
-        set(value) {
-            plexInterceptor.authToken = value
-            _authToken = value
-        }
-        get() = _authToken
-
-    val sessionIdentifier = Random.nextInt(until = 10000).toString()
-
-    fun toServerString(relativePath: String): String {
-        val baseEndsWith = url.endsWith('/')
-        val pathStartsWith = relativePath.startsWith('/')
-        return if (baseEndsWith && pathStartsWith) {
-            "$url/${relativePath.substring(1)}"
-        } else if (!baseEndsWith && !pathStartsWith) {
-            "$url/$relativePath"
-        } else {
-            "$url$relativePath"
-        }
-    }
-
-    fun makeGlideHeaders(): LazyHeaders {
-        return LazyHeaders.Builder()
-            .addHeader("X-Plex-Token", authToken)
-            .build()
-    }
-
-    fun makeDownloadRequest(trackSource: String): DownloadManager.Request {
-        return DownloadManager.Request(Uri.parse(toServerString(trackSource)))
-            .addRequestHeader("X-Plex-Platform", "Android")
-            .addRequestHeader("X-Plex-Provides", "player,timeline")
-            .addRequestHeader("X-Plex-Client-Name", APP_NAME)
-            .addRequestHeader(
-                "X-Plex-Client-Identifier",
-                "Unique client identifier lmao"
-            ) // TODO- add a real uuid
-            .addRequestHeader("X-Plex-Version", BuildConfig.VERSION_NAME)
-            .addRequestHeader("X-Plex-Product", APP_NAME)
-            .addRequestHeader("X-Plex-Platform-Version", Build.VERSION.RELEASE)
-            .addRequestHeader("X-Plex-Device", Build.MODEL)
-            .addRequestHeader("X-Plex-Device-Name", Build.MODEL)
-            .addRequestHeader("X-Plex-Session-Identifier", sessionIdentifier)
-            .addRequestHeader("X-Plex-Token", authToken)
-    }
-
-    @InternalCoroutinesApi
-    @UseExperimental(ExperimentalCoroutinesApi::class)
-    suspend fun chooseViableConnections(scope: CoroutineScope) {
-        Log.i(APP_NAME, "Choosing viable connection")
-        val validUriChannel = Channel<String>(capacity = 1)
-        val resultsChannel = Channel<Pair<String, Boolean>>(capacity = connectionSet.size)
-        connectionSet.sortedByDescending { it.local }.forEach { conn ->
-            scope.launch {
-                Log.i(APP_NAME, "Checking uri: ${conn.uri}")
-                try {
-                    PlexMediaApi.retrofitService.checkServer(conn.uri)
-                    validUriChannel.send(conn.uri)
-                    resultsChannel.send(conn.uri to true)
-                    Log.i(APP_NAME, "Choosing uri: ${conn.uri}")
-                    validUriChannel.close()
-                } catch (e: Exception) {
-                    resultsChannel.send(conn.uri to false)
-                    Log.e(APP_NAME, "Connection failed: ${conn.uri}")
-                }
-            }
-        }
-
-
-        val result = resultsChannel.receive()
-        Log.i(APP_NAME, "Connection result: ${result.second} for ${result.first}")
-
-        val uri = validUriChannel.receive()
-        Log.i(APP_NAME, "Uri is? $uri")
-        validUriChannel.close()
-        url = uri
-    }
-
-    fun clear() {
-        _authToken = ""
-        connectionSet.clear()
-        _url = PLEX_LOGIN_SERVICE_URL
-    }
-}
-
-private val plexInterceptor = PlexInterceptor()
-private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
-    .connectTimeout(15, TimeUnit.SECONDS)
-    .readTimeout(15, TimeUnit.SECONDS)
-    .addInterceptor(plexInterceptor)
-    .addInterceptor(loggingInterceptor)
-    .build()
-
-/**
- * TODO: centralized retrofit error handling to allow retries with other servers
- *  @see https://stackoverflow.com/questions/35029936/centralized-error-handling-retrofit-2
- */
-private val retrofit = Retrofit.Builder()
-    .addConverterFactory(SimpleXmlConverterFactory.create())
-    .client(okHttpClient)
-    .baseUrl(PLEX_LOGIN_SERVICE_URL) // this will be replaced by PlexInterceptor
-    .build()
-
-object PlexLoginApi {
-    val retrofitService: PlexLoginService by lazy {
-        retrofit.create(PlexLoginService::class.java)
-    }
-}
+const val PLACEHOLDER_URL = "https://fake-base-url-should-never-be-called.yyy"
 
 interface PlexLoginService {
-    @POST("/users/sign_in.xml")
-    suspend fun signIn(@Header("Authorization") authorization: String): User
+    @POST("https://plex.tv/users/sign_in.json")
+    suspend fun signIn(@Header("Authorization") authorization: String): UserWrapper
 
-    @GET("/pms/resources?includeHttps=1")
-    suspend fun resources(): MediaContainer
+    @GET("https://plex.tv/api/v2/resources")
+    suspend fun resources(
+        @Query("includeHttps") shouldIncludeHttps: Int = 1,
+        @Query("includeRelay") shouldIncludeRelay: Int = 1
+    ): List<Server>
 }
 
 
 interface PlexMediaService {
-    /**
-     * A basic check used to tell whether a server is online. Returns the lightest reponse AFAIK
-     */
+    /** A basic check used to tell whether a server is online. Returns a lightweight reponse */
     @GET("{url}/identity")
     suspend fun checkServer(@Path("url", encoded = true) url: String): MediaContainer
 
     @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_ALBUM")
-    suspend fun retrieveAllAlbums(@Path("libraryId") libraryId: String): MediaContainer
+    suspend fun retrieveAllAlbums(@Path("libraryId") libraryId: String): MediaContainerWrapper
 
     @GET("/library/metadata/{albumId}/children")
-    suspend fun retrieveTracksForAlbum(@Path("albumId") albumId: Int): MediaContainer
+    suspend fun retrieveTracksForAlbum(@Path("albumId") albumId: Int): MediaContainerWrapper
 
     @GET("/library/sections")
-    suspend fun retrieveSections(): MediaContainer
+    suspend fun retrieveLibraries(): MediaContainerWrapper
 
     @GET("{url}")
     @Streaming
     suspend fun retrieveStreamByFilePath(
-        @Path(
-            value = "url",
-            encoded = true
-        ) url: String
+        @Path(value = "url", encoded = true) url: String
     ): ResponseBody
-
 
     /** Sets a media item to "watched" in the server */
     @GET("/:/scrobble?identifier=com.plexapp.plugins.library")
@@ -253,12 +92,6 @@ interface PlexMediaService {
 
     /** Loads all [MediaType.TRACK]s available in the server */
     @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_TRACK")
-    suspend fun retrieveAllTracksInLibrary(@Path("libraryId") libraryId: String): MediaContainer
-}
-
-object PlexMediaApi {
-    val retrofitService: PlexMediaService by lazy {
-        retrofit.create(PlexMediaService::class.java)
-    }
+    suspend fun retrieveAllTracksInLibrary(@Path("libraryId") libraryId: String): MediaContainerWrapper
 }
 

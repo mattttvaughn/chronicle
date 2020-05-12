@@ -9,10 +9,10 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.databinding.GridItemAudiobookBinding
 
 class AudiobookAdapter(
+    private val isSquare: Boolean,
     private val isVertical: Boolean,
     private val audiobookClick: LibraryFragment.AudiobookClick
-) :
-    ListAdapter<Audiobook, AudiobookAdapter.ViewHolder>(AudiobookDiffCallback()) {
+) : ListAdapter<Audiobook, AudiobookAdapter.ViewHolder>(AudiobookDiffCallback()) {
 
     private var serverConnected: Boolean = false
 
@@ -25,27 +25,29 @@ class AudiobookAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder.from(parent, isVertical)
+        return ViewHolder.from(parent, isVertical, isSquare)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(getItem(position), audiobookClick, serverConnected)
     }
 
-    fun setServerConntected(serverConnected: Boolean) {
+    fun setServerConnected(serverConnected: Boolean) {
         this.serverConnected = serverConnected
         notifyDataSetChanged()
     }
 
     class ViewHolder private constructor(
         val binding: GridItemAudiobookBinding,
-        private val isVertical: Boolean
+        private val isVertical: Boolean,
+        private val isSquare: Boolean
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(
             audiobook: Audiobook,
             audiobookClick: LibraryFragment.AudiobookClick,
             serverConnected: Boolean
         ) {
+            binding.isSquare = isSquare
             binding.audiobook = audiobook
             binding.isVertical = isVertical
             binding.audiobookClick = audiobookClick
@@ -54,10 +56,10 @@ class AudiobookAdapter(
         }
 
         companion object {
-            fun from(viewGroup: ViewGroup, isVertical: Boolean): ViewHolder {
+            fun from(viewGroup: ViewGroup, isVertical: Boolean, isSquare: Boolean): ViewHolder {
                 val inflater = LayoutInflater.from(viewGroup.context)
                 val binding = GridItemAudiobookBinding.inflate(inflater, viewGroup, false)
-                return ViewHolder(binding, isVertical)
+                return ViewHolder(binding, isVertical, isSquare)
             }
         }
     }

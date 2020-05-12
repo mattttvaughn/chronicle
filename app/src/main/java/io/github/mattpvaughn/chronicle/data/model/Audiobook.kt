@@ -101,4 +101,6 @@ fun Audiobook.toMediaItem(): MediaBrowserCompat.MediaItem {
     return MediaBrowserCompat.MediaItem(mediaDescription.build(), FLAG_PLAYABLE)
 }
 
-val EMPTY_AUDIOBOOK = Audiobook(-1, "No title")
+const val NO_AUDIOBOOK_FOUND_ID = -22321
+const val NO_AUDIOBOOK_FOUND_TITLE = "No audiobook found"
+val EMPTY_AUDIOBOOK = Audiobook(NO_AUDIOBOOK_FOUND_ID, "No audiobook found")

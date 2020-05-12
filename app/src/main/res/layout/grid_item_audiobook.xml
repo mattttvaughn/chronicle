@@ -21,11 +21,16 @@
             name="serverConnected"
             type="Boolean" />
 
+        <variable
+            name="isSquare"
+            type="Boolean" />
+
         <import type="android.view.View" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         overrideWidth="@{isVertical ? @dimen/audiobook_match_parent : @dimen/audiobook_item_width}"
+        isSquare="@{isSquare}"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
@@ -38,67 +43,39 @@
         <!-- Assume Glide will mask corners the same as the indicator -->
         <ImageView
             android:id="@+id/book_cover_img"
-            srcRounded="@{audiobook.thumb}"
             lastUpdated="@{audiobook.updatedAt}"
             serverConnected="@{serverConnected}"
+            srcRounded="@{audiobook.thumb}"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:layout_constraintBottom_toTopOf="@id/text_elements"
-            app:layout_constraintDimensionRatio="1:1"
+            app:layout_constraintDimensionRatio="5:8"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-<!--        <ImageView-->
-<!--            android:id="@+id/listener_indicator"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:src="@drawable/ic_listened_indicator"-->
-<!--            android:tint="@color/unlistenedIndicator"-->
-<!--            android:visibility="@{audiobook.listened() ? View.GONE : View.VISIBLE}"-->
-<!--            app:layout_constraintRight_toRightOf="@id/book_cover_img"-->
-<!--            app:layout_constraintTop_toTopOf="@id/book_cover_img" />-->
-
-        <!--        <ImageView-->
-        <!--            android:id="@+id/unlistened_overlay"-->
-        <!--            android:layout_width="0dp"-->
-        <!--            android:layout_height="0dp"-->
-        <!--            android:src="@color/unlistenedOverlay"-->
-        <!--            app:layout_constraintBottom_toBottomOf="@id/book_cover_img"-->
-        <!--            app:layout_constraintLeft_toLeftOf="@id/book_cover_img"-->
-        <!--            app:layout_constraintRight_toRightOf="@id/book_cover_img"-->
-        <!--            app:layout_constraintTop_toTopOf="@id/book_cover_img"-->
-        <!--            tools:layout_height="48dp"-->
-        <!--            tools:layout_width="48dp" />-->
-
-        <LinearLayout
-            android:id="@+id/text_elements"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/title"
+            style="@style/TextAppearance.Body1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:singleLine="true"
+            android:text="@{audiobook.title}"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/book_cover_img">
+            app:layout_constraintTop_toBottomOf="@id/book_cover_img"
+            tools:text="Book" />
 
-            <TextView
-                android:id="@+id/title"
-                style="@style/TextAppearance.Body1"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:text="@{audiobook.title}"
-                tools:text="Book" />
+        <TextView
+            android:id="@+id/author"
+            style="@style/TextAppearance.Body2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text="@{audiobook.author}"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/title"
+            tools:text="Author" />
 
-            <TextView
-                android:id="@+id/author"
-                style="@style/TextAppearance.Body2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:text="@{audiobook.author}"
-                tools:text="Author" />
-
-        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

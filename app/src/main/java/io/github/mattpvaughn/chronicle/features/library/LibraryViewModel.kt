@@ -5,29 +5,27 @@ import android.text.format.Formatter
 import android.util.Log
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.Injector
-import io.github.mattpvaughn.chronicle.application.NetworkAwareViewModel
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
 import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager.CacheStatus
-import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager.CacheStatus.*
-import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
-import io.github.mattpvaughn.chronicle.features.settings.PrefsRepo
+import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager.CacheStatus.CACHED
+import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager.CacheStatus.NOT_CACHED
 import io.github.mattpvaughn.chronicle.util.bytesAvailable
 import io.github.mattpvaughn.chronicle.util.observeOnce
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class LibraryViewModel(
+class LibraryViewModel @Inject constructor(
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
-    plexPrefsRepo: PlexPrefsRepo,
     private val prefsRepo: PrefsRepo,
     private val cachedFileManager: ICachedFileManager
-) : NetworkAwareViewModel(plexPrefsRepo) {
+) : ViewModel() {
 
     private var _books = bookRepository.getAllBooks()
     val books: LiveData<List<Audiobook>>
@@ -84,18 +82,6 @@ class LibraryViewModel(
         _isSearchActive.postValue(isSearchActive)
     }
 
-    private fun refreshBooksFromNetwork() {
-        viewModelScope.launch {
-            try {
-                bookRepository.refreshData(trackRepository)
-                _isNetworkError.value = false
-            } catch (e: Exception) {
-                Log.e(APP_NAME, "Failed to retrieve books from server. $e")
-                _isNetworkError.value = true
-            }
-        }
-    }
-
     /**
      * Searches for books which match the provided text
      */
@@ -114,12 +100,6 @@ class LibraryViewModel(
     val offlineMode: LiveData<Boolean>
         get() = _offlineMode
 
-    private val networkObserver = Observer<Boolean> { isLoading ->
-        if (!isLoading) {
-            refreshBooksFromNetwork()
-        }
-    }
-
     private val offlineModeListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             when (key) {
@@ -131,7 +111,6 @@ class LibraryViewModel(
 
     init {
         prefsRepo.registerPrefsListener(offlineModeListener)
-        isLoading.observeForever(networkObserver)
     }
 
 
@@ -142,7 +121,6 @@ class LibraryViewModel(
 
     override fun onCleared() {
         prefsRepo.unRegisterPrefsListener(offlineModeListener)
-        isLoading.removeObserver(networkObserver)
         super.onCleared()
     }
 

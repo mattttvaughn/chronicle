@@ -3,8 +3,9 @@ package io.github.mattpvaughn.chronicle.data.local
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import javax.inject.Inject
 
-class FakeBookRepository : IBookRepository {
+class FakeBookRepository @Inject constructor() : IBookRepository {
 
     companion object {
         val books = makeBooks()

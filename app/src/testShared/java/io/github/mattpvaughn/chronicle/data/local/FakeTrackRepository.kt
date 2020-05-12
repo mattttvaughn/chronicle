@@ -3,8 +3,9 @@ package io.github.mattpvaughn.chronicle.data.local
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
+import javax.inject.Inject
 
-class FakeTrackRepository : ITrackRepository {
+class FakeTrackRepository @Inject constructor() : ITrackRepository {
 
     val tracks = makeTracks()
 
@@ -76,5 +77,7 @@ class FakeTrackRepository : ITrackRepository {
     override suspend fun loadAllTracks(): LiveData<List<MediaItemTrack>> {
         return MutableLiveData(tracks)
     }
+
+    override suspend fun refreshData() {}
 
 }

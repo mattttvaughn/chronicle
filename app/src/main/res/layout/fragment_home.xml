@@ -9,6 +9,10 @@
             name="viewModel"
             type="io.github.mattpvaughn.chronicle.features.home.HomeViewModel" />
 
+        <variable
+            name="plexConfig"
+            type="io.github.mattpvaughn.chronicle.data.plex.PlexConfig" />
+
         <import type="android.view.View" />
 
     </data>
@@ -115,7 +119,7 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/downloaded_recyclerview"
                     bookList="@{viewModel.downloaded}"
-                    serverConnected="@{!viewModel.isLoading()}"
+                    serverConnected="@{plexConfig.isConnected()}"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -139,7 +143,7 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/on_deck_recyclerview"
                     bookList="@{viewModel.recentlyListened}"
-                    serverConnected="@{!viewModel.isLoading()}"
+                    serverConnected="@{plexConfig.isConnected()}"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -162,7 +166,7 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recently_added_recyclerview"
                     bookList="@{viewModel.recentlyAdded}"
-                    serverConnected="@{!viewModel.isLoading()}"
+                    serverConnected="@{plexConfig.isConnected()}"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -174,11 +178,10 @@
             </LinearLayout>
         </ScrollView>
 
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/search_results_list"
             searchBookList="@{viewModel.searchResults}"
-            serverConnectedSearch="@{!viewModel.isLoading()}"
+            serverConnectedSearch="@{plexConfig.isConnected()}"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@color/colorPrimaryDark"

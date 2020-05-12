@@ -1,49 +1,44 @@
 package io.github.mattpvaughn.chronicle.data.plex.model
 
-import org.simpleframework.xml.Attribute
-import org.simpleframework.xml.ElementList
-import org.simpleframework.xml.Root
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
+import io.github.mattpvaughn.chronicle.data.model.Library
 
 /**
  * Used to represent a <Directory/> element, typically contained by a [MediaContainer]. It
  * represents some type of container for audio tracks/chapters. This could be of type
  * [MediaType.ALBUM], [MediaType.ARTIST], or [MediaType.PERSON] within the context of audio.
  */
-@Root(strict = false)
-data class Directory @JvmOverloads constructor(
-    @field:Attribute
-    var title: String = "",
-    @field:Attribute
-    var key: String = "",
-    @field:Attribute(required = false)
-    var uuid: String = "",
-    @field:Attribute(required = false)
-    var parentTitle: String = "",
-    @field:Attribute(required = false)
-    var art: String = "",
-    @field:Attribute(required = false)
-    var ratingKey: String = "",
-    @field:Attribute(required = false)
-    var type: String = "",
-    @field:Attribute(required = false)
-    var thumb: String = "",
-    @field:Attribute(required = false)
-    var size: Int = 0,
-    @field:Attribute(required = false)
-    var parentRatingKey: Int = 0,
-    @field:Attribute(required = false)
-    var summary: String = "",
-    @field:Attribute(required = false)
-    var addedAt: Long = 0,
-    @field:Attribute(required = false)
-    var updatedAt: Long = 0,
-    @field:Attribute(required = false)
-    var viewedLeafCount: Long = 0,
-    @field:Attribute(required = false)
-    var leafCount: Long = 0,
-    @field:Attribute(required = false)
-    var lastViewedAt: Long = 0,
-    @field:ElementList(inline = true, required = false, entry = "Genre")
-    var genres: List<Genre> = ArrayList()
+@JsonClass(generateAdapter = true)
+data class Directory(
+    val key: String = "",
+    val title: String = "",
+    val ratingKey: String = "",
+    val parentRatingKey: Int = 0,
+    val parentTitle: String = "",
+    val type: String = "",
+    val grandparentTitle: String = "",
+    val thumb: String = "",
+    val size: Int = 0,
+    val summary: String = "",
+    val addedAt: Long = 0,
+    val updatedAt: Long = 0,
+    val viewedLeafCount: Long = 0,
+    val leafCount: Long = 0,
+    val lastViewedAt: Long = 0,
+    val genres: List<Genre> = ArrayList(),
+    val duration: Long = 0L,
+    val index: Int = 0,
+    @Json(name = "Media")
+    val media: List<Media> = emptyList(),
+    val viewOffset: Long = 0L
 )
+
+fun Directory.asLibrary(): Library {
+    return Library(
+        name = title,
+        type = MediaType.TYPES.find { mediaType -> mediaType.typeString == this.type }
+            ?: MediaType.ARTIST,
+        id = key)
+}
 

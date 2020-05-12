@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.databinding.PreferenceItemClickableBinding
 import io.github.mattpvaughn.chronicle.databinding.PreferenceItemSwitchBinding
 import io.github.mattpvaughn.chronicle.databinding.PreferenceItemTitleBinding
@@ -19,12 +20,18 @@ import io.github.mattpvaughn.chronicle.databinding.PreferenceItemTitleBinding
 /**
  * A view which shows
  */
-class SettingsList(context: Context, attrs: AttributeSet? = null) : FrameLayout(context, attrs) {
+class SettingsList : FrameLayout {
+
+    constructor(context: Context) : super(context, null)
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs, 0)
+    constructor (context: Context, attrs: AttributeSet?, defStyle: Int) : super(
+        context, attrs, defStyle
+    )
 
     private val prefsRepo = Injector.get().prefsRepo()
     private val prefAdapter = PreferencesListAdapter(prefsRepo)
 
-    private var list: RecyclerView = RecyclerView(context, attrs).apply {
+    private var list: RecyclerView = RecyclerView(context).apply {
         adapter = prefAdapter
         layoutManager = LinearLayoutManager(context)
         layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
@@ -38,7 +45,8 @@ class SettingsList(context: Context, attrs: AttributeSet? = null) : FrameLayout(
         addView(list)
     }
 
-    class PreferencesListAdapter(private val prefsRepo: PrefsRepo) : ListAdapter<PreferenceModel, RecyclerView.ViewHolder>(PreferenceItemDiffCallback()) {
+    class PreferencesListAdapter(private val prefsRepo: PrefsRepo) :
+        ListAdapter<PreferenceModel, RecyclerView.ViewHolder>(PreferenceItemDiffCallback()) {
         override fun onCreateViewHolder(
             parent: ViewGroup,
             viewType: Int
@@ -133,7 +141,10 @@ class SettingsList(context: Context, attrs: AttributeSet? = null) : FrameLayout(
             return oldItem.title == newItem.title
         }
 
-        override fun areContentsTheSame(oldItem: PreferenceModel, newItem: PreferenceModel): Boolean {
+        override fun areContentsTheSame(
+            oldItem: PreferenceModel,
+            newItem: PreferenceModel
+        ): Boolean {
             return oldItem == newItem
         }
     }

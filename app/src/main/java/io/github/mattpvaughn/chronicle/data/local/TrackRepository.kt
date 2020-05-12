@@ -1,16 +1,18 @@
 package io.github.mattpvaughn.chronicle.data.local
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.plex.PlexMediaApi
+import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
+import io.github.mattpvaughn.chronicle.data.plex.PlexMediaService
+import io.github.mattpvaughn.chronicle.data.plex.model.MediaType
 import io.github.mattpvaughn.chronicle.data.plex.model.asTrackList
-import io.github.mattpvaughn.chronicle.features.settings.PrefsRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 import javax.inject.Singleton
-
 
 interface ITrackRepository {
     /**
@@ -27,6 +29,7 @@ interface ITrackRepository {
 
     /** Return all tracks in the [TrackDatabase]  */
     fun getAllTracks(): LiveData<List<MediaItemTrack>>
+
     suspend fun getAllTracksAsync(): List<MediaItemTrack>
 
     /**
@@ -34,6 +37,7 @@ interface ITrackRepository {
      * [MediaItemTrack.parentKey] == [bookId]
      */
     fun getTracksForAudiobook(bookId: Int): LiveData<List<MediaItemTrack>>
+
     suspend fun getTracksForAudiobookAsync(id: Int): List<MediaItemTrack>
 
     /** Update the value of [MediaItemTrack.progress] == [trackProgress] and
@@ -78,7 +82,9 @@ interface ITrackRepository {
      * of them
      */
     suspend fun loadAllTracksAsync(): List<MediaItemTrack>
-    suspend fun loadAllTracks(): LiveData<List<MediaItemTrack>>
+
+    /** Fetches all [MediaType.TRACK]s from the server, updates the local db */
+    suspend fun refreshData()
 
     companion object {
         /**
@@ -90,13 +96,24 @@ interface ITrackRepository {
 }
 
 @Singleton
-class TrackRepository(
+class TrackRepository @Inject constructor(
     private val trackDao: TrackDao,
-    private val prefsRepo: PrefsRepo
+    private val prefsRepo: PrefsRepo,
+    private val plexMediaService: PlexMediaService
 ) : ITrackRepository {
+    override suspend fun refreshData() {
+        if (prefsRepo.offlineMode) {
+            return
+        }
+        withContext(Dispatchers.IO) {
+            loadAllTracksAsync()
+        }
+    }
+
     override suspend fun loadTracksForAudiobook(bookId: Int): List<MediaItemTrack> {
         return withContext(Dispatchers.IO) {
-            val networkTracks = PlexMediaApi.retrofitService.retrieveTracksForAlbum(bookId).asTrackList()
+            val networkTracks =
+                plexMediaService.retrieveTracksForAlbum(bookId).mediaContainer.asTrackList()
             val localTracks = trackDao.getAllTracksAsync()
             return@withContext mergeNetworkTracks(networkTracks, localTracks)
 
@@ -184,16 +201,12 @@ class TrackRepository(
         }
     }
 
-    override suspend fun loadAllTracks(): LiveData<List<MediaItemTrack>> {
-        return withContext(Dispatchers.IO) {
-            loadAllTracksAsync()
-            return@withContext trackDao.getAllTracks()
-        }
-    }
-
     override suspend fun loadAllTracksAsync(): List<MediaItemTrack> {
         return withContext(Dispatchers.IO) {
-            val networkTracks = PlexMediaApi.retrofitService.retrieveAllTracksInLibrary(Injector.get().plexPrefs().getLibrary()!!.id).asTrackList()
+            val networkTracks = plexMediaService.retrieveAllTracksInLibrary(
+                Injector.get().plexPrefs().getLibrary()!!.id
+            ).mediaContainer.asTrackList()
+            Log.i(APP_NAME, "Retrieved tracks: $networkTracks")
             val localTracks = trackDao.getAllTracksAsync()
             return@withContext mergeNetworkTracks(networkTracks, localTracks)
         }

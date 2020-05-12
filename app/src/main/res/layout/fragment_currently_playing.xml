@@ -9,6 +9,10 @@
             name="viewModel"
             type="io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingViewModel" />
 
+        <variable
+            name="plexConfig"
+            type="io.github.mattpvaughn.chronicle.data.plex.PlexConfig" />
+
         <import type="android.view.View" />
     </data>
 
@@ -40,7 +44,7 @@
             tools:layout="@layout/view_bottom_sheet_chooser" />
 
 
-        <ScrollView
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
@@ -55,7 +59,7 @@
                 <ImageView
                     android:id="@+id/details_artwork"
                     lastUpdated="@{viewModel.audiobook.updatedAt}"
-                    serverConnected="@{!viewModel.isLoading()}"
+                    serverConnected="@{plexConfig.isConnected()}"
                     srcRounded="@{viewModel.audiobook.thumb}"
                     android:layout_width="@dimen/details_artwork_size"
                     android:layout_height="@dimen/details_artwork_size"
@@ -263,7 +267,7 @@
                     android:orientation="vertical"
                     app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
             </androidx.constraintlayout.widget.ConstraintLayout>
-        </ScrollView>
+        </androidx.core.widget.NestedScrollView>
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/details_toolbar"

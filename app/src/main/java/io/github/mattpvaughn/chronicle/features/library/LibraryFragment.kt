@@ -1,5 +1,6 @@
 package io.github.mattpvaughn.chronicle.features.library
 
+import android.content.Context
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
@@ -8,10 +9,12 @@ import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import io.github.mattpvaughn.chronicle.R
-import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MainActivity
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.databinding.FragmentLibraryBinding
+import javax.inject.Inject
 
 /** TODO: refactor search to reuse code from Library + Home fragments */
 class LibraryFragment : Fragment() {
@@ -20,32 +23,32 @@ class LibraryFragment : Fragment() {
         fun newInstance() = LibraryFragment()
     }
 
-    private lateinit var viewModel: LibraryViewModel
+    @Inject
+    lateinit var viewModel: LibraryViewModel
+
+    @Inject
+    lateinit var prefsRepo: PrefsRepo
+
+    @Inject
+    lateinit var plexConfig: PlexConfig
+
+    override fun onAttach(context: Context) {
+        (activity as MainActivity).activityComponent.inject(this)
+        super.onAttach(context)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
-        val activity = activity!!
-
-        val plexPrefsRepo = Injector.get().plexPrefs()
-        val prefsRepo = Injector.get().prefsRepo()
-        viewModel = LibraryViewModel(
-            bookRepository = Injector.get().bookRepo(),
-            trackRepository = Injector.get().trackRepo(),
-            plexPrefsRepo = plexPrefsRepo,
-            prefsRepo = prefsRepo,
-            cachedFileManager = (activity as MainActivity).activityComponent.cachedFileManager()
-        )
-
         val binding = FragmentLibraryBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
-        binding.libraryGrid.adapter = AudiobookAdapter(true, object : AudiobookClick {
+        binding.plexConfig = plexConfig
+        binding.libraryGrid.adapter =
+            AudiobookAdapter(prefsRepo.bookCoverStyle == "Square", true, object : AudiobookClick {
             override fun onClick(audiobook: Audiobook) {
                 openAudiobookDetails(audiobook)
             }
-
         })
         binding.lifecycleOwner = this
         binding.searchResultsList.adapter = AudiobookSearchAdapter(object : AudiobookClick {
@@ -54,7 +57,7 @@ class LibraryFragment : Fragment() {
             }
         })
 
-        activity.setSupportActionBar(binding.toolbar)
+        (activity as MainActivity).setSupportActionBar(binding.toolbar)
 
         return binding.root
     }

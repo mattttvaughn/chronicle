@@ -1,79 +1,43 @@
 package io.github.mattpvaughn.chronicle.injection.modules
 
-import android.app.Activity
-import android.content.ComponentName
-import android.content.Context
+import android.support.v4.media.session.MediaControllerCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import dagger.Module
 import dagger.Provides
-import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.plex.CachedFileManager
 import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.ProgressUpdater
 import io.github.mattpvaughn.chronicle.features.player.SimpleProgressUpdater
-import io.github.mattpvaughn.chronicle.injection.scopes.PerActivity
+import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import kotlinx.coroutines.CoroutineScope
-import javax.inject.Named
-
-interface IActivityModule {
-    open fun provideActivityContext(): Context
-    open fun provideMediaServiceConnection(): MediaServiceConnection
-    open fun coroutineScope(): CoroutineScope
-    open fun provideCachedFileManager(): ICachedFileManager
-    open fun provideProgressUpdater(): ProgressUpdater
-}
 
 @Module
-open class ActivityModule(private val activity: AppCompatActivity) : IActivityModule {
+class ActivityModule(private val activity: AppCompatActivity) {
 
     @Provides
-    @PerActivity
-    @Named("activity")
-    override fun provideActivityContext(): Context = activity
+    @ActivityScope
+    fun coroutineScope(): CoroutineScope = activity.lifecycleScope
 
     @Provides
-    @PerActivity
-    override fun provideMediaServiceConnection(): MediaServiceConnection =
-        MediaServiceConnection.getInstance(
-            provideActivityContext() as Activity,
-            ComponentName(provideActivityContext(), MediaPlayerService::class.java)
-        )
+    @ActivityScope
+    fun navigator(): Navigator = Navigator(activity.supportFragmentManager)
 
     @Provides
-    @PerActivity
-    override fun coroutineScope(): CoroutineScope {
-        return activity.lifecycleScope
-    }
+    @ActivityScope
+    fun provideProgressUpdater(progressUpdater: SimpleProgressUpdater): ProgressUpdater =
+        progressUpdater
 
     @Provides
-    @PerActivity
-    override fun provideCachedFileManager(): ICachedFileManager {
-        return CachedFileManager(
-            Injector.get().downloadManager(),
-            Injector.get().prefsRepo(),
-            coroutineScope(),
-            Injector.get().trackRepo(),
-            Injector.get().bookRepo(),
-            Injector.get().externalDeviceDirs()
-        )
-    }
+    @ActivityScope
+    fun provideCachedFileManager(cacheManager: CachedFileManager): ICachedFileManager = cacheManager
 
     @Provides
-    @PerActivity
-    override fun provideProgressUpdater(): ProgressUpdater {
-        return SimpleProgressUpdater(
-            coroutineScope(),
-            Injector.get().trackRepo(),
-            Injector.get().bookRepo(),
-            Injector.get().workManager(),
-            provideMediaServiceConnection(),
-            provideMediaServiceConnection().mediaController,
-            Injector.get().prefsRepo()
-        )
-    }
+    @ActivityScope
+    fun provideMediaController(connection: MediaServiceConnection): MediaControllerCompat =
+        connection.mediaController
 }
 
 

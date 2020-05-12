@@ -4,9 +4,9 @@ import android.support.v4.media.MediaMetadataCompat
 import android.util.Log
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexRequestSingleton
-import io.github.mattpvaughn.chronicle.data.plex.model.TrackPlexModel
+import io.github.mattpvaughn.chronicle.data.plex.model.Directory
 import io.github.mattpvaughn.chronicle.features.player.*
 import java.io.File
 
@@ -24,6 +24,7 @@ data class MediaItemTrack(
     val index: Int = 0,
     /** The duration of the track in milliseconds */
     val duration: Long = 0L,
+    /** Path to the media file in the form "/library/parts/[id]/SOME_NUMBER/file.mp3" */
     val media: String = "",
     val album: String = "",
     val artist: String = "",
@@ -42,6 +43,7 @@ data class MediaItemTrack(
                 title = metadata.title ?: "",
                 playQueueItemID = metadata.trackNumber,
                 thumb = metadata.artUri.toString(),
+                media = metadata.mediaUri.toString(),
                 index = metadata.trackNumber.toInt(),
                 duration = metadata.duration,
                 album = metadata.album ?: "",
@@ -61,7 +63,8 @@ data class MediaItemTrack(
 
         /**
          * Merges updated local fields with a network copy of the book. Prefers network metadata,
-         * but retains the following local fields if the local copy is more up to date: [lastViewedAt], [progress]
+         * but retains the following local fields if the local copy is more up to date:
+         * [lastViewedAt], [progress]
          *
          * Always retains [cached] field from local copy
          */
@@ -79,22 +82,21 @@ data class MediaItemTrack(
         }
 
         /** Create a [MediaItemTrack] from a Plex model and an index */
-        fun fromPlexModel(networkTrack: TrackPlexModel, index: Int): MediaItemTrack {
+        fun fromPlexModel(networkTrack: Directory): MediaItemTrack {
             return MediaItemTrack(
                 id = networkTrack.ratingKey.toInt(),
-                parentKey = networkTrack.parentKey.replace(PARENT_KEY_PREFIX, "").toInt(),
+                parentKey = networkTrack.parentRatingKey,
                 title = networkTrack.title,
                 artist = networkTrack.grandparentTitle,
                 thumb = networkTrack.thumb,
-                index = index + 1, // b/c humans don't like 0-indexing!
+                index = networkTrack.index, // b/c humans don't like 0-indexing!
                 duration = networkTrack.duration,
                 progress = networkTrack.viewOffset,
-                media = networkTrack.media.part.key,
-                playQueueItemID = networkTrack.playQueueItemID,
+                media = networkTrack.media[0].part[0].key,
                 album = networkTrack.parentTitle,
                 lastViewedAt = networkTrack.lastViewedAt,
                 updatedAt = networkTrack.updatedAt,
-                size = networkTrack.media.part.size
+                size = networkTrack.media[0].part[0].size
             )
         }
 
@@ -113,9 +115,9 @@ data class MediaItemTrack(
 
     fun getTrackSource(): String {
         return if (cached) {
-            getCachedFileName()
+            File(Injector.get().prefsRepo().cachedMediaDir, getCachedFileName()).absolutePath
         } else {
-            media
+            Injector.get().plexConfig().toServerString(media)
         }
     }
 
@@ -161,17 +163,13 @@ fun List<MediaItemTrack>.getActiveTrack(): MediaItemTrack {
  * Converts a [MediaItemTrack] to a [MediaMetadataCompat]. Requires a [file] to be passed in so
  * that a uri can be generated for cached media
  */
-fun MediaItemTrack.toMediaMetadata(file: File): MediaMetadataCompat {
+fun MediaItemTrack.toMediaMetadata(): MediaMetadataCompat {
     val metadataBuilder = MediaMetadataCompat.Builder()
     metadataBuilder.id = this.id.toString()
     metadataBuilder.title = this.title
     metadataBuilder.trackNumber = this.playQueueItemID
     metadataBuilder.albumArtUri = this.thumb
-    metadataBuilder.mediaUri = if (cached) {
-        File(file, getCachedFileName()).absolutePath
-    } else {
-        PlexRequestSingleton.toServerString(getTrackSource())
-    }
+    metadataBuilder.mediaUri = getTrackSource()
     metadataBuilder.trackNumber = this.index.toLong()
     metadataBuilder.duration = this.duration
     metadataBuilder.album = this.album
@@ -179,3 +177,5 @@ fun MediaItemTrack.toMediaMetadata(file: File): MediaMetadataCompat {
     metadataBuilder.genre = this.genre
     return metadataBuilder.build()
 }
+
+val EMPTY_TRACK = MediaItemTrack()

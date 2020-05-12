@@ -3,10 +3,11 @@ package io.github.mattpvaughn.chronicle.data.plex
 import android.app.DownloadManager
 import android.net.Uri
 import android.util.Log
+import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.features.settings.PrefsRepo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.File
@@ -14,7 +15,6 @@ import java.io.FileFilter
 import javax.inject.Inject
 
 interface ICachedFileManager {
-
     enum class CacheStatus {
         CACHED,
         CACHING,
@@ -33,8 +33,10 @@ class CachedFileManager @Inject constructor(
     private val coroutineScope: CoroutineScope,
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
-    private val externalFileDirs: List<File>
+    private val plexConfig: PlexConfig
 ) : ICachedFileManager {
+
+    private val externalFileDirs = Injector.get().externalDeviceDirs()
 
     // Keep a list of tracks which we are actively caching so they can be canceled if needed
     private var cacheQueue = ArrayList<Long>()
@@ -46,20 +48,28 @@ class CachedFileManager @Inject constructor(
     override fun downloadTracks(tracks: List<MediaItemTrack>) {
         cacheQueue.clear()
         val cachedFilesDir = prefsRepo.cachedMediaDir
+        Log.i(APP_NAME, "Caching tracks to: ${cachedFilesDir.path}")
         tracks.sortedBy { it.index }.forEach { track ->
             if (!track.cached) {
-                val downId = downloadManager.enqueue(makeRequest(track, cachedFilesDir))
+                val destFile = File(cachedFilesDir, track.getCachedFileName())
+                if (destFile.exists()) {
+                    // File exists but is not marked as cached in the database- more likely than not
+                    // this means that we failed to download this previously
+                    destFile.delete()
+                }
+                val dest = Uri.parse("file://${destFile.absolutePath}")
+                val downId = downloadManager.enqueue(makeRequest(track, dest))
                 cacheQueue.add(downId)
             }
         }
     }
 
     override fun uncacheAll(): Int {
-        Log.i(APP_NAME, "Uncaching books from: ${externalFileDirs.map { it.path }}")
+        Log.i(APP_NAME, "Removing books from: ${externalFileDirs.map { it.path }}")
         val allCachedFiles = externalFileDirs.flatMap { dir ->
             dir.listFiles(FileFilter {
                 MediaItemTrack.cachedFilePattern.matches(it.name)
-            }).toList()
+            })?.toList() ?: emptyList()
         }
         allCachedFiles.forEach {
             Log.i(APP_NAME, "Deleting file: ${it.name}")
@@ -93,15 +103,11 @@ class CachedFileManager @Inject constructor(
         }
     }
 
-    private fun makeRequest(track: MediaItemTrack, cachedFilesDir: File): DownloadManager.Request {
-        return PlexRequestSingleton.makeDownloadRequest(track.media)
-            .setTitle("Track ${track.index} - ${track.title}")
+    private fun makeRequest(track: MediaItemTrack, dest: Uri): DownloadManager.Request {
+        return plexConfig.makeDownloadRequest(track.media)
+            .setTitle("#${track.index} ${track.album}")
             .setDescription("Downloading")
-            .setDestinationUri(
-                Uri.parse(
-                    "file://${File(cachedFilesDir, track.getCachedFileName()).absolutePath}"
-                )
-            )
+            .setDestinationUri(dest)
     }
 
 }

@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.media.AudioManager
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import javax.inject.Inject
 
 /**
  * Helper class for listening for when headphones are unplugged (or the audio will otherwise
@@ -14,7 +15,7 @@ import android.support.v4.media.session.MediaSessionCompat
  *
  * From UAMP: https://github.com/android/uamp/
  */
-class BecomingNoisyReceiver(
+class BecomingNoisyReceiver @Inject constructor(
     private val context: Context,
     sessionToken: MediaSessionCompat.Token
 ) : BroadcastReceiver() {

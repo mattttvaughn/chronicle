@@ -9,12 +9,13 @@ import android.support.v4.media.session.PlaybackStateCompat
 import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import io.github.mattpvaughn.chronicle.data.plex.PlexMediaRepository
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.toMediaMetadata
+import io.github.mattpvaughn.chronicle.data.plex.PlexMediaRepository
 import java.io.File
+import javax.inject.Inject
 
-class AudiobookPlaybackPreparer(
+class AudiobookPlaybackPreparer @Inject constructor(
     private val mediaSource: PlexMediaRepository,
     private val mediaSessionCallback: MediaSessionCompat.Callback
 ) : MediaSessionConnector.PlaybackPreparer {
@@ -51,5 +52,5 @@ class AudiobookPlaybackPreparer(
 }
 
 fun buildPlaylist(tracks: List<MediaItemTrack>, file: File): List<MediaMetadataCompat> {
-    return tracks.map { track -> track.toMediaMetadata(file) }
+    return tracks.map { track -> track.toMediaMetadata() }
 }

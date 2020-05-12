@@ -12,55 +12,41 @@ import android.util.Log
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
-import io.github.mattpvaughn.chronicle.application.NetworkAwareViewModel
 import io.github.mattpvaughn.chronicle.application.SECONDS_PER_MINUTE
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
+import io.github.mattpvaughn.chronicle.features.player.AudiobookMediaSessionCallback.TrackListStateManager
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_PLAY_STARTING_WITH_TRACK_ID
-import io.github.mattpvaughn.chronicle.features.settings.PrefsRepo
+import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.observeOnce
+import io.github.mattpvaughn.chronicle.util.postEvent
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener.Companion.emptyListener
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
-class CurrentlyPlayingViewModel(
+class CurrentlyPlayingViewModel @Inject constructor(
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
-    private val inputAudiobookId: Int,
-    plexPrefsRepo: PlexPrefsRepo,
+    private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
-    private val mediaServiceConnection: MediaServiceConnection
-) : NetworkAwareViewModel(plexPrefsRepo) {
+    private val plexConfig: PlexConfig
+) : ViewModel() {
 
-    class Factory @Inject constructor(
-        private val bookRepository: IBookRepository,
-        private val trackRepository: ITrackRepository,
-        private val plexPrefsRepo: PlexPrefsRepo,
-        private val prefsRepo: PrefsRepo,
-        private val mediaServiceConnection: MediaServiceConnection
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
-                return CurrentlyPlayingViewModel(
-                    bookRepository,
-                    trackRepository,
-                    0,
-                    plexPrefsRepo,
-                    prefsRepo,
-                    mediaServiceConnection
-                ) as T
-            }
-            throw IllegalArgumentException("Unknown ViewHolder class")
-        }
-    }
+    private var _showUserMessage = MutableLiveData<Event<String>>()
+    val showUserMessage: LiveData<Event<String>>
+        get() = _showUserMessage
+
+    // Placeholder til we figure out dagger 100%
+    private val inputAudiobookId = EMPTY_AUDIOBOOK.id
 
     private var audiobookId = MutableLiveData<Int>()
 
@@ -88,16 +74,13 @@ class CurrentlyPlayingViewModel(
     val speed: LiveData<Float>
         get() = _speed
 
-    val activeTrackId: LiveData<Int> = Transformations.map(mediaServiceConnection.nowPlaying) {
-        if (it.id.isNullOrEmpty()) {
-            -1
-        } else {
-            it.id!!.toInt()
+    val activeTrackId: LiveData<Int> =
+        Transformations.map(mediaServiceConnection.nowPlaying) { metadata ->
+            metadata.takeIf { !it.id.isNullOrEmpty() }?.id?.toInt() ?: TRACK_NOT_FOUND
         }
-    }
 
-    val currentTrack = Transformations.map(tracks) { trackList ->
-        trackList.getActiveTrack()
+    val currentTrack: LiveData<MediaItemTrack> = Transformations.map(tracks) { trackList ->
+        trackList.takeIf { it.isNotEmpty() }?.getActiveTrack() ?: EMPTY_TRACK
     }
 
     private var _isSleepTimerActive = MutableLiveData<Boolean>(false)
@@ -130,10 +113,10 @@ class CurrentlyPlayingViewModel(
     }
 
     val bookDurationString = Transformations.map(audiobook) {
-        return@map DateUtils.formatElapsedTime(StringBuilder(), it.duration / 1000)
+        return@map DateUtils.formatElapsedTime(StringBuilder(), it?.duration?.div(1000) ?: 0)
     }
 
-    private var _isLoadingTracks = MutableLiveData<Boolean>(false)
+    private var _isLoadingTracks = MutableLiveData(false)
     val isLoadingTracks: LiveData<Boolean>
         get() = _isLoadingTracks
 
@@ -176,8 +159,8 @@ class CurrentlyPlayingViewModel(
         }
     }
 
-    private val networkObserver = Observer<Boolean> { isLoading ->
-        if (!isLoading) {
+    private val networkObserver = Observer<Boolean> { isConnected ->
+        if (isConnected) {
             refreshTracks(inputAudiobookId)
         }
     }
@@ -191,21 +174,26 @@ class CurrentlyPlayingViewModel(
     }
 
     private fun setAudiobook(trackId: Int) {
+        val currentAudiobookId = audiobook.value?.id ?: NO_AUDIOBOOK_FOUND_ID
         viewModelScope.launch {
-            audiobookId.postValue(trackRepository.getBookIdForTrack(trackId))
+            if (currentAudiobookId == NO_AUDIOBOOK_FOUND_ID || audiobookId.value != currentAudiobookId) {
+                audiobookId.postValue(trackRepository.getBookIdForTrack(trackId))
+            }
         }
     }
 
     init {
         mediaServiceConnection.nowPlaying.observeForever(playbackObserver)
-
-        isLoading.observeForever(networkObserver)
+        plexConfig.isConnected.observeForever(networkObserver)
 
         // Listen for changes in SharedPreferences that could effect playback
         prefsRepo.registerPrefsListener(prefsChangeListener)
     }
 
     private fun refreshTracks(bookId: Int) {
+        if (bookId == NO_AUDIOBOOK_FOUND_ID) {
+            return
+        }
         viewModelScope.launch {
             try {
                 // Only replace track view w/ loading view if we have no tracks
@@ -230,6 +218,10 @@ class CurrentlyPlayingViewModel(
     }
 
     fun play() {
+        Log.i(
+            APP_NAME,
+            "Connection = $mediaServiceConnection, isConnected = ${mediaServiceConnection.isConnected.value}"
+        )
         if (mediaServiceConnection.isConnected.value != false) {
             checkNotNull(audiobook.value) { "Tried to play null audiobook!" }
             playMediaId(audiobook.value!!.id.toString())
@@ -243,10 +235,10 @@ class CurrentlyPlayingViewModel(
         mediaServiceConnection.playbackState.value?.let { playbackState ->
             if (playbackState.isPlaying) {
                 Log.i(APP_NAME, "Pausing!")
-                transportControls?.pause()
+                transportControls.pause()
             } else {
                 Log.i(APP_NAME, "Playing!")
-                transportControls?.playFromMediaId(bookId, extras)
+                transportControls.playFromMediaId(bookId, extras)
             }
         }
     }
@@ -260,35 +252,38 @@ class CurrentlyPlayingViewModel(
     }
 
     private fun seekRelative(action: PlaybackStateCompat.CustomAction, offset: Long) {
-        if (mediaServiceConnection.nowPlaying.value != NOTHING_PLAYING) {
-            // Service will be alive, so we can let it handle the action
-            Log.i(APP_NAME, "Sending custom action!")
-            mediaServiceConnection.transportControls?.sendCustomAction(action, null)
-        } else {
-            Log.i(APP_NAME, "Updating progress manually!")
-            // Service is not alive, so update track repo directly
-            tracks.observeOnce(Observer { _tracks ->
-                viewModelScope.launch {
-                    val currentTrack = _tracks.getActiveTrack()
-                    val manager = MediaPlayerService.TrackListStateManager()
-                    manager.trackList = _tracks
-                    manager.currentPosition = currentTrack.progress
-                    manager.currentTrackIndex = _tracks.indexOf(currentTrack)
-                    manager.seekByRelative(offset)
-                    val updatedTrack = _tracks[manager.currentTrackIndex]
-                    trackRepository.updateTrackProgress(
-                        manager.currentPosition,
-                        updatedTrack.id,
-                        System.currentTimeMillis()
-                    )
-                }
-            })
+        val transportControls = mediaServiceConnection.transportControls
+        mediaServiceConnection.let { connection ->
+            if (connection.nowPlaying.value != NOTHING_PLAYING) {
+                // Service will be alive, so we can let it handle the action
+                Log.i(APP_NAME, "Seeking!")
+                transportControls.sendCustomAction(action, null)
+            } else {
+                Log.i(APP_NAME, "Updating progress manually!")
+                // Service is not alive, so update track repo directly
+                tracks.observeOnce(Observer { _tracks ->
+                    viewModelScope.launch {
+                        val currentTrack = _tracks.getActiveTrack()
+                        val manager = TrackListStateManager()
+                        manager.trackList = _tracks
+                        manager.currentPosition = currentTrack.progress
+                        manager.currentTrackIndex = _tracks.indexOf(currentTrack)
+                        manager.seekByRelative(offset)
+                        val updatedTrack = _tracks[manager.currentTrackIndex]
+                        trackRepository.updateTrackProgress(
+                            manager.currentPosition,
+                            updatedTrack.id,
+                            System.currentTimeMillis()
+                        )
+                    }
+                })
+            }
         }
     }
 
     fun jumpToTrack(track: MediaItemTrack) {
         val bookId = track.parentKey
-        mediaServiceConnection.transportControls?.playFromMediaId(
+        mediaServiceConnection.transportControls.playFromMediaId(
             bookId.toString(),
             Bundle().apply { this.putInt(KEY_PLAY_STARTING_WITH_TRACK_ID, track.id) }
         )
@@ -308,7 +303,8 @@ class CurrentlyPlayingViewModel(
                 val actionPair = when (itemName) {
                     "5 minutes", "15 minutes", "30 minutes", "40 minutes" -> {
                         val duration =
-                            itemName.substringBefore(" ").toLong() * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                            itemName.substringBefore(" ")
+                                .toLong() * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
                         START_SLEEP_TIMER_STRING to duration
                     }
                     "End of chapter" -> {
@@ -326,7 +322,7 @@ class CurrentlyPlayingViewModel(
                     }
                     else -> throw NoWhenBranchMatchedException("Unknown duration picked for sleep timer")
                 }
-                mediaServiceConnection.transportControls?.sendCustomAction(
+                mediaServiceConnection.transportControls.sendCustomAction(
                     actionPair.first,
                     Bundle().apply {
                         putLong(
@@ -338,10 +334,13 @@ class CurrentlyPlayingViewModel(
                 _showSleepTimer.postValue(false)
             }
         })
-
     }
 
     fun showSpeedChooser() {
+        if (!prefsRepo.isPremium) {
+            _showUserMessage.postEvent("Error: variable playback speed is a premium feature")
+            return
+        }
         showOptionsMenu(
             title = "Playback Speed",
             options = listOf("0.5x", "0.7x", "1.0x", "1.2x", "1.5x", "2.0x", "3.0x"),
@@ -380,7 +379,11 @@ class CurrentlyPlayingViewModel(
                 _isSleepTimerActive.postValue(shouldSleepSleepTimerBeActive)
                 _sleepTimerTimeRemaining.postValue(timeLeftMillis)
                 if (shouldSleepSleepTimerBeActive) {
-                    _sleepTimerTitle.postValue("Sleep timer: ${DateUtils.formatElapsedTime(timeLeftMillis / MILLIS_PER_SECOND)} remaining")
+                    _sleepTimerTitle.postValue(
+                        "Sleep timer: ${DateUtils.formatElapsedTime(
+                            timeLeftMillis / MILLIS_PER_SECOND
+                        )} remaining"
+                    )
                 } else {
                     _sleepTimerTitle.postValue("Sleep timer")
                 }
@@ -391,12 +394,11 @@ class CurrentlyPlayingViewModel(
     override fun onCleared() {
         mediaServiceConnection.nowPlaying.removeObserver(playbackObserver)
         prefsRepo.unRegisterPrefsListener(prefsChangeListener)
-        mediaServiceConnection.disconnect()
-        isLoading.removeObserver(networkObserver)
+        plexConfig.isConnected.removeObserver(networkObserver)
         super.onCleared()
     }
 
     fun seekTo(progress: Int) {
-        mediaServiceConnection.transportControls?.seekTo(progress.toLong())
+        mediaServiceConnection.transportControls.seekTo(progress.toLong())
     }
 }

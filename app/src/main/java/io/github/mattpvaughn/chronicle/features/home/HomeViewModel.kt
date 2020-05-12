@@ -3,22 +3,18 @@ package io.github.mattpvaughn.chronicle.features.home
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.*
-import io.github.mattpvaughn.chronicle.application.NetworkAwareViewModel
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
-import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
-import io.github.mattpvaughn.chronicle.features.settings.PrefsRepo
 import io.github.mattpvaughn.chronicle.util.observeOnce
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class HomeViewModel(
+class HomeViewModel @Inject constructor(
     private val bookRepository: IBookRepository,
-    private val trackRepository: ITrackRepository,
-    plexPrefsRepo: PlexPrefsRepo,
     private val prefsRepo: PrefsRepo
-) : NetworkAwareViewModel(plexPrefsRepo) {
+) : ViewModel() {
 
     private var _recentlyListened = MutableLiveData<List<Audiobook>>(emptyList())
     var recentlyListened = Transformations.map(_recentlyListened) {
@@ -50,22 +46,6 @@ class HomeViewModel(
     val isQueryEmpty: LiveData<Boolean>
         get() = _isQueryEmpty
 
-    private fun refreshBookData() {
-        viewModelScope.launch {
-            try {
-                bookRepository.refreshData(trackRepository)
-            } catch (e: Exception) {
-                Log.e(APP_NAME, "Error loading book data!")
-            }
-        }
-    }
-
-    private val networkObserver = Observer<Boolean> { isLoading ->
-        if (!isLoading) {
-            refreshBookData()
-        }
-    }
-
     private val offlineModeListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             when (key) {
@@ -77,14 +57,12 @@ class HomeViewModel(
 
     init {
         prefsRepo.registerPrefsListener(offlineModeListener)
-        isLoading.observeForever(networkObserver)
         viewModelScope.launch {
             _recentlyListened.postValue(bookRepository.getRecentlyListenedAsync())
         }
     }
 
     override fun onCleared() {
-        isLoading.removeObserver(networkObserver)
         prefsRepo.unRegisterPrefsListener(offlineModeListener)
         super.onCleared()
     }

@@ -1,36 +1,26 @@
 package io.github.mattpvaughn.chronicle.features.player
 
-import android.app.Activity
 import android.content.ComponentName
+import android.content.Context
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
+import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
+import javax.inject.Inject
 
-interface IMediaServiceConnection {
-    val isConnected: MutableLiveData<Boolean>
-    val playbackState: MutableLiveData<PlaybackStateCompat>
-    val nowPlaying: MutableLiveData<MediaMetadataCompat>
-    val connectionCallbacks: MediaBrowserCompat.ConnectionCallback
-    val mediaControllerCallback: MediaControllerCompat.Callback
-    val mediaBrowser: MediaBrowserCompat
-    var mediaController: MediaControllerCompat?
-    val transportControls: MediaControllerCompat.TransportControls?
+class MediaServiceConnection @Inject constructor(
+    context: Context,
+    serviceComponent: ComponentName
+) {
+    val isConnected = MutableLiveData<Boolean>(false)
+    val playbackState = MutableLiveData<PlaybackStateCompat>(EMPTY_PLAYBACK_STATE)
+    val nowPlaying = MutableLiveData<MediaMetadataCompat>(NOTHING_PLAYING)
 
-    fun connect()
-    fun disconnect()
-}
-
-class MediaServiceConnection(context: Activity, serviceComponent: ComponentName) :
-    IMediaServiceConnection {
-    override val isConnected = MutableLiveData<Boolean>(false)
-
-    override val playbackState = MutableLiveData<PlaybackStateCompat>(EMPTY_PLAYBACK_STATE)
-    override val nowPlaying = MutableLiveData<MediaMetadataCompat>(NOTHING_PLAYING)
-
-    override val connectionCallbacks = object : MediaBrowserCompat.ConnectionCallback() {
+    private val connectionCallbacks = object : MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
             isConnected.postValue(true)
 
@@ -44,70 +34,68 @@ class MediaServiceConnection(context: Activity, serviceComponent: ComponentName)
                 ).apply {
                     registerCallback(mediaControllerCallback)
                 }
-
-                // Save the controller
-                MediaControllerCompat.setMediaController(context, mediaController)
             }
         }
 
         override fun onConnectionSuspended() {
             // The Service has crashed. Disable transport controls until it automatically reconnects
+            Log.i(APP_NAME, "Service connection suspended")
             isConnected.postValue(false)
         }
 
         override fun onConnectionFailed() {
             // The Service has refused our connection
+            Log.i(APP_NAME, "Service connection failed")
             isConnected.postValue(false)
         }
     }
 
-    override val mediaControllerCallback = MediaControllerCallback()
+    val mediaControllerCallback = MediaControllerCallback()
 
-    override val mediaBrowser: MediaBrowserCompat = MediaBrowserCompat(
+    val mediaBrowser: MediaBrowserCompat = MediaBrowserCompat(
         context,
         serviceComponent,
         connectionCallbacks,
         null
     )
 
-    override var mediaController : MediaControllerCompat? = null
+    lateinit var mediaController: MediaControllerCompat
 
-    override val transportControls: MediaControllerCompat.TransportControls?
-        get() = mediaController?.transportControls
-
+    val transportControls: MediaControllerCompat.TransportControls by lazy {
+        mediaController.transportControls
+    }
 
     inner class MediaControllerCallback : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             playbackState.postValue(state ?: EMPTY_PLAYBACK_STATE)
         }
 
-        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-            nowPlaying.postValue(metadata ?: NOTHING_PLAYING)
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) =
+            if (metadata?.id == null || metadata.title == null) {
+                nowPlaying.postValue(NOTHING_PLAYING)
+            } else {
+                nowPlaying.postValue(metadata)
+            }
+
+        override fun onSessionDestroyed() {
+            Log.i(APP_NAME, "Media controller callback is kill")
+            isConnected.postValue(false)
+            super.onSessionDestroyed()
         }
     }
 
-    override fun connect() {
-        mediaBrowser.connect()
-    }
-
-    override fun disconnect() {
-        mediaController?.unregisterCallback(mediaControllerCallback)
+    fun disconnect() {
+        Log.i(APP_NAME, "Disconnecting MediaServiceConnection")
+        isConnected.postValue(false)
+        mediaController.unregisterCallback(mediaControllerCallback)
         mediaBrowser.disconnect()
     }
 
-    companion object {
-        // For Singleton instantiation.
-        @Volatile
-        var instance: MediaServiceConnection? = null
-
-        fun getInstance(context: Activity, serviceComponent: ComponentName) =
-            instance ?: synchronized(this) {
-                instance ?: MediaServiceConnection(context, serviceComponent)
-                    .also { instance = it }
-            }
+    fun connect() {
+        mediaBrowser.connect()
     }
-}
 
+}
 
 val EMPTY_PLAYBACK_STATE: PlaybackStateCompat = PlaybackStateCompat.Builder()
     .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE)
@@ -119,5 +107,8 @@ val EMPTY_PLAYBACK_STATE: PlaybackStateCompat = PlaybackStateCompat.Builder()
 
 val NOTHING_PLAYING: MediaMetadataCompat = MediaMetadataCompat.Builder()
     .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, "")
+    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "")
     .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 0)
     .build()
+
+

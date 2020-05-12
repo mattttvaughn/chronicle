@@ -6,15 +6,15 @@ apply plugin: "com.google.android.gms.oss-licenses-plugin"
 apply plugin: "androidx.navigation.safeargs.kotlin"
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion "29.0.1"
+    compileSdkVersion 29
+    buildToolsVersion "29.0.3"
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
-        targetSdkVersion 28
-        versionCode 1
-        versionName "1.0"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        targetSdkVersion 29
+        versionCode 5
+        versionName "0.23"
+        testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
         release {
@@ -22,7 +22,7 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
         debug {
-            applicationIdSuffix ".debug"
+//            applicationIdSuffix ".debug"
             debuggable true
         }
     }
@@ -38,7 +38,6 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
@@ -85,9 +84,15 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-extensions:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion"
 
+    // Google Play Billing
+    implementation 'com.android.billingclient:billing:2.1.0'
+    implementation 'com.android.billingclient:billing-ktx:2.1.0'
+
     // Retrofit
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
-    implementation "com.squareup.retrofit2:converter-simplexml:$simpleXmlConverterVersion"
+    implementation "com.squareup.retrofit2:converter-moshi:2.7.2"
+    implementation "com.squareup.moshi:moshi-kotlin:1.9.2"
+    kapt 'com.squareup.moshi:moshi-kotlin-codegen:1.9.2'
 
     // Kotlin coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
@@ -133,46 +138,34 @@ dependencies {
     // WorkManager helps coordinate background syncing of local data w.r.t. network conditions
     implementation "androidx.work:work-runtime-ktx:$workVersion"
 
-    // Android team's license displayer:
+    // Android team's license displaying library- creates an activity showing all dependencies
+    // by pulling from maven
     implementation "com.google.android.gms:play-services-oss-licenses:$ossLicenseActivityVersion"
 
     /* ~~~~~~~~~~~~ Local Tests ~~~~~~~~~~ */
     testImplementation "junit:junit:$junitVersion"
-
-    // AndroidX Test - JVM testing
     testImplementation "androidx.test.ext:junit-ktx:$androidXTestExtKotlinRunnerVersion"
     testImplementation "androidx.test:core-ktx:$androidXTestCoreVersion"
     testImplementation "org.robolectric:robolectric:$robolectricVersion"
-
-    // Room testing
     testImplementation "androidx.room:room-testing:$roomVersion"
-
-    // AndroidX Arch Testing- for testing LiveData
     testImplementation "androidx.arch.core:core-testing:$archTestingVersion"
-
-    // Coroutines tests
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
-
-    // Hamcrest readable assertions
     testImplementation "org.hamcrest:hamcrest-all:$hamcrestVersion"
-
-    // MockK- Kotlin mocking library
     testImplementation "io.mockk:mockk:$mockKVersion"
 
 
     /* ~~~~~~~~~~~~ Instrumented tests ~~~~~~~~~~ */
-
     androidTestImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test:runner:$androidxTestRunnerVersion"
+    androidTestImplementation "androidx.test:rules:$androidxTestRunnerVersion"
     androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidXTestExtKotlinRunnerVersion"
     androidTestImplementation "androidx.test.ext:junit-ktx:$androidXTestExtKotlinRunnerVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$espressoVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-intents:$espressoVersion"
-    androidTestImplementation "io.mockk:mockk:$mockKVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-contrib:$espressoVersion"
+    androidTestImplementation "io.mockk:mockk-android:$mockKVersion"
 
     androidTestImplementation "androidx.navigation:navigation-testing:$navVersion"
-    androidTestImplementation "androidx.fragment:fragment-testing:$fragmentVersion"
 
     androidTestImplementation "com.google.dagger:dagger:$daggerVersion"
     kaptAndroidTest "com.google.dagger:dagger-compiler:$daggerVersion"

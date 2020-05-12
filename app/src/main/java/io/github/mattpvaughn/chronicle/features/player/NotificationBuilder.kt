@@ -26,7 +26,6 @@ import android.content.Intent
 import android.content.pm.PackageManager.GET_ACTIVITIES
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.Build
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -38,14 +37,11 @@ import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
 import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexMediaApi
-import io.github.mattpvaughn.chronicle.data.plex.PlexRequestSingleton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import java.net.URL
 
 const val NOW_PLAYING_CHANNEL: String = "io.github.mattpvaughn.chronicle"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb32229
@@ -138,7 +134,6 @@ class NotificationBuilder(private val context: Context) {
         } else {
             controller.metadata.albumArtUri.toString()
         }
-        val largeIconBitmap = resolveUriAsBitmap(artPath)
 
         val smallIcon = if (playbackState.isPlaying) {
             R.drawable.ic_notification_icon_playing
@@ -155,9 +150,15 @@ class NotificationBuilder(private val context: Context) {
             .setStyle(mediaStyle)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        if (largeIconBitmap != null) {
-            Log.i(APP_NAME, "Successfully resolved bitmap from uri: ${controller.metadata.albumArtUri}")
-            builder.setLargeIcon(largeIconBitmap)
+        if (artPath.isNotEmpty() && artPath != "null") {
+            val largeIconBitmap = resolveUriAsBitmap(artPath)
+            if (largeIconBitmap != null) {
+                Log.i(
+                    APP_NAME,
+                    "Successfully resolved bitmap from uri: ${controller.metadata.albumArtUri}"
+                )
+                builder.setLargeIcon(largeIconBitmap)
+            }
         }
 
         return builder.build()
@@ -185,9 +186,10 @@ class NotificationBuilder(private val context: Context) {
     }
 
     private suspend fun resolveUriAsBitmap(uri: String): Bitmap? {
+        Log.i(APP_NAME, "Resolving album artwork: $uri")
         return withContext(Dispatchers.IO) {
             try {
-                val response = PlexMediaApi.retrofitService.retrieveStreamByFilePath(uri)
+                val response = Injector.get().plexMediaService().retrieveStreamByFilePath(uri)
                 return@withContext BitmapFactory.decodeStream(response.byteStream())
             } catch (e: Exception) {
                 Log.e(APP_NAME, "Error decoding media [$uri]: $e")

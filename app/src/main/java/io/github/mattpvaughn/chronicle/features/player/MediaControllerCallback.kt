@@ -9,10 +9,13 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.model.getProgress
 import io.github.mattpvaughn.chronicle.data.plex.model.getDuration
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.PLEX_STATE_PAUSED
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.PLEX_STATE_PLAYING
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class MediaControllerCallback(
+class MediaControllerCallback @Inject constructor(
     private val mediaController: MediaControllerCompat,
     private val serviceScope: CoroutineScope,
     private val trackRepository: ITrackRepository,
@@ -40,9 +43,8 @@ class MediaControllerCallback(
         }
         // Update track progress
         val trackId = mediaController.metadata.id
-        if (trackId != null && trackId != TRACK_NOT_FOUND.toString() && state != null) {
-            val stateString =
-                if (state.isPlaying) MediaPlayerService.PLEX_STATE_PLAYING else MediaPlayerService.PLEX_STATE_PAUSED
+        if (trackId != null && trackId != TRACK_NOT_FOUND.toString() && state != null && state.isPrepared) {
+            val stateString = if (state.isPlaying) PLEX_STATE_PLAYING else PLEX_STATE_PAUSED
             serviceScope.launch {
                 val bookId = trackRepository.getBookIdForTrack(trackId.toInt())
                 val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
@@ -60,7 +62,6 @@ class MediaControllerCallback(
     }
 
     private suspend fun updateNotification(state: Int) {
-
         val notification =
             if (mediaController.metadata != null && state != PlaybackStateCompat.STATE_NONE) {
                 notificationBuilder.buildNotification(mediaSession.sessionToken)
@@ -75,7 +76,6 @@ class MediaControllerCallback(
                     notificationManager.notify(NOW_PLAYING_NOTIFICATION, notification)
 
                     if (!foregroundServiceController.isForegroundServiceActive()) {
-                        serviceController.startService()
                         foregroundServiceController.startForeground(
                             NOW_PLAYING_NOTIFICATION,
                             notification

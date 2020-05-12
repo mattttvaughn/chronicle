@@ -36,7 +36,7 @@
     <dimen name="audiobook_item_width">128dp</dimen>
     <dimen name="audiobook_item_radius">8dp</dimen>
     <dimen name="audiobook_listened_indicator_size">16dp</dimen>
-    <dimen name="audiobook_image_height">96dp</dimen>
+    <dimen name="audiobook_image_width">96dp</dimen>
 
     <!-- Track list item -->
     <dimen name="track_list_item_height">48dp</dimen>
@@ -49,5 +49,11 @@
     <!-- Device dependent -->
     <dimen name="screen_horizontal_padding">16dp</dimen>
     <dimen name="screen_vertical_padding">16dp</dimen>
+
+    <!-- Login screen -->
+    <dimen name="fab_size_imageview">48dp</dimen>
+    <dimen name="fab_size_imageview_padding">8dp</dimen>
+    <dimen name="rounded_input_padding_vertical">16dp</dimen>
+    <dimen name="rounded_input_padding_horizontal">24dp</dimen>
 
 </resources>

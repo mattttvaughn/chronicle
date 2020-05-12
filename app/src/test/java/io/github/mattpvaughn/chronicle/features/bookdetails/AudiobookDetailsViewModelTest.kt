@@ -9,9 +9,9 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.plex.CachedFileManager
+import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager.CacheStatus.*
 import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
-import io.github.mattpvaughn.chronicle.features.player.FakeMediaServiceConnection
-import io.github.mattpvaughn.chronicle.features.player.IMediaServiceConnection
+import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.ProgressUpdater
 import io.github.mattpvaughn.chronicle.getOrAwaitValue
 import io.mockk.*
@@ -41,7 +41,9 @@ class AudiobookDetailsViewModelTest {
 
     @RelaxedMockK
     lateinit var mockMediaController: MediaControllerCompat
-    lateinit var fakeMediaServiceConnection: IMediaServiceConnection
+
+    @RelaxedMockK
+    lateinit var mockMediaServiceConnection: MediaServiceConnection
 
     @RelaxedMockK
     lateinit var mockPlexPrefsRepo: PlexPrefsRepo
@@ -73,33 +75,12 @@ class AudiobookDetailsViewModelTest {
         every { Log.e(any(), any()) } returns 0
 
         MockKAnnotations.init(this)
-
-        fakeMediaServiceConnection = FakeMediaServiceConnection(mockMediaController)
-
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain() // reset main dispatcher to the original Main dispatcher
         mainThreadSurrogate.close()
-    }
-
-    @Test
-    fun testOnToggleSummaryView_showDetails() {
-        val viewModel = createViewModel()
-
-        viewModel.shouldShowExtendedDetails(true)
-
-        assertThat(viewModel.showExtendedDetails.getOrAwaitValue(), `is`(true))
-    }
-
-    @Test
-    fun testOnToggleSummaryView_hideDetails() {
-        val viewModel = createViewModel()
-
-        viewModel.shouldShowExtendedDetails(false)
-
-        assertThat(viewModel.showExtendedDetails.getOrAwaitValue(), `is`(false))
     }
 
     @Test
@@ -110,7 +91,7 @@ class AudiobookDetailsViewModelTest {
         viewModel.play()
 
         verify(exactly = 1) {
-            fakeMediaServiceConnection.transportControls?.playFromMediaId(
+            mockMediaServiceConnection.transportControls.playFromMediaId(
                 randomIdAudiobook.id.toString(),
                 any()
             )
@@ -128,7 +109,7 @@ class AudiobookDetailsViewModelTest {
         viewModel.jumpToTrack(correspondingTrackList.first())
 
         verify {
-            fakeMediaServiceConnection.transportControls?.playFromMediaId(
+            mockMediaServiceConnection.transportControls.playFromMediaId(
                 randomIdAudiobook.id.toString(),
                 any()
             )
@@ -147,7 +128,7 @@ class AudiobookDetailsViewModelTest {
 
         assertThat(
             cacheStatus.getOrAwaitValue(),
-            `is`(AudiobookDetailsViewModel.CacheStatus.CACHING)
+            `is`(CACHING)
         )
         verify { mockCachedFileManager.downloadTracks(emptyList()) }
     }
@@ -164,7 +145,7 @@ class AudiobookDetailsViewModelTest {
 
         assertThat(
             viewModel.cacheStatus.getOrAwaitValue(),
-            `is`(AudiobookDetailsViewModel.CacheStatus.CACHED)
+            `is`(CACHED)
         )
         verify(exactly = 0) { mockCachedFileManager.downloadTracks(any()) }
         assertThat(viewModel.showBottomSheet.getOrAwaitValue(), `is`(true))
@@ -182,14 +163,14 @@ class AudiobookDetailsViewModelTest {
         viewModel.onCacheButtonClick()
         assertThat(
             viewModel.cacheStatus.getOrAwaitValue(),
-            `is`(AudiobookDetailsViewModel.CacheStatus.CACHING)
+            `is`(CACHING)
         )
 
         // Cancel caching
         viewModel.onCacheButtonClick()
         assertThat(
             viewModel.cacheStatus.getOrAwaitValue(),
-            `is`(AudiobookDetailsViewModel.CacheStatus.NOT_CACHED)
+            `is`(NOT_CACHED)
         )
         verify(exactly = 1) { mockCachedFileManager.downloadTracks(any()) }
         verify(exactly = 1) { mockCachedFileManager.cancelCaching() }
@@ -215,8 +196,7 @@ class AudiobookDetailsViewModelTest {
             trackRepository = trackRepository,
             cachedFileManager = mockCachedFileManager,
             inputAudiobook = Audiobook(id = audiobook.id, isCached = audiobook.isCached),
-            plexPrefsRepo = mockPlexPrefsRepo,
-            mediaServiceConnection = fakeMediaServiceConnection,
+            mediaServiceConnection = mockMediaServiceConnection,
             progressUpdater = mockProgressUpdater
         )
     }

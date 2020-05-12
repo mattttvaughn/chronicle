@@ -3,6 +3,8 @@ package io.github.mattpvaughn.chronicle.data.local
 import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 
 
@@ -16,12 +18,18 @@ fun getBookDatabase(context: Context): BookDatabase {
                 context.applicationContext,
                 BookDatabase::class.java,
                 BOOK_DATABASE_NAME
-            ).build()
+            ).addMigrations(BOOK_MIGRATION_1_2).build()
         }
     }
     return INSTANCE
 }
 
+val BOOK_MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // Do nothing lol
+    }
+
+}
 
 @Database(entities = [Audiobook::class], version = 2, exportSchema = false)
 abstract class BookDatabase : RoomDatabase() {
@@ -79,7 +87,7 @@ interface BookDao {
     fun updateCached(bookId: Int, cached: Boolean)
 
     @Query("DELETE FROM Audiobook")
-    fun clear()
+    suspend fun clear()
 
     @Query("SELECT * FROM Audiobook ORDER BY lastViewedAt DESC LIMIT 1")
     suspend fun getMostRecent(): Audiobook
@@ -95,7 +103,6 @@ interface BookDao {
 
     @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive ORDER BY title ASC")
     fun getAllBooksAsync(offlineModeActive: Boolean): List<Audiobook>
-
 }
 
 

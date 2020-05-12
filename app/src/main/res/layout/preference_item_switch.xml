@@ -8,6 +8,8 @@
         <variable
             name="model"
             type="io.github.mattpvaughn.chronicle.features.settings.PreferenceModel" />
+
+        <import type="android.view.View" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -28,6 +30,7 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toLeftOf="@id/preference_switch"
             app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintHorizontal_chainStyle="packed"
             app:layout_constraintVertical_chainStyle="packed"
             tools:text="Preference Title" />
 
@@ -38,8 +41,10 @@
             android:layout_height="wrap_content"
             android:layout_marginRight="@dimen/screen_horizontal_padding"
             android:text="@{model.explanation}"
+            android:visibility="@{model.hasExplanation() ? View.VISIBLE : View.GONE}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="@id/preference_title"
+            app:layout_constraintHorizontal_chainStyle="packed"
             app:layout_constraintRight_toLeftOf="@id/preference_switch"
             app:layout_constraintTop_toBottomOf="@id/preference_title"
             app:layout_constraintVertical_chainStyle="packed"

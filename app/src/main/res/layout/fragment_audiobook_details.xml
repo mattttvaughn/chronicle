@@ -13,6 +13,10 @@
             name="inputAudiobook"
             type="io.github.mattpvaughn.chronicle.data.model.Audiobook" />
 
+        <variable
+            name="plexConfig"
+            type="io.github.mattpvaughn.chronicle.data.plex.PlexConfig" />
+
         <import type="io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager.CacheStatus" />
 
         <import type="android.view.View" />
@@ -21,8 +25,8 @@
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:background="@color/colorPrimaryDark"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimaryDark">
 
         <io.github.mattpvaughn.chronicle.views.BottomSheetChooser
             android:id="@+id/bottom_sheet_chooser"
@@ -35,7 +39,7 @@
             android:elevation="1dp"
             tools:layout="@layout/view_bottom_sheet_chooser" />
 
-        <ScrollView
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
@@ -47,7 +51,7 @@
                 <ImageView
                     android:id="@+id/details_artwork"
                     lastUpdated="@{viewModel.audiobook.updatedAt}"
-                    serverConnected="@{!viewModel.isLoading()}"
+                    serverConnected="@{plexConfig.isConnected()}"
                     srcRounded="@{viewModel.audiobook.thumb}"
                     android:layout_width="@dimen/details_artwork_size"
                     android:layout_height="@dimen/details_artwork_size"
@@ -85,9 +89,9 @@
                     android:onClick="@{(view) -> viewModel.onCacheButtonClick()}"
                     android:src="@{viewModel.cacheIconDrawable}"
                     android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHING ? View.INVISIBLE : View.VISIBLE}"
-                    app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                    app:layout_constraintBottom_toBottomOf="@id/play_button_container"
                     app:layout_constraintLeft_toLeftOf="@id/left_gutter"
-                    app:layout_constraintTop_toTopOf="@id/details_pause_play" />
+                    app:layout_constraintTop_toTopOf="@id/play_button_container" />
 
                 <TextView
                     android:id="@+id/book_title"
@@ -99,8 +103,8 @@
                     android:text="@{viewModel.audiobook.title}"
                     app:layout_constraintBottom_toTopOf="@id/author"
                     app:layout_constraintLeft_toRightOf="@id/download"
-                    app:layout_constraintRight_toLeftOf="@id/details_pause_play"
-                    app:layout_constraintTop_toTopOf="@id/details_pause_play"
+                    app:layout_constraintRight_toLeftOf="@id/play_button_container"
+                    app:layout_constraintTop_toTopOf="@id/play_button_container"
                     app:layout_constraintVertical_chainStyle="packed"
                     tools:text="Book title but it's very long so it overflows past the edge of the screen" />
 
@@ -111,35 +115,47 @@
                     android:layout_height="wrap_content"
                     android:lines="1"
                     android:text="@{viewModel.audiobook.author}"
-                    app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                    app:layout_constraintBottom_toBottomOf="@id/play_button_container"
                     app:layout_constraintLeft_toLeftOf="@id/book_title"
                     app:layout_constraintRight_toRightOf="@id/book_title"
                     app:layout_constraintTop_toBottomOf="@id/book_title"
                     app:layout_constraintVertical_chainStyle="packed"
                     tools:text="Author name won't overflow" />
 
-
-                <ImageView
-                    android:id="@+id/details_pause_play"
+                <FrameLayout
+                    android:id="@+id/play_button_container"
                     android:layout_width="@dimen/details_play_button"
                     android:layout_height="@dimen/details_play_button"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:onClick="@{() -> viewModel.play()}"
-                    android:src="@drawable/ic_play_button_large_colored"
                     app:layout_constraintRight_toLeftOf="@id/right_gutter"
-                    app:layout_constraintTop_toBottomOf="@id/progress"
-                    tools:src="@drawable/ic_pause_button_large_colored" />
+                    app:layout_constraintTop_toBottomOf="@id/progress">
+
+                    <ImageView
+                        android:id="@+id/details_pause_play"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:onClick="@{() -> viewModel.play()}"
+                        android:src="@drawable/ic_play_button_large_colored"
+                        android:visibility="@{viewModel.isConnecting() ? View.GONE: View.VISIBLE}"
+                        tools:src="@drawable/ic_pause_button_large_colored" />
+
+                    <ProgressBar
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="@dimen/margin_small"
+                        android:visibility="@{viewModel.isConnecting() ? View.VISIBLE : View.GONE}" />
+                </FrameLayout>
 
                 <TextView
                     style="@style/TextAppearance.Body1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/margin_normal"
                     android:drawableTop="@drawable/ic_error_outline_white"
                     android:text="@string/no_tracks_found"
                     android:visibility="@{(viewModel.tracks.isEmpty() &amp;&amp; !viewModel.isLoadingTracks()) ? View.VISIBLE : View.GONE}"
-                    android:layout_marginTop="@dimen/margin_normal"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/chapters_title"
@@ -157,7 +173,7 @@
                     android:visibility="@{viewModel.showSummary ? View.VISIBLE : View.GONE}"
                     app:layout_constraintLeft_toRightOf="@id/left_gutter"
                     app:layout_constraintRight_toLeftOf="@id/right_gutter"
-                    app:layout_constraintTop_toBottomOf="@id/details_pause_play"
+                    app:layout_constraintTop_toBottomOf="@id/play_button_container"
                     tools:lines="5"
                     tools:text="TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. " />
 
@@ -225,7 +241,7 @@
                     android:orientation="vertical"
                     app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
             </androidx.constraintlayout.widget.ConstraintLayout>
-        </ScrollView>
+        </androidx.core.widget.NestedScrollView>
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/details_toolbar"

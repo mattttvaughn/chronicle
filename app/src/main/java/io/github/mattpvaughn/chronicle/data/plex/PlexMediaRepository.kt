@@ -6,8 +6,11 @@ import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.toAlbumMediaMetadata
 import io.github.mattpvaughn.chronicle.features.player.AbstractMediaSource
+import javax.inject.Inject
 
-class PlexMediaRepository(private val bookRepository: IBookRepository) : AbstractMediaSource() {
+class PlexMediaRepository @Inject constructor(
+    private val bookRepository: IBookRepository
+) : AbstractMediaSource() {
 
     private val bookIndex = 0
     private lateinit var books: LiveData<List<Audiobook>>
@@ -17,7 +20,7 @@ class PlexMediaRepository(private val bookRepository: IBookRepository) : Abstrac
     }
 
     override fun whenReady(performAction: (Boolean) -> Unit): Boolean {
-        performAction.invoke(true)
+        performAction(true)
         return true
     }
 

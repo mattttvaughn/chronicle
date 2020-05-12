@@ -6,6 +6,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
+import javax.inject.Inject
 
 /**
  * A countdown timer which pauses playback at the end of countdown. Important note: the timer
@@ -18,7 +19,7 @@ interface SleepTimer {
     fun extend(extensionDuration: Long)
 }
 
-class SimpleSleepTimer(
+class SimpleSleepTimer @Inject constructor(
     private val broadcastManager: LocalBroadcastManager,
     private val mediaController: MediaControllerCompat
 ) : SleepTimer {

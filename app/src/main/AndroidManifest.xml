@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-configuration android:name="com.android.vending.BILLING" />
 
     <application
         android:name="io.github.mattpvaughn.chronicle.application.ChronicleApplication"
@@ -15,6 +16,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:hardwareAccelerated="true"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
 <!--        <meta-data-->
@@ -28,7 +30,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
-                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
+                <!--                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />-->
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </service>
@@ -39,10 +41,9 @@
             </intent-filter>
         </receiver>
 
-        <activity android:name="io.github.mattpvaughn.chronicle.features.login.LoginActivity">
+        <activity android:name="io.github.mattpvaughn.chronicle.features.login.OnboardingActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -50,7 +51,7 @@
             android:name=".application.MainActivity"
             android:label="Home" />
         <activity android:name="io.github.mattpvaughn.chronicle.features.chooseserver.ChooseServerActivity" />
-        <activity android:name="io.github.mattpvaughn.chronicle.features.chooselibrary.ChooseLibraryActivity" />
+        <activity android:name="io.github.mattpvaughn.chronicle.features.login.ChooseLibraryFragment" />
     </application>
 
 </manifest>

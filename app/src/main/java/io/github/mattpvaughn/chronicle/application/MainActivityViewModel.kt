@@ -1,22 +1,25 @@
 package io.github.mattpvaughn.chronicle.application
 
 import android.app.DownloadManager
+import android.app.DownloadManager.*
 import android.support.v4.media.MediaMetadataCompat
 import android.util.Log
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.*
+import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.DownloadResult.Failure
+import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.DownloadResult.Success
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
-import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.NO_TRACK_ID_FOUND
-import io.github.mattpvaughn.chronicle.data.model.getActiveTrack
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
+import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.id
 import io.github.mattpvaughn.chronicle.features.player.isPlaying
-import io.github.mattpvaughn.chronicle.features.settings.PrefsRepo
+import io.github.mattpvaughn.chronicle.features.player.title
+import io.github.mattpvaughn.chronicle.util.Event
+import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileFilter
@@ -27,9 +30,9 @@ class MainActivityViewModel @Inject constructor(
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val mediaServiceConnection: MediaServiceConnection,
-    plexPrefsRepo: PlexPrefsRepo,
-    private val prefsRepo: PrefsRepo
-) : NetworkAwareViewModel(plexPrefsRepo), MainActivity.CurrentlyPlayingInterface {
+    private val prefsRepo: PrefsRepo,
+    private val plexConfig: PlexConfig
+) : ViewModel(), MainActivity.CurrentlyPlayingInterface {
 
     /** The status of the bottom sheet which contains "currently playing" info */
     enum class BottomSheetState {
@@ -38,43 +41,40 @@ class MainActivityViewModel @Inject constructor(
         EXPANDED
     }
 
-    private var _currentlyPlayingLayoutState = MutableLiveData<BottomSheetState>(HIDDEN)
+    private var _isServerConnected = MutableLiveData(false)
+    val isServerConnected: LiveData<Boolean>
+        get() = _isServerConnected
+
+    private val serverConnectionObserver = Observer<Boolean> { isConnectedToServer ->
+        _isServerConnected.postValue(isConnectedToServer)
+        if (isConnectedToServer) {
+            refreshBookData()
+        }
+    }
+
+    private var _currentlyPlayingLayoutState = MutableLiveData(HIDDEN)
     val currentlyPlayingLayoutState: LiveData<BottomSheetState>
         get() = _currentlyPlayingLayoutState
 
-    private var _audiobook = MutableLiveData<Audiobook?>(null)
-    val audiobook: LiveData<Audiobook?>
+    private var _audiobook = MutableLiveData<Audiobook>(EMPTY_AUDIOBOOK)
+    val audiobook: LiveData<Audiobook>
         get() = _audiobook
 
-    private var _tracks = MutableLiveData<List<MediaItemTrack>?>(null)
-    val tracks: LiveData<List<MediaItemTrack>?>
+    private var _tracks = MutableLiveData<List<MediaItemTrack>>(emptyList())
+    val tracks: LiveData<List<MediaItemTrack>>
         get() = _tracks
 
-    private var _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String>
+    private var _errorMessage = MutableLiveData<Event<String>>()
+    val errorMessage: LiveData<Event<String>>
         get() = _errorMessage
-
-    val thumb = Transformations.map(audiobook) { book ->
-        book?.thumb ?: ""
-    }
-
-    val lastUpdated = Transformations.map(audiobook) { book ->
-        book?.updatedAt ?: -1L
-    }
-
-    val bookTitle = Transformations.map(audiobook) { book ->
-        book?.title ?: "No title"
-    }
 
     val currentTrackTitle = Transformations.map(tracks) { trackList ->
         Log.i(APP_NAME, "Current tracklist? $trackList")
-        trackList?.let {
-            if (trackList.isNotEmpty()) {
-                return@map trackList.getActiveTrack().title
-            } else {
-                return@map "No track playing"
-            }
-        } ?: return@map "No track playing"
+        if (trackList.isNotEmpty()) {
+            return@map trackList.getActiveTrack().title
+        } else {
+            return@map "No track playing"
+        }
     }
 
     val isPlaying = Transformations.map(mediaServiceConnection.playbackState) {
@@ -82,6 +82,7 @@ class MainActivityViewModel @Inject constructor(
     }
 
     private val playbackObserver = Observer<MediaMetadataCompat> { metadata ->
+        Log.i(APP_NAME, "Metadata: ${metadata.id}, ${metadata.title}")
         metadata.id?.let { trackId ->
             if (trackId.isNotEmpty()) {
                 setAudiobook(trackId.toInt())
@@ -91,20 +92,22 @@ class MainActivityViewModel @Inject constructor(
 
     init {
         mediaServiceConnection.nowPlaying.observeForever(playbackObserver)
+        plexConfig.isConnected.observeForever(serverConnectionObserver)
         refreshTrackCacheStatus()
     }
 
-    val showConnectionError = Transformations.map(isConnected) {
-        Log.i(APP_NAME, "Is connected? $it")
-        !it
-    }
-
     private fun setAudiobook(trackId: Int) {
+        val currentAudiobookId = audiobook.value?.id ?: NO_AUDIOBOOK_FOUND_ID
+        Log.i(APP_NAME, "Setting currently playing!")
         viewModelScope.launch {
             val bookId = trackRepository.getBookIdForTrack(trackId)
-            _audiobook.postValue(bookRepository.getAudiobookAsync(bookId))
-            _tracks.postValue(trackRepository.getTracksForAudiobookAsync(bookId))
-            _currentlyPlayingLayoutState.postValue(COLLAPSED)
+            // Only change the active audiobook if it differs from the one currently in metadata OR
+            // there is none set in metadata
+            if (currentAudiobookId == NO_AUDIOBOOK_FOUND_ID || bookId != currentAudiobookId) {
+                _audiobook.postValue(bookRepository.getAudiobookAsync(bookId))
+                _tracks.postValue(trackRepository.getTracksForAudiobookAsync(bookId))
+                _currentlyPlayingLayoutState.postValue(COLLAPSED)
+            }
         }
     }
 
@@ -117,9 +120,9 @@ class MainActivityViewModel @Inject constructor(
             // Keys of tracks which are cached on disk
             val actuallyCachedKeys = prefsRepo.cachedMediaDir.listFiles(FileFilter {
                 MediaItemTrack.cachedFilePattern.matches(it.name)
-            }).map {
+            })?.map {
                 MediaItemTrack.getTrackIdFromFileName(it.name)
-            }
+            } ?: emptyList()
 
             // Exists in DB but not in cache- remove from DB!
             reportedCachedKeys.filter { !actuallyCachedKeys.contains(it) }
@@ -144,48 +147,62 @@ class MainActivityViewModel @Inject constructor(
     }
 
     fun handleDownloadedTrack(downloadManager: DownloadManager, downloadId: Long) {
-        val trackId = getTrackIdForDownload(downloadManager, downloadId)
-        Log.i(APP_NAME, "Track id is: $trackId")
-        viewModelScope.launch {
-            trackRepository.updateCachedStatus(trackId, true)
-            val bookId: Int = trackRepository.getBookIdForTrack(trackId)
-            val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
-            val shouldBookBeCached =
-                tracks.filter { it.cached }.size == tracks.size && tracks.isNotEmpty()
-            if (shouldBookBeCached) {
-                Log.i(APP_NAME, "Should be caching book with id $bookId")
-                bookRepository.updateCached(bookId, shouldBookBeCached)
+        val result = getTrackIdForDownload(downloadManager, downloadId)
+        if (result is Success) {
+            Log.i(APP_NAME, "Download completed: ${result.trackId}")
+            val trackId = result.trackId
+            viewModelScope.launch {
+                trackRepository.updateCachedStatus(trackId, true)
+                val bookId: Int = trackRepository.getBookIdForTrack(trackId)
+                val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
+                // Set the book as cached only when all tracks in it have been cached
+                val shouldBookBeCached =
+                    tracks.filter { it.cached }.size == tracks.size && tracks.isNotEmpty()
+                if (shouldBookBeCached) {
+                    Log.i(APP_NAME, "Should be caching book with id $bookId")
+                    bookRepository.updateCached(bookId, shouldBookBeCached)
+                }
             }
+        } else if (result is Failure) {
+            Log.e(APP_NAME, result.reason)
+            showUserMessage(result.reason)
         }
     }
 
-    private fun getTrackIdForDownload(downloadManager: DownloadManager, downloadId: Long): Int {
-        val query = DownloadManager.Query().apply { setFilterById(downloadId) }
-        val cur = downloadManager.query(query)
+    private sealed class DownloadResult {
+        class Success(val trackId: Int) : DownloadResult()
+        class Failure(val reason: String) : DownloadResult()
+    }
+
+    private fun getTrackIdForDownload(manager: DownloadManager, downloadId: Long): DownloadResult {
+        val query = Query().apply { setFilterById(downloadId) }
+        val cur = manager.query(query)
         if (!cur.moveToFirst()) {
-            Log.i(
-                APP_NAME,
-                "No download found with id: $downloadId. (A download queue may have been canceled after starting)"
+            return Failure("No download found with id: $downloadId. Perhaps the download was canceled")
+        }
+        val statusColumnIndex = cur.getColumnIndex(COLUMN_STATUS)
+        if (STATUS_SUCCESSFUL != cur.getInt(statusColumnIndex)) {
+            val reasonColumnIndex = cur.getColumnIndex(COLUMN_REASON)
+            val titleColumnIndex = cur.getColumnIndex(COLUMN_TITLE)
+            return Failure(
+                "Download failed for \"$titleColumnIndex\". " +
+                        when (val errorReason = cur.getInt(reasonColumnIndex)) {
+                            1008 -> "due to server issues (ERROR_CANNOT_RESUME). Please clear failed downloads from your Downloads app and try again"
+                            else -> "Error code: ($errorReason)"
+                        }
             )
-            return NO_TRACK_ID_FOUND
         }
-        val statusColumnIndex = cur.getColumnIndex(DownloadManager.COLUMN_STATUS)
-        if (DownloadManager.STATUS_SUCCESSFUL != cur.getInt(statusColumnIndex)) {
-            Log.e(APP_NAME, "Download was not successful for download with id: $downloadId")
-            return NO_TRACK_ID_FOUND
-        }
-        val downloadedFilePath = cur.getString(cur.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI))
+        val downloadedFilePath = cur.getString(cur.getColumnIndex(COLUMN_LOCAL_URI))
+
         /** Assume that the filename is also the key of the track */
         val trackName = File(downloadedFilePath.toString()).name
         if (!MediaItemTrack.cachedFilePattern.matches(trackName)) {
             throw IllegalStateException("Downloaded file does not match required pattern! Is this a duplicate download?")
         }
-        Log.i(APP_NAME, "Download completed: $trackName")
         return try {
-            MediaItemTrack.getTrackIdFromFileName(trackName)
+            Success(MediaItemTrack.getTrackIdFromFileName(trackName))
         } catch (e: Exception) {
-            Log.e(APP_NAME, "Failed to get track id!")
-            NO_TRACK_ID_FOUND
+            Failure("Failed to get track id!")
         } finally {
             cur.close()
         }
@@ -204,17 +221,21 @@ class MainActivityViewModel @Inject constructor(
     }
 
     fun pausePlayButtonClicked() {
+        val transportControls = mediaServiceConnection.transportControls
         mediaServiceConnection.playbackState.value?.let { playbackState ->
             if (playbackState.isPlaying) {
-                mediaServiceConnection.transportControls?.pause()
+                Log.i(APP_NAME, "Pausing!")
+                transportControls.pause()
             } else {
-                mediaServiceConnection.transportControls?.play()
+                Log.i(APP_NAME, "Playing!")
+                transportControls.play()
             }
         }
     }
 
     override fun onCleared() {
         mediaServiceConnection.nowPlaying.removeObserver(playbackObserver)
+        plexConfig.isConnected.removeObserver(serverConnectionObserver)
         super.onCleared()
     }
 
@@ -222,8 +243,26 @@ class MainActivityViewModel @Inject constructor(
         _currentlyPlayingLayoutState.postValue(state)
     }
 
+    private fun refreshBookData() {
+        viewModelScope.launch {
+            try {
+                bookRepository.refreshData(trackRepository)
+            } catch (e: Exception) {
+                Log.e(APP_NAME, "Error loading book data! $e")
+                e.printStackTrace()
+            }
+            try {
+                trackRepository.refreshData()
+            } catch (e: Throwable) {
+                Log.e(APP_NAME, "Error loading track data! $e")
+                e.printStackTrace()
+            }
+        }
+    }
+
+
     fun showUserMessage(errorMessage: String) {
-        _errorMessage.postValue(errorMessage)
+        _errorMessage.postEvent(errorMessage)
     }
 
     /** Minimize the currently playing modal/overlay if it is*/
@@ -232,6 +271,5 @@ class MainActivityViewModel @Inject constructor(
             _currentlyPlayingLayoutState.postValue(COLLAPSED)
         }
     }
-
 }
 

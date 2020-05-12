@@ -9,6 +9,10 @@
             name="viewModel"
             type="io.github.mattpvaughn.chronicle.application.MainActivityViewModel" />
 
+        <variable
+            name="plexConfig"
+            type="io.github.mattpvaughn.chronicle.data.plex.PlexConfig" />
+
         <import type="android.view.View" />
     </data>
 
@@ -79,9 +83,9 @@
 
                 <ImageView
                     android:id="@+id/currently_playing_thumb"
-                    lastUpdated="@{viewModel.lastUpdated}"
-                    serverConnected="@{!viewModel.isLoading()}"
-                    srcRounded="@{viewModel.thumb}"
+                    lastUpdated="@{viewModel.audiobook.updatedAt}"
+                    serverConnected="@{plexConfig.isConnected()}"
+                    srcRounded="@{viewModel.audiobook.thumb}"
                     android:layout_width="@dimen/app_bar_height"
                     android:layout_height="@dimen/app_bar_height"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -110,7 +114,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:lines="1"
-                    android:text="@{viewModel.bookTitle}"
+                    android:text="@{viewModel.audiobook.title}"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintLeft_toLeftOf="@id/chapter_title"
                     app:layout_constraintRight_toLeftOf="@id/pause_play_button"

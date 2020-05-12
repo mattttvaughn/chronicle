@@ -8,6 +8,10 @@
             name="viewModel"
             type="io.github.mattpvaughn.chronicle.features.library.LibraryViewModel" />
 
+        <variable
+            name="plexConfig"
+            type="io.github.mattpvaughn.chronicle.data.plex.PlexConfig" />
+
         <import type="android.view.View" />
     </data>
 
@@ -87,7 +91,7 @@
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/library_grid"
-            serverConnected="@{!viewModel.isLoading()}"
+            serverConnected="@{plexConfig.isConnected()}"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:paddingLeft="@dimen/margin_small"
@@ -130,7 +134,7 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/search_results_list"
             searchBookList="@{viewModel.searchResults}"
-            serverConnectedSearch="@{!viewModel.isLoading()}"
+            serverConnectedSearch="@{plexConfig.isConnected()}"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:background="@color/colorPrimaryDark"

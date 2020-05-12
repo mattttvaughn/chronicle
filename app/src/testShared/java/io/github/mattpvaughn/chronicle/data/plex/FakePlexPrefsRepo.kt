@@ -1,38 +1,60 @@
 package io.github.mattpvaughn.chronicle.data.plex
 
-import io.github.mattpvaughn.chronicle.data.plex.model.Connection
-import io.github.mattpvaughn.chronicle.features.chooselibrary.LibraryModel
-import io.github.mattpvaughn.chronicle.features.chooseserver.ServerModel
+import io.github.mattpvaughn.chronicle.data.model.Library
+import io.github.mattpvaughn.chronicle.data.model.ServerModel
+import javax.inject.Inject
 
-class FakePlexPrefsRepo : PlexPrefsRepo {
-    override fun removeAuthToken() {}
+/** A non-persisted implementation of [PlexPrefsRepo] */
+class FakePlexPrefsRepo @Inject constructor() : PlexPrefsRepo {
+    private var token = ""
+
+    override fun removeAuthToken() {
+        token = ""
+    }
 
     override fun getAuthToken(): String {
-        return ""
+        return token
     }
 
-    override fun putAuthToken(value: String) {}
-
-    override fun getLibrary(): LibraryModel? {
-        return null
+    override fun putAuthToken(value: String) {
+        token = value
     }
 
-    override fun putLibrary(value: LibraryModel) {}
+    private var library: Library? = null
+    override fun getLibrary(): Library? {
+        return library
+    }
 
-    override fun removeLibraryName() {}
+    override fun putLibrary(value: Library) {
+        library = value
+    }
 
-    override fun putServer(serverModel: ServerModel) {}
+    override fun removeLibraryName() {
+        library = null
+    }
+
+    private var server: ServerModel? = null
+    override fun putServer(serverModel: ServerModel) {
+        server = serverModel
+    }
 
     override fun getServer(): ServerModel? {
-        return null
+        return server
     }
 
-    override fun removeServer() {}
-
-    override fun getLastSuccessfulConnection(): Connection? {
-        return null
+    override fun removeServer() {
+        server = null
     }
 
-    override fun putSuccessfulConnection(connection: Connection) {}
+    override fun clear() {
+        removeServer()
+        removeAuthToken()
+        removeLibraryName()
+    }
+
+    companion object {
+        const val VALID_AUTH_TOKEN = "0d8g93huwsdoij2cxxqw"
+        const val INVALID_AUTH_TOKEN = ""
+    }
 
 }
