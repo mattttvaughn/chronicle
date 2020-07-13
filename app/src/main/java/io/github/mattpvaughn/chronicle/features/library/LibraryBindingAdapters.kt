@@ -8,7 +8,6 @@ import androidx.databinding.BindingAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.features.bookdetails.TrackListAdapter
 
 
 @BindingAdapter("bookList")
@@ -32,18 +31,12 @@ fun overrideWidth(view: View, width: Float) {
 fun setSquareAspectRatio(constraintLayout: ConstraintLayout, isSquare: Boolean) {
     GLOBAL_CONSTRAINT.clone(constraintLayout)
     if (isSquare) {
-        GLOBAL_CONSTRAINT.setDimensionRatio(R.id.book_cover_img, "1:1")
+        GLOBAL_CONSTRAINT.setDimensionRatio(R.id.thumb_container, "1:1")
     } else {
-        GLOBAL_CONSTRAINT.setDimensionRatio(R.id.book_cover_img, "5:8")
+        GLOBAL_CONSTRAINT.setDimensionRatio(R.id.thumb_container, "5:8")
     }
     constraintLayout.setConstraintSet(GLOBAL_CONSTRAINT)
 }
 
 val GLOBAL_CONSTRAINT = ConstraintSet()
-
-@BindingAdapter("activeTrackId")
-fun setActiveTrack(recyclerView: RecyclerView, trackId: Int) {
-    val adapter = recyclerView.adapter as TrackListAdapter
-    adapter.setActiveTrack(trackId)
-}
 

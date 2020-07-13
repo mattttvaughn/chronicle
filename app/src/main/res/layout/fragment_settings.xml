@@ -19,10 +19,7 @@
 
         <io.github.mattpvaughn.chronicle.views.BottomSheetChooser
             android:id="@+id/bottom_sheet_chooser"
-            bottomSheetTitle="@{viewModel.bottomSheetTitle}"
-            options="@{viewModel.bottomSheetOptions}"
-            optionsListener="@{viewModel.bottomOptionsListener}"
-            show="@{viewModel.showBottomSheet}"
+            bottomChooserState="@{viewModel.bottomChooserState}"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:elevation="1dp"

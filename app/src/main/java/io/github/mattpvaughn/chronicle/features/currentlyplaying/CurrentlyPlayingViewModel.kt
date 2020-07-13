@@ -8,9 +8,11 @@ import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
-import android.util.Log
 import androidx.lifecycle.*
-import io.github.mattpvaughn.chronicle.BuildConfig
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.github.michaelbull.result.Ok
+import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.application.SECONDS_PER_MINUTE
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
@@ -18,39 +20,67 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.plex.model.getDuration
+import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
-import io.github.mattpvaughn.chronicle.features.player.AudiobookMediaSessionCallback.TrackListStateManager
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
-import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_PLAY_STARTING_WITH_TRACK_ID
-import io.github.mattpvaughn.chronicle.util.Event
-import io.github.mattpvaughn.chronicle.util.observeOnce
-import io.github.mattpvaughn.chronicle.util.postEvent
-import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener
-import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener.Companion.emptyListener
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_OFFSET
+import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_ACTION
+import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_DURATION_MILLIS
+import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerAction
+import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerAction.*
+import io.github.mattpvaughn.chronicle.util.*
+import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
+import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
-class CurrentlyPlayingViewModel @Inject constructor(
+class CurrentlyPlayingViewModel(
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
+    private val localBroadcastManager: LocalBroadcastManager,
     private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
     private val plexConfig: PlexConfig
 ) : ViewModel() {
 
+    @Suppress("UNCHECKED_CAST")
+    class Factory @Inject constructor(
+        private val bookRepository: IBookRepository,
+        private val trackRepository: ITrackRepository,
+        private val localBroadcastManager: LocalBroadcastManager,
+        private val mediaServiceConnection: MediaServiceConnection,
+        private val prefsRepo: PrefsRepo,
+        private val plexConfig: PlexConfig
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
+                return CurrentlyPlayingViewModel(
+                    bookRepository,
+                    trackRepository,
+                    localBroadcastManager,
+                    mediaServiceConnection,
+                    prefsRepo,
+                    plexConfig
+                ) as T
+            } else {
+                throw IllegalArgumentException("Incorrect class type provided")
+            }
+        }
+    }
+
     private var _showUserMessage = MutableLiveData<Event<String>>()
     val showUserMessage: LiveData<Event<String>>
         get() = _showUserMessage
 
-    // Placeholder til we figure out dagger 100%
+    // Placeholder til we figure out AssistedInject
     private val inputAudiobookId = EMPTY_AUDIOBOOK.id
 
     private var audiobookId = MutableLiveData<Int>()
 
-    val audiobook: LiveData<Audiobook> = Transformations.switchMap(audiobookId) { id ->
+    val audiobook: LiveData<Audiobook?> = Transformations.switchMap(audiobookId) { id ->
         if (id == EMPTY_AUDIOBOOK.id) {
             emptyAudiobook
         } else {
@@ -61,6 +91,9 @@ class CurrentlyPlayingViewModel @Inject constructor(
     private val emptyAudiobook = MutableLiveData(EMPTY_AUDIOBOOK)
     private val emptyTrackList = MutableLiveData<List<MediaItemTrack>>(emptyList())
 
+    // TODO: expose combined track/chapter bits in ViewModel as "windowSomething" instead of in xml
+
+
     val tracks: LiveData<List<MediaItemTrack>> = Transformations.switchMap(audiobookId) { id ->
         if (id == EMPTY_AUDIOBOOK.id) {
             emptyTrackList
@@ -69,8 +102,24 @@ class CurrentlyPlayingViewModel @Inject constructor(
         }
     }
 
+    // Used to cache tracks.asChapterList when tracks changes
+    private val tracksAsChaptersCache = mapAsync(tracks, viewModelScope) {
+        it.asChapterList()
+    }
 
-    private var _speed = MutableLiveData<Float>(prefsRepo.playbackSpeed)
+    val chapters: DoubleLiveData<Audiobook?, List<Chapter>, List<Chapter>> =
+        DoubleLiveData(
+            audiobook, tracksAsChaptersCache
+        ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
+            if (_audiobook?.chapters?.isNotEmpty() == true) {
+                // We would really prefer this because it doesn't have to be computed
+                _audiobook.chapters
+            } else {
+                _tracksAsChapters ?: emptyList()
+            }
+        }
+
+    private var _speed = MutableLiveData(prefsRepo.playbackSpeed)
     val speed: LiveData<Float>
         get() = _speed
 
@@ -80,31 +129,77 @@ class CurrentlyPlayingViewModel @Inject constructor(
         }
 
     val currentTrack: LiveData<MediaItemTrack> = Transformations.map(tracks) { trackList ->
-        trackList.takeIf { it.isNotEmpty() }?.getActiveTrack() ?: EMPTY_TRACK
+        val track = trackList.takeIf { it.isNotEmpty() }?.getActiveTrack() ?: EMPTY_TRACK
+        return@map track
     }
 
-    private var _isSleepTimerActive = MutableLiveData<Boolean>(false)
+    val currentChapter = DoubleLiveData(
+        tracks,
+        chapters
+    ) { _tracks, _chapters ->
+        // find the offset of the current track from the start of the audiobook, then find the
+        // chapter which contains that timestamp
+        if (_tracks == null || _tracks.isEmpty() || _chapters == null || _chapters.isEmpty()) {
+            return@DoubleLiveData EMPTY_CHAPTER
+        }
+        val currentTrackProgress: Long = _tracks.getActiveTrack().progress
+        val currentTrackOffset: Long = _tracks.getTrackStartTime(_tracks.getActiveTrack())
+        return@DoubleLiveData _chapters.getChapterAt(currentTrackOffset + currentTrackProgress)
+    }
+
+    val chapterProgress = DoubleLiveData(
+        currentChapter,
+        currentTrack
+    ) { _chapter, _track ->
+        if (_chapter == null || _chapter == EMPTY_CHAPTER || _track == null || _track == EMPTY_TRACK) {
+            return@DoubleLiveData -1L
+        }
+        // get the offset of current progress w.r.t. the entire audiobook
+        val tempTracks = tracks.value ?: emptyList()
+        if (tempTracks.isNullOrEmpty() || !tempTracks.contains(_track)) {
+            return@DoubleLiveData -1L
+        }
+        val audiobookProgress = _track.progress + tempTracks.getTrackStartTime(_track)
+        return@DoubleLiveData audiobookProgress - _chapter.startTimeOffset
+    }
+
+    val chapterProgressString = Transformations.map(chapterProgress) { progress ->
+        return@map DateUtils.formatElapsedTime(
+            StringBuilder(),
+            progress / 1000
+        )
+    }
+
+    val chapterDuration = Transformations.map(currentChapter) {
+        return@map it.endTimeOffset - it.startTimeOffset
+    }
+
+    val chapterDurationString = Transformations.map(chapterDuration) { duration ->
+        return@map DateUtils.formatElapsedTime(
+            StringBuilder(),
+            duration / 1000
+        )
+    }
+
+    private var _isSleepTimerActive = MutableLiveData(false)
     val isSleepTimerActive: LiveData<Boolean>
         get() = _isSleepTimerActive
 
-    private var _sleepTimerTimeRemaining = MutableLiveData<Long>()
-    val sleepTimerTimeRemaining: LiveData<Long>
-        get() = _sleepTimerTimeRemaining
+    private var sleepTimerTimeRemaining = 0L
 
     val isPlaying: LiveData<Boolean> =
         Transformations.map(mediaServiceConnection.playbackState) { state ->
-            Log.i(APP_NAME, "Is playing? ${state.isPlaying}")
             return@map state.isPlaying
         }
 
-    val chapterProgress = Transformations.map(currentTrack) { track ->
+    val trackProgress = Transformations.map(currentTrack) { track ->
         return@map DateUtils.formatElapsedTime(
             StringBuilder(),
             track.progress / 1000
         )
     }
 
-    val chapterDuration = Transformations.map(currentTrack) { track ->
+    val trackDuration = Transformations.map(currentTrack) { track ->
         return@map DateUtils.formatElapsedTime(StringBuilder(), track.duration / 1000)
     }
 
@@ -120,38 +215,13 @@ class CurrentlyPlayingViewModel @Inject constructor(
     val isLoadingTracks: LiveData<Boolean>
         get() = _isLoadingTracks
 
-    private var _bottomSheetOptions = MutableLiveData<List<String>>(emptyList())
-    val bottomSheetOptions: LiveData<List<String>>
-        get() = _bottomSheetOptions
+    private var _bottomChooserState = MutableLiveData(EMPTY_BOTTOM_CHOOSER)
+    val bottomChooserState: LiveData<BottomChooserState>
+        get() = _bottomChooserState
 
-    private var _bottomOptionsListener = MutableLiveData<ItemSelectedListener>(emptyListener)
-    val bottomOptionsListener: LiveData<ItemSelectedListener>
-        get() = _bottomOptionsListener
-
-    private var _bottomSheetTitle = MutableLiveData<String>("Title")
-    val bottomSheetTitle: LiveData<String>
-        get() = _bottomSheetTitle
-
-    private var _showBottomSheet = MutableLiveData<Boolean>(false)
-    val showBottomSheet: LiveData<Boolean>
-        get() = _showBottomSheet
-
-    // Sleep timer
-    private var _sleepTimerOptions = MutableLiveData<List<String>>(emptyList())
-    val sleepTimerOptions: LiveData<List<String>>
-        get() = _sleepTimerOptions
-
-    private var _sleepTimerListener = MutableLiveData<ItemSelectedListener>(emptyListener)
-    val sleepTimerListener: LiveData<ItemSelectedListener>
-        get() = _sleepTimerListener
-
-    private var _sleepTimerTitle = MutableLiveData<String>("Title")
-    val sleepTimerTitle: LiveData<String>
-        get() = _sleepTimerTitle
-
-    private var _showSleepTimer = MutableLiveData<Boolean>(false)
-    val showSleepTimer: LiveData<Boolean>
-        get() = _showSleepTimer
+    private var _sleepTimerChooserState = MutableLiveData(EMPTY_BOTTOM_CHOOSER)
+    val sleepTimerChooserState: LiveData<BottomChooserState>
+        get() = _sleepTimerChooserState
 
     private val prefsChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
@@ -166,18 +236,18 @@ class CurrentlyPlayingViewModel @Inject constructor(
     }
 
     private val playbackObserver = Observer<MediaMetadataCompat> { metadata ->
-        metadata.id?.let { trackId ->
-            if (trackId.isNotEmpty()) {
-                setAudiobook(trackId.toInt())
-            }
+        if (metadata.id?.isEmpty() == false) {
+            setAudiobook(metadata.id!!.toInt())
         }
     }
 
     private fun setAudiobook(trackId: Int) {
-        val currentAudiobookId = audiobook.value?.id ?: NO_AUDIOBOOK_FOUND_ID
-        viewModelScope.launch {
-            if (currentAudiobookId == NO_AUDIOBOOK_FOUND_ID || audiobookId.value != currentAudiobookId) {
-                audiobookId.postValue(trackRepository.getBookIdForTrack(trackId))
+        val previousAudiobookId = audiobook.value?.id ?: NO_AUDIOBOOK_FOUND_ID
+        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+            // only update [audiobookId] when we see a new audiobook
+            val potentiallyNewAudiobookId = trackRepository.getBookIdForTrack(trackId)
+            if (potentiallyNewAudiobookId != previousAudiobookId) {
+                audiobookId.postValue(potentiallyNewAudiobookId)
             }
         }
     }
@@ -194,51 +264,60 @@ class CurrentlyPlayingViewModel @Inject constructor(
         if (bookId == NO_AUDIOBOOK_FOUND_ID) {
             return
         }
-        viewModelScope.launch {
+        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             try {
                 // Only replace track view w/ loading view if we have no tracks
                 if (tracks.value?.size == null) {
                     _isLoadingTracks.value = true
                 }
                 val tracks = trackRepository.loadTracksForAudiobook(bookId)
-                bookRepository.updateTrackData(bookId, tracks.getDuration(), tracks.size)
+                if (tracks is Ok) {
+                    bookRepository.updateTrackData(
+                        bookId,
+                        tracks.value.getProgress(),
+                        tracks.value.getDuration(),
+                        tracks.value.size
+                    )
+                    audiobook.value?.let {
+                        bookRepository.loadChapterData(it, tracks.value)
+                    }
+                }
                 _isLoadingTracks.value = false
-            } catch (e: Exception) {
-                Log.e(APP_NAME, "Failed to load tracks for audiobook $bookId: $e")
+            } catch (e: Throwable) {
+                Timber.e("Failed to load tracks for audiobook $bookId: $e")
                 _isLoadingTracks.value = false
             }
         }
     }
 
-    private fun notifyUser(s: String) {
-        Log.i(APP_NAME, s)
-        if (!BuildConfig.DEBUG) {
-            throw TODO("I am a bad boy! I write method stubs and then don't finish them!")
-        }
-    }
-
     fun play() {
-        Log.i(
-            APP_NAME,
-            "Connection = $mediaServiceConnection, isConnected = ${mediaServiceConnection.isConnected.value}"
-        )
-        if (mediaServiceConnection.isConnected.value != false) {
-            checkNotNull(audiobook.value) { "Tried to play null audiobook!" }
-            playMediaId(audiobook.value!!.id.toString())
+        if (mediaServiceConnection.isConnected.value == true) {
+            if (audiobook.value == null) {
+                Timber.e("Tried to play null audiobook!")
+                _showUserMessage.postEvent("Audiobook is null. Try restarting the app and trying again")
+                return
+            }
+            pausePlay(audiobook.value!!.id.toString())
         }
     }
 
-    private fun playMediaId(bookId: String) {
+    private fun pausePlay(
+        bookId: String,
+        startTimeOffset: Long = ACTIVE_TRACK,
+        forcePlay: Boolean = false
+    ) {
         val transportControls = mediaServiceConnection.transportControls
 
-        val extras = Bundle().apply { putInt(KEY_PLAY_STARTING_WITH_TRACK_ID, ACTIVE_TRACK) }
-        mediaServiceConnection.playbackState.value?.let { playbackState ->
-            if (playbackState.isPlaying) {
-                Log.i(APP_NAME, "Pausing!")
-                transportControls.pause()
-            } else {
-                Log.i(APP_NAME, "Playing!")
-                transportControls.playFromMediaId(bookId, extras)
+        val extras = Bundle().apply { putLong(KEY_START_TIME_OFFSET, startTimeOffset) }
+        if (transportControls != null) {
+            mediaServiceConnection.playbackState.value?.let { playbackState ->
+                if (!playbackState.isPlaying || forcePlay) {
+                    Timber.i("Playing!")
+                    transportControls.playFromMediaId(bookId, extras)
+                } else {
+                    Timber.i("Pausing!")
+                    transportControls.pause()
+                }
             }
         }
     }
@@ -248,7 +327,7 @@ class CurrentlyPlayingViewModel @Inject constructor(
     }
 
     fun skipBackwards() {
-        seekRelative(SKIP_BACKWARDS, SKIP_BACKWARDS_DURATION_MS)
+        seekRelative(SKIP_BACKWARDS, SKIP_BACKWARDS_DURATION_MS_SIGNED)
     }
 
     private fun seekRelative(action: PlaybackStateCompat.CustomAction, offset: Long) {
@@ -256,22 +335,24 @@ class CurrentlyPlayingViewModel @Inject constructor(
         mediaServiceConnection.let { connection ->
             if (connection.nowPlaying.value != NOTHING_PLAYING) {
                 // Service will be alive, so we can let it handle the action
-                Log.i(APP_NAME, "Seeking!")
-                transportControls.sendCustomAction(action, null)
+                Timber.i("Seeking!")
+                transportControls?.sendCustomAction(action, null)
             } else {
-                Log.i(APP_NAME, "Updating progress manually!")
+                Timber.i("Updating progress manually!")
                 // Service is not alive, so update track repo directly
                 tracks.observeOnce(Observer { _tracks ->
-                    viewModelScope.launch {
-                        val currentTrack = _tracks.getActiveTrack()
+                    viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+                        // don't bother seeking if there aren't any files
+                        if (_tracks.isEmpty()) {
+                            return@launch
+                        }
                         val manager = TrackListStateManager()
                         manager.trackList = _tracks
-                        manager.currentPosition = currentTrack.progress
-                        manager.currentTrackIndex = _tracks.indexOf(currentTrack)
+                        manager.currentBookPosition = manager.trackList.getProgress()
                         manager.seekByRelative(offset)
                         val updatedTrack = _tracks[manager.currentTrackIndex]
                         trackRepository.updateTrackProgress(
-                            manager.currentPosition,
+                            manager.currentBookPosition,
                             updatedTrack.id,
                             System.currentTimeMillis()
                         )
@@ -281,59 +362,122 @@ class CurrentlyPlayingViewModel @Inject constructor(
         }
     }
 
-    fun jumpToTrack(track: MediaItemTrack) {
-        val bookId = track.parentKey
-        mediaServiceConnection.transportControls.playFromMediaId(
-            bookId.toString(),
-            Bundle().apply { this.putInt(KEY_PLAY_STARTING_WITH_TRACK_ID, track.id) }
-        )
+    fun jumpToChapter(offset: Long, hasUserConfirmation: Boolean = false) {
+        if (!hasUserConfirmation) {
+            showOptionsMenu(
+                title = FormattableString.from(R.string.warning_jump_to_chapter_will_clear_progress),
+                options = listOf(
+                    FormattableString.from(android.R.string.yes),
+                    FormattableString.from(android.R.string.no)
+                ),
+                listener = object : BottomChooserItemListener() {
+                    override fun onItemClicked(formattableString: FormattableString) {
+                        check(formattableString is FormattableString.ResourceString)
+
+                        when (formattableString.stringRes) {
+                            android.R.string.yes -> jumpToChapter(offset, true)
+                            android.R.string.no -> Unit
+                            else -> throw NoWhenBranchMatchedException()
+                        }
+                        hideOptionsMenu()
+                    }
+                })
+            return
+        }
+
+        val pausePlayAction = {
+            audiobook.value?.let { book -> pausePlay(book.id.toString(), offset, forcePlay = true) }
+        }
+        if (mediaServiceConnection.isConnected.value != true) {
+            mediaServiceConnection.connect(onConnected = pausePlayAction)
+        } else {
+            pausePlayAction()
+        }
     }
 
     fun showSleepTimerOptions() {
-        _showSleepTimer.postValue(true)
-        val options = if (isSleepTimerActive.value == true) {
-            listOf("+5 minutes", "End of chapter", "Cancel")
+        val title = if (isSleepTimerActive.value != true) {
+            FormattableString.from(R.string.sleep_timer)
         } else {
-            _sleepTimerTitle.postValue("Sleep timer")
-            listOf("5 minutes", "15 minutes", "30 minutes", "40 minutes", "End of chapter")
+            FormattableString.ResourceString(
+                R.string.sleep_timer_active_title,
+                placeHolderStrings = listOf(DateUtils.formatElapsedTime(sleepTimerTimeRemaining / MILLIS_PER_SECOND))
+            )
         }
-        _sleepTimerOptions.postValue(options)
-        _sleepTimerListener.postValue(object : ItemSelectedListener {
-            override fun onItemSelected(itemName: String) {
-                val actionPair = when (itemName) {
-                    "5 minutes", "15 minutes", "30 minutes", "40 minutes" -> {
-                        val duration =
-                            itemName.substringBefore(" ")
-                                .toLong() * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        START_SLEEP_TIMER_STRING to duration
+        val options = if (isSleepTimerActive.value == true) {
+            listOf(
+                FormattableString.from(R.string.sleep_timer_append),
+                FormattableString.from(R.string.sleep_timer_duration_end_of_chapter),
+                FormattableString.from(R.string.cancel)
+            )
+        } else {
+            listOf(
+                FormattableString.from(R.string.sleep_timer_duration_5_minutes),
+                FormattableString.from(R.string.sleep_timer_duration_15_minutes),
+                FormattableString.from(R.string.sleep_timer_duration_30_minutes),
+                FormattableString.from(R.string.sleep_timer_duration_40_minutes),
+                FormattableString.from(R.string.sleep_timer_duration_end_of_chapter)
+            )
+        }
+        val listener = object : BottomChooserListener {
+            override fun onItemClicked(formattableString: FormattableString) {
+                check(formattableString is FormattableString.ResourceString)
+
+                val actionPair: Pair<SleepTimerAction, Long> = when (formattableString.stringRes) {
+                    R.string.sleep_timer_duration_5_minutes -> {
+                        val duration = 5 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                        BEGIN to duration
                     }
-                    "End of chapter" -> {
-                        val track = tracks.value!!.getActiveTrack()
-                        val duration =
-                            ((track.duration - track.progress) / prefsRepo.playbackSpeed).toLong()
-                        START_SLEEP_TIMER_STRING to duration
+                    R.string.sleep_timer_duration_15_minutes -> {
+                        val duration = 15 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                        BEGIN to duration
                     }
-                    "+5 minutes" -> {
+                    R.string.sleep_timer_duration_30_minutes -> {
+                        val duration = 30 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                        BEGIN to duration
+                    }
+                    R.string.sleep_timer_duration_40_minutes -> {
+                        val duration = 40 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                        BEGIN to duration
+                    }
+                    R.string.sleep_timer_duration_end_of_chapter -> {
+                        val duration = ((chapterDuration.value ?: 0L) - (chapterProgress.value
+                            ?: 0L) / prefsRepo.playbackSpeed).toLong()
+                        BEGIN to duration
+                    }
+                    R.string.sleep_timer_append -> {
                         val additionalTime = 5 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        SLEEP_TIMER_ACTION_EXTEND to additionalTime
+                        EXTEND to additionalTime
                     }
-                    "Cancel" -> {
-                        SLEEP_TIMER_ACTION_CANCEL to 0L
+                    R.string.cancel -> {
+                        setSleepTimerTitle(FormattableString.from(R.string.sleep_timer))
+                        CANCEL to 0L
                     }
                     else -> throw NoWhenBranchMatchedException("Unknown duration picked for sleep timer")
                 }
-                mediaServiceConnection.transportControls.sendCustomAction(
-                    actionPair.first,
-                    Bundle().apply {
-                        putLong(
-                            KEY_SLEEP_TIMER_DURATION_MILLIS,
-                            actionPair.second
-                        )
-                    }
-                )
-                _showSleepTimer.postValue(false)
+                hideSleepTimerChooser()
+                val sleepTimerIntent = Intent(SleepTimer.ACTION_SLEEP_TIMER_CHANGE).apply {
+                    putExtra(ARG_SLEEP_TIMER_ACTION, actionPair.first)
+                    putExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, actionPair.second)
+                }
+                localBroadcastManager.sendBroadcast(sleepTimerIntent)
             }
-        })
+
+            override fun onChooserClosed(wasBackgroundClicked: Boolean) {
+                if (wasBackgroundClicked) {
+                    hideSleepTimerChooser()
+                }
+            }
+        }
+
+        _sleepTimerChooserState.postValue(
+            BottomChooserState(
+                title = title,
+                options = options,
+                listener = listener,
+                shouldShow = true
+            )
+        )
     }
 
     fun showSpeedChooser() {
@@ -342,63 +486,146 @@ class CurrentlyPlayingViewModel @Inject constructor(
             return
         }
         showOptionsMenu(
-            title = "Playback Speed",
-            options = listOf("0.5x", "0.7x", "1.0x", "1.2x", "1.5x", "2.0x", "3.0x"),
-            listener = object : ItemSelectedListener {
-                override fun onItemSelected(itemName: String) {
-                    when (itemName) {
-                        "0.5x", "0.7x", "1.0x", "1.2x", "1.5x", "2.0x", "3.0x" -> {
-                            val playbackSpeed: Float = itemName.substringBefore("x").toFloat()
-                            prefsRepo.playbackSpeed = playbackSpeed
+            title = FormattableString.from(R.string.playback_speed_title),
+            options = listOf(
+                FormattableString.from(R.string.playback_speed_0_5x),
+                FormattableString.from(R.string.playback_speed_0_7x),
+                FormattableString.from(R.string.playback_speed_1_0x),
+                FormattableString.from(R.string.playback_speed_1_2x),
+                FormattableString.from(R.string.playback_speed_1_5x),
+                FormattableString.from(R.string.playback_speed_1_7x),
+                FormattableString.from(R.string.playback_speed_2_0x),
+                FormattableString.from(R.string.playback_speed_3_0x)
+            ),
+            listener = object : BottomChooserItemListener() {
+                override fun onItemClicked(formattableString: FormattableString) {
+                    check(formattableString is FormattableString.ResourceString)
+
+                    prefsRepo.playbackSpeed = when (formattableString.stringRes) {
+                        R.string.playback_speed_0_5x -> {
+                            0.5f
+                        }
+                        R.string.playback_speed_0_7x -> {
+                            0.7f
+                        }
+                        R.string.playback_speed_1_0x -> {
+                            1.0f
+                        }
+                        R.string.playback_speed_1_2x -> {
+                            1.2f
+                        }
+                        R.string.playback_speed_1_5x -> {
+                            1.5f
+                        }
+                        R.string.playback_speed_1_7x -> {
+                            1.5f
+                        }
+                        R.string.playback_speed_2_0x -> {
+                            2.0f
+                        }
+                        R.string.playback_speed_3_0x -> {
+                            3.0f
                         }
                         else -> throw NoWhenBranchMatchedException("Unknown playback speed selected")
                     }
-                    _showBottomSheet.postValue(false)
+                    hideOptionsMenu()
                 }
             }
         )
     }
 
+    private fun hideSleepTimerChooser() {
+        _sleepTimerChooserState.postValue(
+            _sleepTimerChooserState.value?.copy(shouldShow = false) ?: EMPTY_BOTTOM_CHOOSER
+        )
+    }
+
+    private fun hideOptionsMenu() {
+        _bottomChooserState.postValue(
+            _bottomChooserState.value?.copy(shouldShow = false) ?: EMPTY_BOTTOM_CHOOSER
+        )
+    }
+
     private fun showOptionsMenu(
-        title: String,
-        options: List<String>,
-        listener: ItemSelectedListener
+        title: FormattableString,
+        options: List<FormattableString>,
+        listener: BottomChooserListener
     ) {
-        _showBottomSheet.postValue(true)
-        _bottomSheetTitle.postValue(title)
-        _bottomOptionsListener.postValue(listener)
-        _bottomSheetOptions.postValue(options)
+        _bottomChooserState.postValue(
+            BottomChooserState(
+                title = title,
+                options = options,
+                listener = listener,
+                shouldShow = true
+            )
+        )
     }
 
 
     val onUpdateSleepTimer = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent != null) {
-                val timeLeftMillis = intent.getLongExtra(UPDATE_SLEEP_TIMER_STRING, 0L)
-                val shouldSleepSleepTimerBeActive = timeLeftMillis > 0L
-                _isSleepTimerActive.postValue(shouldSleepSleepTimerBeActive)
-                _sleepTimerTimeRemaining.postValue(timeLeftMillis)
-                if (shouldSleepSleepTimerBeActive) {
-                    _sleepTimerTitle.postValue(
-                        "Sleep timer: ${DateUtils.formatElapsedTime(
-                            timeLeftMillis / MILLIS_PER_SECOND
-                        )} remaining"
+            if (intent == null || !intent.hasExtra(ARG_SLEEP_TIMER_DURATION_MILLIS)) {
+                return
+            }
+            val timeLeftMillis = intent.getLongExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, 0L)
+            val shouldSleepSleepTimerBeActive = timeLeftMillis > 0L
+            _isSleepTimerActive.postValue(shouldSleepSleepTimerBeActive)
+            sleepTimerTimeRemaining = timeLeftMillis
+            if (shouldSleepSleepTimerBeActive) {
+                setSleepTimerTitle(
+                    FormattableString.ResourceString(
+                        stringRes = R.string.sleep_timer_active_title,
+                        placeHolderStrings = listOf(DateUtils.formatElapsedTime(timeLeftMillis / MILLIS_PER_SECOND))
                     )
-                } else {
-                    _sleepTimerTitle.postValue("Sleep timer")
-                }
+                )
+            } else {
+                setSleepTimerTitle(FormattableString.from(R.string.sleep_timer))
             }
         }
     }
 
+    private fun setSleepTimerTitle(formattableString: FormattableString) {
+        _sleepTimerChooserState.postValue(
+            _sleepTimerChooserState.value?.copy(title = formattableString) ?: EMPTY_BOTTOM_CHOOSER
+        )
+    }
+
     override fun onCleared() {
         mediaServiceConnection.nowPlaying.removeObserver(playbackObserver)
-        prefsRepo.unRegisterPrefsListener(prefsChangeListener)
+        prefsRepo.unregisterPrefsListener(prefsChangeListener)
         plexConfig.isConnected.removeObserver(networkObserver)
         super.onCleared()
     }
 
-    fun seekTo(progress: Int) {
-        mediaServiceConnection.transportControls.seekTo(progress.toLong())
+    fun seekTo(percentProgress: Double) {
+        val id: String = (audiobookId.value ?: TRACK_NOT_FOUND).toString()
+        if (currentChapter.value == EMPTY_CHAPTER) {
+            // Seeking by track length
+            tracks.value?.let { _tracks ->
+                val startTimeOffset = _tracks.getTrackStartTime(currentTrack.value ?: EMPTY_TRACK)
+                Timber.i("seeking by track: $startTimeOffset")
+                val extras = Bundle().apply {
+                    putLong(KEY_START_TIME_OFFSET, startTimeOffset)
+                }
+                mediaServiceConnection.transportControls?.playFromMediaId(id, extras)
+            }
+        } else {
+            // Seeking by chapter length
+            Timber.i("Seeking by chapter length")
+            currentChapter.value?.let { chapter ->
+                val chapterDuration = chapter.endTimeOffset - chapter.startTimeOffset
+                val startTimeOffset =
+                    chapter.startTimeOffset + (percentProgress * chapterDuration).toLong()
+                Timber.i("Scrub time offset (from book start in ms): $startTimeOffset")
+                val extras = Bundle().apply {
+                    putLong(KEY_START_TIME_OFFSET, startTimeOffset)
+                }
+                if (mediaServiceConnection.playbackState.value?.isPlaying == true) {
+                    mediaServiceConnection.transportControls?.playFromMediaId(id, extras)
+                } else {
+                    mediaServiceConnection.transportControls?.prepareFromMediaId(id, extras)
+                }
+            }
+        }
     }
 }

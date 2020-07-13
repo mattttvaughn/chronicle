@@ -1,31 +1,186 @@
 package io.github.mattpvaughn.chronicle.navigation
 
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.Observer
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment
+import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_ID
+import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_IS_AUDIOBOOK_CACHED
+import io.github.mattpvaughn.chronicle.features.home.HomeFragment
+import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseLibraryFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseServerFragment
+import io.github.mattpvaughn.chronicle.features.login.ChooseUserFragment
 import io.github.mattpvaughn.chronicle.features.login.LoginFragment
+import io.github.mattpvaughn.chronicle.features.settings.SettingsFragment
+import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
+import timber.log.Timber
+import javax.inject.Inject
 
-class Navigator(private val fragmentManager: FragmentManager) {
+/**
+ * Handles navigation actions.
+ *
+ * If I add any more screens then migrating to Jetpack Navigation is probably the way to go. This
+ * scales poorly with additional self-contained nav graphs like the login process
+ *
+ * TODO: handle multiple back stacks for the different bottom nav items?
+ */
+@ActivityScope
+class Navigator @Inject constructor(
+    private val fragmentManager: FragmentManager,
+    private val plexConfig: PlexConfig,
+    private val plexLoginRepo: IPlexLoginRepo,
+    activity: AppCompatActivity
+) {
+
+    init {
+        // never remove observer, but this is a singleton so it's okay
+        plexLoginRepo.loginState.observe(activity, Observer { state ->
+            Timber.i("Login state changed to $state")
+            when (state) {
+                LOGGED_IN_NO_USER_CHOSEN -> showUserChooser()
+                LOGGED_IN_NO_SERVER_CHOSEN -> showServerChooser()
+                LOGGED_IN_NO_LIBRARY_CHOSEN -> showLibraryChooser()
+                LOGGED_IN_FULLY -> showHome()
+                FAILED_TO_LOG_IN -> {
+                }
+                NOT_LOGGED_IN -> showLogin()
+                AWAITING_LOGIN_RESULTS -> {
+                }
+                else -> throw NoWhenBranchMatchedException("Unknown login state: $state")
+            }
+        })
+
+    }
 
     fun showLogin() {
+        plexConfig.clear()
         val frag = LoginFragment.newInstance()
-        fragmentManager.beginTransaction().replace(R.id.onboarding_container, frag).commit()
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, frag)
+            .commit()
+    }
+
+    fun showUserChooser() {
+        plexConfig.clearServer()
+        plexConfig.clearLibrary()
+        plexConfig.clearUser()
+        val frag = ChooseUserFragment.newInstance()
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, frag, ChooseUserFragment.TAG)
+            .commit()
     }
 
     fun showServerChooser() {
+        plexConfig.clearServer()
+        plexConfig.clearLibrary()
         val frag = ChooseServerFragment.newInstance()
-        fragmentManager.beginTransaction().replace(R.id.onboarding_container, frag).commit()
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, frag, ChooseServerFragment.TAG)
+            .commit()
     }
 
     fun showLibraryChooser() {
+        plexConfig.clearLibrary()
         val frag = ChooseLibraryFragment.newInstance()
-        fragmentManager.beginTransaction().replace(R.id.onboarding_container, frag).commit()
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, frag, ChooseLibraryFragment.TAG)
+            .commit()
     }
+
 
     fun showHome() {
+        clearBackStack()
+        // don't re-add home frag if it's already showing
+        if (isFragmentWithTagVisible(HomeFragment.TAG)) {
+            return
+        }
+        val homeFragment = HomeFragment.newInstance()
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, homeFragment, HomeFragment.TAG)
+            .commit()
+    }
+
+    private fun clearBackStack() {
+        while (fragmentManager.backStackEntryCount > 0) {
+            fragmentManager.popBackStackImmediate()
+        }
+    }
+
+    fun showLibrary() {
+        clearBackStack()
+        val libraryFragment = LibraryFragment.newInstance()
+        fragmentManager.beginTransaction().replace(R.id.fragNavHost, libraryFragment).commit()
+    }
+
+    fun showSettings() {
+        clearBackStack()
+        val settingsFragment = SettingsFragment.newInstance()
+        fragmentManager.beginTransaction().replace(R.id.fragNavHost, settingsFragment).commit()
+    }
+
+    fun showDetails(audiobookId: Int, isAudiobookCached: Boolean) {
+        val detailsFrag = AudiobookDetailsFragment.newInstance().apply {
+            if (arguments == null) {
+                arguments = Bundle()
+            }
+            requireArguments().putInt(ARG_AUDIOBOOK_ID, audiobookId)
+            requireArguments().putBoolean(ARG_IS_AUDIOBOOK_CACHED, isAudiobookCached)
+        }
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, detailsFrag)
+            .addToBackStack(AudiobookDetailsFragment.TAG)
+            .commit()
+    }
+
+    /** Handle back presses. Return a boolean indicating whether the back press event was handled */
+    fun onBackPressed(): Boolean {
+        val wasBackPressHandled = when {
+            isFragmentWithTagVisible(ChooseUserFragment.TAG) -> {
+                val frag =
+                    (fragmentManager.findFragmentByTag(ChooseUserFragment.TAG) as ChooseUserFragment)
+                if (frag.isPinEntryScreenVisible()) {
+                    // close pin screen if it's visible
+                    frag.hidePinEntryScreen()
+                } else {
+                    showLogin()
+                }
+                true
+            }
+            isFragmentWithTagVisible(ChooseServerFragment.TAG) -> {
+                plexConfig.clearUser()
+                showUserChooser()
+                true
+            }
+            isFragmentWithTagVisible(ChooseLibraryFragment.TAG) -> {
+                plexConfig.clearServer()
+                showServerChooser()
+                true
+            }
+            else -> false
+        }
+
+        return if (wasBackPressHandled) {
+            true
+        } else {
+            // If the navigator didn't handle the back press and there are fragments on the back
+            // stack, pop a fragment off the back stack
+            if (fragmentManager.backStackEntryCount == 0) {
+                false
+            } else {
+                fragmentManager.popBackStack()
+                true
+            }
+        }
 
     }
 
-
+    private fun isFragmentWithTagVisible(tag: String): Boolean {
+        return fragmentManager.findFragmentByTag(tag)?.isVisible == true
+    }
 }

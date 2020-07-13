@@ -16,13 +16,11 @@
 
 package io.github.mattpvaughn.chronicle.features.player
 
-import android.os.Build
-import android.provider.MediaStore
-import androidx.annotation.IntDef
 import android.support.v4.media.MediaMetadataCompat
+import androidx.annotation.IntDef
 
 /**
- * Interface used by [MusicService] for looking up [MediaMetadataCompat] objects.
+ * Interface used by [MediaPlayerService] for looking up [MediaMetadataCompat] objects.
  *
  * Because Kotlin provides methods such as [Iterable.find] and [Iterable.filter],
  * this is a convient interface to have on sources.
@@ -35,7 +33,7 @@ interface MediaSource : Iterable<MediaMetadataCompat> {
     suspend fun load()
 
     /**
-     * Method which will perform a given action after this [MusicSource] is ready to be used.
+     * Method which will perform a given action after this [MediaPlayerService] is ready to be used.
      *
      * @param performAction A lambda expression to be called with a boolean parameter when
      * the source is ready. `true` indicates the source was successfully prepared, `false`
@@ -112,15 +110,5 @@ abstract class AbstractMediaSource : MediaSource {
             }
         }
 
-    /**
-     * [MediaStore.EXTRA_MEDIA_GENRE] is missing on API 19. Hide this fact by using our
-     * own version of it.
-     */
-    private val EXTRA_MEDIA_GENRE
-        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            MediaStore.EXTRA_MEDIA_GENRE
-        } else {
-            "android.intent.extra.genre"
-        }
 }
 

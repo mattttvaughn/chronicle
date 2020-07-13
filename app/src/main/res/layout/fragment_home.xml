@@ -11,7 +11,7 @@
 
         <variable
             name="plexConfig"
-            type="io.github.mattpvaughn.chronicle.data.plex.PlexConfig" />
+            type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig" />
 
         <import type="android.view.View" />
 
@@ -37,7 +37,8 @@
                 app:collapseIcon="@drawable/ic_search_white"
                 app:layout_constraintTop_toTopOf="parent"
                 app:menu="@menu/home_menu"
-                app:popupTheme="@style/ThemeOverlay.AppCompat.Dark" />
+                app:popupTheme="@style/ThemeOverlay.AppCompat.Dark"
+                app:title="@string/tab_home" />
         </com.google.android.material.appbar.AppBarLayout>
 
         <TextView
@@ -86,7 +87,8 @@
                 android:text="@string/disable_offline_mode" />
         </LinearLayout>
 
-        <ScrollView
+        <io.github.mattpvaughn.chronicle.views.HorizontalChildReadySwipeRefreshLayout
+            android:id="@+id/swipe_to_refresh"
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -94,89 +96,94 @@
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/toolbar_layout">
 
-            <LinearLayout
+            <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/toolbar_layout">
+                android:layout_height="match_parent">
 
-                <TextView
-                    android:id="@+id/downloaded_title"
-                    style="@style/TextAppearance.Title"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/screen_horizontal_padding"
-                    android:layout_marginTop="@dimen/margin_normal"
-                    android:layout_marginRight="@dimen/screen_horizontal_padding"
-                    android:text="@string/available_offline"
-                    android:visibility="@{viewModel.downloaded.isEmpty() ? View.GONE : View.VISIBLE}"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/toolbar_layout" />
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/toolbar_layout">
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/downloaded_recyclerview"
-                    bookList="@{viewModel.downloaded}"
-                    serverConnected="@{plexConfig.isConnected()}"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:visibility="@{viewModel.downloaded.isEmpty() ? View.GONE : View.VISIBLE}"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                    app:spanCount="3"
-                    tools:itemCount="9"
-                    tools:listitem="@layout/grid_item_audiobook" />
+                    <TextView
+                        android:id="@+id/downloaded_title"
+                        style="@style/TextAppearance.Title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="@dimen/screen_horizontal_padding"
+                        android:layout_marginTop="@dimen/margin_normal"
+                        android:layout_marginRight="@dimen/screen_horizontal_padding"
+                        android:text="@string/available_offline"
+                        android:visibility="@{viewModel.downloaded.isEmpty() ? View.GONE : View.VISIBLE}"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/toolbar_layout" />
 
-                <TextView
-                    android:id="@+id/recently_listened_title"
-                    style="@style/TextAppearance.Title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/screen_horizontal_padding"
-                    android:layout_marginTop="@dimen/margin_normal"
-                    android:layout_marginRight="@dimen/screen_horizontal_padding"
-                    android:text="@string/recently_listened"
-                    android:visibility="@{viewModel.recentlyListened.isEmpty() ? View.GONE : View.VISIBLE}" />
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/downloaded_recyclerview"
+                        bookList="@{viewModel.downloaded}"
+                        serverConnected="@{plexConfig.isConnected()}"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:visibility="@{viewModel.downloaded.isEmpty() ? View.GONE : View.VISIBLE}"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        app:spanCount="3"
+                        tools:itemCount="9"
+                        tools:listitem="@layout/grid_item_audiobook" />
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/on_deck_recyclerview"
-                    bookList="@{viewModel.recentlyListened}"
-                    serverConnected="@{plexConfig.isConnected()}"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:visibility="@{viewModel.recentlyListened.isEmpty() ? View.GONE : View.VISIBLE}"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                    tools:itemCount="9"
-                    tools:listitem="@layout/grid_item_audiobook" />
+                    <TextView
+                        android:id="@+id/recently_listened_title"
+                        style="@style/TextAppearance.Title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="@dimen/screen_horizontal_padding"
+                        android:layout_marginTop="@dimen/margin_normal"
+                        android:layout_marginRight="@dimen/screen_horizontal_padding"
+                        android:text="@string/recently_listened"
+                        android:visibility="@{viewModel.recentlyListened.isEmpty() ? View.GONE : View.VISIBLE}" />
 
-                <TextView
-                    android:id="@+id/recently_added_title"
-                    style="@style/TextAppearance.Title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/screen_horizontal_padding"
-                    android:layout_marginTop="@dimen/margin_normal"
-                    android:layout_marginRight="@dimen/screen_horizontal_padding"
-                    android:text="@string/recently_added"
-                    android:visibility="@{viewModel.recentlyAdded.isEmpty() ? View.GONE : View.VISIBLE}" />
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/on_deck_recyclerview"
+                        bookList="@{viewModel.recentlyListened}"
+                        serverConnected="@{plexConfig.isConnected()}"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:visibility="@{viewModel.recentlyListened.isEmpty() ? View.GONE : View.VISIBLE}"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        tools:itemCount="9"
+                        tools:listitem="@layout/grid_item_audiobook" />
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recently_added_recyclerview"
-                    bookList="@{viewModel.recentlyAdded}"
-                    serverConnected="@{plexConfig.isConnected()}"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:visibility="@{viewModel.recentlyAdded.isEmpty() ? View.GONE : View.VISIBLE}"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                    app:spanCount="3"
-                    tools:itemCount="9"
-                    tools:listitem="@layout/grid_item_audiobook" />
-            </LinearLayout>
-        </ScrollView>
+                    <TextView
+                        android:id="@+id/recently_added_title"
+                        style="@style/TextAppearance.Title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="@dimen/screen_horizontal_padding"
+                        android:layout_marginTop="@dimen/margin_normal"
+                        android:layout_marginRight="@dimen/screen_horizontal_padding"
+                        android:text="@string/recently_added"
+                        android:visibility="@{viewModel.recentlyAdded.isEmpty() ? View.GONE : View.VISIBLE}" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recently_added_recyclerview"
+                        bookList="@{viewModel.recentlyAdded}"
+                        serverConnected="@{plexConfig.isConnected()}"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:visibility="@{viewModel.recentlyAdded.isEmpty() ? View.GONE : View.VISIBLE}"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        app:spanCount="3"
+                        tools:itemCount="9"
+                        tools:listitem="@layout/grid_item_audiobook" />
+                </LinearLayout>
+            </ScrollView>
+        </io.github.mattpvaughn.chronicle.views.HorizontalChildReadySwipeRefreshLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/search_results_list"

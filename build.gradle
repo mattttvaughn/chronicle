@@ -2,35 +2,41 @@
 
 buildscript {
     ext {
-        kotlinVersion = "1.3.61"
-        coroutinesVersion = "1.3.0"
+        kotlinVersion = "1.3.72"
+        coroutinesVersion = "1.3.5"
         archLifecycleVersion = "1.1.1"
-        gradleVersion = '3.6.3'
+        gradleVersion = "4.0.0"
         supportlibVersion = "1.1.0"
-        navigationVersion = "1.0.0"
         materialLibVersion = "1.1.0"
-        retrofitVersion = "2.7.2"
-        okhttpVersion = '4.4.0'
+        retrofitVersion = "2.9.0"
+        moshiKotlinVersion = "1.9.3"
+        okhttpVersion = "4.7.2"
         dataBindingCompilerVersion = gradleVersion // Always need to be the same.
-        roomVersion = '2.2.4'
+        roomVersion = "2.2.5"
         glideVersion = "4.11.0"
-        exoplayerVersion = "2.11.1"
-        workVersion = '2.3.3'
+        exoplayerVersion = "2.11.4"
+        workVersion = "2.3.4"
         junitVersion = "4.13"
-        androidxTestRunnerVersion = '1.3.0-alpha04'
-        espressoVersion = '3.3.0-alpha04'
+        androidxTestRunnerVersion = "1.3.0-rc01"
+        espressoVersion = "3.3.0-rc01"
         androidxAnnotationVersion = "1.1.0"
         lifecycleVersion = "2.2.0"
         ossLicenseActivityVersion = "17.0.0"
         androidXTestExtKotlinRunnerVersion = "1.1.1"
         androidXTestCoreVersion = "1.2.0"
         robolectricVersion = "4.3.1"
-        archTestingVersion = '2.1.0'
+        archTestingVersion = "2.1.0"
         hamcrestVersion = "1.3"
-        mockKVersion = "1.9.3"
-        navVersion = '2.3.0-alpha03'
-        daggerVersion = '2.26'
+        mockKVersion = "1.10.0"
+        daggerVersion = "2.28.1"
         localBroadcastManagerVersion = "1.0.0"
+        androidXCustomTabsVersion = "1.2.0"
+        swipeRefreshLayoutVersion = "1.1.0"
+        billingVersion = "2.2.1"
+        constraintLayoutVersion = "2.0.0-beta8"
+        kotlinResultVersion = "1.1.6"
+        timberVersion = "4.7.1"
+        seismicVersion = "1.0.2"
     }
     repositories {
         google()
@@ -39,10 +45,7 @@ buildscript {
     dependencies {
         classpath "com.android.tools.build:gradle:$gradleVersion"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        classpath "com.google.android.gms:oss-licenses-plugin:0.10.1"
-
-        // Safe args plugin
-        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:$navVersion"
+        classpath "com.google.android.gms:oss-licenses-plugin:0.10.2"
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -53,6 +56,7 @@ allprojects {
     repositories {
         google()
         jcenter()
+        maven { url "https://jitpack.io" }
     }
 }
 

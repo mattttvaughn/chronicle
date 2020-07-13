@@ -1,17 +1,14 @@
 package io.github.mattpvaughn.chronicle.application
 
 import android.app.Activity
-import android.util.Log
 import com.android.billingclient.api.*
 import com.android.billingclient.api.BillingClient.BillingResponseCode.OK
 import com.android.billingclient.api.BillingClient.SkuType.INAPP
+import com.android.billingclient.api.Purchase.PurchaseState.PURCHASED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.NO_PREMIUM_TOKEN
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,17 +19,18 @@ import javax.inject.Singleton
  * TODO: use a more sophisticated method to prevent cheats
  */
 @Singleton
-class ChronicleBillingManager @Inject constructor(private val prefsRepo: PrefsRepo) :
-    PurchasesUpdatedListener {
+class ChronicleBillingManager @Inject constructor(
+    private val prefsRepo: PrefsRepo,
+    private val unhandledExceptionHandler: CoroutineExceptionHandler
+) : PurchasesUpdatedListener {
 
     private lateinit var premiumUpgradeSku: SkuDetails
 
-    // TODO: I think we exposed this to avoid a circular dependency but look into it
     var billingClient: BillingClient? = null
         set(value) {
             field = value
-            Log.i(APP_NAME, "Billing client set: $billingClient")
-            GlobalScope.launch {
+            Timber.i("Billing client set: $billingClient")
+            GlobalScope.launch(unhandledExceptionHandler) {
                 querySkuDetails(requireNotNull(billingClient))
                 getPurchaseHistory()
             }
@@ -45,26 +43,23 @@ class ChronicleBillingManager @Inject constructor(private val prefsRepo: PrefsRe
         val purchase = requireNotNull(billingClient).queryPurchases(INAPP)
         if (purchase.billingResult.responseCode == OK) {
             if (purchase.purchasesList.isEmpty()) {
-                Log.i(APP_NAME, "Retrieved purchase list but it was empty")
+                Timber.i("Retrieved purchase list but it was empty")
                 return
             }
-            val premiumSku =
-                purchase.purchasesList.first { record -> record.sku == PREMIUM_IAP_SKU }
-            if (premiumSku != null) {
+            val premiumSku = purchase.purchasesList.find { record -> record.sku == PREMIUM_IAP_SKU }
+            if (premiumSku != null && premiumSku.purchaseState == PURCHASED) {
+                Timber.i("Found premium SKU in user's history: $premiumSku")
                 prefsRepo.premiumPurchaseToken = premiumSku.purchaseToken
             } else {
                 prefsRepo.premiumPurchaseToken = NO_PREMIUM_TOKEN
             }
         } else {
-            Log.i(
-                APP_NAME,
-                "getPurchaseHistory() failed: " + purchase.billingResult.debugMessage
-            )
+            Timber.i("getPurchaseHistory() failed: %s", purchase.billingResult.debugMessage)
         }
     }
 
     private suspend fun querySkuDetails(billingClient: BillingClient) {
-        Log.i(APP_NAME, "Querying sku deets")
+        Timber.i("Querying sku details")
         val params = SkuDetailsParams.newBuilder()
             .setSkusList(IAP_SKU_LIST)
             .setType(INAPP)
@@ -75,25 +70,24 @@ class ChronicleBillingManager @Inject constructor(private val prefsRepo: PrefsRe
         }
 
         if (skuDetailsResult.billingResult.responseCode == OK) {
-            Log.i(APP_NAME, "SKUs available: ${skuDetailsResult.skuDetailsList}")
+            Timber.i("SKUs available: ${skuDetailsResult.skuDetailsList}")
             val skuDetailsList = skuDetailsResult.skuDetailsList ?: emptyList()
             for (skuDetails in skuDetailsList) {
                 val sku = skuDetails.sku
-                Log.i(APP_NAME, "$PREMIUM_IAP_SKU vs. $sku")
+                Timber.i("$PREMIUM_IAP_SKU vs. $sku")
                 if (sku == PREMIUM_IAP_SKU) {
                     premiumUpgradeSku = skuDetails
                 }
             }
         } else {
-            Log.i(
-                APP_NAME,
+            Timber.i(
                 "Failed to load SKU details: ${skuDetailsResult.billingResult.debugMessage}"
             )
         }
     }
 
     fun launchBillingFlow(activity: Activity): BillingResult {
-        Log.i(APP_NAME, "Premium upgrade sku initialized? ${::premiumUpgradeSku.isInitialized}")
+        Timber.i("Premium upgrade sku initialized? ${::premiumUpgradeSku.isInitialized}")
         return if (::premiumUpgradeSku.isInitialized) {
             val flowParams = BillingFlowParams.newBuilder()
                 .setSkuDetails(premiumUpgradeSku)
@@ -108,23 +102,24 @@ class ChronicleBillingManager @Inject constructor(private val prefsRepo: PrefsRe
         billingResult: BillingResult,
         nullablePurchases: MutableList<Purchase>?
     ) {
-        Log.i(APP_NAME, "Checking for purchases")
+        Timber.i("Checking for purchases")
         val purchases = nullablePurchases?.toList() ?: emptyList()
         if (billingResult.responseCode == OK && purchases.isNotEmpty()) {
-            Log.i(APP_NAME, "IAP Purchased!")
+            Timber.i("IAP Purchased!")
             val purchase = purchases[0]
             prefsRepo.premiumPurchaseToken = purchase.purchaseToken
             if (!purchase.isAcknowledged) {
                 val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
                     .setPurchaseToken(purchase.purchaseToken)
-                GlobalScope.launch {
+                GlobalScope.launch(unhandledExceptionHandler) {
                     billingClient?.acknowledgePurchase(acknowledgePurchaseParams.build())
                 }
-            } else {
-                // TODO- retry?
             }
+//            else {
+//            TODO: retry?
+//            }
         } else {
-            Log.e(APP_NAME, "Purchase failed (${billingResult.responseCode})")
+            Timber.e("Purchase failed (${billingResult.responseCode})")
         }
     }
 }

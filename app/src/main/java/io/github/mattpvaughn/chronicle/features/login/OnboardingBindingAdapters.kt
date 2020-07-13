@@ -1,46 +1,47 @@
 package io.github.mattpvaughn.chronicle.features.login
 
-import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.databinding.BindingAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.github.mattpvaughn.chronicle.data.model.Library
+import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
+import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
 import io.github.mattpvaughn.chronicle.data.model.ServerModel
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser
+import timber.log.Timber
 
 @BindingAdapter("loadingStatus")
 fun bindLoadingStatus(
     recyclerView: RecyclerView,
-    loadingStatus: ChooseServerViewModel.LoadingStatus?
+    loadingStatus: LoadingStatus?
 ) {
-    Log.i(APP_NAME, "Loading status: $loadingStatus")
+    Timber.i("Loading status: $loadingStatus")
     when (loadingStatus) {
-        ChooseServerViewModel.LoadingStatus.ERROR -> recyclerView.visibility = View.GONE
-        ChooseServerViewModel.LoadingStatus.DONE -> recyclerView.visibility = View.VISIBLE
-        ChooseServerViewModel.LoadingStatus.LOADING -> recyclerView.visibility = View.GONE
+        LoadingStatus.ERROR -> recyclerView.visibility = View.GONE
+        LoadingStatus.DONE -> recyclerView.visibility = View.VISIBLE
+        LoadingStatus.LOADING -> recyclerView.visibility = View.GONE
     }
 }
 
 @BindingAdapter("loadingStatus")
-fun bindLoadingStatus(errorView: TextView, loadingStatus: ChooseServerViewModel.LoadingStatus?) {
+fun bindLoadingStatus(errorView: TextView, loadingStatus: LoadingStatus?) {
     when (loadingStatus) {
-        ChooseServerViewModel.LoadingStatus.ERROR -> errorView.visibility = View.VISIBLE
-        ChooseServerViewModel.LoadingStatus.DONE -> errorView.visibility = View.GONE
-        ChooseServerViewModel.LoadingStatus.LOADING -> errorView.visibility = View.GONE
+        LoadingStatus.ERROR -> errorView.visibility = View.VISIBLE
+        LoadingStatus.DONE -> errorView.visibility = View.GONE
+        LoadingStatus.LOADING -> errorView.visibility = View.GONE
     }
 }
 
 @BindingAdapter("loadingStatus")
 fun bindLoadingStatus(
     progressBar: ProgressBar,
-    loadingStatus: ChooseServerViewModel.LoadingStatus?
+    loadingStatus: LoadingStatus?
 ) {
     when (loadingStatus) {
-        ChooseServerViewModel.LoadingStatus.ERROR -> progressBar.visibility = View.GONE
-        ChooseServerViewModel.LoadingStatus.DONE -> progressBar.visibility = View.GONE
-        ChooseServerViewModel.LoadingStatus.LOADING -> progressBar.visibility = View.VISIBLE
+        LoadingStatus.ERROR -> progressBar.visibility = View.GONE
+        LoadingStatus.DONE -> progressBar.visibility = View.GONE
+        LoadingStatus.LOADING -> progressBar.visibility = View.VISIBLE
     }
 }
 
@@ -50,42 +51,15 @@ fun bindServerData(recyclerView: RecyclerView, data: List<ServerModel>) {
     adapter.submitList(data)
 }
 
-@BindingAdapter("loadingStatus")
-fun bindLoadingStatus(
-    recyclerView: RecyclerView,
-    loadingStatus: ChooseLibraryViewModel.LoadingStatus?
-) {
-    Log.i(APP_NAME, "Loading status: $loadingStatus")
-    when (loadingStatus) {
-        ChooseLibraryViewModel.LoadingStatus.ERROR -> recyclerView.visibility = View.GONE
-        ChooseLibraryViewModel.LoadingStatus.DONE -> recyclerView.visibility = View.VISIBLE
-        ChooseLibraryViewModel.LoadingStatus.LOADING -> recyclerView.visibility = View.GONE
-    }
+@BindingAdapter("users")
+fun bindUsers(recyclerView: RecyclerView, data: List<PlexUser>) {
+    val adapter = recyclerView.adapter as UserListAdapter
+    adapter.submitList(data)
 }
 
-@BindingAdapter("loadingStatus")
-fun bindLoadingStatus(errorView: TextView, loadingStatus: ChooseLibraryViewModel.LoadingStatus?) {
-    when (loadingStatus) {
-        ChooseLibraryViewModel.LoadingStatus.ERROR -> errorView.visibility = View.VISIBLE
-        ChooseLibraryViewModel.LoadingStatus.DONE -> errorView.visibility = View.GONE
-        ChooseLibraryViewModel.LoadingStatus.LOADING -> errorView.visibility = View.GONE
-    }
-}
-
-@BindingAdapter("loadingStatus")
-fun bindLoadingStatus(
-    progressBar: ProgressBar,
-    loadingStatus: ChooseLibraryViewModel.LoadingStatus?
-) {
-    when (loadingStatus) {
-        ChooseLibraryViewModel.LoadingStatus.ERROR -> progressBar.visibility = View.GONE
-        ChooseLibraryViewModel.LoadingStatus.DONE -> progressBar.visibility = View.GONE
-        ChooseLibraryViewModel.LoadingStatus.LOADING -> progressBar.visibility = View.VISIBLE
-    }
-}
 
 @BindingAdapter("listData")
-fun bindLibraryData(recyclerView: RecyclerView, data: List<Library>) {
+fun bindLibraryData(recyclerView: RecyclerView, data: List<PlexLibrary>) {
     val adapter = recyclerView.adapter as LibraryListAdapter
     adapter.submitList(data)
 }

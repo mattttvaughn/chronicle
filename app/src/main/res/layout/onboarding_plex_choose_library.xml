@@ -12,6 +12,7 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/colorPrimaryDark"
         tools:context=".features.login.ChooseLibraryFragment">
 
         <TextView
@@ -29,14 +30,14 @@
         <ImageView
             android:id="@+id/refresh"
             android:layout_width="@dimen/list_icon_size"
-            android:onClick="@{() -> chooseLibraryViewModel.refresh()}"
             android:layout_height="@dimen/list_icon_size"
-            app:layout_constraintBottom_toBottomOf="@id/choose_library_title"
             android:layout_marginLeft="@dimen/margin_normal"
-            app:layout_constraintTop_toTopOf="@id/choose_library_title"
-            app:layout_constraintLeft_toRightOf="@id/choose_library_title"
+            android:contentDescription="@string/refresh_list"
+            android:onClick="@{() -> chooseLibraryViewModel.refresh()}"
             android:src="@drawable/ic_refresh_white"
-            android:contentDescription="@string/refresh_list" />
+            app:layout_constraintBottom_toBottomOf="@id/choose_library_title"
+            app:layout_constraintLeft_toRightOf="@id/choose_library_title"
+            app:layout_constraintTop_toTopOf="@id/choose_library_title" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/library_list"

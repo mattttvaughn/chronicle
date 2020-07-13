@@ -26,11 +26,16 @@ import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DataSource
+import com.google.android.exoplayer2.util.MimeTypes
+import com.google.android.gms.cast.MediaInfo
+import com.google.android.gms.cast.MediaMetadata
+import com.google.android.gms.cast.MediaQueueItem
+import com.google.android.gms.common.images.WebImage
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.util.toUri
 
-/**
- * Useful extensions for [MediaMetadataCompat].
- */
+
+/** Useful extensions for [MediaMetadataCompat]. */
 inline val MediaMetadataCompat.id: String?
     get() = getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID)
 
@@ -263,21 +268,97 @@ inline var MediaMetadataCompat.Builder.flag: Int
  *
  * These keys are used by the ExoPlayer MediaSession extension when announcing metadata changes.
  */
-inline val MediaMetadataCompat.fullDescription
-    get() =
-        description.also {
-            it.extras?.putAll(bundle)
-        }
+inline val MediaMetadataCompat.fullDescription: MediaDescriptionCompat
+    get() = description.also {
+        it.extras?.putAll(bundle)
+    }
 
 /**
  * Extension method for building an [ExtractorMediaSource] from a [MediaMetadataCompat] object.
  *
  * For convenience, place the [MediaDescriptionCompat] into the tag so it can be retrieved later.
  */
-fun MediaMetadataCompat.toMediaSource(dataSourceFactory: DataSource.Factory) =
+fun MediaMetadataCompat.toMediaSource(dataSourceFactory: DataSource.Factory): ProgressiveMediaSource =
     ProgressiveMediaSource.Factory(dataSourceFactory)
         .setTag(fullDescription)
         .createMediaSource(mediaUri)
+
+fun MediaMetadataCompat.describe(): String {
+    return "${this.title}, ${this.artist}, ${this.displayTitle}"
+}
+
+fun MediaMetadata.describe(): String {
+    return this.getString(MediaMetadata.KEY_TITLE)
+}
+
+fun MediaMetadataCompat.toMediaQueueItem(): MediaMetadata {
+    val metadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_AUDIOBOOK_CHAPTER)
+    metadata.putString(MediaMetadata.KEY_TITLE, this.title)
+    metadata.putInt(MediaMetadata.KEY_QUEUE_ITEM_ID, this.trackNumber.toInt())
+    metadata.putString(MediaMetadata.KEY_ARTIST, this.artist)
+    metadata.putString(MediaMetadata.KEY_SUBTITLE, this.displaySubtitle)
+    metadata.addImage(WebImage(this.albumArtUri))
+    metadata.putString(MediaMetadata.KEY_BOOK_TITLE, this.album)
+    metadata.putInt(MediaMetadata.KEY_CHAPTER_NUMBER, this.trackNumber.toInt())
+    metadata.putInt(MediaMetadata.KEY_DISC_NUMBER, this.discNumber.toInt())
+    return metadata
+}
+
+fun MediaQueueItem.toMediaDescription(): MediaDescriptionCompat {
+    val metadata = this.media.metadata
+    val descBuilder = MediaDescriptionCompat.Builder()
+        .setTitle(metadata.getString(MediaMetadata.KEY_TITLE))
+        .setSubtitle(metadata.getString(MediaMetadata.KEY_SUBTITLE))
+
+    if (metadata.hasImages()) {
+        descBuilder.setIconUri(metadata.images.first().url)
+    }
+
+    return descBuilder.build()
+}
+
+/**
+ * Extension method for converting a [MediaMetadata] to [MediaDescriptionCompat]
+ */
+fun MediaMetadata?.toMediaDescriptionCompat(): MediaDescriptionCompat {
+    return MediaDescriptionCompat.Builder()
+        .setTitle(this?.getString(MediaMetadata.KEY_TITLE))
+        .setSubtitle(this?.getString(MediaMetadata.KEY_ARTIST))
+        .setIconUri(this?.images?.firstOrNull()?.url)
+        .build()
+}
+
+/**
+ * Extension method for converting a [MediaMetadata] to [MediaDescriptionCompat]
+ */
+fun MediaDescriptionCompat.toMediaMetadataCompat(): MediaMetadataCompat {
+    val builder = MediaMetadataCompat.Builder()
+    builder.title = this.title.toString()
+    builder.displayTitle = this.title.toString()
+    builder.displaySubtitle = this.subtitle.toString()
+    builder.displayIconUri = this.iconUri.toString()
+    return builder.build()
+}
+
+/**
+ * Extension method for building an [Array<MediaQueueItem>] given a [List] of [MediaMetadataCompat]
+ * objects.
+ */
+fun List<MediaMetadataCompat>.toMediaQueueItems(plexConfig: PlexConfig): Array<MediaQueueItem> {
+    return map { mediaItem ->
+        val mediaUri = plexConfig.makeUriFromPart(mediaItem.mediaUri.path ?: "").toString()
+        val mediaInfo = MediaInfo.Builder(mediaUri)
+            .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
+            .setContentType(MimeTypes.AUDIO_UNKNOWN)
+            .setStreamDuration(mediaItem.duration)
+            .setMetadata(mediaItem.toMediaQueueItem()).build()
+
+        val queueItem = MediaQueueItem.Builder(mediaInfo)
+            .setPlaybackDuration(mediaItem.duration.toDouble()).build()
+
+        return@map queueItem
+    }.toTypedArray()
+}
 
 /**
  * Extension method for building a [ConcatenatingMediaSource] given a [List]
@@ -298,4 +379,5 @@ fun List<MediaMetadataCompat>.toMediaSource(
  * Custom property that holds whether an item is [MediaItem.FLAG_BROWSABLE] or
  * [MediaItem.FLAG_PLAYABLE].
  */
-const val METADATA_KEY_CHRONICLE_FLAGS = "io.github.mattpvaughn.chronicle.features.player.METADATA_KEY_UAMP_FLAGS"
+const val METADATA_KEY_CHRONICLE_FLAGS =
+    "io.github.mattpvaughn.chronicle.features.player.METADATA_KEY_UAMP_FLAGS"

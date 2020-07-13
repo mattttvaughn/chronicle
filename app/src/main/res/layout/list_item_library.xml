@@ -6,7 +6,7 @@
 
         <variable
             name="library"
-            type="io.github.mattpvaughn.chronicle.data.model.Library" />
+            type="io.github.mattpvaughn.chronicle.data.model.PlexLibrary" />
 
         <variable
             name="clickListener"

@@ -15,243 +15,247 @@
 
         <variable
             name="plexConfig"
-            type="io.github.mattpvaughn.chronicle.data.plex.PlexConfig" />
+            type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig" />
 
-        <import type="io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager.CacheStatus" />
+        <import type="io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus" />
 
         <import type="android.view.View" />
     </data>
 
-
-    <FrameLayout
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/coordinator"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/colorPrimaryDark">
+        android:layout_height="match_parent">
 
-        <io.github.mattpvaughn.chronicle.views.BottomSheetChooser
-            android:id="@+id/bottom_sheet_chooser"
-            bottomSheetTitle="@{viewModel.bottomSheetTitle}"
-            options="@{viewModel.bottomSheetOptions}"
-            optionsListener="@{viewModel.bottomOptionsListener}"
-            show="@{viewModel.showBottomSheet}"
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:elevation="1dp"
-            tools:layout="@layout/view_bottom_sheet_chooser" />
+            android:layout_height="wrap_content">
 
-        <androidx.core.widget.NestedScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <com.google.android.material.appbar.CollapsingToolbarLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                tools:context="io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment">
+                android:background="@color/colorPrimaryDark"
+                app:layout_scrollFlags="scroll"
+                app:titleEnabled="false">
 
-                <ImageView
-                    android:id="@+id/details_artwork"
-                    lastUpdated="@{viewModel.audiobook.updatedAt}"
-                    serverConnected="@{plexConfig.isConnected()}"
-                    srcRounded="@{viewModel.audiobook.thumb}"
-                    android:layout_width="@dimen/details_artwork_size"
-                    android:layout_height="@dimen/details_artwork_size"
-                    android:layout_marginTop="@dimen/app_bar_height"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    tools:src="@drawable/example_cover" />
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
 
-                <TextView
-                    android:id="@+id/progress"
-                    style="@style/TextAppearance.Body2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@{viewModel.progressString + '/' + viewModel.durationString}"
-                    app:layout_constraintRight_toRightOf="@id/details_artwork"
-                    app:layout_constraintTop_toBottomOf="@id/details_artwork"
-                    tools:text="1:21/3:52" />
+                    <androidx.constraintlayout.widget.Guideline
+                        android:id="@+id/left_gutter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        app:layout_constraintGuide_begin="@dimen/screen_horizontal_padding" />
 
-                <ProgressBar
-                    android:id="@+id/caching_tracks_spinner"
-                    android:layout_width="@dimen/list_icon_size"
-                    android:layout_height="@dimen/list_item_height"
-                    android:onClick="@{(view) -> viewModel.onCacheButtonClick()}"
-                    android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHING ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintBottom_toBottomOf="@id/author"
-                    app:layout_constraintLeft_toLeftOf="@id/left_gutter"
-                    app:layout_constraintTop_toTopOf="@id/book_title" />
-
-                <ImageView
-                    android:id="@+id/download"
-                    tintRes="@{viewModel.cacheIconTint}"
-                    android:layout_width="@dimen/list_icon_size"
-                    android:layout_height="@dimen/list_item_height"
-                    android:onClick="@{(view) -> viewModel.onCacheButtonClick()}"
-                    android:src="@{viewModel.cacheIconDrawable}"
-                    android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHING ? View.INVISIBLE : View.VISIBLE}"
-                    app:layout_constraintBottom_toBottomOf="@id/play_button_container"
-                    app:layout_constraintLeft_toLeftOf="@id/left_gutter"
-                    app:layout_constraintTop_toTopOf="@id/play_button_container" />
-
-                <TextView
-                    android:id="@+id/book_title"
-                    style="@style/TextAppearance.Body1"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/margin_normal"
-                    android:lines="1"
-                    android:text="@{viewModel.audiobook.title}"
-                    app:layout_constraintBottom_toTopOf="@id/author"
-                    app:layout_constraintLeft_toRightOf="@id/download"
-                    app:layout_constraintRight_toLeftOf="@id/play_button_container"
-                    app:layout_constraintTop_toTopOf="@id/play_button_container"
-                    app:layout_constraintVertical_chainStyle="packed"
-                    tools:text="Book title but it's very long so it overflows past the edge of the screen" />
-
-                <TextView
-                    android:id="@+id/author"
-                    style="@style/TextAppearance.Body2"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:lines="1"
-                    android:text="@{viewModel.audiobook.author}"
-                    app:layout_constraintBottom_toBottomOf="@id/play_button_container"
-                    app:layout_constraintLeft_toLeftOf="@id/book_title"
-                    app:layout_constraintRight_toRightOf="@id/book_title"
-                    app:layout_constraintTop_toBottomOf="@id/book_title"
-                    app:layout_constraintVertical_chainStyle="packed"
-                    tools:text="Author name won't overflow" />
-
-                <FrameLayout
-                    android:id="@+id/play_button_container"
-                    android:layout_width="@dimen/details_play_button"
-                    android:layout_height="@dimen/details_play_button"
-                    app:layout_constraintRight_toLeftOf="@id/right_gutter"
-                    app:layout_constraintTop_toBottomOf="@id/progress">
+                    <androidx.constraintlayout.widget.Guideline
+                        android:id="@+id/right_gutter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
 
                     <ImageView
-                        android:id="@+id/details_pause_play"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="?android:attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:onClick="@{() -> viewModel.play()}"
-                        android:src="@drawable/ic_play_button_large_colored"
-                        android:visibility="@{viewModel.isConnecting() ? View.GONE: View.VISIBLE}"
-                        tools:src="@drawable/ic_pause_button_large_colored" />
+                        android:id="@+id/details_artwork"
+                        serverConnected="@{plexConfig.isConnected()}"
+                        srcRounded="@{viewModel.audiobook.thumb}"
+                        android:layout_width="@dimen/details_artwork_size"
+                        android:layout_height="@dimen/details_artwork_size"
+                        android:layout_marginTop="@dimen/app_bar_height"
+                        android:contentDescription="@{viewModel.audiobook.title}"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        tools:src="@drawable/example_cover" />
 
-                    <ProgressBar
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:padding="@dimen/margin_small"
-                        android:visibility="@{viewModel.isConnecting() ? View.VISIBLE : View.GONE}" />
-                </FrameLayout>
+                    <TextView
+                        android:id="@+id/progress"
+                        style="@style/TextAppearance.Body2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@{viewModel.progressString + '/' + viewModel.durationString}"
+                        app:layout_constraintRight_toRightOf="@id/details_artwork"
+                        app:layout_constraintTop_toBottomOf="@id/details_artwork"
+                        tools:text="1:21/3:52" />
 
-                <TextView
-                    style="@style/TextAppearance.Body1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/margin_normal"
-                    android:drawableTop="@drawable/ic_error_outline_white"
-                    android:text="@string/no_tracks_found"
-                    android:visibility="@{(viewModel.tracks.isEmpty() &amp;&amp; !viewModel.isLoadingTracks()) ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/chapters_title"
-                    tools:visibility="gone" />
+                    <FrameLayout
+                        android:id="@+id/download_indicator_container"
+                        android:layout_width="@dimen/list_icon_size"
+                        android:layout_height="@dimen/list_icon_size"
+                        app:layout_constraintBottom_toBottomOf="@id/author"
+                        app:layout_constraintLeft_toLeftOf="@id/left_gutter"
+                        app:layout_constraintTop_toTopOf="@id/book_title">
 
-                <TextView
-                    android:id="@+id/info_summary"
-                    style="@style/TextAppearance.Body2"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/margin_normal"
-                    android:layout_marginBottom="@dimen/margin_normal"
-                    android:maxLines="@{viewModel.summaryLinesShown}"
-                    android:text="@{viewModel.audiobook.summary}"
-                    android:visibility="@{viewModel.showSummary ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintLeft_toRightOf="@id/left_gutter"
-                    app:layout_constraintRight_toLeftOf="@id/right_gutter"
-                    app:layout_constraintTop_toBottomOf="@id/play_button_container"
-                    tools:lines="5"
-                    tools:text="TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. " />
+                        <ProgressBar
+                            android:id="@+id/caching_tracks_spinner"
+                            android:layout_width="@dimen/list_icon_size"
+                            android:layout_height="@dimen/list_icon_size"
+                            android:contentDescription="@string/downloading_book"
+                            android:onClick="@{(view) -> viewModel.onCacheButtonClick()}"
+                            android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHING ? View.VISIBLE : View.GONE}" />
 
-                <Button
-                    android:id="@+id/info_expand_summary"
-                    style="@style/Widget.AppCompat.Button.Borderless"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:onClick="@{() -> viewModel.onToggleSummaryView()}"
-                    android:text="@{viewModel.isExpanded() ? @string/less : @string/more}"
-                    android:visibility="@{viewModel.showSummary ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/info_summary" />
+                        <ImageView
+                            android:id="@+id/download"
+                            tintRes="@{viewModel.cacheIconTint}"
+                            android:layout_width="@dimen/list_icon_size"
+                            android:layout_height="@dimen/list_icon_size"
+                            android:contentDescription="@string/download"
+                            android:onClick="@{(view) -> viewModel.onCacheButtonClick()}"
+                            android:src="@{viewModel.cacheIconDrawable}"
+                            android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHING ? View.INVISIBLE : View.VISIBLE}" />
 
-                <TextView
-                    android:id="@+id/chapters_title"
-                    style="@style/TextAppearance.Title"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/margin_normal"
-                    android:text="@string/chapters"
-                    app:layout_constraintLeft_toRightOf="@id/left_gutter"
-                    app:layout_constraintRight_toLeftOf="@id/right_gutter"
-                    app:layout_constraintTop_toBottomOf="@id/info_expand_summary"
-                    tools:text="@string/chapters" />
+                    </FrameLayout>
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/tracks"
-                    activeTrackId="@{viewModel.activeTrackId}"
+                    <TextView
+                        android:id="@+id/book_title"
+                        style="@style/TextAppearance.Body1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="@dimen/margin_normal"
+                        android:lines="1"
+                        android:text="@{viewModel.audiobook.title}"
+                        app:layout_constraintBottom_toTopOf="@id/author"
+                        app:layout_constraintLeft_toRightOf="@id/download_indicator_container"
+                        app:layout_constraintRight_toLeftOf="@id/play_button_container"
+                        app:layout_constraintTop_toTopOf="@id/play_button_container"
+                        app:layout_constraintVertical_chainStyle="packed"
+                        tools:text="Book title but it's very long so it overflows past the edge of the screen"
+                        tools:ignore="RtlHardcoded" />
+
+                    <TextView
+                        android:id="@+id/author"
+                        style="@style/TextAppearance.Body2"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:lines="1"
+                        android:text="@{viewModel.audiobook.author}"
+                        app:layout_constraintBottom_toBottomOf="@id/play_button_container"
+                        app:layout_constraintLeft_toLeftOf="@id/book_title"
+                        app:layout_constraintRight_toRightOf="@id/book_title"
+                        app:layout_constraintTop_toBottomOf="@id/book_title"
+                        app:layout_constraintVertical_chainStyle="packed"
+                        tools:text="Author name won't overflow" />
+
+                    <FrameLayout
+                        android:id="@+id/play_button_container"
+                        android:layout_width="@dimen/details_play_button"
+                        android:layout_height="@dimen/details_play_button"
+                        app:layout_constraintRight_toLeftOf="@id/right_gutter"
+                        app:layout_constraintTop_toBottomOf="@id/progress">
+
+                        <ImageView
+                            android:id="@+id/details_pause_play"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="?android:attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:contentDescription="@string/pause_play_button"
+                            android:focusable="true"
+                            android:onClick="@{() -> viewModel.pausePlayButtonClicked()}"
+                            android:src="@{ viewModel.isBookInViewPlaying() ? @drawable/ic_pause_button_large_colored : @drawable/ic_play_button_large_colored}"
+                            android:visibility="@{viewModel.isConnecting() ? View.GONE : View.VISIBLE}"
+                            tools:src="@drawable/ic_pause_button_large_colored" />
+
+                        <ProgressBar
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="@dimen/margin_small"
+                            android:visibility="@{viewModel.isConnecting() ? View.VISIBLE : View.GONE}" />
+                    </FrameLayout>
+
+                    <TextView
+                        style="@style/TextAppearance.Body1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/margin_normal"
+                        android:drawableTop="@drawable/ic_error_outline_white"
+                        android:text="@string/no_tracks_found"
+                        android:visibility="@{(viewModel.tracks.isEmpty() &amp;&amp; !viewModel.isLoadingTracks()) ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/play_button_container"
+                        tools:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/info_summary"
+                        style="@style/TextAppearance.Body2"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/margin_normal"
+                        android:layout_marginBottom="@dimen/margin_normal"
+                        android:maxLines="@{viewModel.summaryLinesShown}"
+                        android:text="@{viewModel.audiobook.summary}"
+                        android:visibility="@{viewModel.showSummary ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintLeft_toRightOf="@id/left_gutter"
+                        app:layout_constraintRight_toLeftOf="@id/right_gutter"
+                        app:layout_constraintTop_toBottomOf="@id/play_button_container"
+                        tools:lines="5"
+                        tools:text="TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. TODO get summary this is just temporary text but I made it long to simulate what a summary would look like. " />
+
+                    <Button
+                        android:id="@+id/info_expand_summary"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:onClick="@{() -> viewModel.onToggleSummaryView()}"
+                        android:text="@{viewModel.isExpanded() ? @string/less : @string/more}"
+                        android:visibility="@{viewModel.showSummary ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/info_summary" />
+
+                    <TextView
+                        android:id="@+id/chapters_title"
+                        style="@style/TextAppearance.Title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="@dimen/margin_normal"
+                        android:text="@string/chapters"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/info_expand_summary" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.appcompat.widget.Toolbar
+                    android:id="@+id/details_toolbar"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/margin_normal"
-                    android:visibility="@{viewModel.isLoadingTracks() ? View.GONE : View.VISIBLE}"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/chapters_title"
-                    app:trackList="@{viewModel.tracks}"
-                    tools:itemCount="10"
-                    tools:listitem="@layout/list_item_audiobook_track" />
+                    android:layout_height="?attr/actionBarSize"
+                    android:background="@color/colorPrimaryDark"
+                    app:layout_collapseMode="pin"
+                    app:menu="@menu/audiobook_details_menu"
+                    app:navigationIcon="@drawable/ic_arrow_back_white"
+                    app:popupTheme="@style/ThemeOverlay.AppCompat.Dark" />
 
-                <ProgressBar
-                    android:id="@+id/loading_tracks_spinner"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/margin_normal"
-                    android:visibility="@{viewModel.isLoadingTracks() ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toTopOf="@id/tracks" />
+            </com.google.android.material.appbar.CollapsingToolbarLayout>
+        </com.google.android.material.appbar.AppBarLayout>
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/tracks"
+            chapterList="@{viewModel.chapters}"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorPrimaryDark"
+            android:overScrollMode="never"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-                <androidx.constraintlayout.widget.Guideline
-                    android:id="@+id/left_gutter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    app:layout_constraintGuide_begin="@dimen/screen_horizontal_padding" />
-
-                <androidx.constraintlayout.widget.Guideline
-                    android:id="@+id/right_gutter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.core.widget.NestedScrollView>
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/details_toolbar"
+        <ProgressBar
+            android:id="@+id/loading_tracks_spinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:menu="@menu/audiobook_details_menu"
-            app:navigationIcon="@drawable/ic_arrow_back_white" />
+            android:layout_gravity="center_vertical"
+            android:layout_marginTop="@dimen/margin_normal"
+            android:visibility="@{viewModel.isLoadingTracks() ? View.VISIBLE : View.GONE}"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            app:layout_constraintTop_toTopOf="@id/tracks" />
 
-    </FrameLayout>
+        <io.github.mattpvaughn.chronicle.views.BottomSheetChooser
+            bottomChooserState="@{viewModel.bottomChooserState}"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:elevation="4dp" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>

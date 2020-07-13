@@ -5,11 +5,11 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.github.mattpvaughn.chronicle.data.model.Library
+import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
 import io.github.mattpvaughn.chronicle.databinding.ListItemLibraryBinding
 
 class LibraryListAdapter(val clickListener: LibraryClickListener) :
-    ListAdapter<Library, LibraryListAdapter.LibraryViewHolder>(
+    ListAdapter<PlexLibrary, LibraryListAdapter.LibraryViewHolder>(
         LibraryDiffCallback()
     ) {
 
@@ -25,8 +25,8 @@ class LibraryListAdapter(val clickListener: LibraryClickListener) :
 
     class LibraryViewHolder private constructor(val binding: ListItemLibraryBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun bind(library: Library, clickListener: LibraryClickListener) {
-            binding.library = library
+        fun bind(plexLibrary: PlexLibrary, clickListener: LibraryClickListener) {
+            binding.library = plexLibrary
             binding.clickListener = clickListener
             binding.executePendingBindings()
         }
@@ -44,12 +44,12 @@ class LibraryListAdapter(val clickListener: LibraryClickListener) :
 }
 
 
-class LibraryDiffCallback : DiffUtil.ItemCallback<Library>() {
-    override fun areItemsTheSame(oldItem: Library, newItem: Library): Boolean {
+class LibraryDiffCallback : DiffUtil.ItemCallback<PlexLibrary>() {
+    override fun areItemsTheSame(oldItem: PlexLibrary, newItem: PlexLibrary): Boolean {
         return oldItem.name == newItem.name
     }
 
-    override fun areContentsTheSame(oldItem: Library, newItem: Library): Boolean {
+    override fun areContentsTheSame(oldItem: PlexLibrary, newItem: PlexLibrary): Boolean {
         return oldItem == newItem
     }
 }

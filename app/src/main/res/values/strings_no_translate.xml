@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="key_sort_by_title">title</string>
+    <string name="key_sort_by_author">author</string>
+    <string name="key_sort_by_year">year</string>
+    <string name="key_sort_by_release_date">release_date</string>
+    <string name="key_sort_by_date_added">date_added</string>
+    <string name="key_sort_by_rating">rating</string>
+    <string name="key_sort_by_date_played">date_played</string>
+    <string name="key_sort_by_plays">plays</string>
+    <string name="key_sort_by_duration">duration</string>
+
+    <string name="key_view_by_book">book</string>
+    <string name="key_view_by_author">author</string>
+    <string name="key_view_by_folder">folder</string>
+    <string name="key_view_by_collection">collection</string>
+</resources>

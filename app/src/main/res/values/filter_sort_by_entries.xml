@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="filter_view_by_entries">
+        <item>@string/view_by_book</item>
+        <item>@string/view_by_folder</item>
+        <item>@string/view_by_author</item>
+        <item>@string/view_by_collection</item>
+    </string-array>
+
+    <string-array name="filter_sort_by_entries">
+        <item>@string/sort_by_title</item>
+        <item>@string/sort_by_author</item>
+        <item>@string/sort_by_year</item>
+        <item>@string/sort_by_release_date</item>
+        <item>@string/sort_by_date_added</item>
+        <item>@string/sort_by_date_played</item>
+        <item>@string/sort_by_plays</item>
+    </string-array>
+</resources>

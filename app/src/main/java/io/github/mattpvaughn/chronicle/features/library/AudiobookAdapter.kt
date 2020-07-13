@@ -16,10 +16,6 @@ class AudiobookAdapter(
 
     private var serverConnected: Boolean = false
 
-    init {
-        setHasStableIds(true)
-    }
-
     override fun getItemId(position: Int): Long {
         return getItem(position).id.toLong()
     }
@@ -71,13 +67,10 @@ class AudiobookDiffCallback : DiffUtil.ItemCallback<Audiobook>() {
         return oldItem.id == newItem.id
     }
 
-    /**
-     * For the purposes of [AudiobookAdapter], the full content of the audiobook should not be
-     * compared, as certain fields like [Audiobook.lastViewedAt] might differ but not require a
-     * redraw of the view.
-     */
+    /** Changes which require a redraw of the view */
     override fun areContentsTheSame(oldItem: Audiobook, newItem: Audiobook): Boolean {
         return oldItem.thumb == newItem.thumb && oldItem.title == newItem.title
                 && oldItem.author == newItem.author && oldItem.isCached == newItem.isCached
+                && oldItem.progress == newItem.progress
     }
 }

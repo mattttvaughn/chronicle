@@ -2,6 +2,8 @@ package io.github.mattpvaughn.chronicle.data.local
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import javax.inject.Inject
 
@@ -21,8 +23,8 @@ class FakeTrackRepository @Inject constructor() : ITrackRepository {
         return MediaItemTrack(id = trackId, parentKey = bookId)
     }
 
-    override suspend fun loadTracksForAudiobook(bookId: Int): List<MediaItemTrack> {
-        return tracks
+    override suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>, Throwable> {
+        return Ok(tracks)
     }
 
     override suspend fun updateCachedStatus(trackId: Int, isCached: Boolean) {}
@@ -74,10 +76,9 @@ class FakeTrackRepository @Inject constructor() : ITrackRepository {
         return tracks
     }
 
-    override suspend fun loadAllTracks(): LiveData<List<MediaItemTrack>> {
-        return MutableLiveData(tracks)
-    }
-
     override suspend fun refreshData() {}
+    override suspend fun findTrackByTitle(title: String): MediaItemTrack? {
+        TODO("Not yet implemented")
+    }
 
 }

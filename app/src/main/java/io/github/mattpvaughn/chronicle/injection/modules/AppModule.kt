@@ -3,28 +3,29 @@ package io.github.mattpvaughn.chronicle.injection.modules
 import android.app.Application
 import android.app.DownloadManager
 import android.app.Service
-import android.content.ComponentName
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import androidx.core.content.ContextCompat
 import androidx.work.WorkManager
 import com.android.billingclient.api.BillingClient
+import com.google.android.gms.cast.framework.CastContext
+import com.squareup.moshi.Moshi
 import dagger.Module
 import dagger.Provides
-import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.application.ChronicleBillingManager
 import io.github.mattpvaughn.chronicle.application.LOG_NETWORK_REQUESTS
 import io.github.mattpvaughn.chronicle.data.local.*
-import io.github.mattpvaughn.chronicle.data.plex.*
-import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService
-import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
+import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import kotlinx.coroutines.CoroutineExceptionHandler
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import timber.log.Timber
 import java.io.File
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -35,8 +36,7 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun provideSharedPreferences(): SharedPreferences =
-        app.getSharedPreferences(APP_NAME, MODE_PRIVATE)
+    fun provideSharedPrefs(): SharedPreferences = app.getSharedPreferences(APP_NAME, MODE_PRIVATE)
 
     @Provides
     @Singleton
@@ -77,15 +77,6 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun provideMediaServiceConnection(): MediaServiceConnection {
-        return MediaServiceConnection(
-            app.applicationContext,
-            ComponentName(app.applicationContext, MediaPlayerService::class.java)
-        )
-    }
-
-    @Provides
-    @Singleton
     fun workManager(): WorkManager = WorkManager.getInstance(app)
 
     @Provides
@@ -96,7 +87,7 @@ class AppModule(private val app: Application) {
     @Provides
     @Singleton
     fun loggingInterceptor() =
-        if (BuildConfig.DEBUG && LOG_NETWORK_REQUESTS) {
+        if (LOG_NETWORK_REQUESTS) {
             HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
         } else {
             HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.NONE)
@@ -104,19 +95,45 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun okHttpClient(
+    @Named("Media")
+    fun mediaOkHttpClient(
         plexConfig: PlexConfig,
         loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
-        .addInterceptor(plexConfig.plexInterceptor)
+        .addInterceptor(plexConfig.plexMediaInterceptor)
         .addInterceptor(loggingInterceptor)
         .build()
 
     @Provides
     @Singleton
-    fun retrofit(okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
+    @Named("Login")
+    fun loginOkHttpClient(
+        plexConfig: PlexConfig,
+        loggingInterceptor: HttpLoggingInterceptor
+    ): OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .addInterceptor(plexConfig.plexLoginInterceptor)
+        .addInterceptor(loggingInterceptor)
+        .build()
+
+    @Provides
+    @Named("Media")
+    @Singleton
+    fun mediaRetrofit(@Named("Media") okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
+        .addConverterFactory(MoshiConverterFactory.create())
+        .client(okHttpClient)
+        .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
+        .build()
+
+    @Provides
+    @Named("Login")
+    @Singleton
+    fun loginRetrofit(@Named("Login") okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
         .addConverterFactory(MoshiConverterFactory.create())
         .client(okHttpClient)
         .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
@@ -124,14 +141,17 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun plexMediaService(retrofit: Retrofit): PlexMediaService =
-        retrofit.create(PlexMediaService::class.java)
+    fun moshi(): Moshi = Moshi.Builder().build()
 
     @Provides
     @Singleton
-    fun plexLoginService(retrofit: Retrofit): PlexLoginService =
-        retrofit.create(PlexLoginService::class.java)
+    fun plexMediaService(@Named("Media") mediaRetrofit: Retrofit): PlexMediaService =
+        mediaRetrofit.create(PlexMediaService::class.java)
 
+    @Provides
+    @Singleton
+    fun plexLoginService(@Named("Login") loginRetrofit: Retrofit): PlexLoginService =
+        loginRetrofit.create(PlexLoginService::class.java)
 
     @Provides
     @Singleton
@@ -140,4 +160,15 @@ class AppModule(private val app: Application) {
             .enablePendingPurchases()
             .setListener(billingManager).build()
     }
+
+    @Provides
+    @Singleton
+    fun exceptionHandler(): CoroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
+        Timber.e("Caught unhandled exception! $e")
+    }
+
+    @Provides
+    @Singleton
+    fun castContext(context: Context): CastContext = CastContext.getSharedInstance(context)
+
 }

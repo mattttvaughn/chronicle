@@ -7,6 +7,8 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:fontFamily">@font/lato</item>
+        <item name="android:radioButtonStyle">@style/Option</item>
+        <item name="radioButtonStyle">@style/Option</item>
     </style>
 
     <style name="TextAppearance.Title" parent="TextAppearance.MaterialComponents.Body1">
@@ -17,23 +19,29 @@
 
     <style name="TextAppearance.Body1" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:fontFamily">@font/lato_bold</item>
     </style>
 
     <style name="TextAppearance.Body2" parent="TextAppearance.MaterialComponents.Body2">
         <item name="android:textColor">@color/textSecondary</item>
-    </style>
-
-    <style name="TextAppearance.TrackItemText" parent="TextAppearance.Body1">
         <item name="android:fontFamily">@font/lato_bold</item>
     </style>
 
-    <style name="TextAppearance.TrackItemText.Listened" parent="TextAppearance.TrackItemText">
-        <item name="android:textColor">@color/textSecondary</item>
+    <style name="Option" parent="TextAppearance.Body1">
+        <item name="android:button">@null</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="background">@drawable/option_background</item>
+        <item name="android:background">@drawable/option_background</item>
+        <item name="android:focusable">true</item>
+        <item name="android:clickable">true</item>
     </style>
 
-    <style name="TextAppearance.TrackItemNumber" parent="TextAppearance.Body2">
+    <style name="TextAppearance.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
         <item name="android:textAllCaps">true</item>
-        <item name="android:fontFamily">@font/lato_bold</item>
+        <item name="android:textColor">@color/textSecondary</item>
     </style>
 
     <style name="TextAppearance.Subtitle.Settings" parent="TextAppearance.MaterialComponents.Subtitle2">
@@ -51,7 +59,6 @@
         <item name="android:minEms">15</item>
     </style>
 
-
     <!-- Searchbar style courtesy of: https://stackoverflow.com/questions/30369246/implementing-searchview-as-per-the-material-design-guidelines -->
     <style name="SearchViewTheme" parent="Widget.AppCompat.SearchView.ActionBar">
         <item name="layout">@layout/toolbar_search_view</item>
@@ -61,6 +68,10 @@
     </style>
 
     <style name="ToolbarTheme" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="background">@color/colorPrimary</item>
+        <item name="android:background">@color/colorPrimary</item>
+        <item name="fontWeight">400</item>
+        <item name="fontFamily">@font/lato</item>
         <item name="searchViewStyle">@style/SearchViewTheme</item>
     </style>
 

@@ -27,14 +27,17 @@ import android.content.res.XmlResourceParser
 import android.os.Process
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Base64
-import android.util.Log
 import androidx.annotation.XmlRes
 import androidx.media.MediaBrowserServiceCompat
 import io.github.mattpvaughn.chronicle.BuildConfig
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService
 import org.xmlpull.v1.XmlPullParserException
+import timber.log.Timber
 import java.io.IOException
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.util.*
+import kotlin.collections.LinkedHashMap
 
 /**
  * Validates that the calling package is authorized to browse a [MediaBrowserServiceCompat].
@@ -68,13 +71,14 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
 
     /**
      * Checks whether the caller attempting to connect to a [MediaBrowserServiceCompat] is known.
-     * See [MusicService.onGetRoot] for where this is utilized.
+     * See [MediaPlayerService.onGetRoot] for where this is utilized.
      *
      * @param callingPackage The package name of the caller.
      * @param callingUid The user id of the caller.
      * @return `true` if the caller is known, `false` otherwise.
      */
     fun isKnownCaller(callingPackage: String, callingUid: Int): Boolean {
+        Timber.i("Package name: $callingPackage, calling uid: $callingUid")
         // If the caller has already been checked, return the previous result here.
         val (checkedUid, checkResult) = callerChecked[callingPackage] ?: Pair(0, false)
         if (checkedUid == callingUid) {
@@ -120,7 +124,7 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
             /**
              * [MEDIA_CONTENT_CONTROL] permission is only available to system applications, and
              * while it isn't required to allow these apps to connect to a
-             * [MediaBrowserServiceCompat], allowing this ensures optimal compatability with apps
+             * [MediaBrowserServiceCompat], allowing this ensures optimal compatibility with apps
              * such as Android TV and the Google Assistant.
              */
             callerPackageInfo.permissions.contains(MEDIA_CONTENT_CONTROL) -> true
@@ -133,7 +137,7 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
              * with apps such as Wear OS.
              */
             callerPackageInfo.permissions.contains(BIND_NOTIFICATION_LISTENER_SERVICE) -> true
-            // If none of the pervious checks succeeded, then the caller is unrecognized.
+            // If none of the previous checks succeeded, then the caller is unrecognized.
             else -> false
         }
 
@@ -143,6 +147,7 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
 
         // Save our work for next time.
         callerChecked[callingPackage] = Pair(callingUid, isCallerKnown)
+        Timber.i("Is known caller? $isCallerKnown")
         return isCallerKnown
     }
 
@@ -152,7 +157,7 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
      */
     private fun logUnknownCaller(callerPackageInfo: CallerPackageInfo) {
         if (BuildConfig.DEBUG && callerPackageInfo.signature != null) {
-            Log.i(TAG, "Unknown caller attempting to load media: ${callerPackageInfo.packageName}")
+            Timber.i("Unknown caller attempting to load media: ${callerPackageInfo.packageName}")
         }
     }
 
@@ -240,9 +245,9 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
                 eventType = parser.next()
             }
         } catch (xmlException: XmlPullParserException) {
-            Log.e(TAG, "Could not read allowed callers from XML.", xmlException)
+            Timber.e(xmlException, "Could not read allowed callers from XML.")
         } catch (ioException: IOException) {
-            Log.e(TAG, "Could not read allowed callers from XML.", ioException)
+            Timber.e(ioException, "Could not read allowed callers from XML.")
         }
 
         return certificateWhitelist
@@ -273,7 +278,7 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
         var eventType = parser.next()
         while (eventType != XmlResourceParser.END_TAG) {
             val isRelease = parser.getAttributeBooleanValue(null, "release", false)
-            val signature = parser.nextText().replace(WHITESPACE_REGEX, "").toLowerCase()
+            val signature = parser.nextText().replace(WHITESPACE_REGEX, "").toLowerCase(Locale.ROOT)
             callerSignatures += KnownSignature(signature, isRelease)
 
             eventType = parser.next()
@@ -305,7 +310,7 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
         try {
             md = MessageDigest.getInstance("SHA256")
         } catch (noSuchAlgorithmException: NoSuchAlgorithmException) {
-            Log.e(TAG, "No such algorithm: $noSuchAlgorithmException")
+            Timber.e("No such algorithm: $noSuchAlgorithmException")
             throw RuntimeException("Could not find SHA256 hash algorithm", noSuchAlgorithmException)
         }
         md.update(certificate)
@@ -341,6 +346,5 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
     )
 }
 
-private const val TAG = "PackageValidator"
 private const val ANDROID_PLATFORM = "android"
 private val WHITESPACE_REGEX = "\\s|\\n".toRegex()

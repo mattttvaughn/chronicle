@@ -3,16 +3,23 @@ package io.github.mattpvaughn.chronicle.features.player
 import android.os.Handler
 import android.support.v4.media.session.MediaControllerCompat
 import androidx.work.*
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
+import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.application.SECONDS_PER_MINUTE
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.model.getProgress
-import io.github.mattpvaughn.chronicle.data.plex.PlexSyncScrobbleWorker
-import io.github.mattpvaughn.chronicle.data.plex.model.getDuration
+import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
+import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
+import io.github.mattpvaughn.chronicle.data.model.getTrackStartTime
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexSyncScrobbleWorker
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -28,10 +35,19 @@ interface ProgressUpdater {
      * Updates the progress of a track (and book corresponding to that track) on the local DB and
      * at the remote server
      */
-    fun updateProgress(trackId: Int, state: String, progress: Long)
+    fun updateProgress(
+        trackId: Int,
+        playbackState: String,
+        trackProgress: Long,
+        manualUpdate: Boolean
+    )
 
     /** Cancels regular progress updates */
     fun cancel()
+
+    companion object {
+        const val BOOK_FINISHED_END_OFFSET_MILLIS = 2L * MILLIS_PER_SECOND * SECONDS_PER_MINUTE
+    }
 }
 
 class SimpleProgressUpdater @Inject constructor(
@@ -39,13 +55,21 @@ class SimpleProgressUpdater @Inject constructor(
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val workManager: WorkManager,
-    private val prefsRepo: PrefsRepo,
-    private val mediaController: MediaControllerCompat
+    private val prefsRepo: PrefsRepo
 ) : ProgressUpdater {
+
+    var mediaController: MediaControllerCompat? = null
+
+    var mediaSessionConnector: MediaSessionConnector? = null
+
+    var player: Player? = null
 
     /** Frequency of progress updates */
     private val updateProgressFrequencyMs = 1000L
     private var tickCounter = 0L
+
+    private val handler = Handler()
+    private val updateProgressAction = { startRegularProgressUpdates() }
 
     /**
      * Updates the current track/audiobook progress in the local db and remote server.
@@ -53,56 +77,70 @@ class SimpleProgressUpdater @Inject constructor(
      * If we are within 2 minutes of the end of the book and playback stops, mark the book as
      * "finished" by updating the first track to progress=0 and setting it as the most recently viewed
      */
-    private val bookFinishedWindow = 2000L * SECONDS_PER_MINUTE
-    private val handler = Handler()
-    private val updateProgressAction = { startRegularProgressUpdates() }
-
     override fun startRegularProgressUpdates() {
-        if (mediaController.playbackState?.isPlaying != false) {
-            serviceScope.launch {
-                updateProgress(
-                    mediaController.metadata?.id?.toInt() ?: TRACK_NOT_FOUND,
-                    MediaPlayerService.PLEX_STATE_PLAYING,
-                    mediaController.playbackState?.currentPlayBackPosition ?: 0L
-                )
+        requireNotNull(mediaController).let { controller ->
+            if (controller.playbackState?.isPlaying != false) {
+                serviceScope.launch(context = serviceScope.coroutineContext + Dispatchers.IO) {
+                    updateProgress(
+                        controller.metadata?.id?.toInt() ?: TRACK_NOT_FOUND,
+                        MediaPlayerService.PLEX_STATE_PLAYING,
+                        controller.playbackState?.currentPlayBackPosition ?: 0L,
+                        false
+                    )
+                }
             }
         }
         handler.postDelayed(updateProgressAction, updateProgressFrequencyMs)
     }
 
-    override fun updateProgress(trackId: Int, state: String, progress: Long) {
-        tickCounter++
+    override fun updateProgress(
+        trackId: Int,
+        playbackState: String,
+        trackProgress: Long,
+        manualUpdate: Boolean
+    ) {
+        Timber.i("Updating progress")
+        if (!manualUpdate) {
+            tickCounter++
+        }
         if (trackId == TRACK_NOT_FOUND) {
             return
         }
+        // TODO: bring back if we remove MediaSessionConnector
+//        mediaSessionConnector?.invalidateMediaSessionMetadata()
+//        mediaSessionConnector?.invalidateMediaSessionPlaybackState()
         val currentTime = System.currentTimeMillis()
-        serviceScope.launch {
+        serviceScope.launch(context = serviceScope.coroutineContext + Dispatchers.IO) {
             val bookId: Int = trackRepository.getBookIdForTrack(trackId)
             val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
-            val isBookAlmostEnded = tracks.getDuration() - tracks.getProgress() < bookFinishedWindow
-            val isBookFinished = isBookAlmostEnded && (state == MediaPlayerService.PLEX_STATE_STOPPED || state == MediaPlayerService.PLEX_STATE_PAUSED)
-            val trackToUpdate: Int = if (isBookFinished) tracks.first().id else trackId
-            val updatedProgress: Long = if (isBookFinished) 0L else progress
+
+            val track: MediaItemTrack = trackRepository.getTrackAsync(trackId) ?: EMPTY_TRACK
+            check(trackId != EMPTY_TRACK.id)
+            val bookProgress = tracks.getTrackStartTime(track) + trackProgress
 
             // Update local DB
             if (!prefsRepo.debugOnlyDisableLocalProgressTracking) {
-                bookRepository.updateLastViewedAt(bookId, currentTime)
-                trackRepository.updateTrackProgress(
-                    trackProgress = updatedProgress,
-                    trackId = trackToUpdate,
-                    lastViewedAt = currentTime
+                bookRepository.updateProgress(bookId, currentTime, trackProgress)
+                trackRepository.updateTrackProgress(trackProgress, trackId, currentTime)
+                bookRepository.updateTrackData(
+                    bookId,
+                    bookProgress,
+                    tracks.getDuration(),
+                    tracks.size
                 )
             }
 
-            // Update server on every fifth update to local DB (every 5 seconds by default, then)
-            if (tickCounter % 5 == 0L) {
+            // Update server on every fifth update to local DB (every 5 seconds by default), or on
+            // manual progress updates
+            if (manualUpdate || tickCounter % 5 == 0L) {
                 val syncWorkerConstraints =
                     Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
                 val inputData = PlexSyncScrobbleWorker.makeWorkerData(
-                    trackToUpdate,
-                    state,
-                    updatedProgress,
-                    currentTime
+                    trackId = trackId,
+                    playbackState = playbackState,
+                    trackProgress = trackProgress,
+                    playbackTimeStamp = currentTime,
+                    bookProgress = bookProgress
                 )
                 val worker = OneTimeWorkRequestBuilder<PlexSyncScrobbleWorker>()
                     .setInputData(inputData)

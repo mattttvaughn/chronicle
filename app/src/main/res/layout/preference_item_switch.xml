@@ -10,6 +10,7 @@
             type="io.github.mattpvaughn.chronicle.features.settings.PreferenceModel" />
 
         <import type="android.view.View" />
+        <import type="io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString.Companion" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout

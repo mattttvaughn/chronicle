@@ -32,8 +32,8 @@
         <ImageView
             android:id="@+id/book_cover_img"
             srcRounded="@{audiobook.thumb}"
-            lastUpdated="@{audiobook.updatedAt}"
             serverConnected="@{serverConnected}"
+            android:contentDescription="@{audiobook.title}"
             android:layout_width="@dimen/list_icon_size"
             android:layout_height="@dimen/list_icon_size"
             app:layout_constraintBottom_toBottomOf="parent"

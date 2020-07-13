@@ -2,42 +2,127 @@ package io.github.mattpvaughn.chronicle.features.library
 
 import android.content.SharedPreferences
 import android.text.format.Formatter
-import android.util.Log
 import androidx.lifecycle.*
+import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_OFFLINE_MODE
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_AUTHOR
+import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_DATE_ADDED
+import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_DATE_PLAYED
+import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_DURATION
+import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_PLAYS
+import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_TITLE
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager.CacheStatus.CACHED
-import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager.CacheStatus.NOT_CACHED
-import io.github.mattpvaughn.chronicle.util.bytesAvailable
-import io.github.mattpvaughn.chronicle.util.observeOnce
-import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener
+import io.github.mattpvaughn.chronicle.data.model.getProgress
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.CACHED
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.NOT_CACHED
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
+import io.github.mattpvaughn.chronicle.util.*
+import io.github.mattpvaughn.chronicle.views.BottomSheetChooser
+import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserListener
+import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
+import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString
+import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString.ResourceString
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
-class LibraryViewModel @Inject constructor(
+class LibraryViewModel(
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
     private val prefsRepo: PrefsRepo,
-    private val cachedFileManager: ICachedFileManager
+    private val cachedFileManager: ICachedFileManager,
+    private val sharedPreferences: SharedPreferences
 ) : ViewModel() {
 
-    private var _books = bookRepository.getAllBooks()
-    val books: LiveData<List<Audiobook>>
-        get() = _books
+    @Suppress("UNCHECKED_CAST")
+    class Factory @Inject constructor(
+        private val bookRepository: IBookRepository,
+        private val trackRepository: ITrackRepository,
+        private val prefsRepo: PrefsRepo,
+        private val cachedFileManager: ICachedFileManager,
+        private val sharedPreferences: SharedPreferences
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
+                return LibraryViewModel(
+                    bookRepository,
+                    trackRepository,
+                    prefsRepo,
+                    cachedFileManager,
+                    sharedPreferences
+                ) as T
+            } else {
+                throw IllegalArgumentException("Cannot instantiate $modelClass from LibraryViewModel.Factory")
+            }
+        }
+    }
 
-    private var _isNetworkError = MutableLiveData<Boolean>()
-    val isNetworkError: LiveData<Boolean>
-        get() = _isNetworkError
+    private var _isRefreshing = MutableLiveData<Boolean>()
+    val isRefreshing: LiveData<Boolean>
+        get() = _isRefreshing
 
     private var _isSearchActive = MutableLiveData<Boolean>()
     val isSearchActive: LiveData<Boolean>
         get() = _isSearchActive
+
+    private var _isFilterShown = MutableLiveData(false)
+    val isFilterShown: LiveData<Boolean>
+        get() = _isFilterShown
+
+    val isSortDescending = BooleanPreferenceLiveData(
+        KEY_IS_LIBRARY_SORT_DESCENDING,
+        true,
+        sharedPreferences
+    )
+
+    private val sortKey =
+        StringPreferenceLiveData(KEY_BOOK_SORT_BY, SORT_KEY_TITLE, sharedPreferences)
+    val isOffline = BooleanPreferenceLiveData(KEY_OFFLINE_MODE, false, sharedPreferences)
+
+    private val allBooks = bookRepository.getAllBooks()
+    val books = QuadLiveDataAsync(
+        viewModelScope,
+        allBooks,
+        isSortDescending,
+        sortKey,
+        isOffline
+    ) { _books, _isDescending, _sortKey, _isOffline ->
+        if (_books.isNullOrEmpty()) {
+            return@QuadLiveDataAsync emptyList<Audiobook>()
+        }
+        // Use defaults if _isDescending or _sortKey are null
+        val desc = _isDescending ?: true
+        val key = _sortKey ?: SORT_KEY_TITLE
+        val offline = _isOffline ?: false
+
+        return@QuadLiveDataAsync _books.filter { !offline || it.isCached && offline }
+            .sortedWith(Comparator { book1, book2 ->
+                val descMultiplier = if (desc) 1 else -1
+                return@Comparator descMultiplier * when (key) {
+                    SORT_KEY_AUTHOR -> book1.author.compareTo(book2.author)
+                    SORT_KEY_TITLE -> book1.titleSort.compareTo(book2.titleSort)
+                    SORT_KEY_PLAYS -> book2.viewedLeafCount.compareTo(book1.viewedLeafCount)
+                    SORT_KEY_DURATION -> book2.duration.compareTo(book1.duration)
+                    // Note: Reverse order for timestamps, because most recent should be at the top
+                    // of descending, even though the timestamp is larger
+                    SORT_KEY_DATE_ADDED -> book2.addedAt.compareTo(book1.addedAt)
+                    SORT_KEY_DATE_PLAYED -> book2.lastViewedAt.compareTo(book1.lastViewedAt)
+                    else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
+                }
+            })
+    }
+
+    private var _messageForUser = MutableLiveData<Event<String>>()
+    val messageForUser: LiveData<Event<String>>
+        get() = _messageForUser
 
     private var _searchResults = MutableLiveData<List<Audiobook>>()
     val searchResults: LiveData<List<Audiobook>>
@@ -47,22 +132,9 @@ class LibraryViewModel @Inject constructor(
     val isQueryEmpty: LiveData<Boolean>
         get() = _isQueryEmpty
 
-    private var _showBottomSheet = MutableLiveData<Boolean>(false)
-    val showBottomSheet: LiveData<Boolean>
-        get() = _showBottomSheet
-
-    private var _bottomSheetOptions = MutableLiveData<List<String>>(emptyList())
-    val bottomSheetOptions: LiveData<List<String>>
-        get() = _bottomSheetOptions
-
-    private var _bottomOptionsListener =
-        MutableLiveData<ItemSelectedListener>(ItemSelectedListener.emptyListener)
-    val bottomOptionsListener: LiveData<ItemSelectedListener>
-        get() = _bottomOptionsListener
-
-    private var _bottomSheetTitle = MutableLiveData<String>("Title")
-    val bottomSheetTitle: LiveData<String>
-        get() = _bottomSheetTitle
+    private var _bottomChooserState = MutableLiveData(EMPTY_BOTTOM_CHOOSER)
+    val bottomChooserState: LiveData<BottomSheetChooser.BottomChooserState>
+        get() = _bottomChooserState
 
     private var _tracks = trackRepository.getAllTracks()
     val tracks: LiveData<List<MediaItemTrack>>
@@ -96,32 +168,28 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    private var _offlineMode = MutableLiveData<Boolean>(prefsRepo.offlineMode)
-    val offlineMode: LiveData<Boolean>
-        get() = _offlineMode
-
-    private val offlineModeListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            when (key) {
-                PrefsRepo.KEY_OFFLINE_MODE -> _offlineMode.postValue(prefsRepo.offlineMode)
-                else -> { /* Do nothing */
+    private val serverConnectionObserver = Observer<Boolean> { isConnectedToServer ->
+        if (isConnectedToServer) {
+            viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+                val millisSinceLastRefresh =
+                    System.currentTimeMillis() - prefsRepo.lastRefreshTimeStamp
+                val minutesSinceLastRefresh = millisSinceLastRefresh / 1000 / 60
+                val bookCount = bookRepository.getBookCount()
+                val shouldRefresh =
+                    minutesSinceLastRefresh > prefsRepo.refreshRateMinutes || bookCount == 0
+                Timber.i(
+                    """$minutesSinceLastRefresh minutes since last libraryrefresh,
+                    |${prefsRepo.refreshRateMinutes} needed""".trimMargin()
+                )
+                if (shouldRefresh) {
+                    refreshData()
                 }
             }
         }
-
-    init {
-        prefsRepo.registerPrefsListener(offlineModeListener)
     }
-
 
     fun disableOfflineMode() {
         prefsRepo.offlineMode = false
-        _books = bookRepository.getAllBooks()
-    }
-
-    override fun onCleared() {
-        prefsRepo.unRegisterPrefsListener(offlineModeListener)
-        super.onCleared()
     }
 
     /**
@@ -133,33 +201,42 @@ class LibraryViewModel @Inject constructor(
         val bytesAvailable = prefsRepo.cachedMediaDir.bytesAvailable()
 
         // Calculate space required
-        viewModelScope.launch {
+        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             val tracks = try {
                 trackRepository.loadAllTracksAsync()
-            } catch (e: Exception) {
-                Log.e(APP_NAME, "Failed to load tracks!")
+            } catch (e: Throwable) {
+                Timber.e("Failed to load tracks!")
                 emptyList<MediaItemTrack>()
             }
             var bytesToBeUsed = 0L
             tracks.forEach { bytesToBeUsed += it.size }
-            val prompt = "Download will use ${Formatter.formatFileSize(
-                Injector.get().applicationContext(),
-                bytesToBeUsed
-            )}. ${Formatter.formatFileSize(
-                Injector.get().applicationContext(),
-                bytesAvailable
-            )} available"
+            val downloadSize =
+                Formatter.formatFileSize(Injector.get().applicationContext(), bytesToBeUsed)
+            val availableStorage =
+                Formatter.formatFileSize(Injector.get().applicationContext(), bytesAvailable)
+            val prompt = ResourceString(
+                stringRes = R.string.download_all_prompt,
+                placeHolderStrings = listOf(downloadSize, availableStorage)
+            )
 
-            showOptionsMenu(prompt, listOf("Yes", "No"), object : ItemSelectedListener {
-                override fun onItemSelected(itemName: String) {
-                    when (itemName) {
-                        "Yes" -> downloadAll(tracks)
-                        "No" -> { }
-                        else -> throw NoWhenBranchMatchedException()
+            showOptionsMenu(
+                prompt,
+                listOf(
+                    FormattableString.from(android.R.string.yes),
+                    FormattableString.from(android.R.string.no)
+                ),
+                object : BottomSheetChooser.BottomChooserItemListener() {
+                    override fun onItemClicked(formattableString: FormattableString) {
+                        check(formattableString is ResourceString)
+
+                        when (formattableString.stringRes) {
+                            android.R.string.yes -> downloadAll(tracks)
+                            android.R.string.no -> {
+                            }
+                            else -> throw NoWhenBranchMatchedException()
+                        }
                     }
-                }
-            })
-
+                })
         }
 
         // Prompt user to download
@@ -170,14 +247,65 @@ class LibraryViewModel @Inject constructor(
     }
 
     private fun showOptionsMenu(
-        title: String,
-        options: List<String>,
-        listener: ItemSelectedListener
+        title: FormattableString,
+        options: List<FormattableString>,
+        listener: BottomChooserListener
     ) {
-        _showBottomSheet.postValue(true)
-        _bottomSheetTitle.postValue(title)
-        _bottomOptionsListener.postValue(listener)
-        _bottomSheetOptions.postValue(options)
+        _bottomChooserState.postValue(
+            BottomSheetChooser.BottomChooserState(
+                title = title,
+                options = options,
+                listener = listener,
+                shouldShow = true
+            )
+        )
     }
+
+    /**
+     * Pull most recent data from server and update repositories.
+     *
+     * Update book info for fields where child tracks serve as source of truth, like how
+     * [Audiobook.duration] serves as a delegate for [List<MediaItemTrack>.getDuration()]
+     *
+     * TODO: maybe refresh data in the repository whenever a query is made? repeating code b/w
+     *       here and [HomeViewModel]
+     */
+    fun refreshData() {
+        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+            try {
+                _isRefreshing.postValue(true)
+                bookRepository.refreshData()
+                trackRepository.refreshData()
+            } catch (e: Throwable) {
+                _messageForUser.postEvent("Failed to refresh data")
+            } finally {
+                _isRefreshing.postValue(false)
+            }
+
+            val audiobooks = bookRepository.getAllBooksAsync()
+            val tracks = trackRepository.getAllTracksAsync()
+            audiobooks.forEach { book ->
+                val tracksInAudiobook = tracks.filter { it.parentKey == book.id }
+                Timber.i("Book progress: ${tracksInAudiobook.getProgress()}")
+                bookRepository.updateTrackData(
+                    bookId = book.id,
+                    bookProgress = tracksInAudiobook.getProgress(),
+                    bookDuration = tracksInAudiobook.getDuration(),
+                    trackCount = tracksInAudiobook.size
+                )
+            }
+        }
+    }
+
+    /** Shows/hides the filter/sort/view menu to the user. Show if [isVisible] is true, hide otherwise */
+    fun setFilterMenuVisible(isVisible: Boolean) {
+        _isFilterShown.postValue(isVisible)
+    }
+
+    /** Toggles the direction which the library is sorted in (ascending vs. descending) */
+    fun toggleSortDirection() {
+        prefsRepo.isLibrarySortedDescending = !prefsRepo.isLibrarySortedDescending
+    }
+
 
 }

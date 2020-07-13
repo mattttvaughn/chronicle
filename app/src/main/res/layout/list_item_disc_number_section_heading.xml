@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <data>
+
+        <variable
+            name="sectionHeader"
+            type="io.github.mattpvaughn.chronicle.features.bookdetails.ChapterListAdapter.SectionHeaderModel" />
+
+        <import type="android.view.View" />
+    </data>
+
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/track_list_item_height"
+        android:paddingStart="@dimen/screen_horizontal_padding"
+        android:paddingEnd="@dimen/screen_horizontal_padding">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/disc_number"
+            style="@style/TextAppearance.SectionHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|center_vertical"
+            android:text="@{sectionHeader.text}" />
+
+    </FrameLayout>
+</layout>

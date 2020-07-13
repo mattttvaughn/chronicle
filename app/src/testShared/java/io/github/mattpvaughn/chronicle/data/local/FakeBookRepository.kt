@@ -3,6 +3,8 @@ package io.github.mattpvaughn.chronicle.data.local
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
 import javax.inject.Inject
 
 class FakeBookRepository @Inject constructor() : IBookRepository {
@@ -15,7 +17,7 @@ class FakeBookRepository @Inject constructor() : IBookRepository {
         }
 
         private fun makeAudiobook(id: Int): Audiobook {
-            return Audiobook(id = id)
+            return Audiobook(id = id, source = NO_SOURCE_FOUND)
         }
     }
 
@@ -23,18 +25,24 @@ class FakeBookRepository @Inject constructor() : IBookRepository {
         return MutableLiveData(books)
     }
 
-    override suspend fun refreshData(trackRepository: ITrackRepository?) {}
 
     override suspend fun clear() {
         books.clear()
     }
 
-    override suspend fun updateTrackData(id: Int, duration: Long, trackCount: Int) {}
-
-    override fun getAudiobook(id: Int): LiveData<Audiobook> {
-        require(books.isNotEmpty())
-        return MutableLiveData<Audiobook>(books[0])
+    override suspend fun updateTrackData(
+        bookId: Int,
+        bookProgress: Long,
+        bookDuration: Long,
+        trackCount: Int
+    ) {
+        TODO("Not yet implemented")
     }
+
+    override fun getAudiobook(id: Int): LiveData<Audiobook?> {
+        TODO("Not yet implemented")
+    }
+
 
     override suspend fun getAudiobookAsync(bookId: Int): Audiobook? {
         return books.find { it.id == bookId }
@@ -44,15 +52,21 @@ class FakeBookRepository @Inject constructor() : IBookRepository {
         return MutableLiveData(books)
     }
 
+    override suspend fun getRecentlyAddedAsync(): List<Audiobook> {
+        TODO("Not yet implemented")
+    }
+
     override fun getRecentlyListened(): LiveData<List<Audiobook>> {
         return MutableLiveData(books)
     }
 
-    override suspend fun getRecentlyListenedAsync(): List<Audiobook>? {
-        return books
+    override suspend fun getRecentlyListenedAsync(): List<Audiobook> {
+        TODO("Not yet implemented")
     }
 
-    override suspend fun updateLastViewedAt(bookId: Int, currentTime: Long) {}
+    override suspend fun updateProgress(bookId: Int, currentTime: Long, progress: Long) {
+        TODO("Not yet implemented")
+    }
 
     override fun search(query: String): LiveData<List<Audiobook>> {
         return MutableLiveData(books)
@@ -72,10 +86,33 @@ class FakeBookRepository @Inject constructor() : IBookRepository {
         return MutableLiveData(books)
     }
 
+    override suspend fun getCachedAudiobooksAsync(): List<Audiobook> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun uncacheAll() {}
 
     override suspend fun getAllBooksAsync(): List<Audiobook> {
         return books
+    }
+
+    override suspend fun getRandomBookAsync(): Audiobook {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun refreshData() {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getBookCount(): Int {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun loadChapterData(
+        audiobook: Audiobook,
+        tracks: List<MediaItemTrack>
+    ): Boolean {
+        TODO("Not yet implemented")
     }
 
 

@@ -5,12 +5,12 @@
     <data>
 
         <variable
-            name="track"
-            type="io.github.mattpvaughn.chronicle.data.model.MediaItemTrack" />
+            name="chapter"
+            type="io.github.mattpvaughn.chronicle.data.model.Chapter" />
 
         <variable
-            name="activeTrackId"
-            type="Integer" />
+            name="audiobookProgress"
+            type="Long" />
 
         <variable
             name="clickListener"
@@ -22,51 +22,48 @@
     <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="@dimen/track_list_item_height"
-        android:onClick="@{() -> clickListener.onClick(track)}">
+        android:onClick="@{() -> clickListener.onClick(chapter)}">
 
         <FrameLayout
             android:id="@+id/track_number_wrapper"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/screen_horizontal_padding"
-            android:layout_marginEnd="@dimen/margin_normal"
+            android:layout_marginStart="@dimen/chapter_indent"
+            android:layout_marginEnd="@dimen/chapter_indent"
             app:layout_constraintBottom_toBottomOf="@id/track_name"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="@id/track_name">
 
             <TextView
                 android:id="@+id/track_number"
-                style="@style/TextAppearance.TrackItemNumber"
+                style="@style/TextAppearance.Body2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:lines="1"
-                android:text="@{track.paddedIndex(2)}"
+                android:text="@{chapter.paddedIndex(2)}"
                 android:textAllCaps="true"
-                android:textColor="@{track.cached ? @color/textActive : @color/textPrimary}"
-                android:visibility="@{track.id == activeTrackId ? View.GONE: View.VISIBLE}"
                 tools:text="01" />
 
-            <ImageView
-                android:layout_width="@dimen/track_list_item_indicator_size"
-                android:layout_height="@dimen/track_list_item_indicator_size"
-                android:tint="@{track.cached ? @color/iconActive : @color/icon}"
-                android:src="@drawable/ic_playing"
-                android:scaleType="centerInside"
-                android:visibility="@{track.id == activeTrackId ? View.VISIBLE : View.GONE}" />
+            <!--            <ImageView-->
+            <!--                android:layout_width="@dimen/track_list_item_indicator_size"-->
+            <!--                android:layout_height="@dimen/track_list_item_indicator_size"-->
+            <!--                android:tint="@{track.cached ? @color/iconActive : @color/icon}"-->
+            <!--                android:src="@drawable/ic_playing"-->
+            <!--                android:scaleType="centerInside"-->
+            <!--                android:visibility="@{track.id == activeTrackId ? View.VISIBLE : View.GONE}" />-->
         </FrameLayout>
 
         <TextView
             android:id="@+id/track_name"
-            style="@style/TextAppearance.TrackItemText"
+            style="@style/TextAppearance.Body1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/margin_normal"
             android:layout_marginLeft="@dimen/keyline_x_offset"
+            android:layout_marginTop="@dimen/margin_normal"
             android:layout_marginRight="@dimen/screen_horizontal_padding"
             android:layout_marginBottom="@dimen/margin_normal"
             android:lines="1"
-            android:text="@{track.title}"
-            android:textColor="@{track.finished ? @color/textSecondary : @color/textPrimary}"
+            android:text="@{chapter.title}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"

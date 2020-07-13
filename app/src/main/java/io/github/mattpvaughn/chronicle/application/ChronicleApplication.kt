@@ -3,7 +3,6 @@ package io.github.mattpvaughn.chronicle.application
 import android.app.Application
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
-import android.util.Log
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import com.android.billingclient.api.BillingClient
@@ -11,19 +10,22 @@ import com.android.billingclient.api.BillingClient.BillingResponseCode.OK
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import io.github.mattpvaughn.chronicle.BuildConfig
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.plex.PlexConnectionChooser
-import io.github.mattpvaughn.chronicle.data.plex.PlexConnectionChooser.ConnectionResult.Failure
-import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConnectionChooser
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConnectionChooser.ConnectionResult.Failure
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
 import io.github.mattpvaughn.chronicle.injection.components.DaggerAppComponent
 import io.github.mattpvaughn.chronicle.injection.modules.AppModule
 import kotlinx.coroutines.*
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
-
+// Exposing a ref to the application statically doesn't leak anything because Application is already
+// a singleton
+@Suppress("LeakingThis")
 @Singleton
 open class ChronicleApplication : Application() {
     // Instance of the AppComponent that will be used by all the Activities in the project
@@ -45,17 +47,22 @@ open class ChronicleApplication : Application() {
     lateinit var plexConfig: PlexConfig
 
     @Inject
+    lateinit var prefsRepo: PrefsRepo
+
+    @Inject
     lateinit var plexConnectionChooser: PlexConnectionChooser
 
-    // Hmmm...
     @Inject
     lateinit var billingManager: ChronicleBillingManager
 
     @Inject
     lateinit var billingClient: BillingClient
 
+    @Inject
+    lateinit var unhandledExceptionHandler: CoroutineExceptionHandler
+
     override fun onCreate() {
-        if (STRICT_MODE && BuildConfig.DEBUG) {
+        if (USE_STRICT_MODE && BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
                 StrictMode.ThreadPolicy.Builder()
 //                    choose which ones you want
@@ -76,29 +83,36 @@ open class ChronicleApplication : Application() {
                     .build()
             )
         }
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
 
-        appComponent.mediaServiceConnection().connect()
         appComponent.inject(this)
         setupNetwork(plexPrefs)
         setupBilling()
         super.onCreate()
     }
 
+    private var billingSetupAttempts = 0
+
     private fun setupBilling() {
         billingClient.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == OK) {
-                    Log.i(APP_NAME, "Billing client setup successful: $billingClient")
+                    Timber.i("Billing client setup successful: $billingClient")
                     billingManager.billingClient = billingClient
                 } else {
-                    Log.w(APP_NAME, "Billing client setup failed!")
+                    Timber.w("Billing client setup failed! ${billingResult.debugMessage}")
                 }
             }
 
             override fun onBillingServiceDisconnected() {
                 // Try to restart the connection on the next request to
                 // Google Play by calling the startConnection() method.
-                billingClient.startConnection(this)
+                billingSetupAttempts++
+                if (billingSetupAttempts < 3) {
+                    billingClient.startConnection(this)
+                }
             }
         })
     }
@@ -115,30 +129,25 @@ open class ChronicleApplication : Application() {
         fun get(): ChronicleApplication = INSTANCE!!
     }
 
-    @UseExperimental(InternalCoroutinesApi::class)
+    @OptIn(InternalCoroutinesApi::class)
     private fun setupNetwork(plexPrefs: PlexPrefsRepo) {
-        val plexAuthToken = plexPrefs.getAuthToken()
-        val server = plexPrefs.getServer()
-        val library = plexPrefs.getLibrary()
-        if (plexAuthToken.isNotEmpty()) {
-            plexConfig.authToken = plexAuthToken
-        }
+        val server = plexPrefs.server
         if (server != null) {
-            Log.i(APP_NAME, server.connections.toString())
-            plexConnectionChooser.addPotentialConnections(server.connections)
-            applicationScope.launch {
-                val result = plexConnectionChooser.chooseViableConnections(applicationScope)
-                if (result is Failure) {
-                    Toast.makeText(
-                        applicationContext,
-                        "Failed to connect to any server",
-                        LENGTH_SHORT
-                    ).show()
+            plexConnectionChooser.setPotentialConnections(server.connections)
+            applicationScope.launch(unhandledExceptionHandler) {
+                try {
+                    val result = plexConnectionChooser.chooseViableConnections()
+                    if (result is Failure) {
+                        Toast.makeText(
+                            applicationContext,
+                            "Failed to connect to any server",
+                            LENGTH_SHORT
+                        ).show()
+                    }
+                } catch (t: Throwable) {
+                    Timber.i("Exception in chooseViableConnections in ChronicleApplication: $t")
                 }
             }
-        }
-        if (library != null) {
-            plexConfig.libraryId = library.id
         }
     }
 }

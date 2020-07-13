@@ -2,83 +2,51 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <FrameLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimaryDark">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/container"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/oauth_login"
+            style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center">
+            android:drawableLeft="@drawable/ic_lock_white_24dp"
+            android:paddingLeft="@dimen/plex_button_padding_horizontal"
+            android:paddingTop="@dimen/plex_button_padding_vertical"
+            android:paddingRight="@dimen/plex_button_padding_horizontal"
+            android:paddingBottom="@dimen/plex_button_padding_vertical"
+            android:text="@string/login_with_plex"
+            android:textColor="@color/textPrimary"
+            app:backgroundTint="#F0A732"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/plex_login_title"
-                style="@style/TextAppearance.Title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="@dimen/margin_normal"
-                android:text="@string/plex_login"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+        <ProgressBar
+            android:id="@+id/loading"
+            android:layout_width="@dimen/fab_size_imageview"
+            android:layout_height="@dimen/fab_size_imageview"
+            android:layout_gravity="center"
+            android:layout_margin="@dimen/margin_normal"
+            android:visibility="invisible"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/oauth_login" />
 
-            <EditText
-                style="@style/TextAppearance.RoundedRectInput"
-                android:id="@+id/username"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:hint="@string/prompt_username"
-                android:layout_margin="@dimen/margin_normal"
-                android:inputType="text"
-                android:selectAllOnFocus="true"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/plex_login_title" />
-
-            <EditText
-                style="@style/TextAppearance.RoundedRectInput"
-                android:id="@+id/password"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="@dimen/margin_normal"
-                android:hint="@string/prompt_password"
-                android:imeOptions="actionDone"
-                android:importantForAutofill="no"
-                android:inputType="textPassword"
-                android:selectAllOnFocus="true"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/username" />
-
-            <FrameLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintLeft_toLeftOf="@id/password"
-                app:layout_constraintRight_toRightOf="@id/password"
-                app:layout_constraintTop_toBottomOf="@+id/password"
-                app:layout_constraintVertical_bias="0.2">
-
-                <ImageView
-                    android:id="@+id/login"
-                    android:layout_width="@dimen/fab_size_imageview"
-                    android:layout_height="@dimen/fab_size_imageview"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/margin_normal"
-                    android:background="@drawable/circle_button"
-                    android:backgroundTint="@color/colorAccent"
-                    android:padding="@dimen/fab_size_imageview_padding"
-                    android:src="@drawable/ic_done_white_24dp"
-                    android:tint="@color/icon" />
-
-                <ProgressBar
-                    android:id="@+id/loading"
-                    android:layout_width="@dimen/fab_size_imageview"
-                    android:layout_height="@dimen/fab_size_imageview"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/margin_normal"
-                    android:visibility="gone" />
-            </FrameLayout>
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </FrameLayout>
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/enable_auto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/margin_large"
+            android:textColor="@color/textPrimary"
+            app:buttonTint="@color/textPrimary"
+            android:text="@string/allow_auto"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/oauth_login" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

@@ -47,10 +47,8 @@ class SettingsList : FrameLayout {
 
     class PreferencesListAdapter(private val prefsRepo: PrefsRepo) :
         ListAdapter<PreferenceModel, RecyclerView.ViewHolder>(PreferenceItemDiffCallback()) {
-        override fun onCreateViewHolder(
-            parent: ViewGroup,
-            viewType: Int
-        ): RecyclerView.ViewHolder {
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
             return when (prefIntMap.filterValues { it == viewType }.keys.map { it }[0]) {
                 PreferenceType.CLICKABLE -> ClickablePreferenceViewHolder.from(parent)
                 PreferenceType.BOOLEAN -> SwitchPreferenceViewHolder.from(parent, prefsRepo)
@@ -61,14 +59,11 @@ class SettingsList : FrameLayout {
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            if (holder is ClickablePreferenceViewHolder) {
-                holder.bind(getItem(position))
-            }
-            if (holder is SwitchPreferenceViewHolder) {
-                holder.bind(getItem(position))
-            }
-            if (holder is TitlePreferenceViewHolder) {
-                holder.bind(getItem(position))
+            when (holder) {
+                is ClickablePreferenceViewHolder -> holder.bind(getItem(position))
+                is SwitchPreferenceViewHolder -> holder.bind(getItem(position))
+                is TitlePreferenceViewHolder -> holder.bind(getItem(position))
+                else -> throw NoWhenBranchMatchedException()
             }
         }
 
@@ -98,7 +93,12 @@ class SettingsList : FrameLayout {
         ) : RecyclerView.ViewHolder(binding.root) {
             fun bind(preferenceModel: PreferenceModel) {
                 binding.model = preferenceModel
-                binding.preferenceSwitch.isChecked = prefsRepo.getBoolean(preferenceModel.key)
+                binding.preferenceSwitch.isChecked =
+                    if (prefsRepo.containsKey(preferenceModel.key)) {
+                        prefsRepo.getBoolean(preferenceModel.key)
+                    } else {
+                        preferenceModel.defaultValue as Boolean
+                    }
                 binding.preferenceSwitch.setOnCheckedChangeListener { _: CompoundButton, isChecked: Boolean ->
                     prefsRepo.setBoolean(preferenceModel.key, isChecked)
                 }
@@ -145,7 +145,7 @@ class SettingsList : FrameLayout {
             oldItem: PreferenceModel,
             newItem: PreferenceModel
         ): Boolean {
-            return oldItem == newItem
+            return oldItem.title == newItem.title && oldItem.explanation == newItem.explanation
         }
     }
 }

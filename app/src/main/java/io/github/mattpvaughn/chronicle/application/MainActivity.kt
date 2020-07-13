@@ -1,26 +1,29 @@
 package io.github.mattpvaughn.chronicle.application
 
+import android.annotation.SuppressLint
 import android.app.DownloadManager
+import android.app.SearchManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
-import android.util.Log
+import android.view.GestureDetector
+import android.view.MotionEvent
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.navigation.findNavController
-import androidx.navigation.ui.setupWithNavController
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.COLLAPSED
+import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.EXPANDED
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.databinding.ActivityMainBinding
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingFragment
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
@@ -30,21 +33,30 @@ import io.github.mattpvaughn.chronicle.injection.components.ActivityComponent
 import io.github.mattpvaughn.chronicle.injection.components.DaggerActivityComponent
 import io.github.mattpvaughn.chronicle.injection.modules.ActivityModule
 import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.observeEvent
+import timber.log.Timber
 import javax.inject.Inject
 
 
 @ActivityScope
 open class MainActivity : AppCompatActivity() {
 
+    @Inject
+    lateinit var localBroadcastManager: LocalBroadcastManager
+
+    @Inject
+    lateinit var mainActivityViewModelFactory: MainActivityViewModel.Factory
+
     private val viewModel: MainActivityViewModel by lazy {
         ViewModelProvider(this, mainActivityViewModelFactory).get(MainActivityViewModel::class.java)
     }
 
-    private lateinit var localBroadcastManager: LocalBroadcastManager
+    @Inject
+    lateinit var plexLoginRepo: IPlexLoginRepo
 
     @Inject
-    lateinit var mainActivityViewModelFactory: MainActivityViewModelFactory
+    lateinit var navigator: Navigator
 
     @Inject
     lateinit var plexPrefsRepo: PlexPrefsRepo
@@ -56,15 +68,15 @@ open class MainActivity : AppCompatActivity() {
     lateinit var trackRepository: ITrackRepository
 
     @Inject
-    lateinit var mediaServiceConnection: MediaServiceConnection
+    lateinit var plexConfig: PlexConfig
 
     @Inject
-    lateinit var plexConfig: PlexConfig
+    lateinit var mediaServiceConnection: MediaServiceConnection
 
     lateinit var activityComponent: ActivityComponent
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.i(APP_NAME, "MainActivity onCreate()")
+        Timber.i("MainActivity onCreate()")
         activityComponent = DaggerActivityComponent.builder()
             .appComponent((application as ChronicleApplication).appComponent)
             .activityModule(ActivityModule(this))
@@ -85,25 +97,56 @@ open class MainActivity : AppCompatActivity() {
             viewModel.onCurrentlyPlayingClicked()
         }
 
-        viewModel.isServerConnected.observe(this, Observer { isConnectedToServer ->
-            if (isConnectedToServer) {
-                Toast.makeText(this, "Connected to server: ${plexConfig.url}", Toast.LENGTH_SHORT)
-                    .show()
-            }
-        })
-
         viewModel.errorMessage.observeEvent(this) { errorMessage ->
             Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
         }
 
-        val navController = findNavController(R.id.fragNavHost)
-        navController.addOnDestinationChangedListener { _, _, _ ->
+        binding.bottomNav.setOnNavigationItemSelectedListener {
+            when (it.itemId) {
+                R.id.nav_settings -> {
+                    navigator.showSettings()
+                }
+                R.id.nav_library -> {
+                    navigator.showLibrary()
+                }
+                R.id.nav_home -> {
+                    navigator.showHome()
+                }
+                else -> throw NoWhenBranchMatchedException("Unknown bottom tab id: ${it.itemId}")
+            }
             viewModel.minimizeCurrentlyPlaying()
+            return@setOnNavigationItemSelectedListener true
         }
-        binding.bottomNav.setupWithNavController(navController)
-        setupCurrentlyPlaying()
+
+        if (savedInstanceState == null) {
+            setupCurrentlyPlaying()
+        }
+
+        // If the app is being launched by voice assistant with a query
+        val query = intent.getStringExtra(SearchManager.QUERY)
+        if (!query.isNullOrEmpty()) {
+            mediaServiceConnection.connect {
+                mediaServiceConnection.transportControls?.playFromSearch(query, Bundle())
+            }
+        }
+
+        handleNotificationIntent(intent)
     }
 
+    override fun onBackPressed() {
+        // If currently playing view is over fragments, close it via back button
+        if (viewModel.currentlyPlayingLayoutState.value == EXPANDED) {
+            viewModel.setBottomSheetState(COLLAPSED)
+            return
+        }
+        // default to activity back stack if navigator did not handle anything
+        if (!navigator.onBackPressed()) {
+            Timber.i("MainActivity super.onBackPressed()")
+            super.onBackPressed()
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupCurrentlyPlaying() {
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(
@@ -111,10 +154,28 @@ open class MainActivity : AppCompatActivity() {
             CurrentlyPlayingFragment.newInstance()
         )
         transaction.commit()
+        val handle = findViewById<View>(R.id.currently_playing_handle)
+        val gd = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onScroll(
+                e1: MotionEvent?,
+                e2: MotionEvent?,
+                distanceX: Float,
+                distanceY: Float
+            ): Boolean {
+                if (distanceY > distanceX) {
+                    viewModel.onCurrentlyPlayingHandleDragged()
+                }
+                return super.onScroll(e1, e2, distanceX, distanceY)
+            }
+        })
+        handle.setOnTouchListener { v, event ->
+            gd.onTouchEvent(event)
+            v.onTouchEvent(event)
+        }
     }
 
     interface CurrentlyPlayingInterface {
-        fun setState(state: MainActivityViewModel.BottomSheetState)
+        fun setBottomSheetState(state: MainActivityViewModel.BottomSheetState)
     }
 
     fun getCurrentlyPlayingInterface(): CurrentlyPlayingInterface {
@@ -123,7 +184,7 @@ open class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        Log.i(APP_NAME, "MainActivity onStart()")
+        Timber.i("MainActivity onStart()")
         registerReceiver(
             onDownloadComplete,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE).apply {
@@ -134,10 +195,25 @@ open class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-        Log.i(APP_NAME, "MainActivity onStop()")
+        Timber.i("MainActivity onStop()")
         unregisterReceiver(onDownloadComplete)
         localBroadcastManager.unregisterReceiver(onPlaybackError)
         super.onStop()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        handleNotificationIntent(intent)
+        super.onNewIntent(intent)
+    }
+
+    private fun handleNotificationIntent(intent: Intent?) {
+        val isIntentFromNotification = intent?.extras?.getBoolean(
+            FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, false
+        ) == true
+        Timber.i("Should the bottom sheet be maximized? $isIntentFromNotification")
+        if (isIntentFromNotification) {
+            viewModel.maximizeCurrentlyPlaying()
+        }
     }
 
     private val onDownloadComplete = object : BroadcastReceiver() {
@@ -151,7 +227,7 @@ open class MainActivity : AppCompatActivity() {
                     viewModel.handleDownloadedTrack(downloadManager, id)
                 }
                 DownloadManager.ACTION_NOTIFICATION_CLICKED -> {
-                    Log.i(APP_NAME, "Clicked notification!")
+                    Timber.i("Clicked notification!")
                     throw NotImplementedError("No action implemented yet for download notification click")
                 }
             }

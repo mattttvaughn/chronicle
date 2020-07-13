@@ -1,25 +1,29 @@
 package io.github.mattpvaughn.chronicle.data.local
 
-import android.util.Log
 import androidx.lifecycle.LiveData
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexMediaService
-import io.github.mattpvaughn.chronicle.data.plex.model.MediaType
-import io.github.mattpvaughn.chronicle.data.plex.model.asTrackList
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.asTrackList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** A repository abstracting all [MediaItemTrack]s from all [MediaSource]s */
 interface ITrackRepository {
     /**
      * Load all tracks from the network corresponding to the book with id == [bookId], add them to
      * the local [TrackDatabase], and return them
      */
-    suspend fun loadTracksForAudiobook(bookId: Int): List<MediaItemTrack>
+    suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>, Throwable>
 
     /**
      * Update the value of [MediaItemTrack.cached] to [isCached] for a [MediaItemTrack] with
@@ -86,6 +90,8 @@ interface ITrackRepository {
     /** Fetches all [MediaType.TRACK]s from the server, updates the local db */
     suspend fun refreshData()
 
+    suspend fun findTrackByTitle(title: String): MediaItemTrack?
+
     companion object {
         /**
          * The value representing the [MediaItemTrack.id] for any track which does not exist in the
@@ -101,22 +107,31 @@ class TrackRepository @Inject constructor(
     private val prefsRepo: PrefsRepo,
     private val plexMediaService: PlexMediaService
 ) : ITrackRepository {
+
+    @Throws(Throwable::class)
     override suspend fun refreshData() {
         if (prefsRepo.offlineMode) {
             return
         }
-        withContext(Dispatchers.IO) {
-            loadAllTracksAsync()
+        loadAllTracksAsync()
+    }
+
+    override suspend fun findTrackByTitle(title: String): MediaItemTrack? {
+        return withContext(Dispatchers.IO) {
+            trackDao.findTrackByTitle(title)
         }
     }
 
-    override suspend fun loadTracksForAudiobook(bookId: Int): List<MediaItemTrack> {
+    override suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>, Throwable> {
         return withContext(Dispatchers.IO) {
-            val networkTracks =
-                plexMediaService.retrieveTracksForAlbum(bookId).mediaContainer.asTrackList()
             val localTracks = trackDao.getAllTracksAsync()
-            return@withContext mergeNetworkTracks(networkTracks, localTracks)
-
+            try {
+                val networkTracks =
+                    plexMediaService.retrieveTracksForAlbum(bookId).plexMediaContainer.asTrackList()
+                Ok(mergeNetworkTracks(networkTracks, localTracks))
+            } catch (t: Throwable) {
+                Err(t)
+            }
         }
     }
 
@@ -203,12 +218,16 @@ class TrackRepository @Inject constructor(
 
     override suspend fun loadAllTracksAsync(): List<MediaItemTrack> {
         return withContext(Dispatchers.IO) {
-            val networkTracks = plexMediaService.retrieveAllTracksInLibrary(
-                Injector.get().plexPrefs().getLibrary()!!.id
-            ).mediaContainer.asTrackList()
-            Log.i(APP_NAME, "Retrieved tracks: $networkTracks")
             val localTracks = trackDao.getAllTracksAsync()
-            return@withContext mergeNetworkTracks(networkTracks, localTracks)
+            try {
+                val networkTracks = plexMediaService.retrieveAllTracksInLibrary(
+                    Injector.get().plexPrefs().library!!.id
+                ).plexMediaContainer.asTrackList()
+                return@withContext mergeNetworkTracks(networkTracks, localTracks)
+            } catch (t: Throwable) {
+                Timber.e("Failed to load tracks: $t")
+                emptyList<MediaItemTrack>()
+            }
         }
     }
 
@@ -224,8 +243,8 @@ class TrackRepository @Inject constructor(
             val localTrack = localTracks.find { it.id == networkTrack.id }
             if (localTrack != null) {
                 return@map MediaItemTrack.merge(
-                    networkTrack = networkTrack,
-                    localTrack = localTrack
+                    network = networkTrack,
+                    local = localTrack
                 )
             } else {
                 return@map networkTrack

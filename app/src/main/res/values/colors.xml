@@ -12,13 +12,17 @@
     <color name="iconDisabled">@color/textSecondary</color>
     <color name="iconFailed">#FF4444</color>
 
+    <!-- For audiobook grid id -->
+    <color name="imagePlaceholderColor">#33B998CC</color>
+    <color name="progressTrackTintColor">#AABBBBBB</color>
+    <color name="progressTintColor">@color/colorAccent</color>
+
     <!-- For bottom sheet chooser -->
     <color name="bottomSheetOverlayColor">#44000000</color>
-
     <color name="unlistenedIndicator">@color/colorAccent</color>
     <color name="unlistenedOverlay">#22000000</color>
 
-    <!-- Searchbar courtesy of: https://stackoverflow.com/questions/30369246/implementing-searchview-as-per-the-material-design-guidelines -->
+    <!-- Search bar courtesy of: https://stackoverflow.com/questions/30369246/implementing-searchview-as-per-the-material-design-guidelines -->
     <color name="material_light_active_icon">#8A000000</color>
     <color name="material_ripple_light">#1F000000</color>
 </resources>

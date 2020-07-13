@@ -39,6 +39,7 @@
             style="@style/RtlOverlay.Widget.AppCompat.SearchView.MagIcon"
             android:layout_width="@dimen/abc_dropdownitem_icon_width"
             android:layout_height="wrap_content"
+            android:contentDescription="@string/cancel"
             android:layout_gravity="center_vertical"
             android:scaleType="centerInside"
             android:visibility="gone" />

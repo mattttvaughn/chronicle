@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Gradient top is transparent, bottom is black -->
+    <solid android:color="@color/imagePlaceholderColor" />
+    <corners android:radius="@dimen/audiobook_item_radius" />
+
+</shape>

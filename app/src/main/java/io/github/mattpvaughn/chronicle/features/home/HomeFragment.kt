@@ -2,35 +2,45 @@ package io.github.mattpvaughn.chronicle.features.home
 
 import android.os.Bundle
 import android.view.*
+import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import io.github.mattpvaughn.chronicle.R
-import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.databinding.FragmentHomeBinding
 import io.github.mattpvaughn.chronicle.features.library.AudiobookAdapter
 import io.github.mattpvaughn.chronicle.features.library.AudiobookSearchAdapter
-import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
+import io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import javax.inject.Inject
 
 
 class HomeFragment : Fragment() {
+
     @Inject
-    lateinit var viewModel: HomeViewModel
+    lateinit var viewModelFactory: HomeViewModel.Factory
+
+    private lateinit var viewModel: HomeViewModel
 
     @Inject
     lateinit var prefsRepo: PrefsRepo
 
     @Inject
+    lateinit var navigator: Navigator
+
+    @Inject
     lateinit var plexConfig: PlexConfig
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        (activity!!.application as ChronicleApplication).appComponent.inject(this)
+        (requireActivity() as MainActivity).activityComponent.inject(this)
         super.onCreate(savedInstanceState)
+        viewModel = ViewModelProvider(this, viewModelFactory).get(HomeViewModel::class.java)
         setHasOptionsMenu(true)
     }
 
@@ -38,24 +48,41 @@ class HomeFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+
         val binding = FragmentHomeBinding.inflate(inflater, container, false)
-        binding.lifecycleOwner = this
+
+        binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
         binding.plexConfig = plexConfig
 
         binding.recentlyAddedRecyclerview.adapter = makeAudiobookAdapter()
+        binding.recentlyAddedRecyclerview.itemAnimator?.changeDuration = 0
         binding.onDeckRecyclerview.adapter = makeAudiobookAdapter()
+        binding.onDeckRecyclerview.itemAnimator?.changeDuration = 0
         binding.downloadedRecyclerview.adapter = makeAudiobookAdapter()
-        binding.searchResultsList.adapter =
-            AudiobookSearchAdapter(object : LibraryFragment.AudiobookClick {
-                override fun onClick(audiobook: Audiobook) {
-                    openAudiobookDetails(audiobook)
-                }
-            })
+        binding.downloadedRecyclerview.itemAnimator?.changeDuration = 0
+        binding.searchResultsList.adapter = AudiobookSearchAdapter(object : AudiobookClick {
+            override fun onClick(audiobook: Audiobook) {
+                openAudiobookDetails(audiobook)
+            }
+        })
+
+        binding.swipeToRefresh.setOnRefreshListener {
+            viewModel.refreshData()
+        }
+
+        viewModel.isRefreshing.observe(viewLifecycleOwner, Observer {
+            binding.swipeToRefresh.isRefreshing = it
+        })
+
+        viewModel.messageForUser.observe(viewLifecycleOwner, Observer {
+            if (!it.hasBeenHandled) {
+                Toast.makeText(context, it.getContentIfNotHandled(), LENGTH_SHORT).show()
+            }
+        })
 
         (activity as MainActivity).setSupportActionBar(binding.toolbar)
 
-        // Inflate the layout for this fragment
         return binding.root
     }
 
@@ -63,7 +90,7 @@ class HomeFragment : Fragment() {
         return AudiobookAdapter(
             isSquare = prefsRepo.bookCoverStyle == "Square",
             isVertical = false,
-            audiobookClick = object : LibraryFragment.AudiobookClick {
+            audiobookClick = object : AudiobookClick {
                 override fun onClick(audiobook: Audiobook) {
                     openAudiobookDetails(audiobook)
                 }
@@ -105,19 +132,12 @@ class HomeFragment : Fragment() {
     }
 
     fun openAudiobookDetails(audiobook: Audiobook) {
-        val navController = findNavController()
-        // Ensure nav controller doesn't queue two actions if a navigation event occurs twice in
-        // rapid succession
-        if (navController.currentDestination?.id == R.id.nav_home) {
-            val action = HomeFragmentDirections.actionNavHomeToAudiobookDetailsFragment2(
-                audiobook.isCached,
-                audiobook.id
-            )
-            navController.navigate(action)
-        }
+        navigator.showDetails(audiobook.id, audiobook.isCached)
     }
 
     companion object {
+        const val TAG: String = "home tag"
+
         @JvmStatic
         fun newInstance() = HomeFragment()
     }

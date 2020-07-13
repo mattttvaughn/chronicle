@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="io.github.mattpvaughn.chronicle.features.login.ChooseUserViewModel" />
+
+        <import type="android.view.View" />
+
+        <import type="io.github.mattpvaughn.chronicle.data.model.LoadingStatus" />
+    </data>
+
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorPrimaryDark"
+            android:visibility="@{viewModel.showPin ? View.GONE : View.VISIBLE}">
+
+            <TextView
+                android:id="@+id/choose_user_title"
+                style="@style/TextAppearance.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/screen_horizontal_padding"
+                android:layout_marginTop="@dimen/app_bar_height"
+                android:layout_marginRight="@dimen/screen_horizontal_padding"
+                android:text="@string/choose_user"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageView
+                android:id="@+id/refresh"
+                android:layout_width="@dimen/list_icon_size"
+                android:layout_height="@dimen/list_icon_size"
+                android:layout_marginLeft="@dimen/margin_normal"
+                android:contentDescription="@string/refresh_list"
+                android:onClick="@{() -> viewModel.refresh()}"
+                android:src="@drawable/ic_refresh_white"
+                app:layout_constraintBottom_toBottomOf="@id/choose_user_title"
+                app:layout_constraintLeft_toRightOf="@id/choose_user_title"
+                app:layout_constraintTop_toTopOf="@id/choose_user_title" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/user_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginLeft="@dimen/screen_horizontal_padding"
+                android:layout_marginTop="@dimen/margin_large"
+                android:layout_marginRight="@dimen/screen_horizontal_padding"
+                android:layout_marginBottom="@dimen/screen_vertical_padding"
+                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/choose_user_title"
+                app:loadingStatus="@{viewModel.usersLoadingStatus}"
+                app:spanCount="3"
+                app:users="@{viewModel.users}"
+                tools:listitem="@layout/list_item_user" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/no_user_found"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/choose_user_title"
+                app:loadingStatus="@{viewModel.usersLoadingStatus}" />
+
+            <ProgressBar
+                android:id="@+id/loading_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/choose_user_title"
+                app:loadingStatus="@{viewModel.usersLoadingStatus}" />
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorPrimaryDark"
+            android:visibility="@{viewModel.showPin ? View.VISIBLE : View.GONE}">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/pin_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:navigationIcon="@drawable/ic_arrow_back_white" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/pin"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/margin_large"
+                android:hint="@string/pin"
+                app:boxBackgroundColor="@color/colorPrimaryDark"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/material_text_input_layout_outline"
+                app:errorEnabled="true"
+                app:hintTextColor="@color/colorAccent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/pin_toolbar"
+                app:layout_constraintVertical_chainStyle="packed">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/pin_edittext"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ems="4"
+                    android:imeOptions="actionDone"
+                    android:inputType="number"
+                    android:maxLength="4"
+                    android:textAlignment="center"
+                    android:textSize="24sp" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/pin">
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/pin_submit"
+                    style="@style/Widget.MaterialComponents.FloatingActionButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/margin_large"
+                    android:backgroundTint="@color/colorAccent"
+                    android:contentDescription="@string/submit"
+                    android:foregroundTint="@color/icon"
+                    android:onClick="@{() -> viewModel.submitPin()}"
+                    android:src="@drawable/ic_done_white_24dp"
+                    android:tint="@color/icon"
+                    android:visibility="@{viewModel.pinLoadingStatus == LoadingStatus.LOADING ? View.GONE : View.VISIBLE}" />
+
+                <ProgressBar
+                    android:id="@+id/pin_loading_icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:loadingStatus="@{viewModel.pinLoadingStatus}" />
+            </FrameLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </FrameLayout>
+</layout>

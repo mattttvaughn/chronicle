@@ -18,14 +18,13 @@ fun getTrackDatabase(context: Context): TrackDatabase {
                 context.applicationContext,
                 TrackDatabase::class.java,
                 TRACK_DATABASE_NAME
-            ).addMigrations(MIGRATION_1_2).build()
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
         }
     }
     return INSTANCE
 }
 
-
-@Database(entities = [MediaItemTrack::class], version = 2, exportSchema = false)
+@Database(entities = [MediaItemTrack::class], version = 4, exportSchema = false)
 abstract class TrackDatabase : RoomDatabase() {
     abstract val trackDao: TrackDao
 }
@@ -36,6 +35,17 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE MediaItemTrack ADD COLUMN viewCount INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE MediaItemTrack ADD COLUMN discNumber INTEGER NOT NULL DEFAULT 1")
+    }
+}
 
 @Dao
 interface TrackDao {
@@ -80,6 +90,9 @@ interface TrackDao {
 
     @Query("UPDATE MediaItemTrack SET cached = :isCached")
     suspend fun uncacheAll(isCached: Boolean = false)
+
+    @Query("SELECT * FROM MediaItemTrack WHERE title LIKE :title")
+    suspend fun findTrackByTitle(title: String): MediaItemTrack?
 
 
 }

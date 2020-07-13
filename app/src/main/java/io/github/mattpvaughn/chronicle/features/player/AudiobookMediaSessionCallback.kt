@@ -1,283 +1,340 @@
 package io.github.mattpvaughn.chronicle.features.player
 
+import android.content.Intent
 import android.os.Bundle
-import android.os.ResultReceiver
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
-import android.util.Log
+import android.view.KeyEvent
+import android.view.KeyEvent.*
+import com.github.michaelbull.result.Ok
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.ext.cast.CastPlayer
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.model.getActiveTrack
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
-import io.github.mattpvaughn.chronicle.data.plex.getMediaItemUri
-import io.github.mattpvaughn.chronicle.data.plex.model.getDuration
-import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_PLAY_STARTING_WITH_TRACK_ID
+import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import io.github.mattpvaughn.chronicle.data.model.EMPTY_AUDIOBOOK
+import io.github.mattpvaughn.chronicle.data.model.getProgress
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.getMediaItemUri
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_OFFSET
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Inject
-import kotlin.math.abs
 
+@ServiceScope
 class AudiobookMediaSessionCallback @Inject constructor(
     private val plexPrefsRepo: PlexPrefsRepo,
     private val prefsRepo: PrefsRepo,
+    private val plexConfig: PlexConfig,
     private val mediaController: MediaControllerCompat,
-    private val exoPlayer: SimpleExoPlayer,
     private val dataSourceFactory: DefaultDataSourceFactory,
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val serviceScope: CoroutineScope,
-    private val trackListStateManager: TrackListStateManager
+    private val trackListStateManager: TrackListStateManager,
+    private val serviceController: ForegroundServiceController,
+    private val mediaSession: MediaSessionCompat,
+    defaultPlayer: SimpleExoPlayer
 ) : MediaSessionCompat.Callback() {
 
-    companion object {
-        const val NO_LONG_FOUND = -23323L
-    }
+    // Default to ExoPlayer to prevent having a nullable field
+    var currentPlayer: Player = defaultPlayer
 
-    override fun onSkipToNext() {
-        onCustomAction(SKIP_FORWARDS_STRING, null)
-        super.onSkipToNext()
+    companion object {
+        const val ACTION_SEEK = "seek"
+        const val OFFSET_MS = "offset"
     }
 
     override fun onPrepareFromSearch(query: String?, extras: Bundle?) {
-        onPlayFromSearch(query, extras)
-        super.onPrepareFromSearch(query, extras)
+        Timber.i("Prepare from search!")
+        handleSearch(query, false)
     }
 
     override fun onPlayFromSearch(query: String?, extras: Bundle?) {
+        Timber.i("Play from search!")
+        handleSearch(query, true)
+    }
+
+    private fun handleSearch(query: String?, playWhenReady: Boolean) {
         if (query.isNullOrEmpty()) {
+            // take most recently played book, start that
+            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+                val mostRecentlyPlayed = bookRepository.getMostRecentlyPlayed()
+                val bookToPlay = if (mostRecentlyPlayed == EMPTY_AUDIOBOOK) {
+                    bookRepository.getRandomBookAsync()
+                } else {
+                    mostRecentlyPlayed
+                }
+                if (playWhenReady) {
+                    onPlayFromMediaId(bookToPlay.id.toString(), null)
+                } else {
+                    onPrepareFromMediaId(bookToPlay.id.toString(), null)
+                }
+            }
             return
         }
-        serviceScope.launch {
+        serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
             val matchingBooks = bookRepository.searchAsync(query)
             if (matchingBooks.isNotEmpty()) {
-                onPlayFromMediaId(matchingBooks.first().id.toString(), null)
+                val result = matchingBooks.first().id.toString()
+                if (playWhenReady) {
+                    onPlayFromMediaId(result, null)
+                } else {
+                    onPrepareFromMediaId(result, null)
+                }
             }
         }
-        super.onPlayFromSearch(query, extras)
-    }
-
-    override fun onSkipToPrevious() {
-        onCustomAction(SKIP_BACKWARDS_STRING, null)
-        super.onSkipToPrevious()
-    }
-
-    override fun onCommand(command: String?, extras: Bundle?, cb: ResultReceiver?) {
-        Log.i(APP_NAME, "Command? $command")
-        super.onCommand(command, extras, cb)
     }
 
     override fun onPause() {
-        super.onPause()
-        Log.i(APP_NAME, "Pause button received!")
         if (!mediaController.playbackState.isPrepared) {
-            Log.i(APP_NAME, "Started from dead")
-            resumePlayFromEmpty()
+            Timber.i("Started from dead")
+            resumePlayFromEmpty(false)
+        } else {
+            currentPlayer.playWhenReady = false
         }
-        exoPlayer.playWhenReady = false
+    }
+
+    private fun skipForwards() {
+        Timber.i("Track manager is $trackListStateManager")
+        currentPlayer.seekRelative(trackListStateManager, SKIP_FORWARDS_DURATION_MS)
+    }
+
+    private fun skipBackwards() {
+        Timber.i("Track manager is $trackListStateManager")
+        currentPlayer.seekRelative(trackListStateManager, SKIP_BACKWARDS_DURATION_MS_SIGNED)
+    }
+
+    override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
+        if (mediaButtonEvent != null) {
+            val ke: KeyEvent? = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            // Media button events usually come in either an "ACTION_DOWN" + "ACTION_UP" pair, or
+            // as a single ACTION_DOWN. Just take ACTION_DOWNs
+            if (ke?.action == ACTION_DOWN) {
+                when (ke.keyCode) {
+                    KEYCODE_MEDIA_NEXT, KEYCODE_MEDIA_SKIP_FORWARD -> skipForwards()
+                    KEYCODE_MEDIA_PREVIOUS, KEYCODE_MEDIA_SKIP_BACKWARD -> skipBackwards()
+                    KEYCODE_MEDIA_PAUSE -> onPause()
+                    KEYCODE_MEDIA_PLAY -> onPlay()
+                    KEYCODE_MEDIA_STOP -> {
+                        onStop()
+                    }
+                }
+            }
+        }
+        return true
     }
 
     override fun onPlay() {
-        super.onPlay()
         // Check if session is inactive. If so, we are resuming a session right here, so play
         // the most recently played book
-        Log.i(APP_NAME, "Play button received!")
         if (!mediaController.playbackState.isPrepared) {
-            Log.i(APP_NAME, "Started from dead")
-            resumePlayFromEmpty()
+            Timber.i("Started from dead")
+            resumePlayFromEmpty(true)
+        } else {
+            currentPlayer.playWhenReady = true
         }
-        exoPlayer.playWhenReady = true
     }
 
-    override fun onSeekTo(pos: Long) {
-        Log.i(APP_NAME, "Seeking!")
-        super.onSeekTo(pos)
-        exoPlayer.seekTo(pos)
+    override fun onCustomAction(action: String?, extras: Bundle?) {
+        Timber.i("Custom action")
+        when (action) {
+            // onSeekTo doesn't appear to be called by transportControls.seekTo, so use a custom
+            // action instead...
+            ACTION_SEEK -> {
+                val offsetMs = extras?.getLong(OFFSET_MS)
+                    ?: throw IllegalStateException("Received ACTION_SEEK without an offset")
+                trackListStateManager.seekByRelative(offsetMs)
+                currentPlayer.seekTo(
+                    trackListStateManager.currentTrackIndex,
+                    trackListStateManager.currentTrackProgress
+                )
+            }
+            SKIP_FORWARDS_STRING -> skipForwards()
+            SKIP_BACKWARDS_STRING -> skipBackwards()
+        }
     }
 
     /**
      * Assume mediaId refers to the audiobook as a whole, and there is an option string in the
-     * extras bundle referring to the specific track at key [KEY_PLAY_STARTING_WITH_TRACK_ID]
+     * extras bundle referring to the specific track at key [KEY_START_TIME_OFFSET]
      */
     override fun onPlayFromMediaId(bookId: String?, extras: Bundle?) {
         if (bookId.isNullOrEmpty()) {
             throw IllegalArgumentException("MediaControllerCallback.onPlayFromMediaId() must be passed a Book ID. Received bookId = $bookId")
         }
-        Log.i(APP_NAME, "Playing media from ID!")
-        prepareBook(bookId, extras ?: Bundle(), true)
+        Timber.i("Playing media from ID!")
+        playBook(bookId, extras ?: Bundle(), true)
     }
 
     override fun onPrepareFromMediaId(bookId: String?, extras: Bundle?) {
         if (bookId.isNullOrEmpty()) {
             throw IllegalArgumentException("MediaControllerCallback.onPrepareFromMediaId() must be passed a Book ID. Received bookId = $bookId")
         }
-        prepareBook(bookId, extras ?: Bundle(), false)
+        playBook(bookId, extras ?: Bundle(), false)
     }
 
-    private fun prepareBook(bookId: String, extras: Bundle, playWhenReady: Boolean) {
-        val startingTrackOverrideKey =
-            extras.getInt(KEY_PLAY_STARTING_WITH_TRACK_ID, MediaPlayerService.ACTIVE_TRACK)
-        val file = prefsRepo.cachedMediaDir
+    private fun playBook(bookId: String, extras: Bundle, playWhenReady: Boolean) {
+        val startTimeOffsetMillis = extras.getLong(KEY_START_TIME_OFFSET, ACTIVE_TRACK)
+        if (bookId == EMPTY_AUDIOBOOK.id.toString()) {
+            return
+        }
+        Timber.i("Starting playback in the background")
 
-        Log.i(APP_NAME, "Is service scope active? ${serviceScope.isActive}")
+
         serviceScope.launch {
-            Log.i(APP_NAME, "Starting playback in the background")
-            val tracks = trackRepository.getTracksForAudiobookAsync(bookId.toInt())
+            val tracks = withContext(Dispatchers.IO) {
+                trackRepository.getTracksForAudiobookAsync(bookId.toInt())
+            }
             if (tracks.isNullOrEmpty()) {
-                Log.i(APP_NAME, "No known tracks for book: $bookId, attempting to fetch them")
+                Timber.i("No known tracks for book: $bookId, attempting to fetch them")
                 // Tracks haven't been loaded by UI for this track, so load it here
-                serviceScope.launch {
-                    val networkTracks = trackRepository.loadTracksForAudiobook(bookId.toInt())
+                val networkTracks = withContext(Dispatchers.IO) {
+                    trackRepository.loadTracksForAudiobook(bookId.toInt())
+                }
+                if (networkTracks is Ok) {
                     bookRepository.updateTrackData(
                         bookId.toInt(),
-                        networkTracks.getDuration(),
-                        networkTracks.size
+                        networkTracks.value.getProgress(),
+                        networkTracks.value.getDuration(),
+                        networkTracks.value.size
                     )
-                    // TODO: this may loop forever if no network is available
-                    prepareBook(bookId, Bundle(), true)
+                    val audiobook = bookRepository.getAudiobookAsync(bookId.toInt())
+                    if (audiobook != null) {
+                        bookRepository.loadChapterData(audiobook, tracks)
+                    }
+                    playBook(bookId, extras, true)
                 }
             } else {
-                Log.i(APP_NAME, "Starting playback for $bookId: $tracks")
+                Timber.i("Starting playback for $bookId: $tracks")
                 trackListStateManager.trackList = tracks
-                val metadataList = buildPlaylist(tracks, file)
-                val mediaSource = metadataList.toMediaSource(dataSourceFactory)
+                Timber.i("track manager = $trackListStateManager")
+                val metadataList = buildPlaylist(tracks, plexConfig)
 
-                val trackToPlay = if (startingTrackOverrideKey == MediaPlayerService.ACTIVE_TRACK) {
-                    tracks.getActiveTrack()
+                if (startTimeOffsetMillis == ACTIVE_TRACK) {
+                    trackListStateManager.seekToActiveTrack()
                 } else {
-                    tracks.find { it.id == startingTrackOverrideKey } ?: tracks.getActiveTrack()
+                    trackListStateManager.currentBookPosition = startTimeOffsetMillis
                 }
 
-                val progress =
-                    if (startingTrackOverrideKey == MediaPlayerService.ACTIVE_TRACK) trackToPlay.progress else 0
+                // Return if no book found- no reason to setup playback if there's no book
+                val book = withContext(Dispatchers.IO) {
+                    return@withContext bookRepository.getAudiobookAsync(bookId.toInt())
+                }
 
-                trackListStateManager.currentTrackIndex = tracks.indexOf(trackToPlay)
-                trackListStateManager.currentPosition = progress
+                // Auto-rewind depending on last listened time for the book
+                val rewindDurationMillis: Long = calculateRewindDuration(book)
 
-                exoPlayer.playWhenReady = playWhenReady
-                exoPlayer.prepare(mediaSource)
-                // Note: seek to (index - 1) because [_tracks] is 1-indexed
-                exoPlayer.seekTo(tracks.indexOf(trackToPlay), progress)
+                trackListStateManager.seekByRelative(-1L * rewindDurationMillis)
+
+                currentPlayer.playWhenReady = playWhenReady
+                val player = currentPlayer
+                when (player) {
+                    is ExoPlayer -> {
+                        val mediaSource = metadataList.toMediaSource(dataSourceFactory)
+                        player.prepare(mediaSource)
+                    }
+                    is CastPlayer -> {
+                        val mediaQueueItems = metadataList.toMediaQueueItems(plexConfig)
+                        Timber.i("Loading items: ${mediaQueueItems.first().media.metadata.describe()}")
+                        player.loadItems(
+                            mediaQueueItems,
+                            trackListStateManager.currentTrackIndex,
+                            trackListStateManager.currentTrackProgress,
+                            Player.REPEAT_MODE_OFF
+                        )
+                    }
+                    else -> throw NoWhenBranchMatchedException("Unknown media player")
+                }
+
+                player.seekTo(
+                    trackListStateManager.currentTrackIndex,
+                    trackListStateManager.currentTrackProgress
+                )
 
                 // Inform plex server that audio playback session has started
-                val serverId = plexPrefsRepo.getServer()?.serverId
-                if (serverId != null) {
+                val serverId = plexPrefsRepo.server?.serverId
+                if (serverId == null) {
+                    Timber.w("Unknown server id. Cannot start active session. Media playback may not be saved")
+                } else {
                     try {
                         Injector.get().plexMediaService().startMediaSession(
                             getMediaItemUri(serverId, bookId)
                         )
-                    } catch (e: Error) {
-                        Log.e(APP_NAME, "Failed to start media session: $e")
+                    } catch (e: Throwable) {
+                        Timber.e("Failed to start media session: $e")
                     }
-                } else {
-                    Log.w(
-                        APP_NAME,
-                        "Unknown server id. Cannot start active session. Media playback may not be saved"
-                    )
                 }
+            }
+        }
+    }
 
+    private fun calculateRewindDuration(book: Audiobook?): Long {
+        if (!prefsRepo.autoRewind) {
+            return 0L
+        }
+        val millisSinceLastListen = System.currentTimeMillis() - (book?.lastViewedAt ?: 0L)
+        val secondsSinceLastListen = millisSinceLastListen / (1000)
+        return when {
+            secondsSinceLastListen in 15..60 -> {
+                5 * 1000L
+            }
+            secondsSinceLastListen in 60..(60 * 60) -> {
+                10 * 1000L
+            }
+            secondsSinceLastListen > (60 * 60 * 24) -> {
+                20 * 1000L
+            }
+            else -> {
+                0L
             }
         }
     }
 
     /**
-     * Check if session is inactive. If so, we are resuming a session right here, so play
-     * the most recently played book. Unsure why onPause() would be called instead of
-     * onPlay(), but either MediaButtonService or my bluetooth headphones send an resume
-     * sessions an onPause() keyevent sometimes
+     * Resume playback, assuming that service is starting from death. We cannot assume that
+     * UI exists or that the requisite setup has happened, including connecting to a server or
+     * refreshing data.
      */
-    private fun resumePlayFromEmpty() {
-        // Find most recent book
-        serviceScope.launch {
-            val mostRecentBook = bookRepository.getMostRecentlyPlayed()
-            mediaController.transportControls.playFromMediaId(mostRecentBook.id.toString(), null)
+    private fun resumePlayFromEmpty(playWhenReady: Boolean) {
+        // This is ugly but the callback shares the lifecycle of the service, so as long as the
+        // method is only called once we're okay...
+        plexConfig.isConnected.observeForever {
+            // Don't try starting playback until we've connected to a server
+            if (!it) {
+                return@observeForever
+            }
+
+            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+                val mostRecentBook = bookRepository.getMostRecentlyPlayed()
+                if (mostRecentBook == EMPTY_AUDIOBOOK) {
+                    return@launch
+                }
+                if (playWhenReady) {
+                    onPlayFromMediaId(mostRecentBook.id.toString(), null)
+                } else {
+                    onPrepareFromMediaId(mostRecentBook.id.toString(), null)
+                }
+            }
         }
     }
 
-    /**
-     * Shadows the state of tracks in the queue in order to calculate seeks for
-     * [AudiobookMediaSessionCallback]
-     */
-    @ServiceScope
-    class TrackListStateManager @Inject constructor() {
-        /** The list of [MediaItemTrack]s currently playing */
-        var trackList = emptyList<MediaItemTrack>()
-
-        /** The index of the current track within [trackList] */
-        var currentTrackIndex: Int = 0
-
-        /** The number of milliseconds between current position and start of track */
-        var currentPosition: Long = 0
-
-        /** Return the duration of a track at index [trackIndex] in milliseconds */
-        private fun getTrackDuration(trackIndex: Int): Long {
-            return trackList[trackIndex].duration
-        }
-
-        private fun currentTrackDuration(): Long {
-            return getTrackDuration(currentTrackIndex)
-        }
-
-        fun hasNext(): Boolean {
-            return currentTrackIndex < trackList.size
-        }
-
-        fun hasPrevious(): Boolean {
-            return currentTrackIndex > 0
-        }
-
-        /** Seeks forwards or backwards in the playlist by [offset] millis*/
-        fun seekByRelative(offset: Long) {
-            if (offset > 0) {
-                seekForwards(offset)
-            } else {
-                seekBackwards(abs(offset))
-            }
-        }
-
-        /** Seek backwards by [offset] ms */
-        private fun seekBackwards(offset: Long) {
-            check(offset > 0)
-            if (currentPosition > offset) {
-                /** Skip backwards in current track by [offset] */
-                currentPosition -= offset
-            } else {
-                /**
-                 * Skip a combined [offset] milliseconds backwards between this track and previous
-                 * one
-                 */
-                val amountSkippedFromFirstTrack = currentPosition
-                currentPosition = if (hasPrevious()) {
-                    currentTrackIndex--
-                    currentTrackDuration() - (offset - amountSkippedFromFirstTrack)
-                } else {
-                    0
-                }
-            }
-        }
-
-        private fun seekForwards(offset: Long) {
-            if (currentPosition + offset <= currentTrackDuration()) {
-                // Skip 30s forward in current track
-                currentPosition += offset
-            } else {
-                // Skip a combined 30s forward b/w this track and next one
-                val amountSkippedFromFirstTrack = currentTrackDuration() - currentPosition
-                currentPosition = if (hasNext()) {
-                    currentTrackIndex++
-                    offset - amountSkippedFromFirstTrack
-                } else {
-                    currentTrackDuration()
-                }
-            }
-        }
+    override fun onStop() {
+        currentPlayer.stop()
+        mediaSession.setPlaybackState(EMPTY_PLAYBACK_STATE)
+        serviceController.stopForeground(false)
     }
 }
 

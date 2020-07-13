@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="user"
+            type="io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser" />
+
+        <variable
+            name="clickListener"
+            type="io.github.mattpvaughn.chronicle.features.login.UserClickListener" />
+
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:layout_marginRight="@dimen/margin_normal"
+        android:onClick="@{() -> clickListener.onClick(user)}"
+        android:orientation="vertical"
+        tools:layout_width="100dp">
+
+        <ImageView
+            android:id="@+id/user_thumb"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:contentDescription="@string/audio_server"
+            app:layout_constraintDimensionRatio="1:1"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@drawable/example_cover" />
+
+        <TextView
+            android:id="@+id/library_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_normal"
+            android:text="@{ user.title }"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/user_thumb"
+            tools:text="John" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

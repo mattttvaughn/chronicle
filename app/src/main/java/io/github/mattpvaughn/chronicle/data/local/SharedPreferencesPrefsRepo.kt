@@ -1,16 +1,27 @@
 package io.github.mattpvaughn.chronicle.data.local
 
 import android.content.SharedPreferences
+import com.android.billingclient.api.Purchase
+import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_ALLOW_AUTO
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_AUTO_REWIND_ENABLED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_COVER_STYLE
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_DEBUG_DISABLE_PROGRESS
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_PREMIUM
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LAST_REFRESH
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_VIEW_TYPE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_OFFLINE_MODE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PLAYBACK_SPEED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PREMIUM_TOKEN
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_REFRESH_RATE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SKIP_SILENCE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SYNC_DIR_PATH
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.NO_PREMIUM_TOKEN
+import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
 import java.io.File
 import javax.inject.Inject
@@ -22,7 +33,7 @@ interface PrefsRepo {
     /** The directory where media files are synced */
     var cachedMediaDir: File
 
-    /** The style of book covers in the app- i.e. rectanglular, square, ... */
+    /** The style of book covers in the app- i.e. rectangular, square, ... */
     var bookCoverStyle: String
 
     /** Whether the app should be able to access the network */
@@ -31,14 +42,35 @@ interface PrefsRepo {
     /** The user's preferred speed of audio playback */
     var playbackSpeed: Float
 
+    /** Whether the user has given access to Auto */
+    var allowAuto: Boolean
+
     /** Whether to fast-forward through silent bits of audio during playback */
     var skipSilence: Boolean
+
+    /** Whether the app should rewind a small bit if user hasn't played an audiobook in a while */
+    var autoRewind: Boolean
 
     /** Whether the app should display premium features */
     val isPremium: Boolean
 
+    /** The last time the library was refreshed, as Unix timestamp (in millis) */
+    var lastRefreshTimeStamp: Long
+
+    /** The minimum number of minutes between data refreshes*/
+    var refreshRateMinutes: Long
+
     /** The user's IAP token returned in a [Purchase] upon paying for an upgrade to premium */
     var premiumPurchaseToken: String
+
+    /** The key by which the books in the library are sorted. One of [Audiobook.SORT_KEYS] */
+    var bookSortKey: String
+
+    /** The type of elements shown in the library view. One of [MediaType.TYPES]*/
+    var libraryViewTypeKey: String
+
+    /** Whether the library is sorted in descending (true) or ascending (false) order */
+    var isLibrarySortedDescending: Boolean
 
     /**
      * Get a saved preference value corresponding to [key], providing [defaultValue] if no value
@@ -53,9 +85,13 @@ interface PrefsRepo {
     /** Clear all saved preferences */
     fun clearAll()
 
+    /** Register an [SharedPreferences.OnSharedPreferenceChangeListener] */
     fun registerPrefsListener(listener: SharedPreferences.OnSharedPreferenceChangeListener)
 
-    fun unRegisterPrefsListener(listener: SharedPreferences.OnSharedPreferenceChangeListener)
+    /** Unregister an already registered [SharedPreferences.OnSharedPreferenceChangeListener] */
+    fun unregisterPrefsListener(listener: SharedPreferences.OnSharedPreferenceChangeListener)
+
+    fun containsKey(key: String): Boolean
 
     /** Disable progress tracking in the local DB for debugging purposes */
     var debugOnlyDisableLocalProgressTracking: Boolean
@@ -63,13 +99,21 @@ interface PrefsRepo {
     companion object {
         const val KEY_SYNC_DIR_PATH = "key_sync_location"
         const val KEY_BOOK_COVER_STYLE = "key_book_cover_style"
+        const val KEY_APP_OPEN_COUNT = "key_app_open_count"
         const val KEY_OFFLINE_MODE = "key_offline_mode"
+        const val KEY_LAST_REFRESH = "key_last_refresh"
+        const val KEY_REFRESH_RATE = "key_refresh_rate"
         const val KEY_PLAYBACK_SPEED = "key_playback_speed"
         const val KEY_DEBUG_DISABLE_PROGRESS = "debug_key_disable_local_progress"
         const val KEY_SKIP_SILENCE = "key_skip_silence"
+        const val KEY_AUTO_REWIND_ENABLED = "key_auto_rewind_enabled"
+        const val KEY_ALLOW_AUTO = "key_allow_auto"
         const val KEY_IS_PREMIUM = "key_is_premium"
         const val NO_PREMIUM_TOKEN = "no premium token"
         const val KEY_PREMIUM_TOKEN = "key_premium_token"
+        const val KEY_BOOK_SORT_BY = "key_sort_by"
+        const val KEY_IS_LIBRARY_SORT_DESCENDING = "key_is_sort_descending"
+        const val KEY_LIBRARY_VIEW_TYPE = "key_view_type"
     }
 }
 
@@ -80,15 +124,19 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
     PrefsRepo {
     override var cachedMediaDir: File
         get() {
-            val syncLoc = sharedPreferences.getString(KEY_SYNC_DIR_PATH, "")?.ifEmpty {
+            val syncLoc = sharedPreferences.getString(KEY_SYNC_DIR_PATH, "")
+            return if (syncLoc.isNullOrEmpty()) {
                 /** Set default location to [AppComponent.externalDeviceDirs] */
-                val deviceStorage = Injector.get().externalDeviceDirs()[0]
-                sharedPreferences.edit().putString(KEY_SYNC_DIR_PATH, deviceStorage.absolutePath)
+                val deviceStorage = Injector.get().externalDeviceDirs().first()
+                sharedPreferences.edit()
+                    .putString(KEY_SYNC_DIR_PATH, deviceStorage.absolutePath)
                     .apply()
-                return deviceStorage
+                deviceStorage
+            } else {
+                Injector.get().externalDeviceDirs()
+                    .firstOrNull { it.absolutePath == syncLoc }
+                    ?: Injector.get().externalDeviceDirs().first()
             }
-            return Injector.get().externalDeviceDirs().firstOrNull { it.absolutePath == syncLoc }
-                ?: Injector.get().externalDeviceDirs().first()
         }
         set(value) = sharedPreferences.edit().putString(
             KEY_SYNC_DIR_PATH,
@@ -105,6 +153,16 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         get() = sharedPreferences.getBoolean(KEY_OFFLINE_MODE, defaultOfflineMode)
         set(value) = sharedPreferences.edit().putBoolean(KEY_OFFLINE_MODE, value).apply()
 
+    private val defaultLastRefreshTimeStamp = System.currentTimeMillis()
+    override var lastRefreshTimeStamp: Long
+        get() = sharedPreferences.getLong(KEY_LAST_REFRESH, defaultLastRefreshTimeStamp)
+        set(value) = sharedPreferences.edit().putLong(KEY_LAST_REFRESH, value).apply()
+
+    private val defaultRefreshRate = 60L
+    override var refreshRateMinutes: Long
+        get() = sharedPreferences.getLong(KEY_REFRESH_RATE, defaultRefreshRate)
+        set(value) = sharedPreferences.edit().putLong(KEY_REFRESH_RATE, value).apply()
+
     private val defaultPlaybackSpeed = 1.0f
     override var playbackSpeed: Float
         get() = sharedPreferences.getFloat(KEY_PLAYBACK_SPEED, defaultPlaybackSpeed)
@@ -115,9 +173,19 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         get() = sharedPreferences.getBoolean(KEY_SKIP_SILENCE, defaultSkipSilence)
         set(value) = sharedPreferences.edit().putBoolean(KEY_SKIP_SILENCE, value).apply()
 
+    private val defaultAutoRewind = true
+    override var autoRewind: Boolean
+        get() = sharedPreferences.getBoolean(KEY_AUTO_REWIND_ENABLED, defaultAutoRewind)
+        set(value) = sharedPreferences.edit().putBoolean(KEY_AUTO_REWIND_ENABLED, value).apply()
+
+    private val defaultAllowAuto = true
+    override var allowAuto: Boolean
+        get() = sharedPreferences.getBoolean(KEY_ALLOW_AUTO, defaultAllowAuto)
+        set(value) = sharedPreferences.edit().putBoolean(KEY_ALLOW_AUTO, value).apply()
+
     private val defaultIsPremium = false
     override val isPremium: Boolean
-        get() = sharedPreferences.getBoolean(KEY_IS_PREMIUM, defaultIsPremium)
+        get() = sharedPreferences.getBoolean(KEY_IS_PREMIUM, defaultIsPremium) || BuildConfig.DEBUG
 
     private val defaultPremiumToken = NO_PREMIUM_TOKEN
     override var premiumPurchaseToken: String
@@ -126,6 +194,39 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
             sharedPreferences.edit().putString(KEY_PREMIUM_TOKEN, value).apply()
             sharedPreferences.edit().putBoolean(KEY_IS_PREMIUM, value != NO_PREMIUM_TOKEN).apply()
         }
+
+    private val defaultBookSortKey = Audiobook.SORT_KEY_TITLE
+    override var bookSortKey: String
+        get() = getString(KEY_BOOK_SORT_BY, defaultBookSortKey)
+        set(value) {
+            if (value !in Audiobook.SORT_KEYS) {
+                throw IllegalArgumentException("Unknown sort key: $value")
+            }
+            sharedPreferences.edit().putString(KEY_BOOK_SORT_BY, value).apply()
+        }
+
+    private val defaultIsLibrarySortDescending = true
+    override var isLibrarySortedDescending: Boolean
+        get() = getBoolean(KEY_IS_LIBRARY_SORT_DESCENDING, defaultIsLibrarySortDescending)
+        set(value) {
+            sharedPreferences.edit().putBoolean(KEY_IS_LIBRARY_SORT_DESCENDING, value).apply()
+        }
+
+    private val viewTypeBook = "book"
+    private val viewTypeAuthor = "author"
+    private val viewTypeFolder = "folder"
+    private val viewTypeCollection = "collection"
+    private val viewTypes = listOf(viewTypeBook, viewTypeAuthor, viewTypeFolder, viewTypeCollection)
+    private val defaultLibraryViewType = viewTypeBook
+    override var libraryViewTypeKey: String
+        get() = getString(KEY_LIBRARY_VIEW_TYPE, defaultLibraryViewType)
+        set(value) {
+            if (value !in viewTypes) {
+                throw IllegalArgumentException("Unknown view type key: $value")
+            }
+            sharedPreferences.edit().putString(KEY_LIBRARY_VIEW_TYPE, value).apply()
+        }
+
 
     private val debugDisableLocalProgressTracking = false
     override var debugOnlyDisableLocalProgressTracking: Boolean
@@ -155,7 +256,11 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
     }
 
-    override fun unRegisterPrefsListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+    override fun unregisterPrefsListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
         sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    override fun containsKey(key: String): Boolean {
+        return sharedPreferences.contains(key)
     }
 }

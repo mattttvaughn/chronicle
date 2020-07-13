@@ -13,7 +13,7 @@ import javax.inject.Inject
  * Helper class for listening for when headphones are unplugged (or the audio will otherwise
  * cause playback to become "noisy").
  *
- * From UAMP: https://github.com/android/uamp/
+ * From UAMP, copyright by Google: https://github.com/android/uamp/
  */
 class BecomingNoisyReceiver @Inject constructor(
     private val context: Context,

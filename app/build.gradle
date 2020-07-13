@@ -3,7 +3,6 @@ apply plugin: "kotlin-android"
 apply plugin: "kotlin-kapt"
 apply plugin: "kotlin-android-extensions"
 apply plugin: "com.google.android.gms.oss-licenses-plugin"
-apply plugin: "androidx.navigation.safeargs.kotlin"
 
 android {
     compileSdkVersion 29
@@ -12,26 +11,27 @@ android {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 5
-        versionName "0.23"
+        versionCode 16
+        versionName "0.42.1"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
         debug {
-//            applicationIdSuffix ".debug"
+            // Note: toggle this away to test IAP
+            applicationIdSuffix ".debug"
             debuggable true
         }
     }
-    dataBinding {
-        enabled = true
+    buildFeatures {
+        dataBinding = true
     }
     configurations {
         all {
-            exclude module: 'xpp3'
+            exclude module: "xpp3"
         }
     }
     compileOptions {
@@ -41,7 +41,7 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
-    // Shared code b/w test and androidTest: mocks 'n' stuff
+    // Shared code b/w test and androidTest: mocks "n" stuff
     sourceSets {
         final String SHARED_TEST_DIR = "src/testShared/java"
         test {
@@ -58,9 +58,8 @@ android {
             arg("room.expandProjection", "true")
         }
     }
-    // TODO: probably bad! See if you can get around using this
-    testOptions {
-        unitTests.returnDefaultValues = true
+    lintOptions {
+        abortOnError false
     }
 }
 
@@ -73,26 +72,24 @@ dependencies {
     // Material components
     implementation "com.google.android.material:material:$materialLibVersion"
     implementation "androidx.appcompat:appcompat:$supportlibVersion"
-    implementation "androidx.constraintlayout:constraintlayout:2.0.0-beta4"
-
-    // Navigation component
-    implementation "androidx.navigation:navigation-fragment-ktx:$navVersion"
-    implementation "androidx.navigation:navigation-ui-ktx:$navVersion"
+    implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
 
     // AndroidX
     implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
     implementation "androidx.lifecycle:lifecycle-extensions:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion"
 
+
     // Google Play Billing
-    implementation 'com.android.billingclient:billing:2.1.0'
-    implementation 'com.android.billingclient:billing-ktx:2.1.0'
+    implementation "com.android.billingclient:billing:$billingVersion"
+    implementation "com.android.billingclient:billing-ktx:$billingVersion"
 
     // Retrofit
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
-    implementation "com.squareup.retrofit2:converter-moshi:2.7.2"
-    implementation "com.squareup.moshi:moshi-kotlin:1.9.2"
-    kapt 'com.squareup.moshi:moshi-kotlin-codegen:1.9.2'
+    implementation "com.squareup.retrofit2:converter-moshi:$retrofitVersion"
+    implementation("com.squareup.moshi:moshi-kotlin:$moshiKotlinVersion")
+    kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshiKotlinVersion"
 
     // Kotlin coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
@@ -101,6 +98,9 @@ dependencies {
     // OkHttp
     implementation "com.squareup.okhttp3:okhttp:$okhttpVersion"
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttpVersion"
+
+    // Timber Logging
+    implementation "com.jakewharton.timber:timber:$timberVersion"
 
     // Room DB manager
     implementation "androidx.room:room-runtime:$roomVersion"
@@ -111,6 +111,15 @@ dependencies {
     implementation "com.google.dagger:dagger:$daggerVersion"
     kapt "com.google.dagger:dagger-compiler:$daggerVersion"
 
+    // For Plex OAuth implementation
+    implementation "androidx.browser:browser:$androidXCustomTabsVersion"
+
+    // AssistedInject to provide runtime args to Dagger injected objects
+    // TODO- need further research into how this works so we can add AssistInject without adding
+    //       a lot more boilerplate
+//    compileOnly "com.squareup.inject:assisted-inject-annotations-dagger2:0.5.2"
+//    kapt "com.squareup.inject:assisted-inject-processor-dagger2:0.5.2"
+
     // Glide
     implementation "com.github.bumptech.glide:glide:$glideVersion"
     kapt "com.github.bumptech.glide:compiler:$glideVersion"
@@ -119,28 +128,36 @@ dependencies {
     implementation "androidx.localbroadcastmanager:localbroadcastmanager:$localBroadcastManagerVersion"
 
     // Exoplayer
-    // From the [UAMP project](https://github.com/android/uamp/blob/bffac196050a6453f82ee6ad6297a7056603cb82/common/build.gradle)
-    //
-    // This allows UAMP to utilize a local version of ExoPlayer, which is particularly
-    // useful for extending the MediaSession extension, as well as for testing and
-    // customization. If the ":exoplayer-library-core" project is included, we assume
-    // the others are included as well.
-    if (findProject(":exoplayer-library-core") != null) {
-        implementation project(":exoplayer-library-core")
-        implementation project(":exoplayer-library-ui")
-        implementation project(":exoplayer-extension-mediasession")
-    } else {
-        implementation "com.google.android.exoplayer:exoplayer-core:$exoplayerVersion"
-        implementation "com.google.android.exoplayer:exoplayer-ui:$exoplayerVersion"
-        implementation "com.google.android.exoplayer:extension-mediasession:$exoplayerVersion"
+    implementation "com.google.android.exoplayer:exoplayer-core:$exoplayerVersion"
+    implementation "com.google.android.exoplayer:exoplayer-ui:$exoplayerVersion"
+    implementation "com.google.android.exoplayer:extension-mediasession:$exoplayerVersion"
+    implementation "com.google.android.exoplayer:extension-cast:$exoplayerVersion"
+
+
+    // ExoPlayer extensions for FLAC and OPUS file types
+    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-opus:$exoplayerVersion") {
+        transitive = false
+    }
+    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-flac:$exoplayerVersion"){
+        transitive = false
     }
 
     // WorkManager helps coordinate background syncing of local data w.r.t. network conditions
     implementation "androidx.work:work-runtime-ktx:$workVersion"
 
-    // Android team's license displaying library- creates an activity showing all dependencies
+    // Android team"s license displaying library- creates an activity showing all dependencies
     // by pulling from maven
     implementation "com.google.android.gms:play-services-oss-licenses:$ossLicenseActivityVersion"
+
+    // Swipe-to-refresh
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:$swipeRefreshLayoutVersion"
+
+    // Seismic- for shake detecting
+    implementation "com.squareup:seismic:$seismicVersion"
+
+    // kotlin-result (ISC licensed: permissive like MIT license)
+    implementation "com.michael-bull.kotlin-result:kotlin-result:$kotlinResultVersion"
+
 
     /* ~~~~~~~~~~~~ Local Tests ~~~~~~~~~~ */
     testImplementation "junit:junit:$junitVersion"
@@ -151,7 +168,9 @@ dependencies {
     testImplementation "androidx.arch.core:core-testing:$archTestingVersion"
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
     testImplementation "org.hamcrest:hamcrest-all:$hamcrestVersion"
-    testImplementation "io.mockk:mockk:$mockKVersion"
+    testImplementation("io.mockk:mockk:$mockKVersion") {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-reflect"
+    }
 
 
     /* ~~~~~~~~~~~~ Instrumented tests ~~~~~~~~~~ */
@@ -163,9 +182,9 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit-ktx:$androidXTestExtKotlinRunnerVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$espressoVersion"
     androidTestImplementation "androidx.test.espresso:espresso-contrib:$espressoVersion"
-    androidTestImplementation "io.mockk:mockk-android:$mockKVersion"
-
-    androidTestImplementation "androidx.navigation:navigation-testing:$navVersion"
+    androidTestImplementation("io.mockk:mockk:$mockKVersion") {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-reflect"
+    }
 
     androidTestImplementation "com.google.dagger:dagger:$daggerVersion"
     kaptAndroidTest "com.google.dagger:dagger-compiler:$daggerVersion"

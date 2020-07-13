@@ -5,15 +5,24 @@ import android.os.Bundle
 import android.view.*
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.appcompat.widget.SearchView
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.databinding.FragmentLibraryBinding
+import io.github.mattpvaughn.chronicle.navigation.Navigator
+import io.github.mattpvaughn.chronicle.views.FlowableRadioGroup
+import io.github.mattpvaughn.chronicle.views.checkRadioButtonWithTag
+import timber.log.Timber
 import javax.inject.Inject
 
 /** TODO: refactor search to reuse code from Library + Home fragments */
@@ -24,10 +33,17 @@ class LibraryFragment : Fragment() {
     }
 
     @Inject
-    lateinit var viewModel: LibraryViewModel
+    lateinit var viewModelFactory: LibraryViewModel.Factory
+
+    private val viewModel: LibraryViewModel by lazy {
+        ViewModelProvider(this, viewModelFactory).get(LibraryViewModel::class.java)
+    }
 
     @Inject
     lateinit var prefsRepo: PrefsRepo
+
+    @Inject
+    lateinit var navigator: Navigator
 
     @Inject
     lateinit var plexConfig: PlexConfig
@@ -41,38 +57,70 @@ class LibraryFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        Timber.i("Lib frag view create")
         val binding = FragmentLibraryBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
         binding.plexConfig = plexConfig
         binding.libraryGrid.adapter =
             AudiobookAdapter(prefsRepo.bookCoverStyle == "Square", true, object : AudiobookClick {
-            override fun onClick(audiobook: Audiobook) {
-                openAudiobookDetails(audiobook)
-            }
-        })
-        binding.lifecycleOwner = this
+                override fun onClick(audiobook: Audiobook) {
+                    openAudiobookDetails(audiobook)
+                }
+            })
+        binding.libraryGrid.itemAnimator?.changeDuration = 0
+        binding.lifecycleOwner = viewLifecycleOwner
         binding.searchResultsList.adapter = AudiobookSearchAdapter(object : AudiobookClick {
             override fun onClick(audiobook: Audiobook) {
                 openAudiobookDetails(audiobook)
             }
         })
 
-        (activity as MainActivity).setSupportActionBar(binding.toolbar)
+        binding.swipeToRefresh.setOnRefreshListener {
+            viewModel.refreshData()
+        }
+
+        viewModel.isRefreshing.observe(viewLifecycleOwner, Observer {
+            binding.swipeToRefresh.isRefreshing = it
+        })
+
+        binding.sortByOptions.checkRadioButtonWithTag(prefsRepo.bookSortKey)
+        binding.sortByOptions.setOnCheckedChangeListener { group: FlowableRadioGroup, checkedId ->
+            val key = group.findViewById<AppCompatRadioButton>(checkedId).tag as String
+            prefsRepo.bookSortKey = key
+        }
+
+//        binding.viewByOptions.checkRadioButtonWithTag(prefsRepo.libraryViewTypeKey)
+//        binding.viewByOptions.setOnCheckedChangeListener { group, checkedId ->
+//            val key = group.findViewById<AppCompatRadioButton>(checkedId).tag as String
+//            prefsRepo.libraryViewTypeKey = key
+//        }
+
+        viewModel.messageForUser.observe(viewLifecycleOwner, Observer {
+            if (!it.hasBeenHandled) {
+                Toast.makeText(context, it.getContentIfNotHandled(), LENGTH_SHORT).show()
+            }
+        })
+
+        viewModel.isFilterShown.observe(viewLifecycleOwner, Observer { isFilterShown ->
+            Timber.i("Showing filter view: $isFilterShown")
+            val filterBottomSheetState = if (isFilterShown) {
+                BottomSheetBehavior.STATE_EXPANDED
+            } else {
+                BottomSheetBehavior.STATE_HIDDEN
+            }
+
+            val params = binding.filterView.layoutParams as CoordinatorLayout.LayoutParams
+            val behavior = params.behavior as BottomSheetBehavior
+            behavior.state = filterBottomSheetState
+        })
+
+        (activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
 
         return binding.root
     }
 
     private fun openAudiobookDetails(audiobook: Audiobook) {
-        val navController = findNavController()
-        // Ensure nav controller doesn't queue two actions if a navigation event occurs twice in
-        // rapid succession
-        if (navController.currentDestination?.id == R.id.nav_library) {
-            val action = LibraryFragmentDirections.actionNavLibraryToAudiobookDetailsFragment(
-                audiobook.isCached,
-                audiobook.id
-            )
-            navController.navigate(action)
-        }
+        navigator.showDetails(audiobook.id, audiobook.isCached)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,11 +129,10 @@ class LibraryFragment : Fragment() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-
         inflater.inflate(R.menu.library_menu, menu)
         val searchView = menu.findItem(R.id.search).actionView as SearchView
         val searchItem = menu.findItem(R.id.search) as MenuItem
-        val filterItem = menu.findItem(R.id.filter) as MenuItem
+        val filterItem = menu.findItem(R.id.menu_filter) as MenuItem
         val cacheItem = menu.findItem(R.id.download_all) as MenuItem
 
         searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
@@ -97,8 +144,8 @@ class LibraryFragment : Fragment() {
             }
 
             override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
-                filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
-                cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                 viewModel.setSearchActive(false)
                 return true
             }
@@ -116,16 +163,17 @@ class LibraryFragment : Fragment() {
                 }
                 return true
             }
-
         })
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.filter -> Toast.makeText(context, "Not supported yet", LENGTH_SHORT).show()
+            R.id.menu_filter -> viewModel.setFilterMenuVisible(
+                viewModel.isFilterShown.value?.not() ?: false
+            )
             R.id.download_all -> viewModel.promptDownloadAll()
-            R.id.search -> { /* this is handled by listeners set in onCreateOptionsMenu */
-            }
+            R.id.search -> {
+            } // handled by listeners in onCreateView
             else -> throw NoWhenBranchMatchedException("Unknown menu item selected!")
         }
         return super.onOptionsItemSelected(item)

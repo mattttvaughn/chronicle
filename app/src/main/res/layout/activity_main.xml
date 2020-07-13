@@ -11,32 +11,32 @@
 
         <variable
             name="plexConfig"
-            type="io.github.mattpvaughn.chronicle.data.plex.PlexConfig" />
+            type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig" />
 
         <import type="android.view.View" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        bottomSheetState="@{viewModel.currentlyPlayingLayoutState}"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        bottomSheetState="@{viewModel.currentlyPlayingLayoutState}"
         tools:context=".application.MainActivity">
 
-<!--        <TextView-->
-<!--            android:id="@+id/no_connection_message"-->
-<!--            android:layout_width="0dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:background="@color/colorPrimaryDark"-->
-<!--            android:paddingTop="@dimen/margin_small"-->
-<!--            android:paddingBottom="@dimen/margin_small"-->
-<!--            android:text="@string/not_connected"-->
-<!--            android:textAlignment="center"-->
-<!--            android:textColor="@color/textError"-->
-<!--            android:elevation="8dp"-->
-<!--            android:visibility="@{viewModel.showConnectionError ? View.VISIBLE : View.GONE}"-->
-<!--            app:layout_constraintLeft_toLeftOf="parent"-->
-<!--            app:layout_constraintRight_toRightOf="parent"-->
-<!--            app:layout_constraintTop_toTopOf="parent" />-->
+        <!--        <TextView-->
+        <!--            android:id="@+id/no_connection_message"-->
+        <!--            android:layout_width="0dp"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:background="@color/colorPrimaryDark"-->
+        <!--            android:paddingTop="@dimen/margin_small"-->
+        <!--            android:paddingBottom="@dimen/margin_small"-->
+        <!--            android:text="@string/not_connected"-->
+        <!--            android:textAlignment="center"-->
+        <!--            android:textColor="@color/textError"-->
+        <!--            android:elevation="8dp"-->
+        <!--            android:visibility="@{viewModel.showConnectionError ? View.VISIBLE : View.GONE}"-->
+        <!--            app:layout_constraintLeft_toLeftOf="parent"-->
+        <!--            app:layout_constraintRight_toRightOf="parent"-->
+        <!--            app:layout_constraintTop_toTopOf="parent" />-->
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_nav"
@@ -45,6 +45,7 @@
             android:background="@color/colorPrimary"
             android:elevation="4dp"
             android:theme="@style/Widget.BottomNavigationView"
+            android:visibility="@{viewModel.isLoggedIn() ? View.VISIBLE : View.GONE}"
             app:itemIconTint="@color/icon"
             app:itemTextColor="@color/icon"
             app:labelVisibilityMode="selected"
@@ -53,22 +54,20 @@
             app:layout_constraintRight_toRightOf="parent"
             app:menu="@menu/bottom_nav_menu" />
 
-        <fragment
+        <androidx.fragment.app.FragmentContainerView
             android:id="@+id/fragNavHost"
-            android:name="androidx.navigation.fragment.NavHostFragment"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:defaultNavHost="true"
             app:layout_constraintBottom_toTopOf="@id/currently_playing_container"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:navGraph="@navigation/graph" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <FrameLayout
             android:id="@+id/currently_playing_container"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:visibility="@{viewModel.isLoggedIn() ? View.VISIBLE : View.INVISIBLE}"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="@id/bottom_nav">
@@ -76,16 +75,16 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/currently_playing_handle"
                 android:layout_width="match_parent"
-                android:layout_gravity="top"
                 android:layout_height="@dimen/bottom_sheet_handle_height"
+                android:layout_gravity="top"
                 android:background="@color/colorPrimaryDark"
                 android:elevation="1dp">
 
                 <ImageView
                     android:id="@+id/currently_playing_thumb"
-                    lastUpdated="@{viewModel.audiobook.updatedAt}"
                     serverConnected="@{plexConfig.isConnected()}"
                     srcRounded="@{viewModel.audiobook.thumb}"
+                    android:contentDescription="@{viewModel.audiobook.title}"
                     android:layout_width="@dimen/app_bar_height"
                     android:layout_height="@dimen/app_bar_height"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -126,14 +125,14 @@
                     android:id="@+id/pause_play_button"
                     android:layout_width="@dimen/app_bar_height"
                     android:layout_height="@dimen/app_bar_height"
+                    android:contentDescription="@string/pause_play_button"
                     android:onClick="@{() -> viewModel.pausePlayButtonClicked()}"
                     android:padding="@dimen/margin_normal"
                     android:src="@{viewModel.isPlaying() ? @drawable/ic_notification_icon_paused : @drawable/ic_notification_icon_playing}"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
-                    tools:src="@drawable/ic_notification_icon_paused"
-                    android:contentDescription="@string/pause_play_button" />
+                    tools:src="@drawable/ic_notification_icon_paused" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <FrameLayout

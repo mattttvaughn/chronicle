@@ -7,15 +7,15 @@
 
         <variable
             name="title"
-            type="String" />
+            type="io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString" />
 
         <variable
             name="options"
-            type="java.util.List&lt;String&gt;" />
+            type="java.util.List&lt;io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString&gt;" />
 
         <variable
             name="listener"
-            type="io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener" />
+            type="io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserListener" />
 
         <import type="android.view.View" />
     </data>

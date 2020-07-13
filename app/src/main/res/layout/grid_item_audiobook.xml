@@ -29,29 +29,55 @@
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        overrideWidth="@{isVertical ? @dimen/audiobook_match_parent : @dimen/audiobook_item_width}"
         isSquare="@{isSquare}"
+        overrideWidth="@{isVertical ? @dimen/audiobook_match_parent : @dimen/audiobook_item_width}"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="@dimen/margin_small"
         android:onClick="@{() -> audiobookClick.onClick(audiobook)}"
         android:padding="@dimen/margin_small"
+        tools:background="@color/colorPrimaryDark"
         tools:layout_height="128dp"
         tools:layout_width="128dp">
 
-        <!-- Assume Glide will mask corners the same as the indicator -->
-        <ImageView
-            android:id="@+id/book_cover_img"
-            lastUpdated="@{audiobook.updatedAt}"
-            serverConnected="@{serverConnected}"
-            srcRounded="@{audiobook.thumb}"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/thumb_container"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            app:cardCornerRadius="@dimen/audiobook_item_radius"
             app:layout_constraintDimensionRatio="5:8"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent">
+
+            <androidx.core.widget.ContentLoadingProgressBar
+                android:id="@+id/book_progress"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_gravity="bottom"
+                android:layout_margin="0dp"
+                android:max="@{(int) audiobook.duration}"
+                android:maxHeight="4dp"
+                android:minHeight="4dp"
+                android:progress="@{(int) audiobook.progress}"
+                android:progressBackgroundTint="@color/progressTrackTintColor"
+                android:progressTint="@color/progressTintColor"
+                android:translationZ="2dp"
+                android:visibility="@{audiobook.progress > 0L ? View.VISIBLE : View.GONE}" />
+
+            <ImageView
+                android:id="@+id/book_cover_img"
+                serverConnected="@{serverConnected}"
+                srcRounded="@{audiobook.thumb}"
+                android:contentDescription="@{audiobook.title}"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom"
+                tools:src="@drawable/book_cover_missing_placeholder" />
+
+        </androidx.cardview.widget.CardView>
 
         <TextView
             android:id="@+id/title"
@@ -62,8 +88,9 @@
             android:text="@{audiobook.title}"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/book_cover_img"
-            tools:text="Book" />
+            app:layout_constraintTop_toBottomOf="@id/thumb_container"
+            tools:text="Book"
+            tools:textColor="#FFFFFF" />
 
         <TextView
             android:id="@+id/author"

@@ -1,13 +1,15 @@
 package io.github.mattpvaughn.chronicle.data.model
 
 import android.support.v4.media.MediaMetadataCompat
-import android.util.Log
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import io.github.mattpvaughn.chronicle.application.Injector
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.model.Directory
+import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
+import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
 import io.github.mattpvaughn.chronicle.features.player.*
+import timber.log.Timber
 import java.io.File
 
 /**
@@ -16,12 +18,13 @@ import java.io.File
 @Entity
 data class MediaItemTrack(
     @PrimaryKey
-    val id: Int = -1,
+    val id: Int = TRACK_NOT_FOUND,
     val parentKey: Int = -1,
     val title: String = "",
     val playQueueItemID: Long = -1,
     val thumb: String? = null,
     val index: Int = 0,
+    val discNumber: Int = 1,
     /** The duration of the track in milliseconds */
     val duration: Long = 0L,
     /** Path to the media file in the form "/library/parts/[id]/SOME_NUMBER/file.mp3" */
@@ -31,6 +34,7 @@ data class MediaItemTrack(
     val genre: String = "",
     val cached: Boolean = false,
     val artwork: String? = "",
+    val viewCount: Long = 0L,
     val progress: Long = 0L,
     val lastViewedAt: Long = 0L,
     val updatedAt: Long = 0L,
@@ -54,7 +58,7 @@ data class MediaItemTrack(
 
         }
 
-        const val NO_TRACK_ID_FOUND = -111
+        val EMPTY_TRACK = MediaItemTrack(TRACK_NOT_FOUND)
 
         val cachedFilePattern = Regex("\\d*\\..+")
         fun getTrackIdFromFileName(fileName: String): Int {
@@ -68,28 +72,32 @@ data class MediaItemTrack(
          *
          * Always retains [cached] field from local copy
          */
-        fun merge(networkTrack: MediaItemTrack, localTrack: MediaItemTrack): MediaItemTrack {
-            return if (networkTrack.lastViewedAt > localTrack.lastViewedAt) {
-                Log.i(APP_NAME, "Integrating network track: $networkTrack")
-                networkTrack.copy(cached = localTrack.cached)
+        fun merge(network: MediaItemTrack, local: MediaItemTrack): MediaItemTrack {
+            if (network.viewCount != local.viewCount) {
+                Timber.i("Huge huge huge! Views have increased on ${network.title}")
+            }
+            return if (network.lastViewedAt > local.lastViewedAt) {
+                Timber.i("Integrating network track: $network")
+                network.copy(cached = local.cached)
             } else {
-                networkTrack.copy(
-                    cached = localTrack.cached,
-                    lastViewedAt = localTrack.lastViewedAt,
-                    progress = localTrack.progress
+                network.copy(
+                    cached = local.cached,
+                    lastViewedAt = local.lastViewedAt,
+                    progress = local.progress
                 )
             }
         }
 
         /** Create a [MediaItemTrack] from a Plex model and an index */
-        fun fromPlexModel(networkTrack: Directory): MediaItemTrack {
+        fun fromPlexModel(networkTrack: PlexDirectory): MediaItemTrack {
             return MediaItemTrack(
                 id = networkTrack.ratingKey.toInt(),
                 parentKey = networkTrack.parentRatingKey,
                 title = networkTrack.title,
                 artist = networkTrack.grandparentTitle,
                 thumb = networkTrack.thumb,
-                index = networkTrack.index, // b/c humans don't like 0-indexing!
+                index = networkTrack.index,
+                discNumber = networkTrack.parentIndex,
                 duration = networkTrack.duration,
                 progress = networkTrack.viewOffset,
                 media = networkTrack.media[0].part[0].key,
@@ -101,11 +109,6 @@ data class MediaItemTrack(
         }
 
         const val PARENT_KEY_PREFIX = "/library/metadata/"
-    }
-
-    /** Count track as finished if within 5 seconds from the end */
-    fun isFinished(): Boolean {
-        return progress > duration - 5
     }
 
     /** The name of the track when it is written to the file system */
@@ -129,14 +132,46 @@ data class MediaItemTrack(
 
 
 /**
- * Returns the timestamp corresponding to the start of [track] with respect to the entire playlist
+ * Returns the timestamp (in ms) corresponding to the start of [track] with respect to the
+ * entire playlist
  */
 fun List<MediaItemTrack>.getTrackStartTime(track: MediaItemTrack): Long {
     if (isEmpty()) {
         return 0
     }
-    val previousTracks = this.subList(0, indexOf(track))
+    // There's a possibility [track] has been edited and [this] has not, so find it again
+    val trackInList = find { it.id == track.id } ?: return 0
+    val previousTracks = this.subList(0, indexOf(trackInList))
     return previousTracks.map { it.duration }.sum()
+}
+
+/**
+ * Returns the timestamp (in ms) corresponding to the progress of [track] with respect to the
+ * entire playlist
+ */
+fun List<MediaItemTrack>.getTrackProgressInAudiobook(track: MediaItemTrack): Long {
+    if (isEmpty()) {
+        return 0
+    }
+    val previousTracks = this.subList(0, indexOf(track))
+    return previousTracks.map { it.duration }.sum() + track.progress
+}
+
+/**
+ * Returns the track containing the timestamp (as offset from the start of the [List] provided
+ */
+fun List<MediaItemTrack>?.getTrackContainingOffset(offset: Long): MediaItemTrack {
+    if (isNullOrEmpty()) {
+        return EMPTY_TRACK
+    }
+    this?.fold(offset) { acc: Long, track: MediaItemTrack ->
+        val tempAcc: Long = acc - track.duration
+        if (tempAcc <= 0) {
+            return track
+        }
+        return@fold tempAcc
+    }
+    return EMPTY_TRACK
 }
 
 /**
@@ -159,17 +194,16 @@ fun List<MediaItemTrack>.getActiveTrack(): MediaItemTrack {
     return maxBy { it.lastViewedAt } ?: get(0)
 }
 
-/**
- * Converts a [MediaItemTrack] to a [MediaMetadataCompat]. Requires a [file] to be passed in so
- * that a uri can be generated for cached media
- */
-fun MediaItemTrack.toMediaMetadata(): MediaMetadataCompat {
+/** Converts the metadata of a [MediaItemTrack] to a [MediaMetadataCompat]. */
+fun MediaItemTrack.toMediaMetadata(plexConfig: PlexConfig): MediaMetadataCompat {
     val metadataBuilder = MediaMetadataCompat.Builder()
     metadataBuilder.id = this.id.toString()
     metadataBuilder.title = this.title
+    metadataBuilder.displayTitle = this.album
+    metadataBuilder.displaySubtitle = this.artist
     metadataBuilder.trackNumber = this.playQueueItemID
-    metadataBuilder.albumArtUri = this.thumb
     metadataBuilder.mediaUri = getTrackSource()
+    metadataBuilder.albumArtUri = plexConfig.makeUriFromPart(this.thumb ?: "").toString()
     metadataBuilder.trackNumber = this.index.toLong()
     metadataBuilder.duration = this.duration
     metadataBuilder.album = this.album
@@ -178,4 +212,18 @@ fun MediaItemTrack.toMediaMetadata(): MediaMetadataCompat {
     return metadataBuilder.build()
 }
 
-val EMPTY_TRACK = MediaItemTrack()
+
+fun List<MediaItemTrack>.asChapterList(): List<Chapter> {
+    return this.map { track ->
+        Chapter(
+            title = track.title,
+            id = track.id.toLong(),
+            index = track.index.toLong(),
+            discNumber = track.discNumber,
+            startTimeOffset = this.getTrackStartTime(track),
+            endTimeOffset = this.getTrackStartTime(track) + track.duration
+        )
+    }
+}
+
+val EMPTY_TRACK = MediaItemTrack(id = TRACK_NOT_FOUND)

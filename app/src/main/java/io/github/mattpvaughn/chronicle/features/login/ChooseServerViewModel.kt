@@ -1,81 +1,75 @@
 package io.github.mattpvaughn.chronicle.features.login
 
-import android.util.Log
 import androidx.lifecycle.*
+import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
 import io.github.mattpvaughn.chronicle.data.model.ServerModel
 import io.github.mattpvaughn.chronicle.data.model.asServer
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.plex.PlexLoginService
-import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLoginRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLoginService
+import io.github.mattpvaughn.chronicle.util.Event
+import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 class ChooseServerViewModel @Inject constructor(
-    plexConfig: PlexConfig,
     private val plexLoginService: PlexLoginService,
-    plexPrefsRepo: PlexPrefsRepo
+    private val plexLoginRepo: PlexLoginRepo
 ) : ViewModel() {
 
     class Factory @Inject constructor(
-        private val plexPrefsRepo: PlexPrefsRepo,
         private val plexLoginService: PlexLoginService,
-        private val plexConfig: PlexConfig
+        private val plexLoginRepo: PlexLoginRepo
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ChooseServerViewModel::class.java)) {
-                return ChooseServerViewModel(
-                    plexConfig,
-                    plexLoginService,
-                    plexPrefsRepo
-                ) as T
+                return ChooseServerViewModel(plexLoginService, plexLoginRepo) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }
     }
 
+    private val _userMessage = MutableLiveData<Event<String>>()
+    val userMessage: LiveData<Event<String>>
+        get() = _userMessage
+
     private var _servers = MutableLiveData(emptyList<ServerModel>())
     val servers: LiveData<List<ServerModel>>
         get() = _servers
-
-    enum class LoadingStatus { LOADING, DONE, ERROR }
 
     private var _loadingStatus = MutableLiveData(LoadingStatus.LOADING)
     val loadingStatus: LiveData<LoadingStatus>
         get() = _loadingStatus
 
     init {
-        if (plexConfig.authToken.isEmpty()) {
-            val authToken = plexPrefsRepo.getAuthToken()
-            if (authToken.isNotEmpty()) {
-                plexConfig.authToken = authToken
-            }
-        }
         getServers()
     }
 
     private fun getServers() {
-        viewModelScope.launch {
+        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             try {
-                _loadingStatus.value =
-                    LoadingStatus.LOADING
+                _loadingStatus.value = LoadingStatus.LOADING
                 val serverContainer = plexLoginService.resources()
-                Log.i(APP_NAME, "Server: $serverContainer")
-                _loadingStatus.value =
-                    LoadingStatus.DONE
-                _servers.postValue(serverContainer.filter { it.provides.contains("server") }
+                Timber.i("Server: $serverContainer")
+                _loadingStatus.value = LoadingStatus.DONE
+                _servers.postValue(serverContainer
+                    .filter { it.provides.contains("server") }
                     .map { it.asServer() })
-            } catch (e: Exception) {
-                Log.e(APP_NAME, "Failed to get servers: $e")
-                e.printStackTrace()
-                _loadingStatus.value =
-                    LoadingStatus.ERROR
+            } catch (e: Throwable) {
+                Timber.e(e, "Failed to get servers")
+                _userMessage.postEvent("Failed to load servers: ${e.message}")
+                _loadingStatus.value = LoadingStatus.ERROR
             }
         }
     }
 
     fun refresh() {
         getServers()
+    }
+
+    fun chooseServer(serverModel: ServerModel) {
+        plexLoginRepo.chooseServer(serverModel)
     }
 }

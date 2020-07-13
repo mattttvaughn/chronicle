@@ -1,44 +1,51 @@
 package io.github.mattpvaughn.chronicle.injection.modules
 
 import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.hardware.SensorManager
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.Build
+import android.support.v4.media.RatingCompat.RATING_NONE
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.MediaSessionCompat.*
 import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.ext.cast.CastPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.util.Util
+import com.google.android.gms.cast.framework.CastContext
 import dagger.Module
 import dagger.Provides
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.CachedFileManager
-import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.*
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import io.github.mattpvaughn.chronicle.util.PackageValidator
 import kotlinx.coroutines.CompletableJob
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 
 @Module
 class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun serviceJob(): CompletableJob = SupervisorJob()
+    fun service(): Service = service
 
     @Provides
     @ServiceScope
-    fun serviceScope(serviceJob: CompletableJob) = CoroutineScope(Dispatchers.Main + serviceJob)
+    fun serviceJob(): CompletableJob = service.serviceJob
+
+    @Provides
+    @ServiceScope
+    fun serviceScope() = service.serviceScope
 
     @Provides
     @ServiceScope
@@ -61,10 +68,10 @@ class ServiceModule(private val service: MediaPlayerService) {
     fun mediaSession(launchActivityPendingIntent: PendingIntent): MediaSessionCompat =
         MediaSessionCompat(service, APP_NAME).apply {
             // Enable callbacks from MediaButtons and TransportControls
-            setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+            setFlags(FLAG_HANDLES_MEDIA_BUTTONS or FLAG_HANDLES_TRANSPORT_CONTROLS or FLAG_HANDLES_QUEUE_COMMANDS)
             service.sessionToken = sessionToken
             setSessionActivity(launchActivityPendingIntent)
-            setPlaybackState(EMPTY_PLAYBACK_STATE)
+            setRatingType(RATING_NONE)
             isActive = true
         }
 
@@ -74,12 +81,22 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
+    fun sleepTimerBroadcaster(): SleepTimer.SleepTimerBroadcaster = service
+
+    @Provides
+    @ServiceScope
     fun sleepTimer(simpleSleepTimer: SimpleSleepTimer): SleepTimer = simpleSleepTimer
 
     @Provides
-    fun provideProgressUpdater(updater: SimpleProgressUpdater): ProgressUpdater = updater
+    fun provideProgressUpdater(
+        updater: SimpleProgressUpdater,
+        mediaControllerCompat: MediaControllerCompat
+    ): ProgressUpdater = updater.apply {
+        mediaController = mediaControllerCompat
+    }
 
     @Provides
+    @ServiceScope
     fun provideCachedFileManager(cacheManager: CachedFileManager): ICachedFileManager = cacheManager
 
     @Provides
@@ -88,7 +105,8 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun notificationBuilder() = NotificationBuilder(service)
+    fun notificationBuilder(controller: MediaControllerCompat, plexConfig: PlexConfig) =
+        NotificationBuilder(service, controller, plexConfig)
 
     @Provides
     @ServiceScope
@@ -102,30 +120,27 @@ class ServiceModule(private val service: MediaPlayerService) {
     @Provides
     @ServiceScope
     fun serviceController() = object : ServiceController {
-        override fun stopService() {
-            service.stopSelf()
-        }
+        override fun stopService() = service.stopSelf()
     }
 
     @Provides
     @ServiceScope
-    fun plexDataSourceFactory(plexPrefsRepo: PlexPrefsRepo): DefaultDataSourceFactory {
-        val httpDataSourceFactory =
-            DefaultHttpDataSourceFactory(Util.getUserAgent(service, APP_NAME))
+    fun plexDataSourceFactory(plexPrefs: PlexPrefsRepo): DefaultDataSourceFactory {
+        val dataSourceFactory = DefaultHttpDataSourceFactory(Util.getUserAgent(service, APP_NAME))
 
-        val props = httpDataSourceFactory.defaultRequestProperties
+        val props = dataSourceFactory.defaultRequestProperties
         props.set("X-Plex-Platform", "Android")
         props.set("X-Plex-Provides", "player")
         props.set("X-Plex_Client-Name", APP_NAME)
-        props.set("X-Plex-Client-Identifier", "1111111") // TODO add a read UUID
+        props.set("X-Plex-Client-Identifier", plexPrefs.uuid) // TODO add a read UUID
         props.set("X-Plex-Version", BuildConfig.VERSION_NAME)
         props.set("X-Plex-Product", APP_NAME)
         props.set("X-Plex-Platform-Version", Build.VERSION.RELEASE)
         props.set("X-Plex-Device", Build.MODEL)
         props.set("X-Plex-Device-Name", Build.MODEL)
-        props.set("X-Plex-Token", plexPrefsRepo.getAuthToken())
+        props.set("X-Plex-Token", plexPrefs.user?.authToken ?: plexPrefs.accountAuthToken)
 
-        return DefaultDataSourceFactory(service, httpDataSourceFactory)
+        return DefaultDataSourceFactory(service, dataSourceFactory)
     }
 
     @Provides
@@ -140,6 +155,27 @@ class ServiceModule(private val service: MediaPlayerService) {
     @ServiceScope
     fun mediaController(session: MediaSessionCompat) =
         MediaControllerCompat(service, session.sessionToken)
+
+    @Provides
+    @ServiceScope
+    fun mediaSessionCallback(callback: AudiobookMediaSessionCallback): Callback = callback
+
+    @Provides
+    @ServiceScope
+    fun trackListManager(): TrackListStateManager = TrackListStateManager()
+
+    @Provides
+    @ServiceScope
+    fun castPlayer(castContext: CastContext): CastPlayer = CastPlayer(castContext)
+
+    @Provides
+    @ServiceScope
+    fun sensorManager(): SensorManager =
+        service.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+
+    @Provides
+    @ServiceScope
+    fun toneManager() = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
 }
 
 

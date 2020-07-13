@@ -1,15 +1,20 @@
 package io.github.mattpvaughn.chronicle.injection.components
 
-import android.support.v4.media.session.MediaControllerCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.Component
 import io.github.mattpvaughn.chronicle.application.MainActivity
-import io.github.mattpvaughn.chronicle.application.MainActivityViewModelFactory
-import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager
+import io.github.mattpvaughn.chronicle.application.MainActivityViewModel
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
+import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment
+import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsViewModel
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingFragment
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingViewModel
+import io.github.mattpvaughn.chronicle.features.home.HomeFragment
 import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
-import io.github.mattpvaughn.chronicle.features.login.OnboardingActivity
+import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.ProgressUpdater
+import io.github.mattpvaughn.chronicle.features.settings.SettingsFragment
+import io.github.mattpvaughn.chronicle.features.settings.SettingsViewModel
 import io.github.mattpvaughn.chronicle.injection.modules.ActivityModule
 import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
 import io.github.mattpvaughn.chronicle.navigation.Navigator
@@ -18,15 +23,21 @@ import io.github.mattpvaughn.chronicle.navigation.Navigator
 @Component(dependencies = [AppComponent::class], modules = [ActivityModule::class])
 interface ActivityComponent {
     fun cachedFileManager(): ICachedFileManager
-    fun mainActivityViewModelFactory(): MainActivityViewModelFactory
     fun navigator(): Navigator
     fun progressUpdater(): ProgressUpdater
-    fun currentPlayingViewModel(): CurrentlyPlayingViewModel
-    fun mediaController(): MediaControllerCompat
+    fun localBroadcastManager(): LocalBroadcastManager
+    fun mediaServiceConnection(): MediaServiceConnection
+
+    fun mainActivityViewModelFactory(): MainActivityViewModel.Factory
+    fun currentPlayingViewModelFactory(): CurrentlyPlayingViewModel.Factory
+    fun audiobookDetailsViewModelFactory(): AudiobookDetailsViewModel.Factory
+    fun settingsViewModelFactory(): SettingsViewModel.Factory
 
     fun inject(activity: MainActivity)
-    fun inject(activity: OnboardingActivity)
     fun inject(libraryFragment: LibraryFragment)
+    fun inject(detailsFragment: AudiobookDetailsFragment)
+    fun inject(homeFragment: HomeFragment)
+    fun inject(settingsFragment: SettingsFragment)
     fun inject(currentlyPlayingFragment: CurrentlyPlayingFragment)
 }
 

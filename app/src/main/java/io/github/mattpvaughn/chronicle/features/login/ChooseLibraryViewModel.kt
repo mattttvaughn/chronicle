@@ -1,31 +1,38 @@
 package io.github.mattpvaughn.chronicle.features.login
 
-import android.util.Log
 import androidx.lifecycle.*
-import io.github.mattpvaughn.chronicle.data.model.Library
-import io.github.mattpvaughn.chronicle.data.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.plex.PlexConnectionChooser
-import io.github.mattpvaughn.chronicle.data.plex.PlexConnectionChooser.ConnectionResult.Failure
-import io.github.mattpvaughn.chronicle.data.plex.PlexMediaService
-import io.github.mattpvaughn.chronicle.data.plex.model.MediaType.Companion.ARTIST
-import io.github.mattpvaughn.chronicle.data.plex.model.asLibrary
+import androidx.lifecycle.Observer
+import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
+import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConnectionChooser
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConnectionChooser.ConnectionResult.Failure
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType.Companion.ARTIST
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.asLibrary
+import io.github.mattpvaughn.chronicle.util.Event
+import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import java.util.*
 import javax.inject.Inject
 
 
-@UseExperimental(InternalCoroutinesApi::class)
+@OptIn(InternalCoroutinesApi::class)
 class ChooseLibraryViewModel @Inject constructor(
     private val plexMediaService: PlexMediaService,
     plexConnectionChooser: PlexConnectionChooser,
-    private val plexConfig: PlexConfig
+    private val plexConfig: PlexConfig,
+    private val plexPrefsRepo: PlexPrefsRepo
 ) : ViewModel() {
 
     class Factory @Inject constructor(
         private val plexMediaService: PlexMediaService,
         private val plexConnectionChooser: PlexConnectionChooser,
-        private val plexConfig: PlexConfig
+        private val plexConfig: PlexConfig,
+        private val plexPrefsRepo: PlexPrefsRepo
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -33,22 +40,21 @@ class ChooseLibraryViewModel @Inject constructor(
                 return ChooseLibraryViewModel(
                     plexMediaService,
                     plexConnectionChooser,
-                    plexConfig
+                    plexConfig,
+                    plexPrefsRepo
                 ) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }
     }
 
-    private val _userMessage = MutableLiveData<String>()
-    val userMessage: LiveData<String>
+    private val _userMessage = MutableLiveData<Event<String>>()
+    val userMessage: LiveData<Event<String>>
         get() = _userMessage
 
-    private var _libraries = MutableLiveData<List<Library>>(emptyList())
-    val libraries: LiveData<List<Library>>
+    private var _libraries = MutableLiveData<List<PlexLibrary>>(emptyList())
+    val libraries: LiveData<List<PlexLibrary>>
         get() = _libraries
-
-    enum class LoadingStatus { LOADING, DONE, ERROR }
 
     private var _loadingStatus = MutableLiveData(LoadingStatus.LOADING)
     val loadingStatus: LiveData<LoadingStatus>
@@ -56,10 +62,7 @@ class ChooseLibraryViewModel @Inject constructor(
 
     private val networkObserver = Observer<Boolean> { isConnected ->
         if (isConnected) {
-            Log.i(
-                APP_NAME,
-                "Network connected: server url is ${plexConfig.url}. Fetching libraries"
-            )
+            Timber.i("Connected to server at ${plexConfig.url}, fetching libraries with token ${plexPrefsRepo.server?.accessToken}")
             getLibraries()
         }
     }
@@ -67,10 +70,15 @@ class ChooseLibraryViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             // chooseViableConnections must be called here because it won't be called in
-            // ChronicleApplication if we are just coming from login
-            val result = plexConnectionChooser.chooseViableConnections(viewModelScope)
-            if (result is Failure) {
-                _userMessage.postValue("Failed to connect to any server")
+            // ChronicleApplication if we have just logged in
+            try {
+                val result = plexConnectionChooser.chooseViableConnections()
+                if (result is Failure) {
+                    _userMessage.postEvent("Failed to connect to any server")
+                    _loadingStatus.postValue(LoadingStatus.ERROR)
+                }
+            } catch (t: Throwable) {
+                Timber.i("Failed to return result!")
             }
         }
         plexConfig.isConnected.observeForever(networkObserver)
@@ -85,33 +93,23 @@ class ChooseLibraryViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _loadingStatus.value = LoadingStatus.LOADING
-                Log.i(APP_NAME, "Fetching libraries")
                 val libraryContainer = plexMediaService.retrieveLibraries()
-                val libraries = libraryContainer.mediaContainer.directories
+                val tempLibraries = libraryContainer.plexMediaContainer.plexDirectories
                     .filter { it.type == ARTIST.typeString }
                     .map { it.asLibrary() }
-                Log.i(APP_NAME, "Libraries: $libraries")
-                _libraries.postValue(libraries)
+                Timber.i("Libraries: $tempLibraries")
+                _libraries.postValue(tempLibraries)
                 _loadingStatus.value = LoadingStatus.DONE
-            } catch (e: Exception) {
-                Log.e(APP_NAME, "Error: unable to load libraries: $e")
+            } catch (e: Throwable) {
+                Timber.e("Error loading libraries: ${Arrays.toString(e.stackTrace)}")
+                _userMessage.postEvent("Unable to load libraries: ${e.message}")
                 _loadingStatus.value = LoadingStatus.ERROR
-                _libraries.value = emptyList()
             }
         }
     }
 
     fun refresh() {
-        plexConfig.isConnected.observeForever(onHasConnectionObserver)
-    }
-
-    private val onHasConnectionObserver: Observer<Boolean> = Observer { isConnectionActive ->
-        if (isConnectionActive) {
-            removeRefreshObserver()
-        }
-    }
-
-    private fun removeRefreshObserver() {
-        plexConfig.isConnected.removeObserver(onHasConnectionObserver)
+        plexConfig.isConnected.removeObserver(networkObserver)
+        plexConfig.isConnected.observeForever(networkObserver)
     }
 }

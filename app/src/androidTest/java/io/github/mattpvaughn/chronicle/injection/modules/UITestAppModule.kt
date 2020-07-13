@@ -14,17 +14,13 @@ import dagger.Provides
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.application.LOG_NETWORK_REQUESTS
 import io.github.mattpvaughn.chronicle.data.local.*
-import io.github.mattpvaughn.chronicle.data.plex.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.mockk.mockk
 import io.mockk.spyk
-import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.simplexml.SimpleXmlConverterFactory
 import java.io.File
-import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -85,7 +81,7 @@ class UITestAppModule(private val context: Context) {
 
     @Provides
     @Singleton
-    fun provideMediaController(mediaServiceConnection: MediaServiceConnection): MediaControllerCompat =
+    fun provideMediaController(mediaServiceConnection: MediaServiceConnection): MediaControllerCompat? =
         mediaServiceConnection.mediaController
 
     @Provides
@@ -111,25 +107,6 @@ class UITestAppModule(private val context: Context) {
             HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.NONE)
         }
 
-    @Provides
-    @Singleton
-    fun okHttpClient(
-        plexConfig: PlexConfig,
-        loggingInterceptor: HttpLoggingInterceptor
-    ): OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .addInterceptor(plexConfig.plexInterceptor)
-        .addInterceptor(loggingInterceptor)
-        .build()
-
-    @Provides
-    @Singleton
-    fun retrofit(okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
-        .addConverterFactory(SimpleXmlConverterFactory.create())
-        .client(okHttpClient)
-        .baseUrl(PLEX_LOGIN_SERVICE_URL) // this will be replaced by PlexInterceptor as needed
-        .build()
 
     @Provides
     @Singleton

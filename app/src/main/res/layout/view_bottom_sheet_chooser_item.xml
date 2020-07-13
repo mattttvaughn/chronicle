@@ -9,11 +9,11 @@
 
         <variable
             name="option"
-            type="String" />
+            type="io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString" />
 
         <variable
             name="listener"
-            type="io.github.mattpvaughn.chronicle.views.BottomSheetChooser.ItemSelectedListener" />
+            type="io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserListener" />
     </data>
 
     <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -21,7 +21,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
-        android:onClick="@{() -> listener.onItemSelected(option)}"
+        android:onClick="@{() -> listener.onItemClicked(option)}"
         android:paddingTop="@dimen/margin_normal"
         android:paddingBottom="@dimen/margin_normal">
 

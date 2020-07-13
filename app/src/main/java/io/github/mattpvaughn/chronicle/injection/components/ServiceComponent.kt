@@ -6,11 +6,13 @@ import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.ext.cast.CastPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import dagger.Component
-import io.github.mattpvaughn.chronicle.data.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.plex.PlexMediaRepository
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaRepository
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaSource
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.injection.modules.ServiceModule
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
@@ -23,6 +25,7 @@ interface ServiceComponent {
     fun cachedFileManager(): ICachedFileManager
     fun progressUpdater(): ProgressUpdater
     fun exoPlayer(): ExoPlayer
+    fun castPlayer(): CastPlayer
     fun mediaSession(): MediaSessionCompat
     fun pendingIntent(): PendingIntent
     fun sleepTimer(): SleepTimer
@@ -39,7 +42,9 @@ interface ServiceComponent {
     fun packageValidator(): PackageValidator
     fun playbackErrorHandler(): PlaybackErrorHandler
     fun foregroundServiceController(): ForegroundServiceController
+    fun trackListManager(): TrackListStateManager
     fun mediaController(): MediaControllerCompat
+    fun plexMediaSource(): PlexMediaSource
 
     fun inject(mediaPlayerService: MediaPlayerService)
 }

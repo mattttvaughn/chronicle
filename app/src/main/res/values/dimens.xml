@@ -4,6 +4,7 @@
     <dimen name="margin_normal">16dp</dimen>
     <dimen name="margin_small">8dp</dimen>
     <dimen name="margin_large">32dp</dimen> <!-- aka large_marge -->
+    <dimen name="margin_huge">64dp</dimen> <!-- aka large_marge -->
     <dimen name="spacing_normal">8dp</dimen>
     <dimen name="spacing_micro">4dp</dimen>
 
@@ -19,6 +20,7 @@
 
     <!-- Bottom navigation bar -->
     <dimen name="bottom_nav_bar_height">64dp</dimen>
+    <dimen name="bottom_nav_bar_collapsed_height">0dp</dimen>
 
 
     <dimen name="bottom_nav_bar_height_plus_handle_height">136dp</dimen>
@@ -45,6 +47,7 @@
     <!-- Details screen -->
     <dimen name="details_artwork_size">196dp</dimen>
     <dimen name="details_play_button">64dp</dimen>
+    <dimen name="chapter_indent">24dp</dimen>
 
     <!-- Device dependent -->
     <dimen name="screen_horizontal_padding">16dp</dimen>
@@ -55,5 +58,7 @@
     <dimen name="fab_size_imageview_padding">8dp</dimen>
     <dimen name="rounded_input_padding_vertical">16dp</dimen>
     <dimen name="rounded_input_padding_horizontal">24dp</dimen>
+    <dimen name="plex_button_padding_horizontal">40dp</dimen>
+    <dimen name="plex_button_padding_vertical">20dp</dimen>
 
 </resources>
