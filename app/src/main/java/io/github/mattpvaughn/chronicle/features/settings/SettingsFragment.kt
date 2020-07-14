@@ -17,7 +17,10 @@ import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.databinding.FragmentSettingsBinding
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.navigation.Navigator
@@ -40,9 +43,6 @@ class SettingsFragment : Fragment() {
 
     @Inject
     lateinit var plexLoginRepo: IPlexLoginRepo
-
-    @Inject
-    lateinit var plexConnectionChooser: PlexConnectionChooser
 
     @Inject
     lateinit var chronicleBillingManager: ChronicleBillingManager
