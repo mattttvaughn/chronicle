@@ -12,8 +12,8 @@ import com.android.billingclient.api.BillingResult
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConnectionChooser
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConnectionChooser.ConnectionResult.Failure
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionResult.Failure
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
 import io.github.mattpvaughn.chronicle.injection.components.DaggerAppComponent
@@ -44,13 +44,13 @@ open class ChronicleApplication : Application() {
     lateinit var plexPrefs: PlexPrefsRepo
 
     @Inject
+    lateinit var plexMediaService: PlexMediaService
+
+    @Inject
     lateinit var plexConfig: PlexConfig
 
     @Inject
     lateinit var prefsRepo: PrefsRepo
-
-    @Inject
-    lateinit var plexConnectionChooser: PlexConnectionChooser
 
     @Inject
     lateinit var billingManager: ChronicleBillingManager
@@ -133,10 +133,10 @@ open class ChronicleApplication : Application() {
     private fun setupNetwork(plexPrefs: PlexPrefsRepo) {
         val server = plexPrefs.server
         if (server != null) {
-            plexConnectionChooser.setPotentialConnections(server.connections)
+            plexConfig.setPotentialConnections(server.connections)
             applicationScope.launch(unhandledExceptionHandler) {
                 try {
-                    val result = plexConnectionChooser.chooseViableConnections()
+                    val result = plexConfig.connectToServer(plexMediaService)
                     if (result is Failure) {
                         Toast.makeText(
                             applicationContext,

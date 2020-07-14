@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.LazyHeaders
@@ -13,10 +14,13 @@ import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionState.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.Connection
 import io.github.mattpvaughn.chronicle.views.GlideUrlRelativeCacheKey
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import timber.log.Timber
+import java.net.SocketTimeoutException
 import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,18 +36,23 @@ import kotlin.random.Random
 @Singleton
 class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
 
-    private var _url = PLACEHOLDER_URL
-    var url: String
-        get() = _url
-        set(value) {
-            _url = value
-            Timber.i("Url set to: $value")
-            _isConnected.postValue(value != PLACEHOLDER_URL)
-        }
+    private val connectionSet = mutableSetOf<Connection>()
 
-    private var _isConnected = MutableLiveData<Boolean>(false)
+    var url: String = PLACEHOLDER_URL
+
     val isConnected: LiveData<Boolean>
-        get() = _isConnected
+        get() = Transformations.map(connectionState) { it == CONNECTED }
+
+    private var _connectionState = MutableLiveData<ConnectionState>(NOT_CONNECTED)
+    val connectionState: LiveData<ConnectionState>
+        get() = _connectionState
+
+    enum class ConnectionState {
+        CONNECTING,
+        NOT_CONNECTED,
+        CONNECTED,
+        CONNECTION_FAILED
+    }
 
     val sessionIdentifier = Random.nextInt(until = 10000).toString()
 
@@ -148,16 +157,35 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
             ).build()
     }
 
+    fun setPotentialConnections(connections: List<Connection>) {
+        connectionSet.clear()
+        connectionSet.addAll(connections)
+    }
+
+    @InternalCoroutinesApi
+    suspend fun connectToServer(plexMediaService: PlexMediaService): ConnectionResult {
+        _connectionState.postValue(CONNECTING)
+        val connectionResult = chooseViableConnections(plexMediaService)
+        if (connectionResult is ConnectionResult.Success && connectionResult.url != PLACEHOLDER_URL) {
+            url = connectionResult.url
+            _connectionState.postValue(CONNECTED)
+        } else {
+            _connectionState.postValue(CONNECTION_FAILED)
+        }
+        return connectionResult
+    }
+
     /** Clear server data from [plexPrefsRepo] and [url] managed by [PlexConfig] */
     fun clear() {
         plexPrefsRepo.clear()
-        _isConnected.postValue(false)
+        _connectionState.postValue(NOT_CONNECTED)
         url = PLACEHOLDER_URL
+        connectionSet.clear()
     }
 
     fun clearServer() {
-        _isConnected.postValue(false)
-        _url = PLACEHOLDER_URL
+        _connectionState.postValue(NOT_CONNECTED)
+        url = PLACEHOLDER_URL
         plexPrefsRepo.server = null
         plexPrefsRepo.library = null
     }
@@ -170,5 +198,44 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
         plexPrefsRepo.library = null
         plexPrefsRepo.server = null
         plexPrefsRepo.user = null
+    }
+
+    sealed class ConnectionResult {
+        data class Success(val url: String) : ConnectionResult()
+        object Failure : ConnectionResult()
+    }
+
+    @InternalCoroutinesApi
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun chooseViableConnections(plexMediaService: PlexMediaService): ConnectionResult {
+        Timber.i("Choosing viable connection from: $connectionSet")
+        val connectionResultChannel = Channel<ConnectionResult>(capacity = 3)
+        connectionSet.sortedByDescending { it.local }.forEach { conn ->
+            coroutineScope {
+                Timber.i("Checking uri: ${conn.uri}")
+                try {
+                    plexMediaService.checkServer(conn.uri)
+                    if (!connectionResultChannel.isClosedForSend) {
+                        connectionResultChannel.send(ConnectionResult.Success(conn.uri))
+                    }
+                    Timber.i("Choosing uri: ${conn.uri}")
+                } catch (e: SocketTimeoutException) {
+                    Timber.e("Connection timed out for ${conn.uri}, $e")
+                    if (!connectionResultChannel.isClosedForSend) {
+                        connectionResultChannel.send(ConnectionResult.Failure)
+                    }
+                } catch (e: Throwable) {
+                    Timber.e("Connection failed for ${conn.uri}, $e")
+                }
+            }
+        }
+
+        val connectionResult = connectionResultChannel.receive()
+        return if (connectionResult is ConnectionResult.Success) {
+            connectionResultChannel.close() // don't want to connect to multiple servers
+            connectionResult
+        } else {
+            connectionResult
+        }
     }
 }

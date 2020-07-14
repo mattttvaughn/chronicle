@@ -38,7 +38,6 @@ interface AppComponent {
     fun workManager(): WorkManager
     fun downloadManager(): DownloadManager
     fun castContext(): CastContext
-    fun plexConnectionChooser(): PlexConnectionChooser
     fun unhandledExceptionHandler(): CoroutineExceptionHandler
     fun plexConfig(): PlexConfig
     fun plexLoginService(): PlexLoginService
