@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 *.swp
+*.un~
+.*.un~
+
