@@ -159,6 +159,7 @@ open class ChronicleApplication : Application() {
         } else {
             // network listener for sdk 24 and below
             registerReceiver(networkStateListener, IntentFilter().apply {
+                @Suppress("DEPRECATION")
                 this.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
             })
         }

@@ -83,6 +83,15 @@ class LibraryFragment : Fragment() {
             binding.swipeToRefresh.isRefreshing = it
         })
 
+        viewModel.scrollToItem.observe(viewLifecycleOwner, Observer {
+            if (!it.hasBeenHandled) {
+                it.getContentIfNotHandled()
+                binding.libraryGrid.postDelayed({
+                    binding.libraryGrid.scrollToPosition(0)
+                }, 250)
+            }
+        })
+
         binding.sortByOptions.checkRadioButtonWithTag(prefsRepo.bookSortKey)
         binding.sortByOptions.setOnCheckedChangeListener { group: FlowableRadioGroup, checkedId ->
             val key = group.findViewById<AppCompatRadioButton>(checkedId).tag as String

@@ -30,7 +30,9 @@ import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserLis
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString.ResourceString
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -73,6 +75,10 @@ class LibraryViewModel(
     val isSearchActive: LiveData<Boolean>
         get() = _isSearchActive
 
+    private var _scrollToItem = MutableLiveData<Event<Unit>>()
+    val scrollToItem: LiveData<Event<Unit>>
+        get() = _scrollToItem
+
     private var _isFilterShown = MutableLiveData(false)
     val isFilterShown: LiveData<Boolean>
         get() = _isFilterShown
@@ -86,6 +92,8 @@ class LibraryViewModel(
     private val sortKey =
         StringPreferenceLiveData(KEY_BOOK_SORT_BY, SORT_KEY_TITLE, sharedPreferences)
     val isOffline = BooleanPreferenceLiveData(KEY_OFFLINE_MODE, false, sharedPreferences)
+
+    private var prevBooks = emptyList<Audiobook>()
 
     private val allBooks = bookRepository.getAllBooks()
     val books = QuadLiveDataAsync(
@@ -103,7 +111,7 @@ class LibraryViewModel(
         val key = _sortKey ?: SORT_KEY_TITLE
         val offline = _isOffline ?: false
 
-        return@QuadLiveDataAsync _books.filter { !offline || it.isCached && offline }
+        val results = _books.filter { !offline || it.isCached && offline }
             .sortedWith(Comparator { book1, book2 ->
                 val descMultiplier = if (desc) 1 else -1
                 return@Comparator descMultiplier * when (key) {
@@ -118,6 +126,14 @@ class LibraryViewModel(
                     else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
                 }
             })
+
+        withContext(Dispatchers.Main) {
+            _scrollToItem.postEvent(Unit)
+        }
+
+        prevBooks = results
+
+        return@QuadLiveDataAsync results
     }
 
     private var _messageForUser = MutableLiveData<Event<String>>()
