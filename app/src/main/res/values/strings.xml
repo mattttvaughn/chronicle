@@ -70,6 +70,7 @@
     <string name="no_tracks_found">No tracks found</string>
     <string name="download">Download</string>
     <string name="downloading_book">Downloading book</string>
+    <string name="failed_to_connect_to_server">Can\'t connect to server</string>
 
     <!-- Home screen -->
     <string name="home">Home</string>

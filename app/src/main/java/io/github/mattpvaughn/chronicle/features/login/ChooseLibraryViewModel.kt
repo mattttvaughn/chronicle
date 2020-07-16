@@ -5,8 +5,6 @@ import androidx.lifecycle.Observer
 import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
 import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConnectionChooser
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConnectionChooser.ConnectionResult.Failure
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType.Companion.ARTIST
@@ -23,14 +21,12 @@ import javax.inject.Inject
 @OptIn(InternalCoroutinesApi::class)
 class ChooseLibraryViewModel @Inject constructor(
     private val plexMediaService: PlexMediaService,
-    plexConnectionChooser: PlexConnectionChooser,
     private val plexConfig: PlexConfig,
     private val plexPrefsRepo: PlexPrefsRepo
 ) : ViewModel() {
 
     class Factory @Inject constructor(
         private val plexMediaService: PlexMediaService,
-        private val plexConnectionChooser: PlexConnectionChooser,
         private val plexConfig: PlexConfig,
         private val plexPrefsRepo: PlexPrefsRepo
     ) : ViewModelProvider.Factory {
@@ -39,7 +35,6 @@ class ChooseLibraryViewModel @Inject constructor(
             if (modelClass.isAssignableFrom(ChooseLibraryViewModel::class.java)) {
                 return ChooseLibraryViewModel(
                     plexMediaService,
-                    plexConnectionChooser,
                     plexConfig,
                     plexPrefsRepo
                 ) as T
@@ -72,11 +67,7 @@ class ChooseLibraryViewModel @Inject constructor(
             // chooseViableConnections must be called here because it won't be called in
             // ChronicleApplication if we have just logged in
             try {
-                val result = plexConnectionChooser.chooseViableConnections()
-                if (result is Failure) {
-                    _userMessage.postEvent("Failed to connect to any server")
-                    _loadingStatus.postValue(LoadingStatus.ERROR)
-                }
+                plexConfig.connectToServer(plexMediaService)
             } catch (t: Throwable) {
                 Timber.i("Failed to return result!")
             }

@@ -14,7 +14,6 @@ import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConnectionChooser
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.settings.SettingsViewModel.NavigationDestination.*
 import io.github.mattpvaughn.chronicle.util.Event
@@ -37,7 +36,6 @@ import javax.inject.Inject
 class SettingsViewModel(
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
-    private val plexConnectionChooser: PlexConnectionChooser,
     private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
     private val plexLoginRepo: IPlexLoginRepo,
@@ -51,7 +49,6 @@ class SettingsViewModel(
         private val trackRepository: ITrackRepository,
         private val prefsRepo: PrefsRepo,
         private val mediaServiceConnection: MediaServiceConnection,
-        private val plexConnectionChooser: PlexConnectionChooser,
         private val plexLoginRepo: IPlexLoginRepo,
         private val cachedFileManager: CachedFileManager,
         private val plexConfig: PlexConfig
@@ -61,7 +58,6 @@ class SettingsViewModel(
                 return SettingsViewModel(
                     bookRepository,
                     trackRepository,
-                    plexConnectionChooser,
                     mediaServiceConnection,
                     prefsRepo,
                     plexLoginRepo,
@@ -471,7 +467,6 @@ class SettingsViewModel(
                             val logout = {
                                 cachedFileManager.uncacheAll()
                                 plexConfig.clear()
-                                plexConnectionChooser.clear()
                                 mediaServiceConnection.transportControls?.stop()
                                 clearConfig(RETURN_TO_LOGIN)
                             }

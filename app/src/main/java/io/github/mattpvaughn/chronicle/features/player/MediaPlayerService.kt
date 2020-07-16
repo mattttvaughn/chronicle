@@ -9,6 +9,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import android.view.KeyEvent.*
+import androidx.lifecycle.Observer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.media.MediaBrowserServiceCompat
 import com.google.android.exoplayer2.C
@@ -212,6 +213,8 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         invalidatePlaybackParams()
         (progressUpdater as SimpleProgressUpdater).mediaSessionConnector = mediaSessionConnector
         progressUpdater.startRegularProgressUpdates()
+
+        plexConfig.connectionState.observeForever(serverChangedListener)
     }
 
     override fun broadcastUpdate(sleepTimerAction: SleepTimerAction, durationMillis: Long) {
@@ -239,6 +242,25 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                 invalidatePlaybackParams()
             }
         }
+    }
+
+    private val serverChangedListener = Observer<PlexConfig.ConnectionState> {
+        if (mediaController.playbackState.isPrepared) {
+            // Only can change server when playback is prepared because otherwise we would be
+            // attempting to load data on a null/empty tracklist
+            changeServer()
+        }
+    }
+
+    /**
+     * Change the tracks in the player to refer to the new server url. Because [PlexConfig] is a
+     * Singleton we don't need to keep track of state here
+     */
+    private fun changeServer() {
+        mediaSessionCallback.onPlayFromMediaId(
+            trackListManager.trackList.map { it.id }.firstOrNull { true }.toString(),
+            Bundle().apply { putLong(KEY_START_TIME_OFFSET, ACTIVE_TRACK) }
+        )
     }
 
     private fun invalidatePlaybackParams() {
@@ -272,6 +294,8 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         }
         progressUpdater.cancel()
         serviceJob.cancel()
+
+        plexConfig.connectionState.removeObserver(serverChangedListener)
 
         prefsRepo.unregisterPrefsListener(prefsListener)
         localBroadcastManager.unregisterReceiver(sleepTimerBroadcastReceiver)

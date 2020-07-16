@@ -68,7 +68,7 @@ interface IPlexLoginRepo {
 class PlexLoginRepo @Inject constructor(
     private val plexPrefsRepo: PlexPrefsRepo,
     private val plexLoginService: PlexLoginService,
-    private val connectionChooser: PlexConnectionChooser
+    private val plexConfig: PlexConfig
 ) : IPlexLoginRepo {
 
     private var _loginState = MutableLiveData<LoginState>()
@@ -138,7 +138,7 @@ class PlexLoginRepo @Inject constructor(
 
     override fun chooseServer(serverModel: ServerModel) {
         Timber.i("Chose server: $serverModel")
-        connectionChooser.setPotentialConnections(serverModel.connections)
+        plexConfig.setPotentialConnections(serverModel.connections)
         plexPrefsRepo.server = serverModel
         _loginState.postValue(LOGGED_IN_NO_LIBRARY_CHOSEN)
     }
