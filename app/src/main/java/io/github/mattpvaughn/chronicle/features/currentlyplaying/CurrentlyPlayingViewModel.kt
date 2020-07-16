@@ -502,30 +502,14 @@ class CurrentlyPlayingViewModel(
                     check(formattableString is FormattableString.ResourceString)
 
                     prefsRepo.playbackSpeed = when (formattableString.stringRes) {
-                        R.string.playback_speed_0_5x -> {
-                            0.5f
-                        }
-                        R.string.playback_speed_0_7x -> {
-                            0.7f
-                        }
-                        R.string.playback_speed_1_0x -> {
-                            1.0f
-                        }
-                        R.string.playback_speed_1_2x -> {
-                            1.2f
-                        }
-                        R.string.playback_speed_1_5x -> {
-                            1.5f
-                        }
-                        R.string.playback_speed_1_7x -> {
-                            1.5f
-                        }
-                        R.string.playback_speed_2_0x -> {
-                            2.0f
-                        }
-                        R.string.playback_speed_3_0x -> {
-                            3.0f
-                        }
+                        R.string.playback_speed_0_5x -> 0.5f
+                        R.string.playback_speed_0_7x -> 0.7f
+                        R.string.playback_speed_1_0x -> 1.0f
+                        R.string.playback_speed_1_2x -> 1.2f
+                        R.string.playback_speed_1_5x -> 1.5f
+                        R.string.playback_speed_1_7x -> 1.7f
+                        R.string.playback_speed_2_0x -> 2.0f
+                        R.string.playback_speed_3_0x -> 3.0f
                         else -> throw NoWhenBranchMatchedException("Unknown playback speed selected")
                     }
                     hideOptionsMenu()
