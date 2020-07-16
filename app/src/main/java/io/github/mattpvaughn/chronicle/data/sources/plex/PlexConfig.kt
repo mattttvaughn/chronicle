@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Transformations
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.LazyHeaders
@@ -14,13 +13,13 @@ import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionResult.Failure
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionResult.Success
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionState.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.Connection
 import io.github.mattpvaughn.chronicle.views.GlideUrlRelativeCacheKey
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
 import timber.log.Timber
-import java.net.SocketTimeoutException
 import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,10 +39,21 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
 
     var url: String = PLACEHOLDER_URL
 
+    private val _isConnected = MutableLiveData(false)
     val isConnected: LiveData<Boolean>
-        get() = Transformations.map(connectionState) { it == CONNECTED }
+        get() = _isConnected
 
-    private var _connectionState = MutableLiveData<ConnectionState>(NOT_CONNECTED)
+    private val _connectionState = object : MutableLiveData<ConnectionState>(NOT_CONNECTED) {
+        override fun postValue(value: ConnectionState?) {
+            _isConnected.postValue(value == CONNECTED)
+            super.postValue(value)
+        }
+
+        override fun setValue(value: ConnectionState?) {
+            _isConnected.postValue(value == CONNECTED)
+            super.setValue(value)
+        }
+    }
     val connectionState: LiveData<ConnectionState>
         get() = _connectionState
 
@@ -162,17 +172,35 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
         connectionSet.addAll(connections)
     }
 
+    /**
+     * Indicates to observers that connectivity has been lost, but does not update URL yet, as
+     * querying a possibly dead url has a better chance of success than querying no url
+     */
+    fun connectionHasBeenLost() {
+        _connectionState.value = NOT_CONNECTED
+    }
+
+
+    private var prevConnectToServerJob: CompletableJob? = null
+
     @InternalCoroutinesApi
-    suspend fun connectToServer(plexMediaService: PlexMediaService): ConnectionResult {
+    fun connectToServer(plexMediaService: PlexMediaService) {
+        prevConnectToServerJob?.cancel("Killing previous connection attempt")
         _connectionState.postValue(CONNECTING)
-        val connectionResult = chooseViableConnections(plexMediaService)
-        if (connectionResult is ConnectionResult.Success && connectionResult.url != PLACEHOLDER_URL) {
-            url = connectionResult.url
-            _connectionState.postValue(CONNECTED)
-        } else {
-            _connectionState.postValue(CONNECTION_FAILED)
+        prevConnectToServerJob = Job().also {
+            val context = CoroutineScope(it + Dispatchers.Main)
+            context.launch {
+                val connectionResult = chooseViableConnections(plexMediaService)
+                Timber.i("Returned connection $connectionResult")
+                if (connectionResult is Success && connectionResult.url != PLACEHOLDER_URL) {
+                    url = connectionResult.url
+                    _connectionState.postValue(CONNECTED)
+                    Timber.i("Connection success: $url")
+                } else {
+                    _connectionState.postValue(CONNECTION_FAILED)
+                }
+            }
         }
-        return connectionResult
     }
 
     /** Clear server data from [plexPrefsRepo] and [url] managed by [PlexConfig] */
@@ -205,37 +233,60 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
         object Failure : ConnectionResult()
     }
 
+    /**
+     * Attempts to connect to all [Connection]s in [connectionSet] via [PlexMediaService.checkServer].
+     *
+     * On the first successful connection, return a [ConnectionResult.Success] with
+     *   [ConnectionResult.Success.url] from the [Connection.uri]
+     *
+     * If all connections fail: return a [Failure] as soon as all connections have completed
+     *
+     * If no connections are made within 15 seconds, return a [ConnectionResult.Failure].
+     */
     @InternalCoroutinesApi
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun chooseViableConnections(plexMediaService: PlexMediaService): ConnectionResult {
-        Timber.i("Choosing viable connection from: $connectionSet")
-        val connectionResultChannel = Channel<ConnectionResult>(capacity = 3)
-        connectionSet.sortedByDescending { it.local }.forEach { conn ->
-            coroutineScope {
-                Timber.i("Checking uri: ${conn.uri}")
-                try {
-                    plexMediaService.checkServer(conn.uri)
-                    if (!connectionResultChannel.isClosedForSend) {
-                        connectionResultChannel.send(ConnectionResult.Success(conn.uri))
+        return withTimeoutOrNull(15000) {
+            Timber.i("Choosing viable connection from: $connectionSet")
+            val connections = connectionSet.sortedByDescending { it.local }
+            val deferredConnections = connections.map { conn ->
+                async {
+                    Timber.i("Testing connection: ${conn.uri}")
+                    try {
+                        plexMediaService.checkServer(conn.uri)
+                        return@async Success(conn.uri)
+                    } catch (e: Throwable) {
+                        return@async Failure
                     }
-                    Timber.i("Choosing uri: ${conn.uri}")
-                } catch (e: SocketTimeoutException) {
-                    Timber.e("Connection timed out for ${conn.uri}, $e")
-                    if (!connectionResultChannel.isClosedForSend) {
-                        connectionResultChannel.send(ConnectionResult.Failure)
-                    }
-                } catch (e: Throwable) {
-                    Timber.e("Connection failed for ${conn.uri}, $e")
                 }
             }
-        }
 
-        val connectionResult = connectionResultChannel.receive()
-        return if (connectionResult is ConnectionResult.Success) {
-            connectionResultChannel.close() // don't want to connect to multiple servers
-            connectionResult
-        } else {
-            connectionResult
-        }
+            while (deferredConnections.any { it.isActive }) {
+                Timber.i("Connections: $deferredConnections")
+                deferredConnections.forEach { deferred ->
+                    if (deferred.isCompleted) {
+                        val completed = deferred.getCompleted()
+                        if (completed is Success) {
+                            Timber.i("Returning connection $completed")
+                            deferredConnections.forEach { it.cancel("Sibling completed, killing connection attempt: $it") }
+                            return@withTimeoutOrNull completed
+                        }
+                    }
+                }
+                delay(500)
+            }
+
+            // Check if the final completed job was a success
+            Timber.i("Connections: $deferredConnections")
+            deferredConnections.forEach { deferred ->
+                if (deferred.isCompleted && deferred.getCompleted() is Success) {
+                    Timber.i("Returning final completed connection ${deferred.getCompleted()}")
+                    return@withTimeoutOrNull deferred.getCompleted()
+                }
+            }
+
+            Timber.i("Returning connection $Failure")
+            Failure
+        } ?: Failure
     }
 }

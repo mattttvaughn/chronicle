@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
+
     <data>
 
         <variable
@@ -19,6 +20,8 @@
 
         <import type="io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus" />
 
+        <import type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionState" />
+
         <import type="android.view.View" />
     </data>
 
@@ -26,6 +29,7 @@
         android:id="@+id/coordinator"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
 
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appBarLayout"
@@ -121,8 +125,8 @@
                         app:layout_constraintRight_toLeftOf="@id/play_button_container"
                         app:layout_constraintTop_toTopOf="@id/play_button_container"
                         app:layout_constraintVertical_chainStyle="packed"
-                        tools:text="Book title but it's very long so it overflows past the edge of the screen"
-                        tools:ignore="RtlHardcoded" />
+                        tools:ignore="RtlHardcoded"
+                        tools:text="Book title but it's very long so it overflows past the edge of the screen" />
 
                     <TextView
                         android:id="@+id/author"
@@ -155,14 +159,14 @@
                             android:focusable="true"
                             android:onClick="@{() -> viewModel.pausePlayButtonClicked()}"
                             android:src="@{ viewModel.isBookInViewPlaying() ? @drawable/ic_pause_button_large_colored : @drawable/ic_play_button_large_colored}"
-                            android:visibility="@{viewModel.isConnecting() ? View.GONE : View.VISIBLE}"
+                            android:visibility="@{viewModel.isAudioLoading() ? View.GONE : View.VISIBLE}"
                             tools:src="@drawable/ic_pause_button_large_colored" />
 
                         <ProgressBar
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:padding="@dimen/margin_small"
-                            android:visibility="@{viewModel.isConnecting() ? View.VISIBLE : View.GONE}" />
+                            android:visibility="@{viewModel.isAudioLoading() ? View.VISIBLE : View.GONE}" />
                     </FrameLayout>
 
                     <TextView
@@ -218,18 +222,55 @@
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <androidx.appcompat.widget.Toolbar
-                    android:id="@+id/details_toolbar"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    android:background="@color/colorPrimaryDark"
-                    app:layout_collapseMode="pin"
-                    app:menu="@menu/audiobook_details_menu"
-                    app:navigationIcon="@drawable/ic_arrow_back_white"
-                    app:popupTheme="@style/ThemeOverlay.AppCompat.Dark" />
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    app:layout_collapseMode="pin">
 
+                    <FrameLayout
+                        android:id="@+id/connectivity_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:elevation="1dp">
+
+                        <com.google.android.material.progressindicator.ProgressIndicator
+                            android:id="@+id/connecting_to_server_indicator"
+                            style="@style/Widget.MaterialComponents.ProgressIndicator.Linear.Indeterminate"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:indeterminate="true"
+                            android:visibility="@{viewModel.serverConnection == ConnectionState.CONNECTING ? View.VISIBLE: View.GONE}"
+                            app:indicatorColor="@color/colorAccent"
+                            app:indicatorType="linear" />
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                            style="@style/TextAppearance.Body1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:background="@color/textError"
+                            android:drawableEnd="@drawable/ic_refresh_white"
+                            android:onClick="@{() -> viewModel.connectToServer()}"
+                            android:padding="@dimen/spacing_normal"
+                            android:text="@string/failed_to_connect_to_server"
+                            android:textAlignment="center"
+                            android:visibility="@{viewModel.serverConnection == ConnectionState.CONNECTION_FAILED ? View.VISIBLE : View.GONE}" />
+                    </FrameLayout>
+
+                    <androidx.appcompat.widget.Toolbar
+                        android:id="@+id/details_toolbar"
+                        android:layout_width="match_parent"
+                        android:layout_height="?attr/actionBarSize"
+                        android:background="@color/colorPrimaryDark"
+                        app:menu="@menu/audiobook_details_menu"
+                        app:navigationIcon="@drawable/ic_arrow_back_white"
+                        app:popupTheme="@style/ThemeOverlay.AppCompat.Dark" />
+
+                </LinearLayout>
             </com.google.android.material.appbar.CollapsingToolbarLayout>
         </com.google.android.material.appbar.AppBarLayout>
+
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/tracks"
@@ -256,6 +297,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:elevation="4dp" />
+
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>

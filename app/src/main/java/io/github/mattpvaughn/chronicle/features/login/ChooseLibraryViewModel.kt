@@ -5,7 +5,6 @@ import androidx.lifecycle.Observer
 import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
 import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionResult.Failure
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType.Companion.ARTIST
@@ -68,11 +67,7 @@ class ChooseLibraryViewModel @Inject constructor(
             // chooseViableConnections must be called here because it won't be called in
             // ChronicleApplication if we have just logged in
             try {
-                val result = plexConfig.connectToServer(plexMediaService)
-                if (result is Failure) {
-                    _userMessage.postEvent("Failed to connect to any server")
-                    _loadingStatus.postValue(LoadingStatus.ERROR)
-                }
+                plexConfig.connectToServer(plexMediaService)
             } catch (t: Throwable) {
                 Timber.i("Failed to return result!")
             }
