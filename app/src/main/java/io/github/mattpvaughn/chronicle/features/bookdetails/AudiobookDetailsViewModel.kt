@@ -18,6 +18,7 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus
 import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_OFFSET
@@ -28,6 +29,8 @@ import io.github.mattpvaughn.chronicle.util.mapAsync
 import io.github.mattpvaughn.chronicle.util.postEvent
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -41,7 +44,8 @@ class AudiobookDetailsViewModel(
     private val mediaServiceConnection: MediaServiceConnection,
     private val progressUpdater: ProgressUpdater,
     private val plexConfig: PlexConfig,
-    private val prefsRepo: PrefsRepo
+    private val prefsRepo: PrefsRepo,
+    private val plexMediaService: PlexMediaService
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -52,7 +56,8 @@ class AudiobookDetailsViewModel(
         private val mediaServiceConnection: MediaServiceConnection,
         private val progressUpdater: ProgressUpdater,
         private val plexConfig: PlexConfig,
-        private val prefsRepo: PrefsRepo
+        private val prefsRepo: PrefsRepo,
+        private val plexMediaService: PlexMediaService
     ) : ViewModelProvider.Factory {
         lateinit var inputAudiobook: Audiobook
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -66,7 +71,8 @@ class AudiobookDetailsViewModel(
                     mediaServiceConnection,
                     progressUpdater,
                     plexConfig,
-                    prefsRepo
+                    prefsRepo,
+                    plexMediaService
                 ) as T
             } else {
                 throw IllegalStateException("Wrong class provided to ${this.javaClass.name}")
@@ -193,7 +199,7 @@ class AudiobookDetailsViewModel(
     val summaryLinesShown: LiveData<Int>
         get() = _summaryLinesShown
 
-    val isConnecting = Transformations.map(mediaServiceConnection.playbackState) { state ->
+    val isAudioLoading = Transformations.map(mediaServiceConnection.playbackState) { state ->
         if (state.state == PlaybackStateCompat.STATE_ERROR) {
             Timber.i("Playback state: ${state.stateName}, (${state.errorMessage})")
         } else {
@@ -210,9 +216,18 @@ class AudiobookDetailsViewModel(
         return@map lines == lineCountSummaryMaximized
     }
 
+    val serverConnection = Transformations.map(plexConfig.connectionState) { it }
+
     fun onToggleSummaryView() {
         _summaryLinesShown.value =
             if (_summaryLinesShown.value == lineCountSummaryMinimized) lineCountSummaryMaximized else lineCountSummaryMinimized
+    }
+
+    @InternalCoroutinesApi
+    fun connectToServer() {
+        viewModelScope.launch(Dispatchers.IO) {
+            plexConfig.connectToServer(plexMediaService)
+        }
     }
 
     private val networkObserver = Observer<Boolean> { isConnected ->
@@ -347,7 +362,6 @@ class AudiobookDetailsViewModel(
         val transportControls = mediaServiceConnection.transportControls ?: return
 
         val extras = Bundle().apply { putLong(KEY_START_TIME_OFFSET, startTimeOffset) }
-        Timber.i("Shalom: ${mediaServiceConnection.playbackState.value}")
         Timber.i(
             "is this book playing? ${isBookInViewPlaying.value}, this this book active? ${isBookInViewActive.value}"
         )
