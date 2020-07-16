@@ -131,8 +131,6 @@ dependencies {
     implementation "com.google.android.exoplayer:exoplayer-core:$exoplayerVersion"
     implementation "com.google.android.exoplayer:exoplayer-ui:$exoplayerVersion"
     implementation "com.google.android.exoplayer:extension-mediasession:$exoplayerVersion"
-    implementation "com.google.android.exoplayer:extension-cast:$exoplayerVersion"
-
 
     // ExoPlayer extensions for FLAC and OPUS file types
     implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-opus:$exoplayerVersion") {

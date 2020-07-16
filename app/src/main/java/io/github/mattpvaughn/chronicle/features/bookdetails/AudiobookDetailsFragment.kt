@@ -10,7 +10,6 @@ import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.google.android.gms.cast.framework.CastContext
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
@@ -54,9 +53,6 @@ class AudiobookDetailsFragment : Fragment() {
 
     @Inject
     lateinit var mediaServiceConnection: MediaServiceConnection
-
-    @Inject
-    lateinit var castContext: CastContext
 
     @Inject
     lateinit var viewModelFactory: AudiobookDetailsViewModel.Factory

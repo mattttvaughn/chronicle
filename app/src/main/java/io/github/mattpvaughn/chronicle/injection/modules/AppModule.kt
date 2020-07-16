@@ -9,7 +9,6 @@ import android.content.SharedPreferences
 import androidx.core.content.ContextCompat
 import androidx.work.WorkManager
 import com.android.billingclient.api.BillingClient
-import com.google.android.gms.cast.framework.CastContext
 import com.squareup.moshi.Moshi
 import dagger.Module
 import dagger.Provides
@@ -166,9 +165,5 @@ class AppModule(private val app: Application) {
     fun exceptionHandler(): CoroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
         Timber.e("Caught unhandled exception! $e")
     }
-
-    @Provides
-    @Singleton
-    fun castContext(context: Context): CastContext = CastContext.getSharedInstance(context)
 
 }

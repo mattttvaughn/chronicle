@@ -6,7 +6,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.ext.cast.CastPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import dagger.Component
@@ -25,7 +24,6 @@ interface ServiceComponent {
     fun cachedFileManager(): ICachedFileManager
     fun progressUpdater(): ProgressUpdater
     fun exoPlayer(): ExoPlayer
-    fun castPlayer(): CastPlayer
     fun mediaSession(): MediaSessionCompat
     fun pendingIntent(): PendingIntent
     fun sleepTimer(): SleepTimer

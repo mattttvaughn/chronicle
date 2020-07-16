@@ -4,7 +4,6 @@ import android.app.DownloadManager
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.work.WorkManager
-import com.google.android.gms.cast.framework.CastContext
 import com.squareup.moshi.Moshi
 import dagger.Component
 import io.github.mattpvaughn.chronicle.application.ChronicleApplication
@@ -37,7 +36,6 @@ interface AppComponent {
     fun bookRepo(): IBookRepository
     fun workManager(): WorkManager
     fun downloadManager(): DownloadManager
-    fun castContext(): CastContext
     fun unhandledExceptionHandler(): CoroutineExceptionHandler
     fun plexConfig(): PlexConfig
     fun plexLoginService(): PlexLoginService

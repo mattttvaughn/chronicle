@@ -26,12 +26,6 @@ import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.util.MimeTypes
-import com.google.android.gms.cast.MediaInfo
-import com.google.android.gms.cast.MediaMetadata
-import com.google.android.gms.cast.MediaQueueItem
-import com.google.android.gms.common.images.WebImage
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.util.toUri
 
 
@@ -287,47 +281,6 @@ fun MediaMetadataCompat.describe(): String {
     return "${this.title}, ${this.artist}, ${this.displayTitle}"
 }
 
-fun MediaMetadata.describe(): String {
-    return this.getString(MediaMetadata.KEY_TITLE)
-}
-
-fun MediaMetadataCompat.toMediaQueueItem(): MediaMetadata {
-    val metadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_AUDIOBOOK_CHAPTER)
-    metadata.putString(MediaMetadata.KEY_TITLE, this.title)
-    metadata.putInt(MediaMetadata.KEY_QUEUE_ITEM_ID, this.trackNumber.toInt())
-    metadata.putString(MediaMetadata.KEY_ARTIST, this.artist)
-    metadata.putString(MediaMetadata.KEY_SUBTITLE, this.displaySubtitle)
-    metadata.addImage(WebImage(this.albumArtUri))
-    metadata.putString(MediaMetadata.KEY_BOOK_TITLE, this.album)
-    metadata.putInt(MediaMetadata.KEY_CHAPTER_NUMBER, this.trackNumber.toInt())
-    metadata.putInt(MediaMetadata.KEY_DISC_NUMBER, this.discNumber.toInt())
-    return metadata
-}
-
-fun MediaQueueItem.toMediaDescription(): MediaDescriptionCompat {
-    val metadata = this.media.metadata
-    val descBuilder = MediaDescriptionCompat.Builder()
-        .setTitle(metadata.getString(MediaMetadata.KEY_TITLE))
-        .setSubtitle(metadata.getString(MediaMetadata.KEY_SUBTITLE))
-
-    if (metadata.hasImages()) {
-        descBuilder.setIconUri(metadata.images.first().url)
-    }
-
-    return descBuilder.build()
-}
-
-/**
- * Extension method for converting a [MediaMetadata] to [MediaDescriptionCompat]
- */
-fun MediaMetadata?.toMediaDescriptionCompat(): MediaDescriptionCompat {
-    return MediaDescriptionCompat.Builder()
-        .setTitle(this?.getString(MediaMetadata.KEY_TITLE))
-        .setSubtitle(this?.getString(MediaMetadata.KEY_ARTIST))
-        .setIconUri(this?.images?.firstOrNull()?.url)
-        .build()
-}
-
 /**
  * Extension method for converting a [MediaMetadata] to [MediaDescriptionCompat]
  */
@@ -338,26 +291,6 @@ fun MediaDescriptionCompat.toMediaMetadataCompat(): MediaMetadataCompat {
     builder.displaySubtitle = this.subtitle.toString()
     builder.displayIconUri = this.iconUri.toString()
     return builder.build()
-}
-
-/**
- * Extension method for building an [Array<MediaQueueItem>] given a [List] of [MediaMetadataCompat]
- * objects.
- */
-fun List<MediaMetadataCompat>.toMediaQueueItems(plexConfig: PlexConfig): Array<MediaQueueItem> {
-    return map { mediaItem ->
-        val mediaUri = plexConfig.makeUriFromPart(mediaItem.mediaUri.path ?: "").toString()
-        val mediaInfo = MediaInfo.Builder(mediaUri)
-            .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-            .setContentType(MimeTypes.AUDIO_UNKNOWN)
-            .setStreamDuration(mediaItem.duration)
-            .setMetadata(mediaItem.toMediaQueueItem()).build()
-
-        val queueItem = MediaQueueItem.Builder(mediaInfo)
-            .setPlaybackDuration(mediaItem.duration.toDouble()).build()
-
-        return@map queueItem
-    }.toTypedArray()
 }
 
 /**

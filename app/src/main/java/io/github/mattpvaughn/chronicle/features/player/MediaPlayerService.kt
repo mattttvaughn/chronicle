@@ -17,15 +17,10 @@ import com.google.android.exoplayer2.PlaybackParameters
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.audio.AudioAttributes
-import com.google.android.exoplayer2.ext.cast.CastPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.gms.cast.framework.CastContext
-import com.google.android.gms.cast.framework.CastState
-import com.google.android.gms.cast.framework.CastStateListener
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.ChronicleApplication
-import io.github.mattpvaughn.chronicle.application.FEATURE_FLAG_IS_CAST_ENABLED
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
@@ -50,7 +45,7 @@ import javax.inject.Inject
 
 /** The service responsible for media playback, notification */
 class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceController,
-    SleepTimer.SleepTimerBroadcaster, CastStateListener {
+    SleepTimer.SleepTimerBroadcaster {
 
     val serviceJob: CompletableJob = SupervisorJob()
     val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
@@ -87,12 +82,6 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
     @Inject
     lateinit var exoPlayer: SimpleExoPlayer
-
-    @Inject
-    lateinit var castPlayer: CastPlayer
-
-    @Inject
-    lateinit var castContext: CastContext
 
     private val audioAttrs = AudioAttributes.Builder()
         .setContentType(C.CONTENT_TYPE_SPEECH) // pauses playback on temporary audio focus loss
@@ -166,8 +155,6 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
         Timber.i("Service created!")
 
-//        castContext.addCastStateListener(this)
-
         exoPlayer.setAudioAttributes(audioAttrs, true)
 
         prefsRepo.registerPrefsListener(prefsListener)
@@ -177,13 +164,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         mediaSession.setPlaybackState(EMPTY_PLAYBACK_STATE)
         mediaSession.setCallback(mediaSessionCallback)
 
-        if (FEATURE_FLAG_IS_CAST_ENABLED) {
-            currentPlayer = if (castPlayer.isCastSessionAvailable) castPlayer else exoPlayer
-        }
         switchToPlayer(exoPlayer)
-        if (FEATURE_FLAG_IS_CAST_ENABLED) {
-            castPlayer.addListener(playerEventListener)
-        }
         exoPlayer.addListener(playerEventListener)
 
         mediaSessionConnector.setCustomActionProviders(*makeCustomActionProviders(trackListManager))
@@ -275,9 +256,6 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
         // Ensures that players will not block being removed as a foreground service
         exoPlayer.stop(true)
-        if (FEATURE_FLAG_IS_CAST_ENABLED) {
-            castPlayer.stop(true)
-        }
     }
 
     override fun onDestroy() {
@@ -550,20 +528,6 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                         )
                     }
                 }
-            }
-        }
-    }
-
-    override fun onCastStateChanged(castState: Int) {
-        Timber.i("Cast state: $castState")
-        // TODO: finish adding casting
-        if (FEATURE_FLAG_IS_CAST_ENABLED) {
-            when (castState) {
-                CastState.CONNECTED -> switchToPlayer(castPlayer)
-                CastState.NOT_CONNECTED,
-                CastState.NO_DEVICES_AVAILABLE,
-                CastState.CONNECTING -> switchToPlayer(exoPlayer)
-                else -> throw NoWhenBranchMatchedException("Unknown cast state: $castState")
             }
         }
     }

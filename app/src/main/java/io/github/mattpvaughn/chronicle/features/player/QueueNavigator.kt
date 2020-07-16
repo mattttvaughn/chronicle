@@ -5,7 +5,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.Timeline
-import com.google.android.exoplayer2.ext.cast.CastPlayer
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
 import javax.inject.Inject
 
@@ -35,10 +34,6 @@ class QueueNavigator @Inject constructor(
                     windowIndex,
                     window
                 ).tag as MediaDescriptionCompat
-            }
-            is CastPlayer -> {
-                val periodId = player.currentTag as Int
-                player.getItem(periodId)?.media?.metadata.toMediaDescriptionCompat()
             }
             else -> throw NoWhenBranchMatchedException("Unknown player: $player")
         }

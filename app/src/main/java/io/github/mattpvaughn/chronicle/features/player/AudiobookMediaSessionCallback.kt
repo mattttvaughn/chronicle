@@ -10,7 +10,6 @@ import com.github.michaelbull.result.Ok
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
-import com.google.android.exoplayer2.ext.cast.CastPlayer
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
@@ -245,16 +244,6 @@ class AudiobookMediaSessionCallback @Inject constructor(
                     is ExoPlayer -> {
                         val mediaSource = metadataList.toMediaSource(dataSourceFactory)
                         player.prepare(mediaSource)
-                    }
-                    is CastPlayer -> {
-                        val mediaQueueItems = metadataList.toMediaQueueItems(plexConfig)
-                        Timber.i("Loading items: ${mediaQueueItems.first().media.metadata.describe()}")
-                        player.loadItems(
-                            mediaQueueItems,
-                            trackListStateManager.currentTrackIndex,
-                            trackListStateManager.currentTrackProgress,
-                            Player.REPEAT_MODE_OFF
-                        )
                     }
                     else -> throw NoWhenBranchMatchedException("Unknown media player")
                 }

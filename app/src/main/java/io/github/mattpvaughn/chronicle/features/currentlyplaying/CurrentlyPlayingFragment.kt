@@ -3,15 +3,15 @@ package io.github.mattpvaughn.chronicle.features.currentlyplaying
 import android.content.Context
 import android.content.IntentFilter
 import android.os.Bundle
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.google.android.gms.cast.framework.CastButtonFactory
-import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.COLLAPSED
 import io.github.mattpvaughn.chronicle.data.model.Chapter
@@ -107,15 +107,6 @@ class CurrentlyPlayingFragment : Fragment() {
         return binding.root
     }
 
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        CastButtonFactory.setUpMediaRouteButton(
-            requireContext().applicationContext,
-            menu,
-            R.id.menu_cast
-        )
-        super.onCreateOptionsMenu(menu, inflater)
-    }
 
 }
 

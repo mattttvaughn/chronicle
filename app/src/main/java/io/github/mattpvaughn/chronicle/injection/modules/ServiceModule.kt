@@ -15,12 +15,10 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.SimpleExoPlayer
-import com.google.android.exoplayer2.ext.cast.CastPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.util.Util
-import com.google.android.gms.cast.framework.CastContext
 import dagger.Module
 import dagger.Provides
 import io.github.mattpvaughn.chronicle.BuildConfig
@@ -163,10 +161,6 @@ class ServiceModule(private val service: MediaPlayerService) {
     @Provides
     @ServiceScope
     fun trackListManager(): TrackListStateManager = TrackListStateManager()
-
-    @Provides
-    @ServiceScope
-    fun castPlayer(castContext: CastContext): CastPlayer = CastPlayer(castContext)
 
     @Provides
     @ServiceScope
