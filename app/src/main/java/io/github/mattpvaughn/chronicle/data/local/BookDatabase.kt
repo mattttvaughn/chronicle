@@ -118,9 +118,6 @@ interface BookDao {
     @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND (title LIKE :query OR author LIKE :query)")
     fun searchAsync(query: String, offlineModeActive: Boolean): List<Audiobook>
 
-    @Query("UPDATE Audiobook SET isCached = :cached WHERE id = :bookId")
-    fun updateCached(bookId: Int, cached: Boolean)
-
     @Query("DELETE FROM Audiobook")
     suspend fun clear()
 

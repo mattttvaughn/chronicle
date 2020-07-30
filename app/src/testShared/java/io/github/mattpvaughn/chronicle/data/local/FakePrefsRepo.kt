@@ -48,6 +48,9 @@ class FakePrefsRepo @Inject constructor() : PrefsRepo {
     override var isLibrarySortedDescending: Boolean
         get() = TODO("Not yet implemented")
         set(value) {}
+    override var currentDownloadIDs: Set<Long>
+        get() = TODO("Not yet implemented")
+        set(value) {}
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
         return false

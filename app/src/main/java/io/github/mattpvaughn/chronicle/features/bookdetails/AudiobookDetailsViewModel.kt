@@ -9,20 +9,21 @@ import android.text.format.DateUtils
 import androidx.lifecycle.*
 import com.github.michaelbull.result.Ok
 import io.github.mattpvaughn.chronicle.R
-import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_OFFSET
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.PLEX_STATE_STOPPED
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_TRACK_ID
 import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.mapAsync
@@ -38,7 +39,7 @@ import javax.inject.Inject
 class AudiobookDetailsViewModel(
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
-    private val cachedFileManager: CachedFileManager,
+    private val cachedFileManager: ICachedFileManager,
     // Just a skeleton of an audiobook. Only guaranteed to contain a correct [Audiobook.id]
     private val inputAudiobook: Audiobook,
     private val mediaServiceConnection: MediaServiceConnection,
@@ -52,7 +53,7 @@ class AudiobookDetailsViewModel(
     class Factory @Inject constructor(
         private val bookRepository: IBookRepository,
         private val trackRepository: ITrackRepository,
-        private val cachedFileManager: CachedFileManager,
+        private val cachedFileManager: ICachedFileManager,
         private val mediaServiceConnection: MediaServiceConnection,
         private val progressUpdater: ProgressUpdater,
         private val plexConfig: PlexConfig,
@@ -80,10 +81,7 @@ class AudiobookDetailsViewModel(
         }
     }
 
-    private var _audiobook = bookRepository.getAudiobook(inputAudiobook.id)
-    val audiobook: LiveData<Audiobook?>
-        get() = _audiobook
-
+    val audiobook: LiveData<Audiobook?> = bookRepository.getAudiobook(inputAudiobook.id)
     val tracks = trackRepository.getTracksForAudiobook(inputAudiobook.id)
 
     // Used to cache tracks.asChapterList when tracks changes
@@ -107,15 +105,26 @@ class AudiobookDetailsViewModel(
     val messageForUser: LiveData<Event<String>>
         get() = _messageForUser
 
-    val cacheStatus = MediatorLiveData<CacheStatus>()
-    private var _cacheStatusManual =
+    // Default cache status if [tracks] hasn't loaded, or an override if currently caching
+    private var _manualCacheStatus =
         MutableLiveData(if (inputAudiobook.isCached) CACHED else NOT_CACHED)
-    private val _cacheStatusTracks = Transformations.map(tracks) {
-        when {
-            it.isEmpty() -> _cacheStatusManual.value
-            it.all { track -> track.cached } -> CACHED
-            it.none { track -> track.cached } -> NOT_CACHED
-            else -> _cacheStatusManual.value
+
+    /**
+     * Cache status of the current audiobook. Reflects the cache status of [tracks] if they've
+     * been loaded, otherwise default to [_manualCacheStatus].
+     *
+     * Special case: if [_manualCacheStatus] is [CACHING], use that value
+     */
+    val cacheStatus = DoubleLiveData(_manualCacheStatus, audiobook) { default, _audiobook ->
+        if (_audiobook?.isCached == true) {
+            return@DoubleLiveData CACHED
+        }
+        if (default == CACHING) {
+            return@DoubleLiveData CACHING
+        }
+        return@DoubleLiveData when (_audiobook?.isCached) {
+            false -> NOT_CACHED
+            else -> default
         }
     }
 
@@ -232,32 +241,31 @@ class AudiobookDetailsViewModel(
 
     private val networkObserver = Observer<Boolean> { isConnected ->
         if (isConnected) {
-            refreshTracks(inputAudiobook.id)
+            refreshChapterInfo(inputAudiobook.id)
         }
     }
 
     init {
         plexConfig.isConnected.observeForever(networkObserver)
-
-        // Create a MediatorLiveData from _cacheStatusTracks and _cacheStatusManual
-        cacheStatus.addSource(_cacheStatusTracks) { cacheStatus.value = it }
-        cacheStatus.addSource(_cacheStatusManual) { cacheStatus.value = it }
     }
 
-    private fun refreshTracks(bookId: Int) {
+    /**
+     * Refresh the tracks for the current audiobook. Mostly important because we want to refresh
+     * the progress in the audiobook is there's a new
+     */
+    private fun refreshChapterInfo(bookId: Int) {
         Timber.i("Refreshing tracks!")
-        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+        viewModelScope.launch {
             try {
-                // If we're just updating the track list, and there are already tracks/chapters
+                // If we're just updating underlying track list, and there are already tracks/chapters
                 // loaded, don't replace chapter view with loading view
-                if (tracks.value?.isNullOrEmpty() == false && chapters.value?.isNullOrEmpty() == false) {
-                    _isLoadingTracks.value = true
-                }
-                val tracks = trackRepository.loadTracksForAudiobook(bookId)
-                if (tracks is Ok) {
+                _isLoadingTracks.value =
+                    tracks.value?.isNullOrEmpty() == true && chapters.value?.isNullOrEmpty() == true
+                val trackRequest = trackRepository.loadTracksForAudiobook(bookId)
+                if (trackRequest is Ok) {
                     val audiobook = bookRepository.getAudiobookAsync(bookId)
                     audiobook?.let {
-                        bookRepository.loadChapterData(audiobook, tracks.value)
+                        bookRepository.loadChapterData(audiobook, trackRequest.value)
                     }
                 }
                 _isLoadingTracks.value = false
@@ -271,7 +279,7 @@ class AudiobookDetailsViewModel(
     private fun cancelCaching() {
         // Cancel queued downloads
         cachedFileManager.cancelCaching()
-        _cacheStatusManual.postValue(NOT_CACHED)
+        _manualCacheStatus.postValue(NOT_CACHED)
     }
 
     fun onCacheButtonClick() {
@@ -284,9 +292,9 @@ class AudiobookDetailsViewModel(
                 Timber.i("Caching tracks for \"${audiobook.value?.title}\"")
                 if (plexConfig.isConnected.value != true) {
                     showUserMessage("Unable to cache audiobook \"${audiobook.value?.title}\", not connected to server")
-                    _cacheStatusManual.postValue(NOT_CACHED)
+                    _manualCacheStatus.postValue(NOT_CACHED)
                 } else {
-                    _cacheStatusManual.postValue(CACHING)
+                    _manualCacheStatus.postValue(CACHING)
                     cachedFileManager.downloadTracks(tracks.value ?: emptyList())
                 }
             }
@@ -303,17 +311,12 @@ class AudiobookDetailsViewModel(
     private fun promptUserToUncache() {
         showOptionsMenu(
             title = FormattableString.from(R.string.delete_cache_files_prompt),
-            options = listOf(
-                FormattableString.from(android.R.string.yes),
-                FormattableString.from(android.R.string.no)
-            ),
+            options = listOf(FormattableString.yes, FormattableString.no),
             listener = object : BottomChooserItemListener() {
                 override fun onItemClicked(formattableString: FormattableString) {
-                    check(formattableString is FormattableString.ResourceString)
-
-                    when (formattableString.stringRes) {
-                        android.R.string.yes -> uncacheFiles()
-                        android.R.string.no -> { /* Do nothing */
+                    when (formattableString) {
+                        FormattableString.yes -> uncacheFiles()
+                        FormattableString.no -> { /* Do nothing */
                         }
                         else -> throw NoWhenBranchMatchedException("Unknown option selected!")
                     }
@@ -324,8 +327,15 @@ class AudiobookDetailsViewModel(
     }
 
     private fun uncacheFiles() {
-        cachedFileManager.uncacheTracks(inputAudiobook.id, tracks.value ?: emptyList())
-        _cacheStatusManual.postValue(NOT_CACHED)
+        viewModelScope.launch {
+            val result =
+                cachedFileManager.deleteCachedBook(tracks.value ?: emptyList())
+            _manualCacheStatus.postValue(NOT_CACHED)
+            if (result.isFailure) {
+                val messageString = result.exceptionOrNull()?.message ?: return@launch
+                _messageForUser.postEvent(messageString)
+            }
+        }
     }
 
     fun pausePlayButtonClicked() {
@@ -334,7 +344,8 @@ class AudiobookDetailsViewModel(
             return
         }
 
-        val pausePlayAction = { pausePlay(inputAudiobook.id.toString()) }
+        val pausePlayAction =
+            { pausePlay(inputAudiobook.id.toString(), startTimeOffset = ACTIVE_TRACK) }
         if (mediaServiceConnection.isConnected.value != true) {
             mediaServiceConnection.connect(pausePlayAction)
         } else {
@@ -355,13 +366,17 @@ class AudiobookDetailsViewModel(
     private fun pausePlay(
         bookId: String,
         startTimeOffset: Long = ACTIVE_TRACK,
+        trackId: Int = TRACK_NOT_FOUND,
         forcePlayFromMediaId: Boolean = false
     ) {
         updateProgressForChangingBook()
 
         val transportControls = mediaServiceConnection.transportControls ?: return
 
-        val extras = Bundle().apply { putLong(KEY_START_TIME_OFFSET, startTimeOffset) }
+        val extras = Bundle().apply {
+            putLong(KEY_START_TIME_OFFSET, startTimeOffset)
+            putInt(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
+        }
         Timber.i(
             "is this book playing? ${isBookInViewPlaying.value}, this this book active? ${isBookInViewActive.value}"
         )
@@ -410,21 +425,21 @@ class AudiobookDetailsViewModel(
         }
     }
 
-    fun jumpToChapter(offset: Long, hasUserConfirmation: Boolean = false) {
+    /** Jumps to a chapter starting [offset] milliseconds into the audiobook */
+    fun jumpToChapter(
+        offset: Long = USE_TRACK_ID,
+        trackId: Int = TRACK_NOT_FOUND,
+        hasUserConfirmation: Boolean = false
+    ) {
         if (!hasUserConfirmation) {
             showOptionsMenu(
                 title = FormattableString.from(R.string.warning_jump_to_chapter_will_clear_progress),
-                options = listOf(
-                    FormattableString.from(android.R.string.yes),
-                    FormattableString.from(android.R.string.no)
-                ),
+                options = listOf(FormattableString.yes, FormattableString.no),
                 listener = object : BottomChooserItemListener() {
                     override fun onItemClicked(formattableString: FormattableString) {
-                        check(formattableString is FormattableString.ResourceString)
-
-                        when (formattableString.stringRes) {
-                            android.R.string.yes -> jumpToChapter(offset, true)
-                            android.R.string.no -> Unit
+                        when (formattableString) {
+                            FormattableString.yes -> jumpToChapter(offset, trackId, true)
+                            FormattableString.no -> Unit
                             else -> throw NoWhenBranchMatchedException()
                         }
                         hideBottomSheet()
@@ -435,7 +450,7 @@ class AudiobookDetailsViewModel(
 
         val jumpToChapterAction = {
             audiobook.value?.let { book ->
-                pausePlay(book.id.toString(), offset, forcePlayFromMediaId = true)
+                pausePlay(book.id.toString(), offset, trackId, forcePlayFromMediaId = true)
             }
         }
         if (mediaServiceConnection.isConnected.value != true) {
@@ -444,6 +459,7 @@ class AudiobookDetailsViewModel(
             jumpToChapterAction()
         }
     }
+
 
     private fun hideBottomSheet() {
         Timber.i("Hiding bottom sheet?")

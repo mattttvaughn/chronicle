@@ -67,7 +67,7 @@ data class Audiobook constructor(
                 lastViewedAt = dir.lastViewedAt,
                 viewedLeafCount = dir.viewedLeafCount,
                 leafCount = dir.leafCount,
-                chapters = dir.plexChapters.map { it.toChapter() }
+                chapters = dir.plexChapters.map { it.toChapter(false) }
             )
         }
 
@@ -154,7 +154,7 @@ fun Audiobook.toMediaItem(plexConfig: PlexConfig): MediaBrowserCompat.MediaItem 
     mediaDescription.setTitle(title)
     mediaDescription.setMediaId(id.toString())
     mediaDescription.setSubtitle(author)
-    mediaDescription.setIconUri(plexConfig.makeUriFromPart(this.thumb))
+    mediaDescription.setIconUri(plexConfig.makeThumbUri(this.thumb))
     val extras = Bundle()
     extras.putBoolean(EXTRA_IS_DOWNLOADED, isCached)
     extras.putInt(

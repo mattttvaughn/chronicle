@@ -41,7 +41,7 @@ class LibraryViewModel(
     private val trackRepository: ITrackRepository,
     private val prefsRepo: PrefsRepo,
     private val cachedFileManager: ICachedFileManager,
-    private val sharedPreferences: SharedPreferences
+    sharedPreferences: SharedPreferences
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -170,9 +170,7 @@ class LibraryViewModel(
         _isSearchActive.postValue(isSearchActive)
     }
 
-    /**
-     * Searches for books which match the provided text
-     */
+    /** Searches for books which match the provided text */
     fun search(query: String) {
         _isQueryEmpty.postValue(query.isEmpty())
         if (query.isEmpty()) {
@@ -237,17 +235,12 @@ class LibraryViewModel(
 
             showOptionsMenu(
                 prompt,
-                listOf(
-                    FormattableString.from(android.R.string.yes),
-                    FormattableString.from(android.R.string.no)
-                ),
+                listOf(FormattableString.yes, FormattableString.no),
                 object : BottomSheetChooser.BottomChooserItemListener() {
                     override fun onItemClicked(formattableString: FormattableString) {
-                        check(formattableString is ResourceString)
-
-                        when (formattableString.stringRes) {
-                            android.R.string.yes -> downloadAll(tracks)
-                            android.R.string.no -> {
+                        when (formattableString) {
+                            FormattableString.yes -> downloadAll(tracks)
+                            FormattableString.no -> {
                             }
                             else -> throw NoWhenBranchMatchedException()
                         }
@@ -315,13 +308,14 @@ class LibraryViewModel(
 
     /** Shows/hides the filter/sort/view menu to the user. Show if [isVisible] is true, hide otherwise */
     fun setFilterMenuVisible(isVisible: Boolean) {
-        _isFilterShown.postValue(isVisible)
+        if (isVisible != _isFilterShown.value) {
+            _isFilterShown.postValue(isVisible)
+        }
     }
 
     /** Toggles the direction which the library is sorted in (ascending vs. descending) */
     fun toggleSortDirection() {
         prefsRepo.isLibrarySortedDescending = !prefsRepo.isLibrarySortedDescending
     }
-
 
 }

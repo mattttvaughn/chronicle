@@ -21,6 +21,8 @@
 #-renamesourcefileattribute SourceFile
 
 # Accessed via menu.xml
--keep class androidx.mediarouter.app.MediaRouteActionProvider {
-  *;
-}
+
+# TODO: Return when casting is returned
+#-keep class androidx.mediarouter.app.MediaRouteActionProvider {
+#  *;
+#}

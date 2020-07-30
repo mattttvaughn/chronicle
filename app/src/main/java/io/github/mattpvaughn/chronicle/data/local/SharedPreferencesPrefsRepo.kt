@@ -9,6 +9,7 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_AUTO_R
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_COVER_STYLE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_DEBUG_DISABLE_PROGRESS
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_DOWNLOAD_IDS
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_PREMIUM
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LAST_REFRESH
@@ -33,7 +34,7 @@ interface PrefsRepo {
     /** The directory where media files are synced */
     var cachedMediaDir: File
 
-    /** The style of book covers in the app- i.e. rectangular, square, ... */
+    /** The style of book covers in the app- i.e. rectangular, square */
     var bookCoverStyle: String
 
     /** Whether the app should be able to access the network */
@@ -71,6 +72,15 @@ interface PrefsRepo {
 
     /** Whether the library is sorted in descending (true) or ascending (false) order */
     var isLibrarySortedDescending: Boolean
+
+    /**
+     * IDs for downloads currently downloading. If it has finished downloading or errored, it
+     * should be removed from the download set
+     *
+     * This is a hacky way of persisting info about current downloads between sessions because
+     * DownloadManager doesn't provide that capability
+     */
+    var currentDownloadIDs: Set<Long>
 
     /**
      * Get a saved preference value corresponding to [key], providing [defaultValue] if no value
@@ -114,6 +124,7 @@ interface PrefsRepo {
         const val KEY_BOOK_SORT_BY = "key_sort_by"
         const val KEY_IS_LIBRARY_SORT_DESCENDING = "key_is_sort_descending"
         const val KEY_LIBRARY_VIEW_TYPE = "key_view_type"
+        const val KEY_DOWNLOAD_IDS = "key_download_ids"
     }
 }
 
@@ -210,6 +221,19 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         get() = getBoolean(KEY_IS_LIBRARY_SORT_DESCENDING, defaultIsLibrarySortDescending)
         set(value) {
             sharedPreferences.edit().putBoolean(KEY_IS_LIBRARY_SORT_DESCENDING, value).apply()
+        }
+
+    override var currentDownloadIDs: Set<Long>
+        get() {
+            return sharedPreferences.getStringSet(KEY_DOWNLOAD_IDS, emptySet())
+                ?.map { it.toLong() }
+                ?.toSet()
+                ?: emptySet()
+        }
+        set(value) {
+            sharedPreferences.edit()
+                .putStringSet(KEY_DOWNLOAD_IDS, value.map { it.toString() }.toSet())
+                .apply()
         }
 
     private val viewTypeBook = "book"

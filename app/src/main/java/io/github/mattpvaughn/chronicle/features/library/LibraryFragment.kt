@@ -13,6 +13,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
@@ -110,17 +112,30 @@ class LibraryFragment : Fragment() {
             }
         })
 
+        val behavior = (binding.filterView.layoutParams) as CoordinatorLayout.LayoutParams
+        (behavior.behavior as BottomSheetBehavior).addBottomSheetCallback(object :
+            BottomSheetBehavior.BottomSheetCallback() {
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {}
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                // ignore in-between states
+                if (newState == STATE_EXPANDED || newState == STATE_HIDDEN) {
+                    viewModel.setFilterMenuVisible(newState == STATE_EXPANDED)
+                }
+            }
+        })
+
+
         viewModel.isFilterShown.observe(viewLifecycleOwner, Observer { isFilterShown ->
             Timber.i("Showing filter view: $isFilterShown")
             val filterBottomSheetState = if (isFilterShown) {
-                BottomSheetBehavior.STATE_EXPANDED
+                STATE_EXPANDED
             } else {
-                BottomSheetBehavior.STATE_HIDDEN
+                STATE_HIDDEN
             }
 
             val params = binding.filterView.layoutParams as CoordinatorLayout.LayoutParams
-            val behavior = params.behavior as BottomSheetBehavior
-            behavior.state = filterBottomSheetState
+            val bottomSheetBehavior = params.behavior as BottomSheetBehavior
+            bottomSheetBehavior.state = filterBottomSheetState
         })
 
         (activity as AppCompatActivity).setSupportActionBar(binding.toolbar)

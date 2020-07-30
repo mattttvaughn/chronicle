@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 @ActivityScope
 class MediaServiceConnection @Inject constructor(
-    context: Context,
+    applicationContext: Context,
     serviceComponent: ComponentName
 ) {
     val isConnected = MutableLiveData(false)
@@ -28,7 +28,7 @@ class MediaServiceConnection @Inject constructor(
 
             // Create a MediaControllerCompat from the session token
             mediaController = MediaControllerCompat(
-                context,
+                applicationContext,
                 mediaBrowser.sessionToken
             ).apply {
                 registerCallback(mediaControllerCallback)
@@ -58,7 +58,7 @@ class MediaServiceConnection @Inject constructor(
     val mediaControllerCallback = MediaControllerCallback()
 
     val mediaBrowser: MediaBrowserCompat = MediaBrowserCompat(
-        context,
+        applicationContext,
         serviceComponent,
         connectionCallbacks,
         null
@@ -69,6 +69,7 @@ class MediaServiceConnection @Inject constructor(
     var transportControls: MediaControllerCompat.TransportControls? = null
 
     inner class MediaControllerCallback : MediaControllerCompat.Callback() {
+        // Dangerous- easy to leak this lambda as [MediaServiceConnection] is application-scoped
         var onConnected: () -> Unit? = {}
 
         override fun onSessionReady() {
@@ -78,11 +79,13 @@ class MediaServiceConnection @Inject constructor(
         }
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            onConnected = {}
             Timber.i("MediaController state: $state")
             playbackState.postValue(state ?: EMPTY_PLAYBACK_STATE)
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            onConnected = {}
             Timber.i("MediaController metadata: ${metadata?.describe()}")
             if (metadata?.id == null || metadata.title == null) {
                 nowPlaying.postValue(NOTHING_PLAYING)
@@ -92,6 +95,7 @@ class MediaServiceConnection @Inject constructor(
         }
 
         override fun onSessionDestroyed() {
+            onConnected = {}
             Timber.i("MediaController callback is kill")
             isConnected.postValue(false)
             super.onSessionDestroyed()
@@ -101,6 +105,7 @@ class MediaServiceConnection @Inject constructor(
     fun disconnect() {
         Timber.i("Disconnecting MediaServiceConnection")
         isConnected.postValue(false)
+        mediaControllerCallback.onConnected = {}
         mediaController?.unregisterCallback(mediaControllerCallback)
         mediaBrowser.disconnect()
     }

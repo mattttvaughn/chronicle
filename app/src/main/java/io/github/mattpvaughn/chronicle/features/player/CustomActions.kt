@@ -23,13 +23,13 @@ fun makeCustomActionProviders(
             player.seekRelative(trackListStateManager, SKIP_BACKWARDS_DURATION_MS_SIGNED)
         },
         SimpleCustomActionProvider(SKIP_FORWARDS) { player: Player, _: String, _: Bundle? ->
-            player.seekRelative(trackListStateManager, SKIP_FORWARDS_DURATION_MS)
+            player.seekRelative(trackListStateManager, SKIP_FORWARDS_DURATION_MS_SIGNED)
         }
     )
 
 }
 
-const val SKIP_FORWARDS_DURATION_MS = 30000L
+const val SKIP_FORWARDS_DURATION_MS_SIGNED = 30000L
 const val SKIP_BACKWARDS_DURATION_MS_SIGNED = -10000L
 
 const val SKIP_FORWARDS_STRING = "Skip forwards"

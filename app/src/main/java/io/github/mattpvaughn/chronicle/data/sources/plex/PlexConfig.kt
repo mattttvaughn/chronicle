@@ -66,6 +66,7 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
 
     val sessionIdentifier = Random.nextInt(until = 10000).toString()
 
+    /** Prepends the current server url to [relativePath], accounting for trailing/leading `/`s */
     fun toServerString(relativePath: String): String {
         val baseEndsWith = url.endsWith('/')
         val pathStartsWith = relativePath.startsWith('/')
@@ -94,10 +95,11 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
             if (thumb.startsWith("http")) {
                 thumb
             } else {
+                Timber.i("Taking part uri")
                 toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$thumb")
             }
         )
-        Timber.i("Url is: $url")
+        Timber.i("Notification thumb uri is: $url")
         val glideUrl = GlideUrlRelativeCacheKey(url, makeGlideHeaders())
         return try {
             return withContext(Dispatchers.IO) {
@@ -106,7 +108,6 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
                     .load(glideUrl)
                     .onlyRetrieveFromCache(requireCached)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .timeout(200)
                     .transform(CenterCrop())
                     .submit()
                     .get()
@@ -148,19 +149,12 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
             )
     }
 
-    fun makeUriFromPart(part: String): Uri {
-        val uri = Uri.parse(toServerString(part))
+    fun makeThumbUri(part: String): Uri {
+        val appContext = Injector.get().applicationContext()
+        val imageSize = appContext.resources.getDimension(R.dimen.audiobook_image_width).toInt()
+        val plexThumbPart = "photo/:/transcode?width=$imageSize&height=$imageSize&url=$part"
+        val uri = Uri.parse(toServerString(plexThumbPart))
         return uri.buildUpon()
-            .appendQueryParameter("X-Plex-Platform", "Android")
-            .appendQueryParameter("X-Plex-Provides", "player,timeline")
-            .appendQueryParameter("X-Plex-Client-Name", APP_NAME)
-            .appendQueryParameter("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
-            .appendQueryParameter("X-Plex-Version", BuildConfig.VERSION_NAME)
-            .appendQueryParameter("X-Plex-Product", APP_NAME)
-            .appendQueryParameter("X-Plex-Platform-Version", Build.VERSION.RELEASE)
-            .appendQueryParameter("X-Plex-Device", Build.MODEL)
-            .appendQueryParameter("X-Plex-Device-Name", Build.MODEL)
-            .appendQueryParameter("X-Plex-Session-Identifier", sessionIdentifier)
             .appendQueryParameter(
                 "X-Plex-Token",
                 plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken

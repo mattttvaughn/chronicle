@@ -82,9 +82,6 @@ interface IBookRepository {
      */
     suspend fun searchAsync(query: String): List<Audiobook>
 
-    /** Update the [Audiobook.isCached] field to [isCached] for an audiobook with id [bookId] */
-    suspend fun updateCached(bookId: Int, isCached: Boolean)
-
     /**
      * Return the [Audiobook] which has been listened to the most recently. Specifically, look for
      * the [Audiobook.lastViewedAt] field which is largest among all [Audiobook]s in the local DB
@@ -112,6 +109,7 @@ interface IBookRepository {
      * @return true if chapter data was found and added to db, otherwise false
      */
     suspend fun loadChapterData(audiobook: Audiobook, tracks: List<MediaItemTrack>): Boolean
+    suspend fun update(audiobook: Audiobook)
 }
 
 @Singleton
@@ -154,7 +152,7 @@ class BookRepository @Inject constructor(
                 null
             }
         } ?: return
-        //    ^^^ quit on network failure- without a server as source of truth nothing below matters
+        //    ^^^ quit on network failure- nothing below matters without new books from server
 
 
         val localBooks = withContext(Dispatchers.IO) { bookDao.getAudiobooks() }
@@ -242,9 +240,10 @@ class BookRepository @Inject constructor(
         return bookDao.search("%$query%", prefsRepo.offlineMode)
     }
 
-    override suspend fun updateCached(bookId: Int, isCached: Boolean) {
+    override suspend fun update(audiobook: Audiobook) {
         withContext(Dispatchers.IO) {
-            bookDao.updateCached(bookId, isCached)
+            // set the chapters stored in the db to also be cached
+            bookDao.update(audiobook)
         }
     }
 
@@ -293,10 +292,11 @@ class BookRepository @Inject constructor(
         val chapters: List<Chapter> = withContext(Dispatchers.IO) {
             try {
                 tracks.flatMap {
-                    plexMediaService.retrieveTrackInfo(it.id).plexMediaContainer.metadata
+                    plexMediaService.retrieveChapterInfo(it.id).plexMediaContainer.metadata
                         .firstOrNull()
                         ?.plexChapters
-                        ?.map { plexChapter -> plexChapter.toChapter() }
+                        // TODO: below won't work for books made of multiple m4b files
+                        ?.map { plexChapter -> plexChapter.toChapter(audiobook.isCached) }
                         ?: emptyList()
                 }
             } catch (t: Throwable) {
@@ -305,6 +305,7 @@ class BookRepository @Inject constructor(
             }
         }
         return if (chapters.isNotEmpty()) {
+            // Update [Audiobook.chapters] in the local db
             val replacementBook = audiobook.copy(chapters = chapters)
             withContext(Dispatchers.IO) {
                 bookDao.update(replacementBook)

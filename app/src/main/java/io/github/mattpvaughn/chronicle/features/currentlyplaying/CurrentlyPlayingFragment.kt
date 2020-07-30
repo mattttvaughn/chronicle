@@ -83,7 +83,7 @@ class CurrentlyPlayingFragment : Fragment() {
 
         val adapter = ChapterListAdapter(object : TrackClickListener {
             override fun onClick(chapter: Chapter) {
-                viewModel.jumpToChapter(chapter.startTimeOffset)
+                viewModel.jumpToChapter(chapter.startTimeOffset, chapter.id.toInt())
             }
         })
         binding.chapterProgressSeekbar.setOnSeekBarChangeListener(object :
@@ -106,8 +106,5 @@ class CurrentlyPlayingFragment : Fragment() {
 
         return binding.root
     }
-
-
 }
-
 

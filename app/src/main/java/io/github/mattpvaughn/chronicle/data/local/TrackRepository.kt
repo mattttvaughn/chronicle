@@ -5,8 +5,8 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import io.github.mattpvaughn.chronicle.application.Injector
-import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
+import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
@@ -182,7 +182,10 @@ class TrackRepository @Inject constructor(
 
     override suspend fun getBookIdForTrack(trackId: Int): Int {
         return withContext(Dispatchers.IO) {
-            trackDao.getTrackAsync(trackId)?.parentKey ?: TRACK_NOT_FOUND
+            val track = trackDao.getTrackAsync(trackId)
+            Timber.i("Track is $track")
+            val parentKey = track?.parentKey
+            parentKey ?: NO_AUDIOBOOK_FOUND_ID
         }
     }
 

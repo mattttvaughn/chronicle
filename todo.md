@@ -70,11 +70,20 @@ Low priority
 
 Release 0.50:
 
+(July 30th):
+ - [X] Fix playback issues for large libraries (seeking, jump to chapter)
+ - [X] Fixed possible memory leak
+ - [X] Fixed problem where thumbnails don't load on slow connections
+
+(July 21st):
+ - [X] Allow audiobooks to be retained between library changes
+
+(July 10thish):
  - [X] Shake to reset snooze
 
 Release 0.42.1:
 
- - [X] Bug where leading 0s in pins are trimmed
+ - [X] Bug where leading zeroes in pins are trimmed
 
 Release 0.42:
 

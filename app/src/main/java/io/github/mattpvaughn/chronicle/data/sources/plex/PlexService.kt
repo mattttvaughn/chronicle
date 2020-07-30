@@ -45,7 +45,7 @@ interface PlexMediaService {
     ): PlexMediaContainerWrapper
 
     @GET("/library/metadata/{trackId}")
-    suspend fun retrieveTrackInfo(
+    suspend fun retrieveChapterInfo(
         @Path("trackId") trackId: Int,
         @Query("includeChapters") includeChapters: Int = 1
     ): PlexMediaContainerWrapper

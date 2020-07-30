@@ -25,7 +25,9 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_OFFSET
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_TRACK_ID
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_ACTION
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_DURATION_MILLIS
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerAction
@@ -297,18 +299,22 @@ class CurrentlyPlayingViewModel(
                 _showUserMessage.postEvent("Audiobook is null. Try restarting the app and trying again")
                 return
             }
-            pausePlay(audiobook.value!!.id.toString())
+            pausePlay(audiobook.value!!.id.toString(), startTimeOffset = ACTIVE_TRACK)
         }
     }
 
     private fun pausePlay(
         bookId: String,
         startTimeOffset: Long = ACTIVE_TRACK,
-        forcePlay: Boolean = false
+        forcePlay: Boolean = false,
+        trackId: Int = TRACK_NOT_FOUND
     ) {
         val transportControls = mediaServiceConnection.transportControls
 
-        val extras = Bundle().apply { putLong(KEY_START_TIME_OFFSET, startTimeOffset) }
+        val extras = Bundle().apply {
+            putLong(KEY_START_TIME_OFFSET, startTimeOffset)
+            putInt(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
+        }
         if (transportControls != null) {
             mediaServiceConnection.playbackState.value?.let { playbackState ->
                 if (!playbackState.isPlaying || forcePlay) {
@@ -323,7 +329,7 @@ class CurrentlyPlayingViewModel(
     }
 
     fun skipForwards() {
-        seekRelative(SKIP_FORWARDS, SKIP_FORWARDS_DURATION_MS)
+        seekRelative(SKIP_FORWARDS, SKIP_FORWARDS_DURATION_MS_SIGNED)
     }
 
     fun skipBackwards() {
@@ -348,7 +354,7 @@ class CurrentlyPlayingViewModel(
                         }
                         val manager = TrackListStateManager()
                         manager.trackList = _tracks
-                        manager.currentBookPosition = manager.trackList.getProgress()
+                        manager.seekToActiveTrack()
                         manager.seekByRelative(offset)
                         val updatedTrack = _tracks[manager.currentTrackIndex]
                         trackRepository.updateTrackProgress(
@@ -362,21 +368,22 @@ class CurrentlyPlayingViewModel(
         }
     }
 
-    fun jumpToChapter(offset: Long, hasUserConfirmation: Boolean = false) {
+
+    /** Jumps to a given track with [MediaItemTrack.id] == [trackId] */
+    fun jumpToChapter(
+        startTimeOffset: Long = USE_TRACK_ID,
+        trackId: Int = TRACK_NOT_FOUND,
+        hasUserConfirmation: Boolean = false
+    ) {
         if (!hasUserConfirmation) {
             showOptionsMenu(
                 title = FormattableString.from(R.string.warning_jump_to_chapter_will_clear_progress),
-                options = listOf(
-                    FormattableString.from(android.R.string.yes),
-                    FormattableString.from(android.R.string.no)
-                ),
+                options = listOf(FormattableString.yes, FormattableString.no),
                 listener = object : BottomChooserItemListener() {
                     override fun onItemClicked(formattableString: FormattableString) {
-                        check(formattableString is FormattableString.ResourceString)
-
-                        when (formattableString.stringRes) {
-                            android.R.string.yes -> jumpToChapter(offset, true)
-                            android.R.string.no -> Unit
+                        when (formattableString) {
+                            FormattableString.yes -> jumpToChapter(startTimeOffset, trackId, true)
+                            FormattableString.no -> Unit
                             else -> throw NoWhenBranchMatchedException()
                         }
                         hideOptionsMenu()
@@ -385,13 +392,20 @@ class CurrentlyPlayingViewModel(
             return
         }
 
-        val pausePlayAction = {
-            audiobook.value?.let { book -> pausePlay(book.id.toString(), offset, forcePlay = true) }
+        val jumpToChapterAction = {
+            audiobook.value?.let { book ->
+                pausePlay(
+                    book.id.toString(),
+                    startTimeOffset = startTimeOffset,
+                    trackId = trackId,
+                    forcePlay = true
+                )
+            }
         }
         if (mediaServiceConnection.isConnected.value != true) {
-            mediaServiceConnection.connect(onConnected = pausePlayAction)
+            mediaServiceConnection.connect(onConnected = jumpToChapterAction)
         } else {
-            pausePlayAction()
+            jumpToChapterAction()
         }
     }
 
@@ -586,10 +600,8 @@ class CurrentlyPlayingViewModel(
         if (currentChapter.value == EMPTY_CHAPTER) {
             // Seeking by track length
             tracks.value?.let { _tracks ->
-                val startTimeOffset = _tracks.getTrackStartTime(currentTrack.value ?: EMPTY_TRACK)
-                Timber.i("seeking by track: $startTimeOffset")
                 val extras = Bundle().apply {
-                    putLong(KEY_START_TIME_OFFSET, startTimeOffset)
+                    putInt(KEY_SEEK_TO_TRACK_WITH_ID, currentTrack.value?.id ?: TRACK_NOT_FOUND)
                 }
                 mediaServiceConnection.transportControls?.playFromMediaId(id, extras)
             }

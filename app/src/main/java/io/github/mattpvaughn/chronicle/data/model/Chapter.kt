@@ -3,7 +3,7 @@ package io.github.mattpvaughn.chronicle.data.model
 import androidx.room.TypeConverter
 
 
-data class Chapter(
+data class Chapter constructor(
     val title: String = "",
     val id: Long = 0L,
     val index: Long = 0L,
@@ -11,7 +11,8 @@ data class Chapter(
     // The number of milliseconds between the start of the book and the start of the chapter
     val startTimeOffset: Long = 0L,
     // The number of milliseconds between the start of the book and the end of the chapter
-    val endTimeOffset: Long = 0L
+    val endTimeOffset: Long = 0L,
+    val downloaded: Boolean = false
 ) {
     /** A string representing the index but padded to [length] characters with zeroes */
     fun paddedIndex(length: Int): String {
@@ -42,18 +43,16 @@ class ChapterListConverter {
         }
         return s.split("®").map {
             val split = it.split("©")
-            val discNumber = if (split.size >= 6) {
-                split[5].toInt()
-            } else {
-                1
-            }
+            val discNumber = if (split.size >= 6) split[5].toInt() else 1
+            val downloaded = if (split.size >= 7) split[6].toBoolean() else false
             Chapter(
                 title = split[0],
                 id = split[1].toLong(),
                 index = split[2].toLong(),
                 startTimeOffset = split[3].toLong(),
                 endTimeOffset = split[4].toLong(),
-                discNumber = discNumber
+                discNumber = discNumber,
+                downloaded = downloaded
             )
         }
     }
@@ -61,7 +60,7 @@ class ChapterListConverter {
     // A little yikes but funny
     @TypeConverter
     fun toString(chapters: List<Chapter>): String {
-        return chapters.joinToString("®") { "${it.title}©${it.id}©${it.index}©${it.startTimeOffset}©${it.endTimeOffset}©${it.discNumber}" }
+        return chapters.joinToString("®") { "${it.title}©${it.id}©${it.index}©${it.startTimeOffset}©${it.endTimeOffset}©${it.discNumber}©${it.downloaded}" }
     }
 }
 

@@ -32,11 +32,11 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
 
     class SectionHeaderModel(val text: BottomSheetChooser.FormattableString)
 
-    fun submitChapters(list: List<Chapter>?) {
-        Timber.i("Submitted chapters: $list")
+    fun submitChapters(chapters: List<Chapter>?) {
+        Timber.i("Submitted chapters: $chapters")
         // Add disc headers only if necessary. We use disc numbers if the final track is owned by
         // a disc other than 1 (discNumber defaults to 1)
-        if (!list.isNullOrEmpty() && list.last().discNumber > 1) {
+        if (!chapters.isNullOrEmpty() && chapters.last().discNumber > 1) {
             // iterate through chapters, insert section headers as indicated by [Chapter.discNumber]
             val listWithSections = mutableListOf<ChapterListModel>()
             listWithSections.add(
@@ -48,8 +48,8 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
                     )
                 )
             )
-            listWithSections.add(ChapterItemModel(list.first()))
-            list.fold(list.first()) { prev, curr ->
+            listWithSections.add(ChapterItemModel(chapters.first()))
+            chapters.fold(chapters.first()) { prev, curr ->
                 // avoid edge cases at start/end, id is guaranteed to be different for unique
                 // chapters/tracks by Plex
                 if (curr.id == prev.id) {
@@ -68,16 +68,15 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
                     )
                 }
                 listWithSections.add(ChapterItemModel(curr))
-
                 curr
             }
 
             super.submitList(listWithSections)
         } else {
-            if (list.isNullOrEmpty()) {
+            if (chapters.isNullOrEmpty()) {
                 super.submitList(mutableListOf<ChapterListModel>())
             } else {
-                super.submitList(list.map { ChapterItemModel(it) })
+                super.submitList(chapters.map { ChapterItemModel(it) })
             }
         }
     }
@@ -175,7 +174,9 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
         ): Boolean {
             return when {
                 oldItem is ChapterItemModel && newItem is ChapterItemModel -> {
-                    oldItem.chapter.index == newItem.chapter.index && oldItem.chapter.title == newItem.chapter.title
+                    oldItem.chapter.index == newItem.chapter.index
+                            && oldItem.chapter.title == newItem.chapter.title
+                            && oldItem.chapter.downloaded == newItem.chapter.downloaded
                 }
                 oldItem is SectionHeaderWrapper && newItem is SectionHeaderWrapper -> {
                     oldItem.section.text == newItem.section.text

@@ -5,7 +5,8 @@
     <color name="colorAccent">#00B8D4</color>
     <color name="textPrimary">#D8FFFFFF</color>
     <color name="textSecondary">#7BB998CC</color>
-    <color name="textActive">@color/colorAccent</color>
+    <color name="textActive">#00B8D4</color>
+    <color name="textActiveSecondary">#7B00B8D4</color>
     <color name="textError">#FF4444</color>
     <color name="icon">@color/textPrimary</color>
     <color name="iconActive">@color/colorAccent</color>

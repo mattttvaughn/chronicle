@@ -134,6 +134,10 @@ data class MediaItemTrack(
 /**
  * Returns the timestamp (in ms) corresponding to the start of [track] with respect to the
  * entire playlist
+ *
+ * IMPORTANT: [MediaItemTrack.duration] is not guaranteed to perfectly match the duration of the
+ * track represented, as we don't trust the server and are unable to verify this ourselves, so
+ * use with caution
  */
 fun List<MediaItemTrack>.getTrackStartTime(track: MediaItemTrack): Long {
     if (isEmpty()) {
@@ -203,7 +207,7 @@ fun MediaItemTrack.toMediaMetadata(plexConfig: PlexConfig): MediaMetadataCompat 
     metadataBuilder.displaySubtitle = this.artist
     metadataBuilder.trackNumber = this.playQueueItemID
     metadataBuilder.mediaUri = getTrackSource()
-    metadataBuilder.albumArtUri = plexConfig.makeUriFromPart(this.thumb ?: "").toString()
+    metadataBuilder.albumArtUri = plexConfig.makeThumbUri(this.thumb ?: "").toString()
     metadataBuilder.trackNumber = this.index.toLong()
     metadataBuilder.duration = this.duration
     metadataBuilder.album = this.album
@@ -221,7 +225,8 @@ fun List<MediaItemTrack>.asChapterList(): List<Chapter> {
             index = track.index.toLong(),
             discNumber = track.discNumber,
             startTimeOffset = this.getTrackStartTime(track),
-            endTimeOffset = this.getTrackStartTime(track) + track.duration
+            endTimeOffset = this.getTrackStartTime(track) + track.duration,
+            downloaded = track.cached
         )
     }
 }

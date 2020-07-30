@@ -61,6 +61,9 @@ android {
     lintOptions {
         abortOnError false
     }
+    kotlinOptions {
+        freeCompilerArgs = ["-Xallow-result-return-type"]
+    }
 }
 
 dependencies {
@@ -120,8 +123,11 @@ dependencies {
 //    compileOnly "com.squareup.inject:assisted-inject-annotations-dagger2:0.5.2"
 //    kapt "com.squareup.inject:assisted-inject-processor-dagger2:0.5.2"
 
-    // Glide
-    implementation "com.github.bumptech.glide:glide:$glideVersion"
+    // Glide - image loading
+    implementation ("com.github.bumptech.glide:glide:$glideVersion") {
+        // exclude okhttp import in favor of our own import
+        exclude group: "com.squareup.okhttp:"
+    }
     kapt "com.github.bumptech.glide:compiler:$glideVersion"
 
     // LocalBroadcastManager
@@ -150,11 +156,14 @@ dependencies {
     // Swipe-to-refresh
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:$swipeRefreshLayoutVersion"
 
-    // Seismic- for shake detecting
+    // Seismic- for shake detection
     implementation "com.squareup:seismic:$seismicVersion"
 
     // kotlin-result (ISC licensed: permissive like MIT license)
     implementation "com.michael-bull.kotlin-result:kotlin-result:$kotlinResultVersion"
+
+    // Test for memory leaks
+    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.4"
 
 
     /* ~~~~~~~~~~~~ Local Tests ~~~~~~~~~~ */

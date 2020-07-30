@@ -118,11 +118,18 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         const val PLEX_STATE_STOPPED = "stopped"
         const val PLEX_STATE_PAUSED = "paused"
 
-        // Key indicating where in the audiobook to begin playback
+        /**
+         * Key indicating playback offset relative entire audiobook duration (only use for, m4b
+         * chapters, as mp3 durations are generally too imprecise)
+         */
         const val KEY_START_TIME_OFFSET = "track index bundle 2939829 tubers"
+
+        // Key indicating the ID of the track to begin playback at
+        const val KEY_SEEK_TO_TRACK_WITH_ID = "MediaPlayerService.key_seek_to_track_with_id"
 
         // Value indicating to begin playback at the most recently listened position
         const val ACTIVE_TRACK = Long.MIN_VALUE + 22233L
+        const val USE_TRACK_ID = Long.MIN_VALUE + 22250L
 
         private const val CHRONICLE_MEDIA_ROOT_ID = "chronicle_media_root_id"
         private const val CHRONICLE_MEDIA_EMPTY_ROOT = "empty root"

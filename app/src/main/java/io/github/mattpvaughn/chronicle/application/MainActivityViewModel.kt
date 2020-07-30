@@ -1,19 +1,16 @@
 package io.github.mattpvaughn.chronicle.application
 
-import android.app.DownloadManager
-import android.app.DownloadManager.*
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.STATE_NONE
 import android.support.v4.media.session.PlaybackStateCompat.STATE_STOPPED
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.*
-import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.DownloadResult.Failure
-import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.DownloadResult.Success
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.LOGGED_IN_FULLY
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
@@ -25,8 +22,6 @@ import io.github.mattpvaughn.chronicle.util.mapAsync
 import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
-import java.io.FileFilter
 import javax.inject.Inject
 
 
@@ -35,7 +30,8 @@ class MainActivityViewModel(
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val mediaServiceConnection: MediaServiceConnection,
-    private val prefsRepo: PrefsRepo
+    private val prefsRepo: PrefsRepo,
+    private val cachedFileManager: ICachedFileManager
 ) : ViewModel(), MainActivity.CurrentlyPlayingInterface {
 
     @Suppress("UNCHECKED_CAST")
@@ -44,7 +40,8 @@ class MainActivityViewModel(
         private val trackRepository: ITrackRepository,
         private val bookRepository: IBookRepository,
         private val mediaServiceConnection: MediaServiceConnection,
-        private val prefsRepo: PrefsRepo
+        private val prefsRepo: PrefsRepo,
+        private val cachedFileManager: ICachedFileManager
     ) : ViewModelProvider.Factory {
 
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -54,7 +51,8 @@ class MainActivityViewModel(
                     trackRepository,
                     bookRepository,
                     mediaServiceConnection,
-                    prefsRepo
+                    prefsRepo,
+                    cachedFileManager
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from MainActivityViewModel.Factory")
@@ -138,7 +136,9 @@ class MainActivityViewModel(
     init {
         mediaServiceConnection.nowPlaying.observeForever(metadataObserver)
         mediaServiceConnection.playbackState.observeForever(playbackObserver)
-        refreshTrackCacheStatus()
+        viewModelScope.launch {
+            cachedFileManager.refreshTrackDownloadedStatus()
+        }
     }
 
     private suspend fun setAudiobook(trackId: Int) {
@@ -155,102 +155,6 @@ class MainActivityViewModel(
         }
     }
 
-    /** Updates the DB to reflect whether cache files for tracks exist on disk */
-    private fun refreshTrackCacheStatus() {
-        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            // Keys of tracks which the DB reports as cached
-            val reportedCachedKeys = trackRepository.getCachedTracks().map { it.id }
-
-            // Keys of tracks which are cached on disk
-            val actuallyCachedKeys = prefsRepo.cachedMediaDir.listFiles(FileFilter {
-                MediaItemTrack.cachedFilePattern.matches(it.name)
-            })?.map {
-                MediaItemTrack.getTrackIdFromFileName(it.name)
-            } ?: emptyList()
-
-            // Exists in DB but not in cache- remove from DB!
-            reportedCachedKeys.filter { !actuallyCachedKeys.contains(it) }
-                .forEach { trackRepository.updateCachedStatus(it, false) }
-
-            // Exists in cache but not in DB- add to DB!
-            actuallyCachedKeys.filter { !reportedCachedKeys.contains(it) }
-                .forEach {
-                    trackRepository.updateCachedStatus(it, true)
-                }
-
-            actuallyCachedKeys.map { trackRepository.getBookIdForTrack(it) }.distinct()
-                .forEach { bookId: Int ->
-                    val tracksCachedForBook =
-                        trackRepository.getCachedTrackCountForBookAsync(bookId)
-                    val tracksInBook = trackRepository.getTrackCountForBookAsync(bookId)
-                    if (tracksInBook > 0 && tracksCachedForBook == tracksInBook) {
-                        bookRepository.updateCached(bookId, true)
-                    }
-                }
-        }
-    }
-
-    fun handleDownloadedTrack(downloadManager: DownloadManager, downloadId: Long) {
-        val result = getTrackIdForDownload(downloadManager, downloadId)
-        if (result is Success) {
-            Timber.i("Download completed: ${result.trackId}")
-            val trackId = result.trackId
-            viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-                trackRepository.updateCachedStatus(trackId, true)
-                val bookId: Int = trackRepository.getBookIdForTrack(trackId)
-                val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
-                // Set the book as cached only when all tracks in it have been cached
-                val shouldBookBeCached =
-                    tracks.filter { it.cached }.size == tracks.size && tracks.isNotEmpty()
-                if (shouldBookBeCached) {
-                    Timber.i("Should be caching book with id $bookId")
-                    bookRepository.updateCached(bookId, shouldBookBeCached)
-                }
-            }
-        } else if (result is Failure) {
-            Timber.e(result.reason)
-            showUserMessage(result.reason)
-        }
-    }
-
-    private sealed class DownloadResult {
-        class Success(val trackId: Int) : DownloadResult()
-        class Failure(val reason: String) : DownloadResult()
-    }
-
-    private fun getTrackIdForDownload(manager: DownloadManager, downloadId: Long): DownloadResult {
-        val query = Query().apply { setFilterById(downloadId) }
-        val cur = manager.query(query)
-        if (!cur.moveToFirst()) {
-            return Failure("No download found with id: $downloadId. Perhaps the download was canceled")
-        }
-        val statusColumnIndex = cur.getColumnIndex(COLUMN_STATUS)
-        if (STATUS_SUCCESSFUL != cur.getInt(statusColumnIndex)) {
-            val reasonColumnIndex = cur.getColumnIndex(COLUMN_REASON)
-            val titleColumnIndex = cur.getColumnIndex(COLUMN_TITLE)
-            return Failure(
-                "Download failed for \"$titleColumnIndex\". " +
-                        when (val errorReason = cur.getInt(reasonColumnIndex)) {
-                            1008 -> "due to server issues (ERROR_CANNOT_RESUME). Please clear failed downloads from your Downloads app and try again"
-                            else -> "Error code: ($errorReason)"
-                        }
-            )
-        }
-        val downloadedFilePath = cur.getString(cur.getColumnIndex(COLUMN_LOCAL_URI))
-
-        /** Assume that the filename is also the key of the track */
-        val trackName = File(downloadedFilePath.toString()).name
-        if (!MediaItemTrack.cachedFilePattern.matches(trackName)) {
-            throw IllegalStateException("Downloaded file does not match required pattern! Is this a duplicate download?")
-        }
-        return try {
-            Success(MediaItemTrack.getTrackIdFromFileName(trackName))
-        } catch (e: Throwable) {
-            Failure("Failed to get track id: ${e.message}")
-        } finally {
-            cur.close()
-        }
-    }
 
     /**
      * React to clicks on the "currently playing" modal, which is shown at the bottom of the
@@ -319,6 +223,12 @@ class MainActivityViewModel(
     fun onCurrentlyPlayingHandleDragged() {
         if (currentlyPlayingLayoutState.value == COLLAPSED) {
             _currentlyPlayingLayoutState.postValue(EXPANDED)
+        }
+    }
+
+    fun handleDownloadedTrack(id: Long) {
+        viewModelScope.launch {
+            cachedFileManager.handleDownloadedTrack(id)
         }
     }
 }

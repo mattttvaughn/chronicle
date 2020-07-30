@@ -76,8 +76,6 @@ class FakeBookRepository @Inject constructor() : IBookRepository {
         return books
     }
 
-    override suspend fun updateCached(bookId: Int, isCached: Boolean) {}
-
     override suspend fun getMostRecentlyPlayed(): Audiobook {
         return books.first()
     }
@@ -112,6 +110,10 @@ class FakeBookRepository @Inject constructor() : IBookRepository {
         audiobook: Audiobook,
         tracks: List<MediaItemTrack>
     ): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun update(audiobook: Audiobook) {
         TODO("Not yet implemented")
     }
 

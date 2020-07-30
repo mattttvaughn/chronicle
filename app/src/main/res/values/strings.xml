@@ -93,6 +93,9 @@
     <string name="download_all">Download all</string>
     <string name="download_all_prompt">Download will use %1$s. %2$s available</string>
     <string name="delete_cache_files_prompt">Delete cached files?</string>
+    <string name="download_failed">Download failed for %1$s %2$s</string>
+    <string name="download_failed_reason_already_exists">because the download already exists</string>
+    <string name="download_failed_reason_error_code">Error code: %1%s</string>
 
     <!-- Speed chooser -->
     <string name="playback_speed_desc">Playback speed: %1$s times normal speed</string>
@@ -175,6 +178,9 @@
     <string name="settings_subreddit_title">reddit.com/r/ChronicleApp</string>
     <string name="settings_subreddit_explanation">Share bug reports, request features, and learn what\'s coming next in Chronicle</string>
     <string name="settings_clear_downloads_warning">This will delete your downloaded files. Continue?</string>
+    <string name="prompt_clear_downloads_allow_retain">Would you like to keep your downloaded files?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 
     <!-- Android Auto -->
     <string name="allow_auto">Enable Android Auto</string>

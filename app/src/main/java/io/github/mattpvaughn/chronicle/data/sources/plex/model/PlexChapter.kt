@@ -14,13 +14,14 @@ data class PlexChapter(
     val endTimeOffset: Long = 0L
 )
 
-fun PlexChapter.toChapter(): Chapter {
+fun PlexChapter.toChapter(downloaded: Boolean): Chapter {
     return Chapter(
         title = tag.takeIf { it.isNotEmpty() } ?: "Chapter $index",
         id = id,
         index = index,
         discNumber = discNumber,
         startTimeOffset = startTimeOffset,
-        endTimeOffset = endTimeOffset
+        endTimeOffset = endTimeOffset,
+        downloaded = downloaded
     )
 }

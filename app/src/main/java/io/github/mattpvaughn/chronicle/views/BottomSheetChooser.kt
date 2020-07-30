@@ -239,8 +239,8 @@ class BottomSheetChooser : FrameLayout {
                 return LiteralString(string)
             }
 
-            val yes = from(android.R.string.yes)
-            val no = from(android.R.string.no)
+            val yes = from(R.string.yes)
+            val no = from(R.string.no)
 
             val EMPTY_STRING = from("")
         }

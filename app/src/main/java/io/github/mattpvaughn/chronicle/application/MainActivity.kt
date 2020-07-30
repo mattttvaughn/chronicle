@@ -221,14 +221,12 @@ open class MainActivity : AppCompatActivity() {
             //Fetching the download id received with the broadcast
             when (intent.action) {
                 DownloadManager.ACTION_DOWNLOAD_COMPLETE -> {
-                    val downloadManager =
-                        getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                     val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                    viewModel.handleDownloadedTrack(downloadManager, id)
+                    viewModel.handleDownloadedTrack(id)
                 }
                 DownloadManager.ACTION_NOTIFICATION_CLICKED -> {
+                    // TODO: add when downloads shown in app individually
                     Timber.i("Clicked notification!")
-                    throw NotImplementedError("No action implemented yet for download notification click")
                 }
             }
         }

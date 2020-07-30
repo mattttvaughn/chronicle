@@ -11,16 +11,24 @@ class FakeCachedFileManager : ICachedFileManager{
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun uncacheAll(): Int {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override suspend fun uncacheAllInLibrary(): Int {
+        TODO("Not yet implemented")
     }
 
-    override fun uncacheTracks(bookId: Int, tracks: List<MediaItemTrack>) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override suspend fun deleteCachedBook(tracks: List<MediaItemTrack>): Result<Unit> {
+        TODO("Not yet implemented")
     }
 
     override suspend fun hasUserCachedTracks(): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override suspend fun refreshTrackDownloadedStatus() {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun handleDownloadedTrack(downloadId: Long): Result<Long> {
+        TODO("Not yet implemented")
     }
 
 }

@@ -14,15 +14,15 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.data.model.EMPTY_AUDIOBOOK
-import io.github.mattpvaughn.chronicle.data.model.getProgress
+import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.getMediaItemUri
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_OFFSET
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import kotlinx.coroutines.CoroutineScope
@@ -108,7 +108,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
 
     private fun skipForwards() {
         Timber.i("Track manager is $trackListStateManager")
-        currentPlayer.seekRelative(trackListStateManager, SKIP_FORWARDS_DURATION_MS)
+        currentPlayer.seekRelative(trackListStateManager, SKIP_FORWARDS_DURATION_MS_SIGNED)
     }
 
     private fun skipBackwards() {
@@ -186,7 +186,9 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private fun playBook(bookId: String, extras: Bundle, playWhenReady: Boolean) {
+        val startingTrackId = extras.getInt(KEY_SEEK_TO_TRACK_WITH_ID, TRACK_NOT_FOUND)
         val startTimeOffsetMillis = extras.getLong(KEY_START_TIME_OFFSET, ACTIVE_TRACK)
+
         if (bookId == EMPTY_AUDIOBOOK.id.toString()) {
             return
         }
@@ -198,34 +200,48 @@ class AudiobookMediaSessionCallback @Inject constructor(
                 trackRepository.getTracksForAudiobookAsync(bookId.toInt())
             }
             if (tracks.isNullOrEmpty()) {
-                Timber.i("No known tracks for book: $bookId, attempting to fetch them")
-                // Tracks haven't been loaded by UI for this track, so load it here
-                val networkTracks = withContext(Dispatchers.IO) {
-                    trackRepository.loadTracksForAudiobook(bookId.toInt())
-                }
-                if (networkTracks is Ok) {
-                    bookRepository.updateTrackData(
-                        bookId.toInt(),
-                        networkTracks.value.getProgress(),
-                        networkTracks.value.getDuration(),
-                        networkTracks.value.size
-                    )
-                    val audiobook = bookRepository.getAudiobookAsync(bookId.toInt())
-                    if (audiobook != null) {
-                        bookRepository.loadChapterData(audiobook, tracks)
-                    }
-                    playBook(bookId, extras, true)
-                }
+                handlePlayBookWithNoTracks(bookId, tracks, extras)
             } else {
                 Timber.i("Starting playback for $bookId: $tracks")
+                // test if the starting track is a track or chapter
+                val doesSeekToTrackExist = startingTrackId in tracks.map { it.id }
                 trackListStateManager.trackList = tracks
-                Timber.i("track manager = $trackListStateManager")
                 val metadataList = buildPlaylist(tracks, plexConfig)
 
-                if (startTimeOffsetMillis == ACTIVE_TRACK) {
-                    trackListStateManager.seekToActiveTrack()
+                // set desired starting track position in trackListStateManager
+                if (!doesSeekToTrackExist) {
+                    if (startTimeOffsetMillis == ACTIVE_TRACK) {
+                        Timber.i("Seeking to active track")
+                        trackListStateManager.seekToActiveTrack()
+                    } else {
+                        Timber.i("Seeking by offset")
+                        val startingTrack = tracks.getTrackContainingOffset(startTimeOffsetMillis)
+                        // calculate offset in case startTimeOffsetMillis happens to be just barely
+                        // before the start of the correct track. This way we only start a few ms
+                        // before, rather restarting the entire previous track entirely
+                        val trackStartOffsetMillis =
+                            startTimeOffsetMillis - (tracks.getTrackStartTime(startingTrack))
+                        val startingTrackIndex = tracks.indexOf(startingTrack)
+                        trackListStateManager.updatePosition(
+                            startingTrackIndex,
+                            trackStartOffsetMillis
+                        )
+                    }
                 } else {
-                    trackListStateManager.currentBookPosition = startTimeOffsetMillis
+                    // in this case we always start from start of track
+                    Timber.i("Seeking to start of track with id: $startingTrackId")
+                    val startingTrack =
+                        trackListStateManager.trackList.find { it.id == startingTrackId }
+                    if (startingTrack == null) {
+                        val track = trackRepository.getTrackAsync(startingTrackId)
+                            ?: throw IllegalArgumentException("Unknown track id: $startingTrackId")
+                        val index = tracks.indexOf(track)
+                        trackListStateManager.updatePosition(index, 0)
+                    } else {
+                        val index = tracks.indexOf(startingTrack)
+                        trackListStateManager.updatePosition(index, 0)
+                        Timber.i("New position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
+                    }
                 }
 
                 // Return if no book found- no reason to setup playback if there's no book
@@ -233,10 +249,17 @@ class AudiobookMediaSessionCallback @Inject constructor(
                     return@withContext bookRepository.getAudiobookAsync(bookId.toInt())
                 }
 
-                // Auto-rewind depending on last listened time for the book
-                val rewindDurationMillis: Long = calculateRewindDuration(book)
+                // Auto-rewind depending on last listened time for the book. Don't rewind if we're
+                // starting a new chapter/track of a book
+                val rewindDurationMillis: Long =
+                    if (trackListStateManager.currentTrackProgress != 0L) {
+                        calculateRewindDuration(book)
+                    } else {
+                        0
+                    }
 
                 trackListStateManager.seekByRelative(-1L * rewindDurationMillis)
+                Timber.i("Rewound position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
 
                 currentPlayer.playWhenReady = playWhenReady
                 val player = currentPlayer
@@ -267,6 +290,31 @@ class AudiobookMediaSessionCallback @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun handlePlayBookWithNoTracks(
+        bookId: String,
+        tracks: List<MediaItemTrack>,
+        extras: Bundle
+    ) {
+        Timber.i("No known tracks for book: $bookId, attempting to fetch them")
+        // Tracks haven't been loaded by UI for this track, so load it here
+        val networkTracks = withContext(Dispatchers.IO) {
+            trackRepository.loadTracksForAudiobook(bookId.toInt())
+        }
+        if (networkTracks is Ok) {
+            bookRepository.updateTrackData(
+                bookId.toInt(),
+                networkTracks.value.getProgress(),
+                networkTracks.value.getDuration(),
+                networkTracks.value.size
+            )
+            val audiobook = bookRepository.getAudiobookAsync(bookId.toInt())
+            if (audiobook != null) {
+                bookRepository.loadChapterData(audiobook, tracks)
+            }
+            playBook(bookId, extras, true)
         }
     }
 

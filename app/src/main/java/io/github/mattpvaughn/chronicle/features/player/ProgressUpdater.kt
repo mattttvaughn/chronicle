@@ -66,6 +66,10 @@ class SimpleProgressUpdater @Inject constructor(
 
     /** Frequency of progress updates */
     private val updateProgressFrequencyMs = 1000L
+
+    /** Update server progress every [networkCallFrequency] calls to [updateProgress] */
+    private val networkCallFrequency = 10
+
     private var tickCounter = 0L
 
     private val handler = Handler()
@@ -130,9 +134,9 @@ class SimpleProgressUpdater @Inject constructor(
                 )
             }
 
-            // Update server on every fifth update to local DB (every 5 seconds by default), or on
-            // manual progress updates
-            if (manualUpdate || tickCounter % 5 == 0L) {
+            // Update server once every [networkCallFrequency] calls, or when manual updates
+            // have been specifically requested
+            if (manualUpdate || tickCounter % networkCallFrequency == 0L) {
                 val syncWorkerConstraints =
                     Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
                 val inputData = PlexSyncScrobbleWorker.makeWorkerData(
@@ -151,6 +155,7 @@ class SimpleProgressUpdater @Inject constructor(
                         TimeUnit.MILLISECONDS
                     )
                     .build()
+
                 workManager
                     .beginUniqueWork(trackId.toString(), ExistingWorkPolicy.REPLACE, worker)
                     .enqueue()

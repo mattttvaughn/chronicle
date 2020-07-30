@@ -10,7 +10,6 @@ import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
@@ -88,7 +87,7 @@ class AudiobookDetailsFragment : Fragment() {
 
         val adapter = ChapterListAdapter(object : TrackClickListener {
             override fun onClick(chapter: Chapter) {
-                viewModel.jumpToChapter(chapter.startTimeOffset)
+                viewModel.jumpToChapter(chapter.startTimeOffset, chapter.id.toInt())
             }
         })
         binding.tracks.adapter = adapter
@@ -116,10 +115,10 @@ class AudiobookDetailsFragment : Fragment() {
 
         binding.detailsToolbar.setOnMenuItemClickListener {
             when (it.itemId) {
-                R.id.menu_cast -> {
-                    viewModel.pausePlayButtonClicked()
-                    true
-                }
+//                R.id.menu_cast -> {
+//                    viewModel.pausePlayButtonClicked()
+//                    true
+//                }
                 else -> super.onOptionsItemSelected(it)
             }
         }

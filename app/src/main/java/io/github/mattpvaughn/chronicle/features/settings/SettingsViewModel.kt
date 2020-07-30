@@ -11,7 +11,7 @@ import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
@@ -39,7 +39,7 @@ class SettingsViewModel(
     private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
     private val plexLoginRepo: IPlexLoginRepo,
-    private val cachedFileManager: CachedFileManager,
+    private val cachedFileManager: ICachedFileManager,
     private val plexConfig: PlexConfig
 ) : ViewModel() {
 
@@ -50,7 +50,7 @@ class SettingsViewModel(
         private val prefsRepo: PrefsRepo,
         private val mediaServiceConnection: MediaServiceConnection,
         private val plexLoginRepo: IPlexLoginRepo,
-        private val cachedFileManager: CachedFileManager,
+        private val cachedFileManager: ICachedFileManager,
         private val plexConfig: PlexConfig
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -325,27 +325,25 @@ class SettingsViewModel(
                 click = object : PreferenceClick {
                     override fun onClick() {
                         showOptionsMenu(
-                            options = listOf(
-                                FormattableString.from(android.R.string.yes),
-                                FormattableString.from(android.R.string.no)
-                            ),
+                            options = listOf(FormattableString.yes, FormattableString.no),
                             title = FormattableString.from(R.string.settings_delete_synced_confirm),
                             listener = object : BottomChooserItemListener() {
                                 override fun onItemClicked(formattableString: FormattableString) {
-                                    check(formattableString is FormattableString.ResourceString)
-
-                                    when (formattableString.stringRes) {
-                                        android.R.string.yes -> {
-                                            val deletedFileCount = cachedFileManager.uncacheAll()
-                                            showUserMessage(
-                                                FormattableString.ResourceString(
-                                                    R.string.settings_delete_synced_response,
-                                                    placeHolderStrings = listOf(deletedFileCount.toString())
+                                    when (formattableString) {
+                                        FormattableString.yes -> {
+                                            viewModelScope.launch {
+                                                val deletedFileCount =
+                                                    cachedFileManager.uncacheAllInLibrary()
+                                                showUserMessage(
+                                                    FormattableString.ResourceString(
+                                                        R.string.settings_delete_synced_response,
+                                                        placeHolderStrings = listOf(deletedFileCount.toString())
+                                                    )
                                                 )
-                                            )
+                                            }
                                         }
-                                        else -> { /* do nothing*/
-                                        }
+                                        else -> {
+                                        } /* do nothing*/
                                     }
                                     setBottomSheetVisibility(false)
                                 }
@@ -391,13 +389,23 @@ class SettingsViewModel(
                                 return@launch
                             }
                             showOptionsMenu(
-                                title = FormattableString.from(R.string.settings_clear_downloads_warning),
+                                title = FormattableString.from(R.string.prompt_clear_downloads_allow_retain),
                                 options = listOf(FormattableString.yes, FormattableString.no),
                                 listener = object : BottomChooserItemListener() {
                                     override fun onItemClicked(formattableString: FormattableString) {
                                         check(formattableString is FormattableString.ResourceString)
-                                        if (formattableString.stringRes == android.R.string.yes) {
-                                            clearConfig(RETURN_TO_LIBRARY_CHOOSER)
+                                        if (formattableString.stringRes == R.string.yes) {
+                                            // Keep downloaded
+                                            clearConfig(
+                                                RETURN_TO_LIBRARY_CHOOSER,
+                                                clearDownloads = false
+                                            )
+                                        } else {
+                                            // Delete downloaded
+                                            clearConfig(
+                                                RETURN_TO_LIBRARY_CHOOSER,
+                                                clearDownloads = true
+                                            )
                                         }
                                         setBottomSheetVisibility(false)
                                     }
@@ -421,8 +429,7 @@ class SettingsViewModel(
                                 options = listOf(FormattableString.yes, FormattableString.no),
                                 listener = object : BottomChooserItemListener() {
                                     override fun onItemClicked(formattableString: FormattableString) {
-                                        check(formattableString is FormattableString.ResourceString)
-                                        if (formattableString.stringRes == android.R.string.yes) {
+                                        if (formattableString == FormattableString.yes) {
                                             clearConfig(RETURN_TO_SERVER_CHOOSER)
                                         }
                                         setBottomSheetVisibility(false)
@@ -447,8 +454,7 @@ class SettingsViewModel(
                                 options = listOf(FormattableString.yes, FormattableString.no),
                                 listener = object : BottomChooserItemListener() {
                                     override fun onItemClicked(formattableString: FormattableString) {
-                                        check(formattableString is FormattableString.ResourceString)
-                                        if (formattableString.stringRes == android.R.string.yes) {
+                                        if (formattableString == FormattableString.yes) {
                                             clearConfig(RETURN_TO_USER_CHOOSER)
                                         }
                                         setBottomSheetVisibility(false)
@@ -465,7 +471,9 @@ class SettingsViewModel(
                     override fun onClick() {
                         viewModelScope.launch {
                             val logout = {
-                                cachedFileManager.uncacheAll()
+                                viewModelScope.launch {
+                                    cachedFileManager.uncacheAllInLibrary()
+                                }
                                 plexConfig.clear()
                                 mediaServiceConnection.transportControls?.stop()
                                 clearConfig(RETURN_TO_LOGIN)
@@ -479,8 +487,7 @@ class SettingsViewModel(
                                 options = listOf(FormattableString.yes, FormattableString.no),
                                 listener = object : BottomChooserItemListener() {
                                     override fun onItemClicked(formattableString: FormattableString) {
-                                        check(formattableString is FormattableString.ResourceString)
-                                        if (formattableString.stringRes == android.R.string.yes) {
+                                        if (formattableString == FormattableString.yes) {
                                             logout()
                                         }
                                         setBottomSheetVisibility(false)
@@ -537,7 +544,7 @@ class SettingsViewModel(
                         FormattableString.from(string = "Clear DB"),
                         click = object : PreferenceClick {
                             override fun onClick() {
-                                clearConfig()
+                                clearConfig(clearDownloads = false)
                             }
                         }),
                     PreferenceModel(
@@ -625,14 +632,17 @@ class SettingsViewModel(
      * Clears the server cached data, and navigates to reset the data on a chooser depending on the
      * [navigateTo] provided
      */
-    private fun clearConfig(navigateTo: NavigationDestination = DO_NOT_NAVIGATE) {
+    private fun clearConfig(
+        navigateTo: NavigationDestination = DO_NOT_NAVIGATE,
+        clearDownloads: Boolean = true
+    ) {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+            if (clearDownloads) {
+                cachedFileManager.uncacheAllInLibrary()
+            }
             withContext(Dispatchers.IO) {
                 bookRepository.clear()
                 trackRepository.clear()
-            }
-            if (navigateTo != DO_NOT_NAVIGATE) {
-                cachedFileManager.uncacheAll()
             }
             mediaServiceConnection.transportControls?.stop()
             when (navigateTo) {
