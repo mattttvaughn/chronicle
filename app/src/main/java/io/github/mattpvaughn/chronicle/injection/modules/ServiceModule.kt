@@ -13,6 +13,7 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.MediaSessionCompat.*
 import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
@@ -47,7 +48,17 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun simpleExoPlayer(): SimpleExoPlayer = SimpleExoPlayer.Builder(service).build()
+    fun simpleExoPlayer(): SimpleExoPlayer = SimpleExoPlayer.Builder(service).setLoadControl(
+        // increase buffer size across the board as ExoPlayer defaults are set for video
+        DefaultLoadControl.Builder().setBackBuffer(60 * 1000, true)
+            .setBufferDurationsMs(
+                10 * 1000,
+                180 * 1000,
+                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+            )
+            .createDefaultLoadControl()
+    ).build()
 
     @Provides
     @ServiceScope
