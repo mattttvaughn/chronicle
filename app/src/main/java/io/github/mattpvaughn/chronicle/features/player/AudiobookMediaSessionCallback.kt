@@ -203,44 +203,56 @@ class AudiobookMediaSessionCallback @Inject constructor(
                 handlePlayBookWithNoTracks(bookId, tracks, extras)
             } else {
                 Timber.i("Starting playback for $bookId: $tracks")
-                // test if the starting track is a track or chapter
-                val doesSeekToTrackExist = startingTrackId in tracks.map { it.id }
+                // seeking to track if our [startingTrackId] exists
+                val seekingToTrack = startingTrackId in tracks.map { it.id }
                 trackListStateManager.trackList = tracks
                 val metadataList = buildPlaylist(tracks, plexConfig)
 
                 // set desired starting track position in trackListStateManager
-                if (!doesSeekToTrackExist) {
-                    if (startTimeOffsetMillis == ACTIVE_TRACK) {
+                val startingTrack = tracks.getTrackContainingOffset(startTimeOffsetMillis)
+                when {
+                    seekingToTrack -> {
+                        // in this case we always start from start of track
+                        Timber.i("Seeking to start of track with id: $startingTrackId")
+                        val seekToThisTrack =
+                            trackListStateManager.trackList.find { it.id == startingTrackId }
+                        if (seekToThisTrack == null) {
+                            val track = trackRepository.getTrackAsync(startingTrackId)
+                                ?: throw IllegalArgumentException("Unknown track id: $startingTrackId")
+                            val index = tracks.indexOf(track)
+                            trackListStateManager.updatePosition(index, 0)
+                        } else {
+                            val index = tracks.indexOf(seekToThisTrack)
+                            trackListStateManager.updatePosition(index, 0)
+                            Timber.i("New position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
+                        }
+                    }
+                    !seekingToTrack && startTimeOffsetMillis == ACTIVE_TRACK -> {
                         Timber.i("Seeking to active track")
                         trackListStateManager.seekToActiveTrack()
-                    } else {
-                        Timber.i("Seeking by offset")
-                        val startingTrack = tracks.getTrackContainingOffset(startTimeOffsetMillis)
+                    }
+                    !seekingToTrack && startingTrack == EMPTY_TRACK -> {
+                        // problematic- it wants to seek to an unknown track, let's just seek
+                        // to the first track in this case
+                        trackListStateManager.trackList = tracks
+                        trackListStateManager.updatePosition(0, 0)
+                    }
+                    !seekingToTrack && startingTrack != EMPTY_TRACK -> {
                         // calculate offset in case startTimeOffsetMillis happens to be just barely
                         // before the start of the correct track. This way we only start a few ms
                         // before, rather restarting the entire previous track entirely
                         val trackStartOffsetMillis =
                             startTimeOffsetMillis - (tracks.getTrackStartTime(startingTrack))
                         val startingTrackIndex = tracks.indexOf(startingTrack)
+                        // We will throw error in trackListStateManager if we call this outside the
+                        // bounds of manager.trackList, but we are certain it's
+                        if (startingTrackIndex > trackListStateManager.trackList.size || startingTrackIndex < 0) {
+                            trackListStateManager.trackList = tracks
+                        }
                         trackListStateManager.updatePosition(
                             startingTrackIndex,
                             trackStartOffsetMillis
                         )
-                    }
-                } else {
-                    // in this case we always start from start of track
-                    Timber.i("Seeking to start of track with id: $startingTrackId")
-                    val startingTrack =
-                        trackListStateManager.trackList.find { it.id == startingTrackId }
-                    if (startingTrack == null) {
-                        val track = trackRepository.getTrackAsync(startingTrackId)
-                            ?: throw IllegalArgumentException("Unknown track id: $startingTrackId")
-                        val index = tracks.indexOf(track)
-                        trackListStateManager.updatePosition(index, 0)
-                    } else {
-                        val index = tracks.indexOf(startingTrack)
-                        trackListStateManager.updatePosition(index, 0)
-                        Timber.i("New position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
                     }
                 }
 
