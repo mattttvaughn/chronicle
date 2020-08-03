@@ -8,7 +8,6 @@ import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.*
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
-import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
@@ -30,7 +29,6 @@ class MainActivityViewModel(
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val mediaServiceConnection: MediaServiceConnection,
-    private val prefsRepo: PrefsRepo,
     private val cachedFileManager: ICachedFileManager
 ) : ViewModel(), MainActivity.CurrentlyPlayingInterface {
 
@@ -40,7 +38,6 @@ class MainActivityViewModel(
         private val trackRepository: ITrackRepository,
         private val bookRepository: IBookRepository,
         private val mediaServiceConnection: MediaServiceConnection,
-        private val prefsRepo: PrefsRepo,
         private val cachedFileManager: ICachedFileManager
     ) : ViewModelProvider.Factory {
 
@@ -51,7 +48,6 @@ class MainActivityViewModel(
                     trackRepository,
                     bookRepository,
                     mediaServiceConnection,
-                    prefsRepo,
                     cachedFileManager
                 ) as T
             } else {

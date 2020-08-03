@@ -110,12 +110,10 @@ class LoginFragment : Fragment() {
                 // make login url
                 val url = loginViewModel.makeOAuthLoginUrl(oAuthPin.clientIdentifier, oAuthPin.code)
 
-                // TODO: leaks access token
                 loginViewModel.setLaunched(true)
                 customTabsIntent.launchUrl(requireContext(), url)
             }
         })
-
 
         return binding.root
     }
