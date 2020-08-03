@@ -178,6 +178,8 @@
     <string name="settings_subreddit_title">reddit.com/r/ChronicleApp</string>
     <string name="settings_subreddit_explanation">Share bug reports, request features, and learn what\'s coming next in Chronicle</string>
     <string name="settings_clear_downloads_warning">This will delete your downloaded files. Continue?</string>
+    <string name="settings_shake_to_snooze_title">Shake to snooze</string>
+    <string name="settings_shake_to_snooze_explanation">Shaking device will snooze sleep timer by 5 minutes</string>
     <string name="prompt_clear_downloads_allow_retain">Would you like to keep your downloaded files?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>

@@ -8,6 +8,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.widget.Toast
 import com.squareup.seismic.ShakeDetector
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerAction.*
 import io.github.mattpvaughn.chronicle.util.showToast
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser
@@ -50,7 +51,8 @@ class SimpleSleepTimer @Inject constructor(
     private val broadcastManager: SleepTimer.SleepTimerBroadcaster,
     private val mediaController: MediaControllerCompat,
     private val sensorManager: SensorManager,
-    private val toneGenerator: ToneGenerator
+    private val toneGenerator: ToneGenerator,
+    private val prefsRepo: PrefsRepo
 ) : SleepTimer {
 
     private val sleepTimerUpdateFrequencyMs = 1000L
@@ -58,15 +60,19 @@ class SimpleSleepTimer @Inject constructor(
     private val sleepTimerHandler = Handler()
     private val updateSleepTimerAction = { start(false) }
     private var isActive: Boolean = false
+    private val shakeToSnoozeDurationMs = 5 * 60 * 1000L
+    private val shakeOccurredSoundDurationMs = 150
     private val shakeDetector = ShakeDetector(ShakeDetector.Listener {
         Timber.i("Shake detected. Extending")
-        extend(5 * 60 * 1000)
-        toneGenerator.startTone(ToneGenerator.TONE_CDMA_PIP, 150)
-        showToast(
-            service,
-            BottomSheetChooser.FormattableString.from(R.string.sleep_timer_extended_message),
-            Toast.LENGTH_SHORT
-        )
+        if (prefsRepo.shakeToSnooze) {
+            extend(shakeToSnoozeDurationMs)
+            toneGenerator.startTone(ToneGenerator.TONE_CDMA_PIP, shakeOccurredSoundDurationMs)
+            showToast(
+                service,
+                BottomSheetChooser.FormattableString.from(R.string.sleep_timer_extended_message),
+                Toast.LENGTH_SHORT
+            )
+        }
     })
 
     override fun handleAction(action: SleepTimer.SleepTimerAction, durationMillis: Long) {

@@ -375,6 +375,13 @@ class SettingsViewModel(
                 defaultValue = prefsRepo.autoRewind
             ),
             PreferenceModel(
+                type = PreferenceType.BOOLEAN,
+                title = FormattableString.from(R.string.settings_shake_to_snooze_title),
+                explanation = FormattableString.from(R.string.settings_shake_to_snooze_explanation),
+                key = PrefsRepo.KEY_SHAKE_TO_SNOOZE_ENABLED,
+                defaultValue = prefsRepo.shakeToSnooze
+            ),
+            PreferenceModel(
                 PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_account)
             ),
@@ -502,7 +509,6 @@ class SettingsViewModel(
                 PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_etc)
             ),
-
             PreferenceModel(
                 type = PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_subreddit_title),

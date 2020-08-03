@@ -18,6 +18,7 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_OFFLIN
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PLAYBACK_SPEED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PREMIUM_TOKEN
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_REFRESH_RATE
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SHAKE_TO_SNOOZE_ENABLED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SKIP_SILENCE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SYNC_DIR_PATH
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.NO_PREMIUM_TOKEN
@@ -51,6 +52,9 @@ interface PrefsRepo {
 
     /** Whether the app should rewind a small bit if user hasn't played an audiobook in a while */
     var autoRewind: Boolean
+
+    /** Whether the app will extend the sleep timer upon device shake */
+    var shakeToSnooze: Boolean
 
     /** Whether the app should display premium features */
     val isPremium: Boolean
@@ -118,6 +122,7 @@ interface PrefsRepo {
         const val KEY_SKIP_SILENCE = "key_skip_silence"
         const val KEY_AUTO_REWIND_ENABLED = "key_auto_rewind_enabled"
         const val KEY_ALLOW_AUTO = "key_allow_auto"
+        const val KEY_SHAKE_TO_SNOOZE_ENABLED = "key_shake_to_snooze_enabled"
         const val KEY_IS_PREMIUM = "key_is_premium"
         const val NO_PREMIUM_TOKEN = "no premium token"
         const val KEY_PREMIUM_TOKEN = "key_premium_token"
@@ -188,6 +193,11 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
     override var autoRewind: Boolean
         get() = sharedPreferences.getBoolean(KEY_AUTO_REWIND_ENABLED, defaultAutoRewind)
         set(value) = sharedPreferences.edit().putBoolean(KEY_AUTO_REWIND_ENABLED, value).apply()
+
+    private val defaultShakeToSnooze = true
+    override var shakeToSnooze: Boolean
+        get() = sharedPreferences.getBoolean(KEY_SHAKE_TO_SNOOZE_ENABLED, defaultShakeToSnooze)
+        set(value) = sharedPreferences.edit().putBoolean(KEY_SHAKE_TO_SNOOZE_ENABLED, value).apply()
 
     private val defaultAllowAuto = true
     override var allowAuto: Boolean
