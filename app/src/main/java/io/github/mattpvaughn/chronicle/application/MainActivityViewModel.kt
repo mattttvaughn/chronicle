@@ -224,7 +224,13 @@ class MainActivityViewModel(
 
     fun handleDownloadedTrack(id: Long) {
         viewModelScope.launch {
-            cachedFileManager.handleDownloadedTrack(id)
+            val downloadResult = cachedFileManager.handleDownloadedTrack(id)
+            if (downloadResult.isFailure) {
+                val downloadFailureMessage = downloadResult.exceptionOrNull()?.message
+                if (downloadFailureMessage != null) {
+                    _errorMessage.postEvent(downloadFailureMessage)
+                }
+            }
         }
     }
 }

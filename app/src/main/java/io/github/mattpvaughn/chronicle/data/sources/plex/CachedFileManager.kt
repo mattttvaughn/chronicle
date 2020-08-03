@@ -217,9 +217,23 @@ class CachedFileManager @Inject constructor(
         val downloadedFilePath = cur.getString(cur.getColumnIndex(COLUMN_LOCAL_URI))
 
         /** Assume that the filename is also the key of the track */
-        val trackName = File(downloadedFilePath.toString()).name
+        val downloadedTrack = File(downloadedFilePath.toString())
+        val trackName = downloadedTrack.name
         if (!MediaItemTrack.cachedFilePattern.matches(trackName)) {
-            throw IllegalStateException("Downloaded file does not match required pattern! Is this a duplicate download?")
+            // Attempt to delete the previous failed download, then rename this download
+            val trackId = MediaItemTrack.getTrackIdFromFileName(trackName).toString()
+            val trackFileName = trackId + downloadedTrack.extension
+            val newTrackFile = File(downloadedTrack.parentFile, trackFileName)
+            downloadedTrack.renameTo(newTrackFile)
+            return if (newTrackFile.exists()) {
+                Result.success(trackId.toLong())
+            } else {
+                Result.failure(
+                    IllegalStateException(
+                        "Downloaded file already exists and could not replace it"
+                    )
+                )
+            }
         }
         return try {
             Result.success(MediaItemTrack.getTrackIdFromFileName(trackName).toLong())
