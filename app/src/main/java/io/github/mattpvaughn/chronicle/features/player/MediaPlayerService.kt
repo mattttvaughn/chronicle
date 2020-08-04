@@ -434,7 +434,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         val extras = Bundle().apply {
             putBoolean(
                 CHRONICLE_MEDIA_SEARCH_SUPPORTED,
-                isClientLegal && prefsRepo.allowAuto && plexLoginRepo.loginState.value == LOGGED_IN_FULLY
+                isClientLegal && prefsRepo.allowAuto && plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_FULLY
             )
             putBoolean(CONTENT_STYLE_SUPPORTED, true)
             putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE)
@@ -454,25 +454,25 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
-            plexLoginRepo.loginState.value == NOT_LOGGED_IN -> {
+            plexLoginRepo.loginEvent.value?.peekContent() == NOT_LOGGED_IN -> {
                 mediaSessionConnector.setCustomErrorMessage(
                     getString(R.string.auto_access_error_not_logged_in)
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
-            plexLoginRepo.loginState.value == LOGGED_IN_NO_USER_CHOSEN -> {
+            plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_USER_CHOSEN -> {
                 mediaSessionConnector.setCustomErrorMessage(
                     getString(R.string.auto_access_error_no_user_chosen)
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
-            plexLoginRepo.loginState.value == LOGGED_IN_NO_SERVER_CHOSEN -> {
+            plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_SERVER_CHOSEN -> {
                 mediaSessionConnector.setCustomErrorMessage(
                     getString(R.string.auto_access_error_no_server_chosen)
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
-            plexLoginRepo.loginState.value == LOGGED_IN_NO_LIBRARY_CHOSEN -> {
+            plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_LIBRARY_CHOSEN -> {
                 mediaSessionConnector.setCustomErrorMessage(
                     getString(R.string.auto_access_error_no_library_chosen)
                 )

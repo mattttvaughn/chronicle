@@ -12,6 +12,8 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexInterceptor.Compani
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.OAuthResponse
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.UsersResponse
+import io.github.mattpvaughn.chronicle.util.Event
+import io.github.mattpvaughn.chronicle.util.postEvent
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,14 +25,14 @@ interface IPlexLoginRepo {
 
     /**
      * Chooses a user, updates the auth token to match the user in the [PlexConfig], sets
-     * [PlexPrefsRepo.user] to [responseUser], changes [loginState] to [LOGGED_IN_NO_SERVER_CHOSEN]
+     * [PlexPrefsRepo.user] to [responseUser], changes [loginEvent] to [LOGGED_IN_NO_SERVER_CHOSEN]
      *
      * [responseUser] must have a valid auth token
      */
     fun chooseUser(responseUser: PlexUser)
 
     /**
-     * Chooses a server, sets it in the [PlexPrefsRepo], changes [loginState] to
+     * Chooses a server, sets it in the [PlexPrefsRepo], changes [loginEvent] to
      * [LOGGED_IN_NO_LIBRARY_CHOSEN]
      */
     fun chooseServer(serverModel: ServerModel)
@@ -40,11 +42,11 @@ interface IPlexLoginRepo {
 
     /**
      * Determines the current [LoginState] based on information stored in [PlexPrefsRepo] and
-     * updates the [loginState] to reflect that
+     * updates the [loginEvent] to reflect that
      */
     fun determineLoginState()
 
-    val loginState: LiveData<LoginState>
+    val loginEvent: LiveData<Event<LoginState>>
 
     enum class LoginState {
         NOT_LOGGED_IN,
@@ -71,19 +73,19 @@ class PlexLoginRepo @Inject constructor(
     private val plexConfig: PlexConfig
 ) : IPlexLoginRepo {
 
-    private var _loginState = MutableLiveData<LoginState>()
-    override val loginState: LiveData<LoginState>
+    private var _loginState = MutableLiveData<Event<LoginState>>()
+    override val loginEvent: LiveData<Event<LoginState>>
         get() = _loginState
 
     override suspend fun postOAuthPin(): OAuthResponse? {
         return try {
-            _loginState.postValue(AWAITING_LOGIN_RESULTS)
+            _loginState.postEvent(AWAITING_LOGIN_RESULTS)
             val pin = plexLoginService.postAuthPin()
             plexPrefsRepo.oAuthTempId = pin.id
             pin
         } catch (e: Throwable) {
             Timber.e("Failed to log in: $e")
-            _loginState.postValue(FAILED_TO_LOG_IN)
+            _loginState.postEvent(FAILED_TO_LOG_IN)
             null
         }
     }
@@ -91,7 +93,7 @@ class PlexLoginRepo @Inject constructor(
     override fun chooseUser(responseUser: PlexUser) {
         check(!responseUser.authToken.isNullOrEmpty())
         plexPrefsRepo.user = responseUser
-        _loginState.postValue(LOGGED_IN_NO_SERVER_CHOSEN)
+        _loginState.postEvent(LOGGED_IN_NO_SERVER_CHOSEN)
     }
 
     override fun makeOAuthUrl(clientId: String, code: String): Uri {
@@ -128,7 +130,7 @@ class PlexLoginRepo @Inject constructor(
                     chooseUser(userResponse.users[0])
                 } else {
                     // now we proceed to choose user
-                    _loginState.postValue(LOGGED_IN_NO_USER_CHOSEN)
+                    _loginState.postEvent(LOGGED_IN_NO_USER_CHOSEN)
                 }
             } catch (t: Throwable) {
                 Timber.e(t, "Failed to load users, cannot proceed to profile")
@@ -140,12 +142,12 @@ class PlexLoginRepo @Inject constructor(
         Timber.i("Chose server: $serverModel")
         plexConfig.setPotentialConnections(serverModel.connections)
         plexPrefsRepo.server = serverModel
-        _loginState.postValue(LOGGED_IN_NO_LIBRARY_CHOSEN)
+        _loginState.postEvent(LOGGED_IN_NO_LIBRARY_CHOSEN)
     }
 
     override fun chooseLibrary(plexLibrary: PlexLibrary) {
         plexPrefsRepo.library = plexLibrary
-        _loginState.postValue(LOGGED_IN_FULLY)
+        _loginState.postEvent(LOGGED_IN_FULLY)
     }
 
     init {
@@ -163,16 +165,18 @@ class PlexLoginRepo @Inject constructor(
                     |server token = ${server?.accessToken},
                     |library = ${library?.name}""".trimMargin()
         )
-        _loginState.value = when {
-            token.isEmpty() -> NOT_LOGGED_IN
-            server != null && library != null -> LOGGED_IN_FULLY // Migrating from v0.41, impossible otherwise
-            user == null -> LOGGED_IN_NO_USER_CHOSEN
-            server == null -> LOGGED_IN_NO_SERVER_CHOSEN
-            library == null -> LOGGED_IN_NO_LIBRARY_CHOSEN
-            else -> {
-                Timber.i("Fully logged in branch, awaiting server checks")
-                LOGGED_IN_FULLY
+        _loginState.postEvent(
+            when {
+                token.isEmpty() -> NOT_LOGGED_IN
+                server != null && library != null -> LOGGED_IN_FULLY // Migrating from v0.41, impossible otherwise
+                user == null -> LOGGED_IN_NO_USER_CHOSEN
+                server == null -> LOGGED_IN_NO_SERVER_CHOSEN
+                library == null -> LOGGED_IN_NO_LIBRARY_CHOSEN
+                else -> {
+                    Timber.i("Fully logged in branch, awaiting server checks")
+                    LOGGED_IN_FULLY
+                }
             }
-        }
+        )
     }
 }

@@ -63,7 +63,9 @@ class MainActivityViewModel(
         EXPANDED
     }
 
-    val isLoggedIn = Transformations.map(loginRepo.loginState) { it == LOGGED_IN_FULLY }
+    val isLoggedIn = Transformations.map(loginRepo.loginEvent) {
+        it.peekContent() == LOGGED_IN_FULLY
+    }
 
     private var _currentlyPlayingLayoutState = MutableLiveData(HIDDEN)
     val currentlyPlayingLayoutState: LiveData<BottomSheetState>

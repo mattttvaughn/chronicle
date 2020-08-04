@@ -34,15 +34,18 @@ import javax.inject.Inject
 class Navigator @Inject constructor(
     private val fragmentManager: FragmentManager,
     private val plexConfig: PlexConfig,
-    private val plexLoginRepo: IPlexLoginRepo,
+    plexLoginRepo: IPlexLoginRepo,
     activity: AppCompatActivity
 ) {
 
     init {
         // never remove observer, but this is a singleton so it's okay
-        plexLoginRepo.loginState.observe(activity, Observer { state ->
-            Timber.i("Login state changed to $state")
-            when (state) {
+        plexLoginRepo.loginEvent.observe(activity, Observer { event ->
+            if (event.hasBeenHandled) {
+                return@Observer
+            }
+            Timber.i("Login event changed to $event")
+            when (event.getContentIfNotHandled()) {
                 LOGGED_IN_NO_USER_CHOSEN -> showUserChooser()
                 LOGGED_IN_NO_SERVER_CHOSEN -> showServerChooser()
                 LOGGED_IN_NO_LIBRARY_CHOSEN -> showLibraryChooser()
@@ -52,7 +55,7 @@ class Navigator @Inject constructor(
                 NOT_LOGGED_IN -> showLogin()
                 AWAITING_LOGIN_RESULTS -> {
                 }
-                else -> throw NoWhenBranchMatchedException("Unknown login state: $state")
+                else -> throw NoWhenBranchMatchedException("Unknown login event: $event")
             }
         })
 
