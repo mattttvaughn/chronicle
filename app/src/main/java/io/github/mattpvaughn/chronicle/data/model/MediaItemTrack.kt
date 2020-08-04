@@ -161,9 +161,7 @@ fun List<MediaItemTrack>.getTrackProgressInAudiobook(track: MediaItemTrack): Lon
     return previousTracks.map { it.duration }.sum() + track.progress
 }
 
-/**
- * Returns the track containing the timestamp (as offset from the start of the [List] provided
- */
+/** Returns the track containing the timestamp (as offset from the start of the [List] provided */
 fun List<MediaItemTrack>?.getTrackContainingOffset(offset: Long): MediaItemTrack {
     if (isNullOrEmpty()) {
         return EMPTY_TRACK

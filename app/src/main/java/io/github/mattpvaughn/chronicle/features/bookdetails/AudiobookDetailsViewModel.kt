@@ -369,7 +369,7 @@ class AudiobookDetailsViewModel(
         trackId: Int = TRACK_NOT_FOUND,
         forcePlayFromMediaId: Boolean = false
     ) {
-        updateProgressForChangingBook()
+        updateProgressIfChangingBook()
 
         val transportControls = mediaServiceConnection.transportControls ?: return
 
@@ -400,7 +400,7 @@ class AudiobookDetailsViewModel(
      * Check if there is an active audiobook which are about to be replaced by a different
      * audiobook and if so, make a network request to inform the server that playback has ended
      */
-    private fun updateProgressForChangingBook() {
+    private fun updateProgressIfChangingBook() {
         val currentlyPlayingTrackId = mediaServiceConnection.nowPlaying.value?.id
         val isChangingBooks = if (currentlyPlayingTrackId.isNullOrEmpty()) {
             false

@@ -201,105 +201,108 @@ class AudiobookMediaSessionCallback @Inject constructor(
             }
             if (tracks.isNullOrEmpty()) {
                 handlePlayBookWithNoTracks(bookId, tracks, extras)
-            } else {
-                Timber.i("Starting playback for $bookId: $tracks")
-                // seeking to track if our [startingTrackId] exists
-                val seekingToTrack = startingTrackId in tracks.map { it.id }
-                trackListStateManager.trackList = tracks
-                val metadataList = buildPlaylist(tracks, plexConfig)
+                return@launch
+            }
 
-                // set desired starting track position in trackListStateManager
-                val startingTrack = tracks.getTrackContainingOffset(startTimeOffsetMillis)
-                when {
-                    seekingToTrack -> {
-                        // in this case we always start from start of track
-                        Timber.i("Seeking to start of track with id: $startingTrackId")
-                        val seekToThisTrack =
-                            trackListStateManager.trackList.find { it.id == startingTrackId }
-                        if (seekToThisTrack == null) {
-                            val track = trackRepository.getTrackAsync(startingTrackId)
-                                ?: throw IllegalArgumentException("Unknown track id: $startingTrackId")
-                            val index = tracks.indexOf(track)
-                            trackListStateManager.updatePosition(index, 0)
-                        } else {
-                            val index = tracks.indexOf(seekToThisTrack)
-                            trackListStateManager.updatePosition(index, 0)
-                            Timber.i("New position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
-                        }
-                    }
-                    !seekingToTrack && startTimeOffsetMillis == ACTIVE_TRACK -> {
-                        Timber.i("Seeking to active track")
-                        trackListStateManager.seekToActiveTrack()
-                    }
-                    !seekingToTrack && startingTrack == EMPTY_TRACK -> {
-                        // problematic- it wants to seek to an unknown track, let's just seek
-                        // to the first track in this case
-                        trackListStateManager.trackList = tracks
-                        trackListStateManager.updatePosition(0, 0)
-                    }
-                    !seekingToTrack && startingTrack != EMPTY_TRACK -> {
-                        // calculate offset in case startTimeOffsetMillis happens to be just barely
-                        // before the start of the correct track. This way we only start a few ms
-                        // before, rather restarting the entire previous track entirely
-                        val trackStartOffsetMillis =
-                            startTimeOffsetMillis - (tracks.getTrackStartTime(startingTrack))
-                        val startingTrackIndex = tracks.indexOf(startingTrack)
-                        // We will throw error in trackListStateManager if we call this outside the
-                        // bounds of manager.trackList, but we are certain it's
-                        if (startingTrackIndex > trackListStateManager.trackList.size || startingTrackIndex < 0) {
-                            trackListStateManager.trackList = tracks
-                        }
-                        trackListStateManager.updatePosition(
-                            startingTrackIndex,
-                            trackStartOffsetMillis
-                        )
-                    }
-                }
+            Timber.i("Starting playback for $bookId: $tracks")
+            // seeking to track if our [startingTrackId] exists
+            val seekingToTrack = startingTrackId in tracks.map { it.id }
+            trackListStateManager.trackList = tracks
+            val metadataList = buildPlaylist(tracks, plexConfig)
 
-                // Return if no book found- no reason to setup playback if there's no book
-                val book = withContext(Dispatchers.IO) {
-                    return@withContext bookRepository.getAudiobookAsync(bookId.toInt())
-                }
-
-                // Auto-rewind depending on last listened time for the book. Don't rewind if we're
-                // starting a new chapter/track of a book
-                val rewindDurationMillis: Long =
-                    if (trackListStateManager.currentTrackProgress != 0L) {
-                        calculateRewindDuration(book)
+            // set desired starting track position in trackListStateManager
+            val startingTrack = tracks.getTrackContainingOffset(startTimeOffsetMillis)
+            when {
+                seekingToTrack -> {
+                    // in this case we always start from start of track
+                    Timber.i("Seeking to start of track with id: $startingTrackId")
+                    val seekToThisTrack =
+                        trackListStateManager.trackList.find { it.id == startingTrackId }
+                    if (seekToThisTrack == null) {
+                        val track = trackRepository.getTrackAsync(startingTrackId)
+                            ?: throw IllegalArgumentException("Unknown track id: $startingTrackId")
+                        val index = tracks.indexOf(track)
+                        trackListStateManager.updatePosition(index, 0)
                     } else {
-                        0
+                        val index = tracks.indexOf(seekToThisTrack)
+                        trackListStateManager.updatePosition(index, 0)
+                        Timber.i("New position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
                     }
-
-                trackListStateManager.seekByRelative(-1L * rewindDurationMillis)
-                Timber.i("Rewound position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
-
-                currentPlayer.playWhenReady = playWhenReady
-                val player = currentPlayer
-                when (player) {
-                    is ExoPlayer -> {
-                        val mediaSource = metadataList.toMediaSource(dataSourceFactory)
-                        player.prepare(mediaSource)
+                }
+                !seekingToTrack && startTimeOffsetMillis == ACTIVE_TRACK -> {
+                    Timber.i("Seeking to active track")
+                    trackListStateManager.seekToActiveTrack()
+                }
+                !seekingToTrack && startingTrack == EMPTY_TRACK -> {
+                    Timber.i("Seeking to first track")
+                    // problematic- it wants to seek to an unknown track, let's just seek
+                    // to the first track in this case
+                    trackListStateManager.trackList = tracks
+                    trackListStateManager.updatePosition(0, 0)
+                }
+                !seekingToTrack && startingTrack != EMPTY_TRACK -> {
+                    Timber.i("Seeking to normal track")
+                    // calculate offset in case startTimeOffsetMillis happens to be just barely
+                    // before the start of the correct track. This way we only start a few ms
+                    // before, rather restarting the entire previous track entirely
+                    val trackStartOffsetMillis =
+                        startTimeOffsetMillis - (tracks.getTrackStartTime(startingTrack))
+                    val startingTrackIndex = tracks.indexOf(startingTrack)
+                    // We will throw error in trackListStateManager if we call this outside the
+                    // bounds of manager.trackList, but we are certain it's
+                    if (startingTrackIndex > trackListStateManager.trackList.size || startingTrackIndex < 0) {
+                        trackListStateManager.trackList = tracks
                     }
-                    else -> throw NoWhenBranchMatchedException("Unknown media player")
+                    trackListStateManager.updatePosition(
+                        startingTrackIndex,
+                        trackStartOffsetMillis
+                    )
+                }
+            }
+
+            // Return if no book found- no reason to setup playback if there's no book
+            val book = withContext(Dispatchers.IO) {
+                return@withContext bookRepository.getAudiobookAsync(bookId.toInt())
+            }
+
+            // Auto-rewind depending on last listened time for the book. Don't rewind if we're
+            // starting a new chapter/track of a book
+            val rewindDurationMillis: Long =
+                if (trackListStateManager.currentTrackProgress != 0L) {
+                    calculateRewindDuration(book)
+                } else {
+                    0
                 }
 
-                player.seekTo(
-                    trackListStateManager.currentTrackIndex,
-                    trackListStateManager.currentTrackProgress
-                )
+            trackListStateManager.seekByRelative(-1L * rewindDurationMillis)
+            Timber.i("Rewound position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
 
-                // Inform plex server that audio playback session has started
-                val serverId = plexPrefsRepo.server?.serverId
-                if (serverId == null) {
-                    Timber.w("Unknown server id. Cannot start active session. Media playback may not be saved")
-                } else {
-                    try {
-                        Injector.get().plexMediaService().startMediaSession(
-                            getMediaItemUri(serverId, bookId)
-                        )
-                    } catch (e: Throwable) {
-                        Timber.e("Failed to start media session: $e")
-                    }
+            currentPlayer.playWhenReady = playWhenReady
+            val player = currentPlayer
+            when (player) {
+                is ExoPlayer -> {
+                    val mediaSource = metadataList.toMediaSource(dataSourceFactory)
+                    player.prepare(mediaSource)
+                }
+                else -> throw NoWhenBranchMatchedException("Unknown media player")
+            }
+
+            player.seekTo(
+                trackListStateManager.currentTrackIndex,
+                trackListStateManager.currentTrackProgress
+            )
+
+            // Inform plex server that audio playback session has started
+            val serverId = plexPrefsRepo.server?.serverId
+            if (serverId == null) {
+                Timber.w("Unknown server id. Cannot start active session. Media playback may not be saved")
+            } else {
+                try {
+                    Injector.get().plexMediaService().startMediaSession(
+                        getMediaItemUri(serverId, bookId)
+                    )
+                } catch (e: Throwable) {
+                    Timber.e("Failed to start media session: $e")
                 }
             }
         }
