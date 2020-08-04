@@ -71,12 +71,19 @@ Low priority
 Release 0.50:
 
 (July 30th):
- - [X] Fix playback issues for large libraries (seeking, jump to chapter)
- - [X] Fixed possible memory leak
- - [X] Fixed problem where thumbnails don't load on slow connections
+ - [X] Fix playback issues for multi-track audiobooks (seeking, jump to chapter)
+ - [X] Fixed possible memory leak in playback
+ - [X] Fixed problem where notification icon won't load on slow connections
+ - [X] Possibly resolved problem where library fails to load after user pin entered 
+ - [X] Increased audio buffer range
+ - [X] Remote progress updates called more consistently
+ - [X] Fixed 1.7x speed
+ - [X] Audiobook screen now shows connection state, and allows retries on fails
+ - [X] App now automatically reconnects to server on changes to network
+ - [X] Better messages shown for download errors
 
 (July 21st):
- - [X] Allow audiobooks to be retained between library changes
+ - [X] Allow audiobooks to be retained between library changes (but not server!)
 
 (July 10thish):
  - [X] Shake to reset snooze

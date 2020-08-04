@@ -11,8 +11,8 @@ android {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 16
-        versionName "0.42.1"
+        versionCode 17
+        versionName "0.42.2"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
@@ -178,7 +178,6 @@ dependencies {
     testImplementation("io.mockk:mockk:$mockKVersion") {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-reflect"
     }
-
 
     /* ~~~~~~~~~~~~ Instrumented tests ~~~~~~~~~~ */
     androidTestImplementation "junit:junit:$junitVersion"
