@@ -18,6 +18,7 @@ android {
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
         debug {
@@ -159,7 +160,7 @@ dependencies {
     // Seismic- for shake detection
     implementation "com.squareup:seismic:$seismicVersion"
 
-    // kotlin-result (ISC licensed: permissive like MIT license)
+    // Kotlin-result: TODO remove because Result is now accessible in our current build
     implementation "com.michael-bull.kotlin-result:kotlin-result:$kotlinResultVersion"
 
     // Test for memory leaks
