@@ -1,8 +1,10 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 
-class FakeCachedFileManager : ICachedFileManager{
+class FakeCachedFileManager :
+    ICachedFileManager {
     override fun cancelCaching() {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }

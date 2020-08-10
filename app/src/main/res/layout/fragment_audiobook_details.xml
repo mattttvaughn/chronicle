@@ -3,7 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
-
     <data>
 
         <variable
@@ -15,12 +14,20 @@
             type="io.github.mattpvaughn.chronicle.data.model.Audiobook" />
 
         <variable
-            name="plexConfig"
-            type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig" />
+            name="sourceManager"
+            type="io.github.mattpvaughn.chronicle.data.sources.SourceManager" />
 
-        <import type="io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus" />
+        <variable
+            name="mediaSource"
+            type="io.github.mattpvaughn.chronicle.data.sources.MediaSource" />
 
-        <import type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionState" />
+        <import type="io.github.mattpvaughn.chronicle.data.sources.MediaSource" />
+
+        <import type="io.github.mattpvaughn.chronicle.data.ICachedFileManager" />
+
+        <import type="io.github.mattpvaughn.chronicle.data.ICachedFileManager.CacheStatus" />
+
+        <import type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource.ConnectionState" />
 
         <import type="android.view.View" />
     </data>
@@ -29,7 +36,6 @@
         android:id="@+id/coordinator"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
 
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appBarLayout"
@@ -63,8 +69,9 @@
 
                     <ImageView
                         android:id="@+id/details_artwork"
-                        serverConnected="@{plexConfig.isConnected()}"
+                        serverConnected="@{sourceManager.isSourceConnected(mediaSource.id)}"
                         srcRounded="@{viewModel.audiobook.thumb}"
+                        mediaSource="@{mediaSource}"
                         android:layout_width="@dimen/details_artwork_size"
                         android:layout_height="@dimen/details_artwork_size"
                         android:layout_marginTop="@dimen/app_bar_height"

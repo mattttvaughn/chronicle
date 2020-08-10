@@ -14,7 +14,7 @@ import timber.log.Timber
  */
 class PlexInterceptor(
     private val plexPrefsRepo: PlexPrefsRepo,
-    private val plexConfig: PlexConfig,
+    private val plexLibrarySource: PlexLibrarySource,
     private val isLoginService: Boolean
 ) : Interceptor {
 
@@ -33,7 +33,8 @@ class PlexInterceptor(
     }
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val interceptedUrl = chain.request().url.toString().replace(PLACEHOLDER_URL, plexConfig.url)
+        val interceptedUrl =
+            chain.request().url.toString().replace(PLACEHOLDER_URL, plexLibrarySource.url)
 
         val requestBuilder = chain.request().newBuilder()
             .header("Accept", "application/json")
@@ -43,7 +44,7 @@ class PlexInterceptor(
             .header("X-Plex-Version", BuildConfig.VERSION_NAME)
             .header("X-Plex-Product", PRODUCT)
             .header("X-Plex-Platform-Version", Build.VERSION.RELEASE)
-            .header("X-Plex-Session-Identifier", plexConfig.sessionIdentifier)
+            .header("X-Plex-Session-Identifier", plexLibrarySource.sessionIdentifier)
             .header("X-Plex-Client-Name", APP_NAME)
             .header("X-Plex-Device", DEVICE)
             .header("X-Plex-Device-Name", Build.MODEL)

@@ -9,9 +9,8 @@ import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import dagger.Component
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaRepository
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaSource
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.injection.modules.ServiceModule
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
@@ -42,7 +41,6 @@ interface ServiceComponent {
     fun foregroundServiceController(): ForegroundServiceController
     fun trackListManager(): TrackListStateManager
     fun mediaController(): MediaControllerCompat
-    fun plexMediaSource(): PlexMediaSource
 
     fun inject(mediaPlayerService: MediaPlayerService)
 }

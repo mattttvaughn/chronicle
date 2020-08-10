@@ -9,7 +9,6 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_AUTO_R
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_COVER_STYLE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_DEBUG_DISABLE_PROGRESS
-import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_DOWNLOAD_IDS
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_PREMIUM
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LAST_REFRESH
@@ -20,9 +19,12 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PREMIU
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_REFRESH_RATE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SHAKE_TO_SNOOZE_ENABLED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SKIP_SILENCE
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SOURCES
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SYNC_DIR_PATH
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.NO_PREMIUM_TOKEN
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
 import java.io.File
@@ -78,13 +80,10 @@ interface PrefsRepo {
     var isLibrarySortedDescending: Boolean
 
     /**
-     * IDs for downloads currently downloading. If it has finished downloading or errored, it
-     * should be removed from the download set
-     *
-     * This is a hacky way of persisting info about current downloads between sessions because
-     * DownloadManager doesn't provide that capability
+     * A persisted representation of [SourceManager.sources], with only [MediaSource.id] and
+     * [MediaSource.type] persisted
      */
-    var currentDownloadIDs: Set<Long>
+    var sources: List<Pair<Long, String>>
 
     /**
      * Get a saved preference value corresponding to [key], providing [defaultValue] if no value
@@ -130,14 +129,16 @@ interface PrefsRepo {
         const val KEY_IS_LIBRARY_SORT_DESCENDING = "key_is_sort_descending"
         const val KEY_LIBRARY_VIEW_TYPE = "key_view_type"
         const val KEY_DOWNLOAD_IDS = "key_download_ids"
+        const val KEY_SOURCES = "key_sources"
     }
 }
 
 /**
  *  An implementation of [PrefsRepo] wrapping [SharedPreferences]
  */
-class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferences: SharedPreferences) :
-    PrefsRepo {
+class SharedPreferencesPrefsRepo @Inject constructor(
+    private val sharedPreferences: SharedPreferences
+) : PrefsRepo {
     override var cachedMediaDir: File
         get() {
             val syncLoc = sharedPreferences.getString(KEY_SYNC_DIR_PATH, "")
@@ -233,17 +234,26 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
             sharedPreferences.edit().putBoolean(KEY_IS_LIBRARY_SORT_DESCENDING, value).apply()
         }
 
-    override var currentDownloadIDs: Set<Long>
+    @ExperimentalStdlibApi
+    override var sources: List<Pair<Long, String>>
         get() {
-            return sharedPreferences.getStringSet(KEY_DOWNLOAD_IDS, emptySet())
-                ?.map { it.toLong() }
-                ?.toSet()
-                ?: emptySet()
+            val sourceStrings = sharedPreferences.getStringSet(KEY_SOURCES, emptySet())
+            return sourceStrings?.map {
+                val split = it.split(":")
+                val id = split[0].toLong()
+                val typeString = split[1]
+                Pair(id, typeString)
+            } ?: emptyList()
+
         }
         set(value) {
+            // Only care about type and id of our source. We can recreate our sources solely from that
+            // Store in the form: "<ID>:<TYPE>"
             sharedPreferences.edit()
-                .putStringSet(KEY_DOWNLOAD_IDS, value.map { it.toString() }.toSet())
-                .apply()
+                .putStringSet(
+                    KEY_SOURCES,
+                    value.map { "${it.first}:${it.second}" }.toSet()
+                ).commit()
         }
 
     private val viewTypeBook = "book"

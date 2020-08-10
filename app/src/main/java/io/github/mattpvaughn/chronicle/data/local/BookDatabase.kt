@@ -85,6 +85,9 @@ interface BookDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun update(audiobook: Audiobook)
 
+    @Query("SELECT * FROM Audiobook WHERE source= :sourceId AND isCached >= :isOfflineModeActive LIMIT 1")
+    fun getAudiobooksForSourceAsync(sourceId: Long, isOfflineModeActive: Boolean): List<Audiobook>
+
     @Query("SELECT * FROM Audiobook WHERE id = :id AND isCached >= :isOfflineModeActive LIMIT 1")
     fun getAudiobook(id: Int, isOfflineModeActive: Boolean): LiveData<Audiobook?>
 

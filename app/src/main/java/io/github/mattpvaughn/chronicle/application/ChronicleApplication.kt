@@ -15,10 +15,7 @@ import com.android.billingclient.api.BillingClient.BillingResponseCode.OK
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import io.github.mattpvaughn.chronicle.BuildConfig
-import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
 import io.github.mattpvaughn.chronicle.injection.components.DaggerAppComponent
 import io.github.mattpvaughn.chronicle.injection.modules.AppModule
@@ -45,16 +42,7 @@ open class ChronicleApplication : Application() {
     private val applicationScope = CoroutineScope(applicationJob + Dispatchers.Main)
 
     @Inject
-    lateinit var plexPrefs: PlexPrefsRepo
-
-    @Inject
-    lateinit var plexMediaService: PlexMediaService
-
-    @Inject
-    lateinit var plexConfig: PlexConfig
-
-    @Inject
-    lateinit var prefsRepo: PrefsRepo
+    lateinit var sourceManager: SourceManager
 
     @Inject
     lateinit var billingManager: ChronicleBillingManager
@@ -92,7 +80,7 @@ open class ChronicleApplication : Application() {
         }
 
         appComponent.inject(this)
-        setupNetwork(plexPrefs)
+        setupNetwork()
         setupBilling()
         super.onCreate()
     }
@@ -134,14 +122,14 @@ open class ChronicleApplication : Application() {
     }
 
     @OptIn(InternalCoroutinesApi::class)
-    private fun setupNetwork(plexPrefs: PlexPrefsRepo) {
+    private fun setupNetwork() {
         val connectivityManager =
             getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             connectivityManager.registerDefaultNetworkCallback(object :
                 ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
-                    connectToServer()
+                    connectToServers()
                     super.onAvailable(network)
                 }
 
@@ -150,7 +138,7 @@ open class ChronicleApplication : Application() {
                     // called on ConnectivityThread with no warning
                     applicationScope.launch {
                         withContext(Dispatchers.Main) {
-                            plexConfig.connectionHasBeenLost()
+                            onConnectionLost()
                         }
                     }
                     super.onLost(network)
@@ -163,15 +151,11 @@ open class ChronicleApplication : Application() {
                 this.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
             })
         }
-        val server = plexPrefs.server
-        if (server != null) {
-            plexConfig.setPotentialConnections(server.connections)
-            applicationScope.launch(unhandledExceptionHandler) {
-                try {
-                    plexConfig.connectToServer(plexMediaService)
-                } catch (t: Throwable) {
-                    Timber.i("Exception in chooseViableConnections in ChronicleApplication: $t")
-                }
+        applicationScope.launch(unhandledExceptionHandler) {
+            try {
+                connectToServers()
+            } catch (t: Throwable) {
+                Timber.i("Exception in chooseViableConnections in ChronicleApplication: $t")
             }
         }
     }
@@ -181,8 +165,8 @@ open class ChronicleApplication : Application() {
         override fun onReceive(context: Context?, intent: Intent?) {
             applicationScope.launch {
                 if (context != null && intent != null) {
-                    plexConfig.connectionHasBeenLost()
-                    connectToServer()
+                    onConnectionLost()
+                    connectToServers()
                 }
             }
         }
@@ -190,8 +174,13 @@ open class ChronicleApplication : Application() {
 
     // Connect to the first connection which can establish a connection
     @InternalCoroutinesApi
-    private fun connectToServer() {
-        plexConfig.connectToServer(plexMediaService)
+    private fun connectToServers() {
+        applicationScope.launch {
+            sourceManager.connectToRemotes()
+        }
     }
 
+    private fun onConnectionLost() {
+        sourceManager.connectionHasBeenLost()
+    }
 }

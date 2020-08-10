@@ -10,8 +10,8 @@
             type="io.github.mattpvaughn.chronicle.features.library.LibraryViewModel" />
 
         <variable
-            name="plexConfig"
-            type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig" />
+            name="sourceManager"
+            type="io.github.mattpvaughn.chronicle.data.sources.SourceManager" />
 
         <import type="android.view.View" />
 
@@ -86,7 +86,7 @@
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/library_grid"
-                    serverConnected="@{plexConfig.isConnected()}"
+                    serverConnected="@{sourceManager.connectedSourceIds}"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingLeft="@dimen/margin_small"
@@ -114,7 +114,7 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/search_results_list"
                     searchBookList="@{viewModel.searchResults}"
-                    serverConnectedSearch="@{plexConfig.isConnected()}"
+                    sourceConnectionsSearch="@{sourceManager.connectedSourceIds}"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@color/colorPrimaryDark"

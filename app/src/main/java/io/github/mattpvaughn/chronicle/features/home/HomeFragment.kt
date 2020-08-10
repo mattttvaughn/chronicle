@@ -12,7 +12,7 @@ import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.databinding.FragmentHomeBinding
 import io.github.mattpvaughn.chronicle.features.library.AudiobookAdapter
 import io.github.mattpvaughn.chronicle.features.library.AudiobookSearchAdapter
@@ -35,7 +35,7 @@ class HomeFragment : Fragment() {
     lateinit var navigator: Navigator
 
     @Inject
-    lateinit var plexConfig: PlexConfig
+    lateinit var sourceManager: SourceManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         (requireActivity() as MainActivity).activityComponent.inject(this)
@@ -53,7 +53,7 @@ class HomeFragment : Fragment() {
 
         binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
-        binding.plexConfig = plexConfig
+        binding.sourceManager = sourceManager
 
         binding.recentlyAddedRecyclerview.adapter = makeAudiobookAdapter()
         binding.recentlyAddedRecyclerview.itemAnimator?.changeDuration = 0
@@ -132,7 +132,7 @@ class HomeFragment : Fragment() {
     }
 
     fun openAudiobookDetails(audiobook: Audiobook) {
-        navigator.showDetails(audiobook.id, audiobook.isCached)
+        navigator.showDetails(audiobook.id, audiobook.isCached, audiobook.source)
     }
 
     companion object {

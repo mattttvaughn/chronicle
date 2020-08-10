@@ -26,6 +26,9 @@ class FakePrefsRepo @Inject constructor() : PrefsRepo {
     override var autoRewind: Boolean
         get() = TODO("Not yet implemented")
         set(value) {}
+    override var shakeToSnooze: Boolean
+        get() = TODO("Not yet implemented")
+        set(value) {}
 
     override val isPremium: Boolean
         get() = TODO("Not yet implemented")
@@ -48,7 +51,7 @@ class FakePrefsRepo @Inject constructor() : PrefsRepo {
     override var isLibrarySortedDescending: Boolean
         get() = TODO("Not yet implemented")
         set(value) {}
-    override var currentDownloadIDs: Set<Long>
+    override var sources: List<Pair<Long, String>>
         get() = TODO("Not yet implemented")
         set(value) {}
 

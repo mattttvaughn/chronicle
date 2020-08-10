@@ -25,7 +25,11 @@ import dagger.Provides
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
-import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import io.github.mattpvaughn.chronicle.data.CachedFileManager
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.APP_NAME
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import io.github.mattpvaughn.chronicle.util.PackageValidator
@@ -114,8 +118,11 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun notificationBuilder(controller: MediaControllerCompat, plexConfig: PlexConfig) =
-        NotificationBuilder(service, controller, plexConfig)
+    fun notificationBuilder(
+        controller: MediaControllerCompat,
+        plexLibrarySource: PlexLibrarySource
+    ) =
+        NotificationBuilder(service, controller, plexLibrarySource)
 
     @Provides
     @ServiceScope

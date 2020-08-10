@@ -10,8 +10,12 @@
             type="io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingViewModel" />
 
         <variable
-            name="plexConfig"
-            type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig" />
+            name="mediaSource"
+            type="io.github.mattpvaughn.chronicle.data.sources.MediaSource" />
+
+        <variable
+            name="sourceManager"
+            type="io.github.mattpvaughn.chronicle.data.sources.SourceManager" />
 
         <import type="android.view.View" />
     </data>
@@ -53,8 +57,9 @@
 
                     <ImageView
                         android:id="@+id/details_artwork"
-                        serverConnected="@{plexConfig.isConnected()}"
+                        serverConnected="@{sourceManager.isSourceConnected(mediaSource.id)}"
                         srcRounded="@{viewModel.audiobook.thumb}"
+                        mediaSource="@{mediaSource}"
                         android:contentDescription="@{viewModel.audiobook.title}"
                         android:layout_width="@dimen/details_artwork_size"
                         android:layout_height="@dimen/details_artwork_size"

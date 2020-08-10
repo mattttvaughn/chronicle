@@ -15,7 +15,7 @@ import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
 import io.github.mattpvaughn.chronicle.data.model.getTrackStartTime
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexSyncScrobbleWorker
+import io.github.mattpvaughn.chronicle.data.sources.plex.RemoteSyncScrobbleWorker
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.ProgressUpdater.Companion.NETWORK_CALL_FREQUENCY
 import kotlinx.coroutines.CoroutineScope
@@ -38,7 +38,7 @@ interface ProgressUpdater {
      * with id [trackId] and a book containing that track.
      *
      * Updates book/track progress in remote DB if [forceNetworkUpdate] == true or every
-     * [NETWORK_CALL_FREQUENCY] calls. Pass additional [playbackState] for [PlexSyncScrobbleWorker]
+     * [NETWORK_CALL_FREQUENCY] calls. Pass additional [playbackState] for [RemoteSyncScrobbleWorker]
      * to pass playback state to server
      */
     fun updateProgress(
@@ -169,14 +169,14 @@ class SimpleProgressUpdater @Inject constructor(
     ) {
         val syncWorkerConstraints =
             Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-        val inputData = PlexSyncScrobbleWorker.makeWorkerData(
+        val inputData = RemoteSyncScrobbleWorker.makeWorkerData(
             trackId = trackId,
             playbackState = playbackState,
             trackProgress = trackProgress,
             playbackTimeStamp = currentTime,
             bookProgress = bookProgress
         )
-        val worker = OneTimeWorkRequestBuilder<PlexSyncScrobbleWorker>()
+        val worker = OneTimeWorkRequestBuilder<RemoteSyncScrobbleWorker>()
             .setInputData(inputData)
             .setConstraints(syncWorkerConstraints)
             .setBackoffCriteria(

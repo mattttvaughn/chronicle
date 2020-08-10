@@ -1,4 +1,4 @@
-package io.github.mattpvaughn.chronicle.data.sources.plex
+package io.github.mattpvaughn.chronicle.data
 
 import android.app.DownloadManager
 import android.app.DownloadManager.*
@@ -11,6 +11,8 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
+import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -40,7 +42,7 @@ class CachedFileManager @Inject constructor(
     private val prefsRepo: PrefsRepo,
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
-    private val plexConfig: PlexConfig
+    private val sourceManager: SourceManager
 ) : ICachedFileManager {
 
     private val externalFileDirs = Injector.get().externalDeviceDirs()
@@ -74,11 +76,17 @@ class CachedFileManager @Inject constructor(
                     }
                 }
                 val dest = Uri.parse("file://${destFile.absolutePath}")
-                val downId = downloadManager.enqueue(makeTrackDownloadRequest(track, dest))
-                cacheQueue.add(downId)
+                val source = sourceManager.getSourceById(track.source)
+                if (source is HttpMediaSource) {
+                    val request = source.makeDownloadRequest(track.media)
+                        .setTitle("#${track.index} ${track.album}")
+                        .setDescription("Downloading")
+                        .setDestinationUri(dest)
+                    val downId = downloadManager.enqueue(request)
+                    cacheQueue.add(downId)
+                }
             }
         }
-        prefsRepo.currentDownloadIDs = cacheQueue.toSet()
     }
 
     override suspend fun uncacheAllInLibrary(): Int {
@@ -99,7 +107,6 @@ class CachedFileManager @Inject constructor(
                 Timber.i("Not deleting file: ${it.name}")
             }
         }
-        prefsRepo.currentDownloadIDs = emptySet()
         trackRepository.uncacheAll()
         bookRepository.uncacheAll()
         return allCachedTrackFiles.size
@@ -145,14 +152,6 @@ class CachedFileManager @Inject constructor(
             // Only return the first failure
             failures.first()
         }
-    }
-
-    /** Create a [Request] for a track download with the proper metadata */
-    private fun makeTrackDownloadRequest(track: MediaItemTrack, dest: Uri): Request {
-        return plexConfig.makeDownloadRequest(track.media)
-            .setTitle("#${track.index} ${track.album}")
-            .setDescription("Downloading")
-            .setDestinationUri(dest)
     }
 
     /** Handle track download finished */

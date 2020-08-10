@@ -14,15 +14,17 @@ import com.bumptech.glide.load.model.Headers
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import io.github.mattpvaughn.chronicle.R
-import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import java.net.URL
 
 
-@BindingAdapter(value = ["srcRounded", "serverConnected"], requireAll = true)
+@BindingAdapter(value = ["srcRounded", "serverConnected", "mediaSource"], requireAll = true)
 fun bindImageRounded(
     imageView: ImageView,
     src: String?,
-    serverConnected: Boolean
+    serverConnected: Boolean,
+    mediaSource: MediaSource
 ) {
     if ((imageView.context as Activity).isDestroyed) {
         return
@@ -32,11 +34,14 @@ fun bindImageRounded(
         return
     }
 
-    val imageSize = imageView.resources.getDimension(R.dimen.audiobook_image_width).toInt()
-    val config = Injector.get().plexConfig()
-    val url =
-        URL(config.toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$src"))
-    val glideUrl = GlideUrlRelativeCacheKey(url, Injector.get().plexConfig().makeGlideHeaders())
+    val glideUrl = if (mediaSource is HttpMediaSource) {
+        val url = URL(mediaSource.makeThumbUri(src).toString())
+        GlideUrlRelativeCacheKey(url, mediaSource.makeGlideHeaders())
+    } else {
+        // no headers needed for non-http sources
+        val url = URL(mediaSource.makeThumbUri(src).toString())
+        GlideUrl(url)
+    }
 
     Glide.with(imageView)
         .load(glideUrl)

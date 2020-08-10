@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!--    <data>-->
+
+    <!--        <variable-->
+    <!--            name="viewModel"-->
+    <!--            type="io.github.mattpvaughn.chronicle.features.sources.SourceManagerViewModel" />-->
+
+    <!--        <import type="android.view.View" />-->
+    <!--    </data>-->
+
+    <!--    <androidx.constraintlayout.widget.ConstraintLayout-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="match_parent"-->
+    <!--        android:background="@color/colorPrimaryDark"-->
+    <!--        tools:context=".features.sources.SourceManagerFragment">-->
+
+    <!--        <TextView-->
+    <!--            android:id="@+id/choose_source_title"-->
+    <!--            style="@style/TextAppearance.Title"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_marginLeft="@dimen/screen_horizontal_padding"-->
+    <!--            android:layout_marginTop="@dimen/app_bar_height"-->
+    <!--            android:layout_marginRight="@dimen/screen_horizontal_padding"-->
+    <!--            android:text="@string/sources"-->
+    <!--            app:layout_constraintLeft_toLeftOf="parent"-->
+    <!--            app:layout_constraintTop_toTopOf="parent" />-->
+
+    <!--        <androidx.recyclerview.widget.RecyclerView-->
+    <!--            android:id="@+id/source_list"-->
+    <!--            android:layout_width="match_parent"-->
+    <!--            android:layout_height="0dp"-->
+    <!--            android:layout_marginLeft="@dimen/screen_horizontal_padding"-->
+    <!--            android:layout_marginTop="@dimen/spacing_normal"-->
+    <!--            android:layout_marginRight="@dimen/screen_horizontal_padding"-->
+    <!--            android:layout_marginBottom="@dimen/screen_vertical_padding"-->
+    <!--            android:visibility="@{!viewModel.sources.empty  ? View.VISIBLE : View.GONE}"-->
+    <!--            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"-->
+    <!--            app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--            app:layout_constraintLeft_toLeftOf="parent"-->
+    <!--            app:layout_constraintRight_toRightOf="parent"-->
+    <!--            app:layout_constraintTop_toBottomOf="@id/choose_source_title"-->
+    <!--            app:listData="@{viewModel.sources}"-->
+    <!--            tools:listitem="@layout/list_item_source" />-->
+
+    <!--        <TextView-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:text="@string/no_sources_found"-->
+    <!--            android:visibility="@{viewModel.sources.empty  ? View.VISIBLE : View.GONE}"-->
+    <!--            app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--            app:layout_constraintLeft_toLeftOf="parent"-->
+    <!--            app:layout_constraintRight_toRightOf="parent"-->
+    <!--            app:layout_constraintTop_toBottomOf="@id/choose_source_title" />-->
+
+    <!--        <com.google.android.material.floatingactionbutton.FloatingActionButton-->
+    <!--            android:id="@+id/add_new_source"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:src="@drawable/ic_add"-->
+    <!--            android:tint="@color/colorAccent"-->
+    <!--            app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--            app:layout_constraintRight_toRightOf="parent" />-->
+
+    <!--    </androidx.constraintlayout.widget.ConstraintLayout>-->
+</layout>

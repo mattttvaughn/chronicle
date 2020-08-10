@@ -86,8 +86,11 @@ class UITestAppModule(private val context: Context) {
 
     @Provides
     @Singleton
-    fun plexConnectionChooser(plexConfig: PlexConfig, plexMediaService: PlexMediaService) =
-        spyk(PlexConnectionChooser(plexConfig, plexMediaService))
+    fun plexConnectionChooser(
+        plexLibrarySource: PlexLibrarySource,
+        plexMediaService: PlexMediaService
+    ) =
+        spyk(PlexConnectionChooser(plexLibrarySource, plexMediaService))
 
     @Provides
     @Singleton

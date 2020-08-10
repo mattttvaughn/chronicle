@@ -39,7 +39,7 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import timber.log.Timber
 
@@ -51,7 +51,7 @@ const val NOW_PLAYING_NOTIFICATION: Int = 0xb32229
 class NotificationBuilder(
     private val context: Context,
     private val controller: MediaControllerCompat,
-    private val plexConfig: PlexConfig
+    private val plexLibrarySource: PlexLibrarySource
 ) {
 
     private val platformNotificationManager: NotificationManager =
@@ -145,7 +145,7 @@ class NotificationBuilder(
         // Only load bitmap on changes to the title
         if (bookTitleBitmapPair?.first != description.title) {
             Timber.i("Loading art uri")
-            val largeIcon = plexConfig.getBitmapFromServer(artUri.toString())
+            val largeIcon = plexLibrarySource.getBitmapFromServer(artUri.toString())
             if (largeIcon != null) {
                 bookTitleBitmapPair = Pair(description?.title?.toString() ?: "", largeIcon)
             }

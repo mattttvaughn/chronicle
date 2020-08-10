@@ -21,9 +21,7 @@ import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomS
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.EXPANDED
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.databinding.ActivityMainBinding
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingFragment
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
@@ -53,13 +51,7 @@ open class MainActivity : AppCompatActivity() {
     }
 
     @Inject
-    lateinit var plexLoginRepo: IPlexLoginRepo
-
-    @Inject
     lateinit var navigator: Navigator
-
-    @Inject
-    lateinit var plexPrefsRepo: PlexPrefsRepo
 
     @Inject
     lateinit var bookRepository: IBookRepository
@@ -68,10 +60,10 @@ open class MainActivity : AppCompatActivity() {
     lateinit var trackRepository: ITrackRepository
 
     @Inject
-    lateinit var plexConfig: PlexConfig
+    lateinit var mediaServiceConnection: MediaServiceConnection
 
     @Inject
-    lateinit var mediaServiceConnection: MediaServiceConnection
+    lateinit var sourceManager: SourceManager
 
     lateinit var activityComponent: ActivityComponent
 
@@ -90,8 +82,8 @@ open class MainActivity : AppCompatActivity() {
         val binding =
             DataBindingUtil.setContentView<ActivityMainBinding>(this, R.layout.activity_main)
         binding.lifecycleOwner = this
+        binding.sourceManager = sourceManager
         binding.viewModel = viewModel
-        binding.plexConfig = plexConfig
 
         binding.currentlyPlayingHandle.setOnClickListener {
             viewModel.onCurrentlyPlayingClicked()

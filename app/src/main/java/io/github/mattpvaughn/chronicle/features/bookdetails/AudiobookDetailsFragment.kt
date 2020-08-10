@@ -16,8 +16,7 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.Chapter
-import io.github.mattpvaughn.chronicle.data.sources.MediaSource
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.databinding.FragmentAudiobookDetailsBinding
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.navigation.Navigator
@@ -32,6 +31,7 @@ class AudiobookDetailsFragment : Fragment() {
         fun newInstance() = AudiobookDetailsFragment()
         const val TAG = "details tag"
         const val ARG_AUDIOBOOK_ID = "audiobook_id"
+        const val ARG_AUDIOBOOK_SOURCE_ID = "audiobook_source_id"
         const val ARG_IS_AUDIOBOOK_CACHED = "is_audiobook_cached"
     }
 
@@ -48,7 +48,7 @@ class AudiobookDetailsFragment : Fragment() {
     lateinit var bookRepository: IBookRepository
 
     @Inject
-    lateinit var plexConfig: PlexConfig
+    lateinit var sourceManager: SourceManager
 
     @Inject
     lateinit var mediaServiceConnection: MediaServiceConnection
@@ -71,11 +71,15 @@ class AudiobookDetailsFragment : Fragment() {
         val binding = FragmentAudiobookDetailsBinding.inflate(inflater, container, false)
 
         val inputId = requireArguments().getInt(ARG_AUDIOBOOK_ID)
+        val sourceId = requireArguments().getLong(ARG_AUDIOBOOK_SOURCE_ID)
         val inputCached = requireArguments().getBoolean(ARG_IS_AUDIOBOOK_CACHED)
+
+        val mediaSource = sourceManager.getSourceById(sourceId)
+        checkNotNull(mediaSource) { "Non-null MediaSource required" }
 
         viewModelFactory.inputAudiobook = Audiobook(
             id = inputId,
-            source = MediaSource.NO_SOURCE_FOUND,
+            source = sourceId,
             isCached = inputCached
         )
         val viewModel =
@@ -83,7 +87,8 @@ class AudiobookDetailsFragment : Fragment() {
 
         binding.viewModel = viewModel
         binding.lifecycleOwner = viewLifecycleOwner
-        binding.plexConfig = plexConfig
+        binding.sourceManager = sourceManager
+        binding.mediaSource = mediaSource
 
         val adapter = ChapterListAdapter(object : TrackClickListener {
             override fun onClick(chapter: Chapter) {

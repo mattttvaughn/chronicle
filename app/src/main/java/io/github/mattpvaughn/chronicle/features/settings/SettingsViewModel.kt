@@ -7,15 +7,13 @@ import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.FEATURE_FLAG_IS_AUTO_ENABLED
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
-import io.github.mattpvaughn.chronicle.features.settings.SettingsViewModel.NavigationDestination.*
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.bytesAvailable
 import io.github.mattpvaughn.chronicle.util.postEvent
@@ -38,9 +36,8 @@ class SettingsViewModel(
     private val trackRepository: ITrackRepository,
     private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
-    private val plexLoginRepo: IPlexLoginRepo,
     private val cachedFileManager: ICachedFileManager,
-    private val plexConfig: PlexConfig
+    private val navigator: Navigator
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -49,9 +46,8 @@ class SettingsViewModel(
         private val trackRepository: ITrackRepository,
         private val prefsRepo: PrefsRepo,
         private val mediaServiceConnection: MediaServiceConnection,
-        private val plexLoginRepo: IPlexLoginRepo,
         private val cachedFileManager: ICachedFileManager,
-        private val plexConfig: PlexConfig
+        private val navigator: Navigator
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
@@ -60,9 +56,8 @@ class SettingsViewModel(
                     trackRepository,
                     mediaServiceConnection,
                     prefsRepo,
-                    plexLoginRepo,
                     cachedFileManager,
-                    plexConfig
+                    navigator
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from SettingsViewModel.Factory")
@@ -386,123 +381,12 @@ class SettingsViewModel(
                 FormattableString.from(R.string.settings_category_account)
             ),
             PreferenceModel(
-                PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_change_library),
+                type = PreferenceType.CLICKABLE,
+                title = FormattableString.from(R.string.settings_sources_title),
+                explanation = FormattableString.from(R.string.settings_sources_explanation),
                 click = object : PreferenceClick {
                     override fun onClick() {
-                        viewModelScope.launch {
-                            if (!cachedFileManager.hasUserCachedTracks()) {
-                                clearConfig(RETURN_TO_LIBRARY_CHOOSER)
-                                return@launch
-                            }
-                            showOptionsMenu(
-                                title = FormattableString.from(R.string.prompt_clear_downloads_allow_retain),
-                                options = listOf(FormattableString.yes, FormattableString.no),
-                                listener = object : BottomChooserItemListener() {
-                                    override fun onItemClicked(formattableString: FormattableString) {
-                                        check(formattableString is FormattableString.ResourceString)
-                                        if (formattableString.stringRes == R.string.yes) {
-                                            // Keep downloaded
-                                            clearConfig(
-                                                RETURN_TO_LIBRARY_CHOOSER,
-                                                clearDownloads = false
-                                            )
-                                        } else {
-                                            // Delete downloaded
-                                            clearConfig(
-                                                RETURN_TO_LIBRARY_CHOOSER,
-                                                clearDownloads = true
-                                            )
-                                        }
-                                        setBottomSheetVisibility(false)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }),
-            PreferenceModel(
-                PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_change_server),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        viewModelScope.launch {
-                            if (!cachedFileManager.hasUserCachedTracks()) {
-                                clearConfig(RETURN_TO_SERVER_CHOOSER)
-                                return@launch
-                            }
-                            showOptionsMenu(
-                                title = FormattableString.from(R.string.settings_clear_downloads_warning),
-                                options = listOf(FormattableString.yes, FormattableString.no),
-                                listener = object : BottomChooserItemListener() {
-                                    override fun onItemClicked(formattableString: FormattableString) {
-                                        if (formattableString == FormattableString.yes) {
-                                            clearConfig(RETURN_TO_SERVER_CHOOSER)
-                                        }
-                                        setBottomSheetVisibility(false)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }),
-            PreferenceModel(
-                PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_change_user),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        viewModelScope.launch {
-                            if (!cachedFileManager.hasUserCachedTracks()) {
-                                clearConfig(RETURN_TO_USER_CHOOSER)
-                                return@launch
-                            }
-                            showOptionsMenu(
-                                title = FormattableString.from(R.string.settings_clear_downloads_warning),
-                                options = listOf(FormattableString.yes, FormattableString.no),
-                                listener = object : BottomChooserItemListener() {
-                                    override fun onItemClicked(formattableString: FormattableString) {
-                                        if (formattableString == FormattableString.yes) {
-                                            clearConfig(RETURN_TO_USER_CHOOSER)
-                                        }
-                                        setBottomSheetVisibility(false)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }),
-            PreferenceModel(
-                PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_log_out),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        viewModelScope.launch {
-                            val logout = {
-                                viewModelScope.launch {
-                                    cachedFileManager.uncacheAllInLibrary()
-                                }
-                                plexConfig.clear()
-                                mediaServiceConnection.transportControls?.stop()
-                                clearConfig(RETURN_TO_LOGIN)
-                            }
-                            if (!cachedFileManager.hasUserCachedTracks()) {
-                                logout()
-                                return@launch
-                            }
-                            showOptionsMenu(
-                                title = FormattableString.from(R.string.settings_clear_downloads_warning),
-                                options = listOf(FormattableString.yes, FormattableString.no),
-                                listener = object : BottomChooserItemListener() {
-                                    override fun onItemClicked(formattableString: FormattableString) {
-                                        if (formattableString == FormattableString.yes) {
-                                            logout()
-                                        }
-                                        setBottomSheetVisibility(false)
-                                    }
-                                }
-                            )
-                        }
-                        Timber.i("Logging out")
+                        navigator.showSourcesManager()
                     }
                 }),
             PreferenceModel(
@@ -550,7 +434,7 @@ class SettingsViewModel(
                         FormattableString.from(string = "Clear DB"),
                         click = object : PreferenceClick {
                             override fun onClick() {
-                                clearConfig(clearDownloads = false)
+                                clearDB()
                             }
                         }),
                     PreferenceModel(
@@ -626,40 +510,17 @@ class SettingsViewModel(
         }
     }
 
-    private enum class NavigationDestination {
-        RETURN_TO_LIBRARY_CHOOSER,
-        RETURN_TO_SERVER_CHOOSER,
-        RETURN_TO_LOGIN,
-        RETURN_TO_USER_CHOOSER,
-        DO_NOT_NAVIGATE
-    }
-
     /**
      * Clears the server cached data, and navigates to reset the data on a chooser depending on the
      * [navigateTo] provided
      */
-    private fun clearConfig(
-        navigateTo: NavigationDestination = DO_NOT_NAVIGATE,
-        clearDownloads: Boolean = true
-    ) {
+    private fun clearDB() {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            if (clearDownloads) {
-                cachedFileManager.uncacheAllInLibrary()
-            }
             withContext(Dispatchers.IO) {
                 bookRepository.clear()
                 trackRepository.clear()
             }
             mediaServiceConnection.transportControls?.stop()
-            when (navigateTo) {
-                RETURN_TO_LIBRARY_CHOOSER -> plexConfig.clearLibrary()
-                RETURN_TO_SERVER_CHOOSER -> plexConfig.clearServer()
-                RETURN_TO_LOGIN -> plexConfig.clear()
-                RETURN_TO_USER_CHOOSER -> plexConfig.clearUser()
-                DO_NOT_NAVIGATE -> {
-                }
-            }
-            plexLoginRepo.determineLoginState()
         }
     }
 

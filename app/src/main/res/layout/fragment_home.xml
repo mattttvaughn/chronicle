@@ -10,8 +10,8 @@
             type="io.github.mattpvaughn.chronicle.features.home.HomeViewModel" />
 
         <variable
-            name="plexConfig"
-            type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig" />
+            name="sourceManager"
+            type="io.github.mattpvaughn.chronicle.data.sources.SourceManager" />
 
         <import type="android.view.View" />
 
@@ -125,7 +125,7 @@
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/downloaded_recyclerview"
                         bookList="@{viewModel.downloaded}"
-                        serverConnected="@{plexConfig.isConnected()}"
+                        sourceConnections="@{sourceManager.connectedSourceIds}"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
@@ -149,7 +149,7 @@
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/on_deck_recyclerview"
                         bookList="@{viewModel.recentlyListened}"
-                        serverConnected="@{plexConfig.isConnected()}"
+                        sourceConnections="@{sourceManager.connectedSourceIds}"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
@@ -172,7 +172,7 @@
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recently_added_recyclerview"
                         bookList="@{viewModel.recentlyAdded}"
-                        serverConnected="@{plexConfig.isConnected()}"
+                        sourceConnections="@{sourceManager.connectedSourceIds}"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
@@ -188,7 +188,7 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/search_results_list"
             searchBookList="@{viewModel.searchResults}"
-            serverConnectedSearch="@{plexConfig.isConnected()}"
+            sourceConnectionsSearch="@{sourceManager.connectedSourceIds}"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@color/colorPrimaryDark"

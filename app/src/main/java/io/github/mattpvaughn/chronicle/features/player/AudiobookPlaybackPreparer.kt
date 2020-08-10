@@ -11,7 +11,7 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.toMediaMetadata
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaRepository
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import javax.inject.Inject
@@ -63,6 +63,9 @@ class AudiobookPlaybackPreparer @Inject constructor(
 
 }
 
-fun buildPlaylist(tracks: List<MediaItemTrack>, plexConfig: PlexConfig): List<MediaMetadataCompat> {
-    return tracks.map { track -> track.toMediaMetadata(plexConfig) }
+fun buildPlaylist(
+    tracks: List<MediaItemTrack>,
+    mediaSource: MediaSource
+): List<MediaMetadataCompat> {
+    return tracks.map { track -> track.toMediaMetadata(mediaSource) }
 }

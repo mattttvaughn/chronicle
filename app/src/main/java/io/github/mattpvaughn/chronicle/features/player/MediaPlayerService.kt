@@ -30,8 +30,9 @@ import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.getActiveTrack
 import io.github.mattpvaughn.chronicle.data.model.getProgress
 import io.github.mattpvaughn.chronicle.data.model.toMediaItem
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_ACTION
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_DURATION_MILLIS
@@ -63,7 +64,9 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
     lateinit var notificationBuilder: NotificationBuilder
 
     @Inject
-    lateinit var plexConfig: PlexConfig
+    lateinit var sourceManager: SourceManager
+
+    var currentSource: MediaSource? = null
 
     @Inject
     lateinit var becomingNoisyReceiver: BecomingNoisyReceiver
@@ -105,12 +108,6 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
     @Inject
     lateinit var prefsRepo: PrefsRepo
-
-    @Inject
-    lateinit var plexPrefs: PlexPrefsRepo
-
-    @Inject
-    lateinit var plexLoginRepo: IPlexLoginRepo
 
     companion object {
         /** Strings used by plex to indicate playback state */
@@ -201,8 +198,6 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         invalidatePlaybackParams()
         (progressUpdater as SimpleProgressUpdater).mediaSessionConnector = mediaSessionConnector
         progressUpdater.startRegularProgressUpdates()
-
-        plexConfig.connectionState.observeForever(serverChangedListener)
     }
 
     override fun broadcastUpdate(sleepTimerAction: SleepTimerAction, durationMillis: Long) {
@@ -232,7 +227,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         }
     }
 
-    private val serverChangedListener = Observer<PlexConfig.ConnectionState> {
+    private val serverChangedListener = Observer<PlexLibrarySource.ConnectionState> {
         if (mediaController.playbackState.isPrepared) {
             // Only can change server when playback is prepared because otherwise we would be
             // attempting to load data on a null/empty tracklist
@@ -241,7 +236,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
     }
 
     /**
-     * Change the tracks in the player to refer to the new server url. Because [PlexConfig] is a
+     * Change the tracks in the player to refer to the new server url. Because [PlexLibrarySource] is a
      * Singleton we don't need to keep track of state here
      */
     private fun changeServer() {
@@ -280,7 +275,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         progressUpdater.cancel()
         serviceJob.cancel()
 
-        plexConfig.connectionState.removeObserver(serverChangedListener)
+//        plexLibrarySource.connectionState.removeObserver(serverChangedListener)
 
         prefsRepo.unregisterPrefsListener(prefsListener)
         localBroadcastManager.unregisterReceiver(sleepTimerBroadcastReceiver)
@@ -385,22 +380,22 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                     }
                     getString(R.string.auto_category_recently_listened) -> {
                         val recentlyListened = bookRepository.getRecentlyListenedAsync()
-                        result.sendResult(recentlyListened.map { it.toMediaItem(plexConfig) }
+                        result.sendResult(recentlyListened.map { it.toMediaItem(currentSource) }
                             .toMutableList())
                     }
                     getString(R.string.auto_category_recently_added) -> {
                         val recentlyAdded = bookRepository.getRecentlyAddedAsync()
-                        result.sendResult(recentlyAdded.map { it.toMediaItem(plexConfig) }
+                        result.sendResult(recentlyAdded.map { it.toMediaItem(currentSource) }
                             .toMutableList())
                     }
                     getString(R.string.auto_category_library) -> {
                         val books = bookRepository.getAllBooksAsync()
-                        result.sendResult(books.map { it.toMediaItem(plexConfig) }
+                        result.sendResult(books.map { it.toMediaItem(currentSource) }
                             .toMutableList())
                     }
                     getString(R.string.auto_category_offline) -> {
                         val offline = bookRepository.getCachedAudiobooksAsync()
-                        result.sendResult(offline.map { it.toMediaItem(plexConfig) }
+                        result.sendResult(offline.map { it.toMediaItem(currentSource) }
                             .toMutableList())
                     }
                 }
@@ -416,7 +411,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         Timber.i("Searching! Query = $query")
         serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
             val books = bookRepository.searchAsync(query)
-            result.sendResult(books.map { it.toMediaItem(plexConfig) }.toMutableList())
+            result.sendResult(books.map { it.toMediaItem(currentSource) }.toMutableList())
         }
         result.detach()
     }
@@ -434,7 +429,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         val extras = Bundle().apply {
             putBoolean(
                 CHRONICLE_MEDIA_SEARCH_SUPPORTED,
-                isClientLegal && prefsRepo.allowAuto && plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_FULLY
+                isClientLegal && prefsRepo.allowAuto && sourceManager.hasAnyAuthorizedSources()
             )
             putBoolean(CONTENT_STYLE_SUPPORTED, true)
             putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE)
@@ -454,27 +449,9 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
-            plexLoginRepo.loginEvent.value?.peekContent() == NOT_LOGGED_IN -> {
+            sourceManager.hasAnyAuthorizedSources() -> {
                 mediaSessionConnector.setCustomErrorMessage(
-                    getString(R.string.auto_access_error_not_logged_in)
-                )
-                BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
-            }
-            plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_USER_CHOSEN -> {
-                mediaSessionConnector.setCustomErrorMessage(
-                    getString(R.string.auto_access_error_no_user_chosen)
-                )
-                BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
-            }
-            plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_SERVER_CHOSEN -> {
-                mediaSessionConnector.setCustomErrorMessage(
-                    getString(R.string.auto_access_error_no_server_chosen)
-                )
-                BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
-            }
-            plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_LIBRARY_CHOSEN -> {
-                mediaSessionConnector.setCustomErrorMessage(
-                    getString(R.string.auto_access_error_no_library_chosen)
+                    getString(R.string.auto_access_error_no_sources)
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }

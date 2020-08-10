@@ -18,9 +18,7 @@ class LibraryListAdapter(val clickListener: LibraryClickListener) :
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LibraryViewHolder {
-        return LibraryViewHolder.from(
-            parent
-        )
+        return LibraryViewHolder.from(parent)
     }
 
     class LibraryViewHolder private constructor(val binding: ListItemLibraryBinding) :
@@ -35,9 +33,7 @@ class LibraryListAdapter(val clickListener: LibraryClickListener) :
             fun from(parent: ViewGroup): LibraryViewHolder {
                 val layoutInflater = LayoutInflater.from(parent.context)
                 val binding = ListItemLibraryBinding.inflate(layoutInflater, parent, false)
-                return LibraryViewHolder(
-                    binding
-                )
+                return LibraryViewHolder(binding)
             }
         }
     }

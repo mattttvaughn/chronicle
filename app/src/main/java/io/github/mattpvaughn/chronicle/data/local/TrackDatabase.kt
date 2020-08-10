@@ -18,13 +18,13 @@ fun getTrackDatabase(context: Context): TrackDatabase {
                 context.applicationContext,
                 TrackDatabase::class.java,
                 TRACK_DATABASE_NAME
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build()
         }
     }
     return INSTANCE
 }
 
-@Database(entities = [MediaItemTrack::class], version = 4, exportSchema = false)
+@Database(entities = [MediaItemTrack::class], version = 5, exportSchema = false)
 abstract class TrackDatabase : RoomDatabase() {
     abstract val trackDao: TrackDao
 }
@@ -47,6 +47,12 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE MediaItemTrack ADD COLUMN source INTEGER NOT NULL DEFAULT -1")
+    }
+}
+
 @Dao
 interface TrackDao {
     @Query("SELECT * FROM MediaItemTrack")
@@ -64,11 +70,17 @@ interface TrackDao {
     @Query("SELECT * FROM MediaItemTrack WHERE id = :id LIMIT 1")
     suspend fun getTrackAsync(id: Int): MediaItemTrack?
 
+    @Query("SELECT * FROM MediaItemTrack WHERE source = :sourceId")
+    suspend fun getAllTracksInSource(sourceId: Long): List<MediaItemTrack>
+
     @Query("SELECT * FROM MediaItemTrack WHERE parentKey = :bookId AND cached >= :isOfflineMode ORDER BY `index` ASC")
     fun getTracksForAudiobook(bookId: Int, isOfflineMode: Boolean): LiveData<List<MediaItemTrack>>
 
     @Query("SELECT * FROM MediaItemTrack WHERE parentKey = :id AND cached >= :offlineModeActive ORDER BY `index` ASC")
-    suspend fun getTracksForAudiobookAsync(id: Int, offlineModeActive: Boolean): List<MediaItemTrack>
+    suspend fun getTracksForAudiobookAsync(
+        id: Int,
+        offlineModeActive: Boolean
+    ): List<MediaItemTrack>
 
     @Query("SELECT COUNT(*) FROM MediaItemTrack WHERE parentKey = :bookId")
     suspend fun getTrackCountForAudiobookAsync(bookId: Int): Int

@@ -5,32 +5,36 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick
 import io.github.mattpvaughn.chronicle.databinding.ListItemSearchResultAudiobookBinding
+import io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick
 
 class AudiobookSearchAdapter(private val audiobookClick: AudiobookClick) : ListAdapter<Audiobook, AudiobookSearchAdapter.ViewHolder>(AudiobookDiffCallback()) {
 
-    private var serverConnected: Boolean = false
+    private var activeSourceIds: List<Long> = emptyList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder.from(parent)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position), audiobookClick, serverConnected)
+        holder.bind(getItem(position), audiobookClick, activeSourceIds)
     }
 
-    fun setServerConnected(serverConnected: Boolean) {
-        this.serverConnected = serverConnected
+    fun setActiveConnections(connectedSourceIds: List<Long>) {
+        activeSourceIds = connectedSourceIds
         notifyDataSetChanged()
     }
 
     class ViewHolder private constructor(val binding: ListItemSearchResultAudiobookBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun bind(audiobook: Audiobook, searchResultClick: AudiobookClick, isConnected: Boolean) {
+        fun bind(
+            audiobook: Audiobook,
+            searchResultClick: AudiobookClick,
+            connectedSourceIds: List<Long>
+        ) {
             binding.audiobook = audiobook
             binding.searchResultClick = searchResultClick
-            binding.serverConnected = isConnected
+            binding.serverConnected = connectedSourceIds.contains(audiobook.source)
             binding.executePendingBindings()
         }
 

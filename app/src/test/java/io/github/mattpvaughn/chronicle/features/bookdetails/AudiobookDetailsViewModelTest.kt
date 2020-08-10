@@ -3,10 +3,10 @@ package io.github.mattpvaughn.chronicle.features.bookdetails
 import android.support.v4.media.session.MediaControllerCompat
 import android.util.Log
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import io.github.mattpvaughn.chronicle.data.CachedFileManager
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.ProgressUpdater

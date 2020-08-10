@@ -1,6 +1,5 @@
 package io.github.mattpvaughn.chronicle.injection.modules
 
-import android.app.Application
 import android.app.DownloadManager
 import android.app.Service
 import android.content.Context
@@ -12,34 +11,30 @@ import com.android.billingclient.api.BillingClient
 import com.squareup.moshi.Moshi
 import dagger.Module
 import dagger.Provides
+import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.application.ChronicleBillingManager
 import io.github.mattpvaughn.chronicle.application.LOG_NETWORK_REQUESTS
 import io.github.mattpvaughn.chronicle.data.local.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.APP_NAME
 import kotlinx.coroutines.CoroutineExceptionHandler
-import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 import timber.log.Timber
 import java.io.File
-import java.util.concurrent.TimeUnit
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
-class AppModule(private val app: Application) {
+class AppModule(private val app: ChronicleApplication) {
     @Provides
     @Singleton
     fun provideContext(): Context = app.applicationContext
 
     @Provides
     @Singleton
-    fun provideSharedPrefs(): SharedPreferences = app.getSharedPreferences(APP_NAME, MODE_PRIVATE)
+    fun provideApplication(): ChronicleApplication = app
 
     @Provides
     @Singleton
-    fun providePlexPrefsRepo(prefsImpl: SharedPreferencesPlexPrefsRepo): PlexPrefsRepo = prefsImpl
+    fun provideSharedPrefs(): SharedPreferences = app.getSharedPreferences(APP_NAME, MODE_PRIVATE)
 
     @Provides
     @Singleton
@@ -72,10 +67,6 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun loginRepo(plexLoginRepo: PlexLoginRepo): IPlexLoginRepo = plexLoginRepo
-
-    @Provides
-    @Singleton
     fun workManager(): WorkManager = WorkManager.getInstance(app)
 
     @Provides
@@ -94,63 +85,7 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    @Named("Media")
-    fun mediaOkHttpClient(
-        plexConfig: PlexConfig,
-        loggingInterceptor: HttpLoggingInterceptor
-    ): OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .addInterceptor(plexConfig.plexMediaInterceptor)
-        .addInterceptor(loggingInterceptor)
-        .build()
-
-    @Provides
-    @Singleton
-    @Named("Login")
-    fun loginOkHttpClient(
-        plexConfig: PlexConfig,
-        loggingInterceptor: HttpLoggingInterceptor
-    ): OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .addInterceptor(plexConfig.plexLoginInterceptor)
-        .addInterceptor(loggingInterceptor)
-        .build()
-
-    @Provides
-    @Named("Media")
-    @Singleton
-    fun mediaRetrofit(@Named("Media") okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
-        .addConverterFactory(MoshiConverterFactory.create())
-        .client(okHttpClient)
-        .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
-        .build()
-
-    @Provides
-    @Named("Login")
-    @Singleton
-    fun loginRetrofit(@Named("Login") okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
-        .addConverterFactory(MoshiConverterFactory.create())
-        .client(okHttpClient)
-        .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
-        .build()
-
-    @Provides
-    @Singleton
     fun moshi(): Moshi = Moshi.Builder().build()
-
-    @Provides
-    @Singleton
-    fun plexMediaService(@Named("Media") mediaRetrofit: Retrofit): PlexMediaService =
-        mediaRetrofit.create(PlexMediaService::class.java)
-
-    @Provides
-    @Singleton
-    fun plexLoginService(@Named("Login") loginRetrofit: Retrofit): PlexLoginService =
-        loginRetrofit.create(PlexLoginService::class.java)
 
     @Provides
     @Singleton

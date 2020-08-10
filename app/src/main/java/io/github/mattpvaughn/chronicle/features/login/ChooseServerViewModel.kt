@@ -5,27 +5,26 @@ import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
 import io.github.mattpvaughn.chronicle.data.model.ServerModel
 import io.github.mattpvaughn.chronicle.data.model.asServer
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLoginRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLoginService
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-class ChooseServerViewModel @Inject constructor(
-    private val plexLoginService: PlexLoginService,
-    private val plexLoginRepo: PlexLoginRepo
-) : ViewModel() {
+class ChooseServerViewModel(private val plexLibrarySource: PlexLibrarySource) : ViewModel() {
 
-    class Factory @Inject constructor(
-        private val plexLoginService: PlexLoginService,
-        private val plexLoginRepo: PlexLoginRepo
-    ) : ViewModelProvider.Factory {
+    class Factory @Inject constructor() : ViewModelProvider.Factory {
+
+        lateinit var plexLibrarySource: PlexLibrarySource
+
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (!this::plexLibrarySource.isInitialized) {
+                throw IllegalStateException("No source provided!")
+            }
             if (modelClass.isAssignableFrom(ChooseServerViewModel::class.java)) {
-                return ChooseServerViewModel(plexLoginService, plexLoginRepo) as T
+                return ChooseServerViewModel(plexLibrarySource) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }
@@ -51,7 +50,7 @@ class ChooseServerViewModel @Inject constructor(
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             try {
                 _loadingStatus.value = LoadingStatus.LOADING
-                val serverContainer = plexLoginService.resources()
+                val serverContainer = plexLibrarySource.fetchServers()
                 Timber.i("Server: $serverContainer")
                 _loadingStatus.value = LoadingStatus.DONE
                 _servers.postValue(serverContainer
@@ -70,6 +69,6 @@ class ChooseServerViewModel @Inject constructor(
     }
 
     fun chooseServer(serverModel: ServerModel) {
-        plexLoginRepo.chooseServer(serverModel)
+        plexLibrarySource.chooseServer(serverModel)
     }
 }

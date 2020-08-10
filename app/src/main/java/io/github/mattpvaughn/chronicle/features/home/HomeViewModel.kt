@@ -3,15 +3,14 @@ package io.github.mattpvaughn.chronicle.features.home
 import android.content.SharedPreferences
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.Injector
-import io.github.mattpvaughn.chronicle.application.MainActivityViewModel
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
+import io.github.mattpvaughn.chronicle.data.local.DataManager
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.data.model.getProgress
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.features.library.LibraryViewModel
 import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
@@ -22,29 +21,32 @@ import timber.log.Timber
 import javax.inject.Inject
 
 class HomeViewModel(
-    private val plexConfig: PlexConfig,
+    private val plexLibrarySource: PlexLibrarySource,
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
     private val prefsRepo: PrefsRepo,
-    private val cachedFileManager: ICachedFileManager
+    private val cachedFileManager: ICachedFileManager,
+    private val sourceManager: SourceManager
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
     class Factory @Inject constructor(
-        private val plexConfig: PlexConfig,
+        private val plexLibrarySource: PlexLibrarySource,
         private val bookRepository: IBookRepository,
         private val trackRepository: ITrackRepository,
         private val prefsRepo: PrefsRepo,
-        private val cachedFileManager: ICachedFileManager
+        private val cachedFileManager: ICachedFileManager,
+        private val sourceManager: SourceManager
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
                 return HomeViewModel(
-                    plexConfig,
+                    plexLibrarySource,
                     bookRepository,
                     trackRepository,
                     prefsRepo,
-                    cachedFileManager
+                    cachedFileManager,
+                    sourceManager
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from HomeViewModel.Factory")
@@ -127,11 +129,11 @@ class HomeViewModel(
 
     init {
         Timber.i("HomeViewModel init")
-        if (plexConfig.isConnected.value == true) {
+        if (plexLibrarySource.isConnected.value == true) {
             // if already connected, call it just once
             serverConnectionObserver.onChanged(true)
         }
-        plexConfig.isConnected.observeForever(serverConnectionObserver)
+        plexLibrarySource.isConnected.observeForever(serverConnectionObserver)
         prefsRepo.registerPrefsListener(offlineModeListener)
 
         viewModelScope.launch {
@@ -140,7 +142,7 @@ class HomeViewModel(
     }
 
     override fun onCleared() {
-        plexConfig.isConnected.removeObserver(serverConnectionObserver)
+        plexLibrarySource.isConnected.removeObserver(serverConnectionObserver)
         prefsRepo.unregisterPrefsListener(offlineModeListener)
         super.onCleared()
     }
@@ -172,34 +174,16 @@ class HomeViewModel(
      * Update book info for fields where child tracks serve as source of truth, like how
      * [Audiobook.duration] serves as a delegate for [List<MediaItemTrack>.getDuration()]
      *
-     * TODO: migrate to [MainActivityViewModel] so code isn't duplicated b/w [HomeViewModel] and
-     * [LibraryViewModel]
+     * TODO: extract so code isn't duplicated b/w [HomeViewModel] and [LibraryViewModel]
      */
     fun refreshData() {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            try {
-                _isRefreshing.postValue(true)
-                bookRepository.refreshData()
-                trackRepository.refreshData()
-            } catch (e: Throwable) {
-                _messageForUser.postEvent("Failed to refresh data: ${e.message}")
-            } finally {
-                _isRefreshing.postValue(false)
+            _isRefreshing.postValue(true)
+            val failureMessage = DataManager.refreshData(bookRepository, trackRepository)
+            if (!failureMessage.isNullOrEmpty()) {
+                _messageForUser.postEvent(failureMessage)
             }
-
-            // Update audiobooks which depend on track data
-            val audiobooks = bookRepository.getAllBooksAsync()
-            val tracks = trackRepository.getAllTracksAsync()
-            audiobooks.forEach { book ->
-                // Not necessarily in the right order, but it doesn't matter for updateTrackData
-                val tracksInAudiobook = tracks.filter { it.parentKey == book.id }
-                bookRepository.updateTrackData(
-                    bookId = book.id,
-                    bookProgress = tracksInAudiobook.getProgress(),
-                    bookDuration = tracksInAudiobook.getDuration(),
-                    trackCount = tracksInAudiobook.size
-                )
-            }
+            _isRefreshing.postValue(false)
         }
     }
 }

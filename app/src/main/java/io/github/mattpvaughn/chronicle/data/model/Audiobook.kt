@@ -11,7 +11,10 @@ import androidx.room.TypeConverters
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.EXTRA_IS_DOWNLOADED
+import io.github.mattpvaughn.chronicle.data.sources.plex.EXTRA_PLAY_COMPLETION_STATE
+import io.github.mattpvaughn.chronicle.data.sources.plex.STATUS_NOT_PLAYED
+import io.github.mattpvaughn.chronicle.data.sources.plex.STATUS_PARTIALLY_PLAYED
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.toChapter
 import io.github.mattpvaughn.chronicle.features.player.*
@@ -21,7 +24,7 @@ import io.github.mattpvaughn.chronicle.features.player.*
 data class Audiobook constructor(
     @PrimaryKey
     val id: Int,
-    /** Unique long representing a [MediaSource] in [SourceManager] */
+    /** Long representing a unique [MediaSource] in [SourceManager] */
     val source: Long,
     val title: String = "",
     val titleSort: String = "",
@@ -51,10 +54,10 @@ data class Audiobook constructor(
 ) {
 
     companion object {
-        fun from(dir: PlexDirectory): Audiobook {
+        fun from(dir: PlexDirectory, id: Long): Audiobook {
             return Audiobook(
                 id = dir.ratingKey.toInt(),
-                source = PlexMediaSource.MEDIA_SOURCE_ID_PLEX,
+                source = id,
                 title = dir.title,
                 titleSort = dir.titleSort.takeIf { it.isNotEmpty() } ?: dir.title,
                 author = dir.parentTitle,
@@ -84,6 +87,8 @@ data class Audiobook constructor(
          * all child [MediaItemTrack]'s of the Audiobook are loaded. We retain [duration], [source],
          * and [isCached] because they are explicitly local values, they do not even exist on the
          * server
+         *
+         * TODO: Alternate [merge]s depending on [MediaSource] may be necessary
          */
         fun merge(network: Audiobook, local: Audiobook): Audiobook {
             return if (network.lastViewedAt > local.lastViewedAt) {
@@ -149,12 +154,14 @@ fun Audiobook.toAlbumMediaMetadata(): MediaMetadataCompat {
  * [androidx.media.MediaBrowserServiceCompat.onSearch] and
  * [androidx.media.MediaBrowserServiceCompat.onLoadChildren], and respective clients
  */
-fun Audiobook.toMediaItem(plexConfig: PlexConfig): MediaBrowserCompat.MediaItem {
+fun Audiobook.toMediaItem(mediaSource: MediaSource?): MediaBrowserCompat.MediaItem {
     val mediaDescription = MediaDescriptionCompat.Builder()
     mediaDescription.setTitle(title)
     mediaDescription.setMediaId(id.toString())
     mediaDescription.setSubtitle(author)
-    mediaDescription.setIconUri(plexConfig.makeThumbUri(this.thumb))
+    if (mediaSource != null) {
+        mediaDescription.setIconUri(mediaSource.makeThumbUri(this.thumb))
+    }
     val extras = Bundle()
     extras.putBoolean(EXTRA_IS_DOWNLOADED, isCached)
     extras.putInt(

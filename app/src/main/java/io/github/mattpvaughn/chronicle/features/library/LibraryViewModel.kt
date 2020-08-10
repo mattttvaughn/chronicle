@@ -1,10 +1,12 @@
 package io.github.mattpvaughn.chronicle.features.library
 
 import android.content.SharedPreferences
-import android.text.format.Formatter
 import androidx.lifecycle.*
-import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager.CacheStatus.CACHED
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager.CacheStatus.NOT_CACHED
+import io.github.mattpvaughn.chronicle.data.local.DataManager
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
@@ -19,17 +21,12 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_D
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_PLAYS
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_TITLE
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.model.getProgress
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.CACHED
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.NOT_CACHED
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.util.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserListener
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString
-import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString.ResourceString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,7 +38,8 @@ class LibraryViewModel(
     private val trackRepository: ITrackRepository,
     private val prefsRepo: PrefsRepo,
     private val cachedFileManager: ICachedFileManager,
-    sharedPreferences: SharedPreferences
+    sharedPreferences: SharedPreferences,
+    private val sourceManager: SourceManager
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -50,7 +48,8 @@ class LibraryViewModel(
         private val trackRepository: ITrackRepository,
         private val prefsRepo: PrefsRepo,
         private val cachedFileManager: ICachedFileManager,
-        private val sharedPreferences: SharedPreferences
+        private val sharedPreferences: SharedPreferences,
+        private val sourceManager: SourceManager
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
@@ -59,7 +58,8 @@ class LibraryViewModel(
                     trackRepository,
                     prefsRepo,
                     cachedFileManager,
-                    sharedPreferences
+                    sharedPreferences,
+                    sourceManager
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from LibraryViewModel.Factory")
@@ -206,50 +206,50 @@ class LibraryViewModel(
         prefsRepo.offlineMode = false
     }
 
-    /**
-     * Prompt the user with a choice to download all audiobooks on device, presenting the user
-     * with information on the space available in the sync directory and the space required
-     */
-    fun promptDownloadAll() {
-        // Calculate space available
-        val bytesAvailable = prefsRepo.cachedMediaDir.bytesAvailable()
-
-        // Calculate space required
-        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            val tracks = try {
-                trackRepository.loadAllTracksAsync()
-            } catch (e: Throwable) {
-                Timber.e("Failed to load tracks!")
-                emptyList<MediaItemTrack>()
-            }
-            var bytesToBeUsed = 0L
-            tracks.forEach { bytesToBeUsed += it.size }
-            val downloadSize =
-                Formatter.formatFileSize(Injector.get().applicationContext(), bytesToBeUsed)
-            val availableStorage =
-                Formatter.formatFileSize(Injector.get().applicationContext(), bytesAvailable)
-            val prompt = ResourceString(
-                stringRes = R.string.download_all_prompt,
-                placeHolderStrings = listOf(downloadSize, availableStorage)
-            )
-
-            showOptionsMenu(
-                prompt,
-                listOf(FormattableString.yes, FormattableString.no),
-                object : BottomSheetChooser.BottomChooserItemListener() {
-                    override fun onItemClicked(formattableString: FormattableString) {
-                        when (formattableString) {
-                            FormattableString.yes -> downloadAll(tracks)
-                            FormattableString.no -> {
-                            }
-                            else -> throw NoWhenBranchMatchedException()
-                        }
-                    }
-                })
-        }
-
-        // Prompt user to download
-    }
+//    /**
+//     * Prompt the user with a choice to download all audiobooks on device, presenting the user
+//     * with information on the space available in the sync directory and the space required
+//     */
+//    fun promptDownloadAll() {
+//        // Calculate space available
+//        val bytesAvailable = prefsRepo.cachedMediaDir.bytesAvailable()
+//
+//        // Calculate space required
+//        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+//            val tracks = try {
+//                trackRepository.loadAllTracksAsync()
+//            } catch (e: Throwable) {
+//                Timber.e("Failed to load tracks!")
+//                emptyList<MediaItemTrack>()
+//            }
+//            var bytesToBeUsed = 0L
+//            tracks.forEach { bytesToBeUsed += it.size }
+//            val downloadSize =
+//                Formatter.formatFileSize(Injector.get().applicationContext(), bytesToBeUsed)
+//            val availableStorage =
+//                Formatter.formatFileSize(Injector.get().applicationContext(), bytesAvailable)
+//            val prompt = ResourceString(
+//                stringRes = R.string.download_all_prompt,
+//                placeHolderStrings = listOf(downloadSize, availableStorage)
+//            )
+//
+//            showOptionsMenu(
+//                prompt,
+//                listOf(FormattableString.yes, FormattableString.no),
+//                object : BottomSheetChooser.BottomChooserItemListener() {
+//                    override fun onItemClicked(formattableString: FormattableString) {
+//                        when (formattableString) {
+//                            FormattableString.yes -> downloadAll(tracks)
+//                            FormattableString.no -> {
+//                            }
+//                            else -> throw NoWhenBranchMatchedException()
+//                        }
+//                    }
+//                })
+//        }
+//
+//        // Prompt user to download
+//    }
 
     private fun downloadAll(tracks: List<MediaItemTrack>) {
         cachedFileManager.downloadTracks(tracks)
@@ -281,28 +281,12 @@ class LibraryViewModel(
      */
     fun refreshData() {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            try {
-                _isRefreshing.postValue(true)
-                bookRepository.refreshData()
-                trackRepository.refreshData()
-            } catch (e: Throwable) {
-                _messageForUser.postEvent("Failed to refresh data")
-            } finally {
-                _isRefreshing.postValue(false)
+            _isRefreshing.postValue(true)
+            val failureMessage = DataManager.refreshData(bookRepository, trackRepository)
+            if (!failureMessage.isNullOrEmpty()) {
+                _messageForUser.postEvent(failureMessage)
             }
-
-            val audiobooks = bookRepository.getAllBooksAsync()
-            val tracks = trackRepository.getAllTracksAsync()
-            audiobooks.forEach { book ->
-                val tracksInAudiobook = tracks.filter { it.parentKey == book.id }
-                Timber.i("Book progress: ${tracksInAudiobook.getProgress()}")
-                bookRepository.updateTrackData(
-                    bookId = book.id,
-                    bookProgress = tracksInAudiobook.getProgress(),
-                    bookDuration = tracksInAudiobook.getDuration(),
-                    trackCount = tracksInAudiobook.size
-                )
-            }
+            _isRefreshing.postValue(false)
         }
     }
 

@@ -3,10 +3,8 @@ package io.github.mattpvaughn.chronicle.data.local
 import androidx.lifecycle.LiveData
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.asAudiobooks
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.toChapter
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -22,7 +20,7 @@ interface IBookRepository {
     suspend fun getRandomBookAsync(): Audiobook
 
     /** Refreshes the data in the local database with elements from the network */
-    suspend fun refreshData()
+    suspend fun refreshData(): List<Result<Unit>>
 
     /** Returns the number of books in the repository */
     suspend fun getBookCount(): Int
@@ -116,8 +114,8 @@ interface IBookRepository {
 class BookRepository @Inject constructor(
     private val bookDao: BookDao,
     private val prefsRepo: PrefsRepo,
-    private val plexPrefsRepo: PlexPrefsRepo,
-    private val plexMediaService: PlexMediaService
+    private val plexLibrarySource: PlexLibrarySource,
+    private val sourceManager: SourceManager
 ) : IBookRepository {
 
     /** TODO: observe prefsRepo.offlineMode? */
@@ -139,47 +137,46 @@ class BookRepository @Inject constructor(
     }
 
     @Throws(Throwable::class)
-    override suspend fun refreshData() {
+    override suspend fun refreshData(): List<Result<Unit>> {
         if (prefsRepo.offlineMode) {
-            return
+            return listOf(Result.success(Unit))
         }
         prefsRepo.lastRefreshTimeStamp = System.currentTimeMillis()
-        val networkBooks: List<Audiobook> = withContext(Dispatchers.IO) {
-            try {
-                plexMediaService.retrieveAllAlbums(plexPrefsRepo.library!!.id).plexMediaContainer.asAudiobooks()
-            } catch (t: Throwable) {
-                Timber.i("Failed to retrieve books: $t")
-                null
+        val queryResults: List<Pair<Long, Result<List<Audiobook>>>> = sourceManager.fetchBooks()
+
+        return queryResults.map { queryResult ->
+            val sourceId = queryResult.first
+            if (queryResult.second.isFailure) {
+                return@map Result.failure<Unit>(queryResult.second.exceptionOrNull() ?: Exception())
             }
-        } ?: return
-        //    ^^^ quit on network failure- nothing below matters without new books from server
-
-
-        val localBooks = withContext(Dispatchers.IO) { bookDao.getAudiobooks() }
-
-        val mergedBooks = networkBooks.map { networkBook ->
-            val localBook = localBooks.find { it.id == networkBook.id }
-            if (localBook != null) {
-                // [Audiobook.merge] chooses fields depending on [Audiobook.lastViewedAt]
-                return@map Audiobook.merge(network = networkBook, local = localBook)
-            } else {
-                return@map networkBook
+            val localBooks = withContext(Dispatchers.IO) {
+                bookDao.getAudiobooksForSourceAsync(sourceId, false)
             }
-        }
+            val networkBooks = queryResult.second.getOrNull() ?: emptyList()
 
-        // remove books which have been deleted from server
-        val networkIds = networkBooks.map { it.id }
-        val removedFromNetwork = localBooks.filter { localBook ->
-            !networkIds.contains(localBook.id)
-        }
+            val mergedBooks = networkBooks.map { networkBook ->
+                val localBook = localBooks.find { it.id == networkBook.id }
+                if (localBook != null) {
+                    // [Audiobook.merge] chooses fields depending on [Audiobook.lastViewedAt]
+                    Audiobook.merge(network = networkBook, local = localBook)
+                } else {
+                    networkBook
+                }
+            }
 
-        Timber.i("Removed from network: ${removedFromNetwork.map { it.title }}")
-        withContext(Dispatchers.IO) {
-            val removed = bookDao.removeAll(removedFromNetwork.map { it.id.toString() })
-            Timber.i("Removed $removed items from DB")
+            // Remove books which have been deleted from the server
+            val networkIds = networkBooks.map { networkBook -> networkBook.id }
+            val removedFromNetwork = localBooks.filter { localBook ->
+                !networkIds.contains(localBook.id)
+            }
 
-            Timber.i("Loaded books: $mergedBooks")
-            bookDao.insertAll(mergedBooks)
+            withContext(Dispatchers.IO) {
+                val removed = bookDao.removeAll(removedFromNetwork.map { it.id.toString() })
+                Timber.i("Removed $removed items from DB")
+                bookDao.insertAll(mergedBooks)
+                Timber.i("Loaded books: $mergedBooks")
+            }
+            return@map Result.success(Unit)
         }
     }
 
@@ -291,14 +288,7 @@ class BookRepository @Inject constructor(
     ): Boolean {
         val chapters: List<Chapter> = withContext(Dispatchers.IO) {
             try {
-                tracks.flatMap {
-                    plexMediaService.retrieveChapterInfo(it.id).plexMediaContainer.metadata
-                        .firstOrNull()
-                        ?.plexChapters
-                        // TODO: below won't work for books made of multiple m4b files
-                        ?.map { plexChapter -> plexChapter.toChapter(audiobook.isCached) }
-                        ?: emptyList()
-                }
+                plexLibrarySource.fetchChapterInfo(audiobook.isCached, tracks)
             } catch (t: Throwable) {
                 Timber.e("Failed to load chapters: $t")
                 emptyList<Chapter>()

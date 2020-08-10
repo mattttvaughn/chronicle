@@ -4,9 +4,7 @@ import androidx.lifecycle.*
 import androidx.lifecycle.Observer
 import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
 import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType.Companion.ARTIST
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.asLibrary
 import io.github.mattpvaughn.chronicle.util.Event
@@ -19,25 +17,18 @@ import javax.inject.Inject
 
 
 @OptIn(InternalCoroutinesApi::class)
-class ChooseLibraryViewModel @Inject constructor(
-    private val plexMediaService: PlexMediaService,
-    private val plexConfig: PlexConfig,
-    private val plexPrefsRepo: PlexPrefsRepo
-) : ViewModel() {
+class ChooseLibraryViewModel(private val source: PlexLibrarySource) : ViewModel() {
 
-    class Factory @Inject constructor(
-        private val plexMediaService: PlexMediaService,
-        private val plexConfig: PlexConfig,
-        private val plexPrefsRepo: PlexPrefsRepo
-    ) : ViewModelProvider.Factory {
+    class Factory @Inject constructor() : ViewModelProvider.Factory {
+        lateinit var source: PlexLibrarySource
+
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (this::source.isInitialized) {
+                throw IllegalStateException("No source provided!")
+            }
             if (modelClass.isAssignableFrom(ChooseLibraryViewModel::class.java)) {
-                return ChooseLibraryViewModel(
-                    plexMediaService,
-                    plexConfig,
-                    plexPrefsRepo
-                ) as T
+                return ChooseLibraryViewModel(source) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }
@@ -57,7 +48,7 @@ class ChooseLibraryViewModel @Inject constructor(
 
     private val networkObserver = Observer<Boolean> { isConnected ->
         if (isConnected) {
-            Timber.i("Connected to server at ${plexConfig.url}, fetching libraries with token ${plexPrefsRepo.server?.accessToken}")
+            Timber.i("Connected to server at ${source.url}")
             getLibraries()
         }
     }
@@ -67,16 +58,16 @@ class ChooseLibraryViewModel @Inject constructor(
             // chooseViableConnections must be called here because it won't be called in
             // ChronicleApplication if we have just logged in
             try {
-                plexConfig.connectToServer(plexMediaService)
+                source.connectToRemote()
             } catch (t: Throwable) {
                 Timber.i("Failed to return result!")
             }
         }
-        plexConfig.isConnected.observeForever(networkObserver)
+        source.isConnected.observeForever(networkObserver)
     }
 
     override fun onCleared() {
-        plexConfig.isConnected.removeObserver(networkObserver)
+        source.isConnected.removeObserver(networkObserver)
         super.onCleared()
     }
 
@@ -84,7 +75,7 @@ class ChooseLibraryViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _loadingStatus.value = LoadingStatus.LOADING
-                val libraryContainer = plexMediaService.retrieveLibraries()
+                val libraryContainer = source.fetchLibraries()
                 val tempLibraries = libraryContainer.plexMediaContainer.plexDirectories
                     .filter { it.type == ARTIST.typeString }
                     .map { it.asLibrary() }
@@ -100,7 +91,7 @@ class ChooseLibraryViewModel @Inject constructor(
     }
 
     fun refresh() {
-        plexConfig.isConnected.removeObserver(networkObserver)
-        plexConfig.isConnected.observeForever(networkObserver)
+        source.isConnected.removeObserver(networkObserver)
+        source.isConnected.observeForever(networkObserver)
     }
 }

@@ -6,7 +6,9 @@ import androidx.room.PrimaryKey
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
 import io.github.mattpvaughn.chronicle.features.player.*
 import timber.log.Timber
@@ -38,7 +40,8 @@ data class MediaItemTrack(
     val progress: Long = 0L,
     val lastViewedAt: Long = 0L,
     val updatedAt: Long = 0L,
-    val size: Long = 0L
+    val size: Long = 0L,
+    val source: Long = NO_SOURCE_FOUND
 ) {
     companion object {
         fun from(metadata: MediaMetadataCompat): MediaItemTrack {
@@ -120,7 +123,13 @@ data class MediaItemTrack(
         return if (cached) {
             File(Injector.get().prefsRepo().cachedMediaDir, getCachedFileName()).absolutePath
         } else {
-            Injector.get().plexConfig().toServerString(media)
+            val source = Injector.get().sourceManager().getSourceById(source)
+            return if (source is HttpMediaSource) {
+                source.toServerString(media)
+            } else {
+                // TODO: how to handle for local and demo?
+                media
+            }
         }
     }
 
@@ -197,7 +206,7 @@ fun List<MediaItemTrack>.getActiveTrack(): MediaItemTrack {
 }
 
 /** Converts the metadata of a [MediaItemTrack] to a [MediaMetadataCompat]. */
-fun MediaItemTrack.toMediaMetadata(plexConfig: PlexConfig): MediaMetadataCompat {
+fun MediaItemTrack.toMediaMetadata(mediaSource: MediaSource): MediaMetadataCompat {
     val metadataBuilder = MediaMetadataCompat.Builder()
     metadataBuilder.id = this.id.toString()
     metadataBuilder.title = this.title
@@ -205,7 +214,7 @@ fun MediaItemTrack.toMediaMetadata(plexConfig: PlexConfig): MediaMetadataCompat 
     metadataBuilder.displaySubtitle = this.artist
     metadataBuilder.trackNumber = this.playQueueItemID
     metadataBuilder.mediaUri = getTrackSource()
-    metadataBuilder.albumArtUri = plexConfig.makeThumbUri(this.thumb ?: "").toString()
+    metadataBuilder.albumArtUri = mediaSource.makeThumbUri(this.thumb ?: "").toString()
     metadataBuilder.trackNumber = this.index.toLong()
     metadataBuilder.duration = this.duration
     metadataBuilder.album = this.album

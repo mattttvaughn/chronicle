@@ -3,8 +3,7 @@ package io.github.mattpvaughn.chronicle.features.login
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLoginService
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
@@ -13,22 +12,18 @@ import retrofit2.HttpException
 import timber.log.Timber
 import javax.inject.Inject
 
-class ChooseUserViewModel(
-    private val plexLoginService: PlexLoginService,
-    private val plexLoginRepo: IPlexLoginRepo
-) : ViewModel() {
+class ChooseUserViewModel(private val plexLibrarySource: PlexLibrarySource) : ViewModel() {
 
-    class Factory @Inject constructor(
-        private val plexLoginService: PlexLoginService,
-        private val plexLoginRepo: IPlexLoginRepo
-    ) : ViewModelProvider.Factory {
+    class Factory @Inject constructor() : ViewModelProvider.Factory {
+        lateinit var plexLibrarySource: PlexLibrarySource
+
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (!this::plexLibrarySource.isInitialized) {
+                throw IllegalStateException("Source not initialized")
+            }
             if (modelClass.isAssignableFrom(ChooseUserViewModel::class.java)) {
-                return ChooseUserViewModel(
-                    plexLoginService,
-                    plexLoginRepo
-                ) as T
+                return ChooseUserViewModel(plexLibrarySource) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }
@@ -78,7 +73,7 @@ class ChooseUserViewModel(
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             try {
                 _usersLoadingStatus.value = LoadingStatus.LOADING
-                val usersResponse = plexLoginService.getUsersForAccount()
+                val usersResponse = plexLibrarySource.fetchUsersForAccount()
                 _users.postValue(usersResponse.users)
                 _usersLoadingStatus.value = LoadingStatus.DONE
             } catch (e: Throwable) {
@@ -116,11 +111,11 @@ class ChooseUserViewModel(
     private suspend fun submitPin(uuid: String, pin: String?) {
         try {
             _pinLoadingStatus.postValue(LoadingStatus.LOADING)
-            val responseUser: PlexUser = plexLoginService.pickUser(uuid, pin)
+            val responseUser: PlexUser = plexLibrarySource.pickUser(uuid, pin ?: "")
             if (responseUser.authToken.isNullOrEmpty()) {
                 throw IllegalStateException("Pin submitted but no auth token received")
             }
-            plexLoginRepo.chooseUser(responseUser)
+            plexLibrarySource.chooseUser(responseUser)
             _pinLoadingStatus.postValue(LoadingStatus.DONE)
         } catch (t: HttpException) {
             when (t.code()) {

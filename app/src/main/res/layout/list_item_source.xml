@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="source"
+            type="io.github.mattpvaughn.chronicle.data.sources.MediaSource" />
+
+        <variable
+            name="clickListener"
+            type="io.github.mattpvaughn.chronicle.features.sources.SourceClickListener" />
+
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/list_item_height"
+        android:onClick="@{() -> clickListener.onClick(source)}"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/source_type_icon"
+            android:layout_width="@dimen/list_icon_size"
+            android:layout_height="@dimen/list_icon_size"
+            android:layout_marginLeft="@dimen/screen_horizontal_padding"
+            android:contentDescription="@{source.name}"
+            android:src="@{source.icon}"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/library_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/keyline_x_offset"
+            android:text="@{ source.name }"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Audiobooks" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

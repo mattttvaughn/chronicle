@@ -1,6 +1,5 @@
 package io.github.mattpvaughn.chronicle.features.login
 
-import android.app.Activity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -13,9 +12,8 @@ import android.widget.Toast.LENGTH_SHORT
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import io.github.mattpvaughn.chronicle.application.ChronicleApplication
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.application.MainActivity
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser
 import io.github.mattpvaughn.chronicle.databinding.OnboardingPlexChooseUserBinding
 import javax.inject.Inject
@@ -35,10 +33,7 @@ class ChooseUserFragment : Fragment() {
     private lateinit var viewModel: ChooseUserViewModel
 
     @Inject
-    lateinit var plexLoginRepo: IPlexLoginRepo
-
-    @Inject
-    lateinit var plexConfig: PlexConfig
+    lateinit var sourceManager: SourceManager
 
     private lateinit var userListAdapter: UserListAdapter
 
@@ -47,9 +42,7 @@ class ChooseUserFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        ((activity as Activity).application as ChronicleApplication)
-            .appComponent
-            .inject(this)
+        (requireActivity() as MainActivity).activityComponent.inject(this)
         super.onCreate(savedInstanceState)
 
         val binding = OnboardingPlexChooseUserBinding.inflate(inflater, container, false)

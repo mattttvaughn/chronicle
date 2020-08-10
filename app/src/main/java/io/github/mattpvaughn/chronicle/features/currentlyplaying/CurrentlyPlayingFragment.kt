@@ -10,12 +10,13 @@ import android.widget.SeekBar
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.COLLAPSED
 import io.github.mattpvaughn.chronicle.data.model.Chapter
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.databinding.FragmentCurrentlyPlayingBinding
 import io.github.mattpvaughn.chronicle.features.bookdetails.ChapterListAdapter
 import io.github.mattpvaughn.chronicle.features.bookdetails.TrackClickListener
@@ -31,7 +32,7 @@ class CurrentlyPlayingFragment : Fragment() {
     private lateinit var currentlyPlayingInterface: MainActivity.CurrentlyPlayingInterface
 
     @Inject
-    lateinit var plexConfig: PlexConfig
+    lateinit var sourceManager: SourceManager
 
     @Inject
     lateinit var viewModelFactory: CurrentlyPlayingViewModel.Factory
@@ -78,7 +79,7 @@ class CurrentlyPlayingFragment : Fragment() {
         }
 
         binding.viewModel = viewModel
-        binding.plexConfig = plexConfig
+        binding.sourceManager = sourceManager
         binding.lifecycleOwner = viewLifecycleOwner
 
         val adapter = ChapterListAdapter(object : TrackClickListener {
@@ -94,6 +95,15 @@ class CurrentlyPlayingFragment : Fragment() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 if (seekBar != null) {
                     viewModel.seekTo(seekBar.progress.toDouble() / seekBar.max)
+                }
+            }
+        })
+
+        viewModel.audiobook.observe(viewLifecycleOwner, Observer {
+            if (it != null) {
+                val source = sourceManager.getSourceById(it.id.toLong())
+                source?.let {
+                    binding.mediaSource = source
                 }
             }
         })

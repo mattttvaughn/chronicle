@@ -14,13 +14,11 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import io.github.mattpvaughn.chronicle.application.ChronicleBillingManager
 import io.github.mattpvaughn.chronicle.application.MainActivity
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.databinding.FragmentSettingsBinding
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.navigation.Navigator
@@ -42,9 +40,6 @@ class SettingsFragment : Fragment() {
     lateinit var navigator: Navigator
 
     @Inject
-    lateinit var plexLoginRepo: IPlexLoginRepo
-
-    @Inject
     lateinit var chronicleBillingManager: ChronicleBillingManager
 
     @Inject
@@ -60,10 +55,7 @@ class SettingsFragment : Fragment() {
     lateinit var prefsRepo: PrefsRepo
 
     @Inject
-    lateinit var plexPrefsRepo: PlexPrefsRepo
-
-    @Inject
-    lateinit var plexConfig: PlexConfig
+    lateinit var sourceManager: SourceManager
 
     companion object {
         @JvmStatic

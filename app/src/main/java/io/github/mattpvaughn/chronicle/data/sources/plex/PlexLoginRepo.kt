@@ -15,8 +15,6 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.model.UsersResponse
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 interface IPlexLoginRepo {
 
@@ -24,7 +22,7 @@ interface IPlexLoginRepo {
     suspend fun postOAuthPin(): OAuthResponse?
 
     /**
-     * Chooses a user, updates the auth token to match the user in the [PlexConfig], sets
+     * Chooses a user, updates the auth token to match the user in the [PlexLibrarySource], sets
      * [PlexPrefsRepo.user] to [responseUser], changes [loginEvent] to [LOGGED_IN_NO_SERVER_CHOSEN]
      *
      * [responseUser] must have a valid auth token
@@ -66,11 +64,9 @@ interface IPlexLoginRepo {
  * Responsible for querying network w/r/t network data, configuring network to use login data once
  * on login succeeds, and for saving login info via [PlexPrefsRepo] on success
  */
-@Singleton
-class PlexLoginRepo @Inject constructor(
+class PlexLoginRepo(
     private val plexPrefsRepo: PlexPrefsRepo,
-    private val plexLoginService: PlexLoginService,
-    private val plexConfig: PlexConfig
+    private val plexLoginService: PlexLoginService
 ) : IPlexLoginRepo {
 
     private var _loginState = MutableLiveData<Event<LoginState>>()
@@ -140,7 +136,6 @@ class PlexLoginRepo @Inject constructor(
 
     override fun chooseServer(serverModel: ServerModel) {
         Timber.i("Chose server: $serverModel")
-        plexConfig.setPotentialConnections(serverModel.connections)
         plexPrefsRepo.server = serverModel
         _loginState.postEvent(LOGGED_IN_NO_LIBRARY_CHOSEN)
     }

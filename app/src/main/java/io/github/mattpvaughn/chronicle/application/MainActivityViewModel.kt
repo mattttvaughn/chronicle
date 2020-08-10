@@ -6,12 +6,11 @@ import android.support.v4.media.session.PlaybackStateCompat.STATE_NONE
 import android.support.v4.media.session.PlaybackStateCompat.STATE_STOPPED
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.*
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.LOGGED_IN_FULLY
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.id
 import io.github.mattpvaughn.chronicle.features.player.isPlaying
@@ -25,7 +24,7 @@ import javax.inject.Inject
 
 
 class MainActivityViewModel(
-    loginRepo: IPlexLoginRepo,
+    sourceManager: SourceManager,
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val mediaServiceConnection: MediaServiceConnection,
@@ -34,7 +33,7 @@ class MainActivityViewModel(
 
     @Suppress("UNCHECKED_CAST")
     class Factory @Inject constructor(
-        private val loginRepo: IPlexLoginRepo,
+        private val sourceManager: SourceManager,
         private val trackRepository: ITrackRepository,
         private val bookRepository: IBookRepository,
         private val mediaServiceConnection: MediaServiceConnection,
@@ -44,7 +43,7 @@ class MainActivityViewModel(
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MainActivityViewModel::class.java)) {
                 return MainActivityViewModel(
-                    loginRepo,
+                    sourceManager,
                     trackRepository,
                     bookRepository,
                     mediaServiceConnection,
@@ -63,9 +62,7 @@ class MainActivityViewModel(
         EXPANDED
     }
 
-    val isLoggedIn = Transformations.map(loginRepo.loginEvent) {
-        it.peekContent() == LOGGED_IN_FULLY
-    }
+    val isLoggedIn = sourceManager.isLoggedIn()
 
     private var _currentlyPlayingLayoutState = MutableLiveData(HIDDEN)
     val currentlyPlayingLayoutState: LiveData<BottomSheetState>

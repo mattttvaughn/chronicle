@@ -19,7 +19,7 @@ import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.databinding.FragmentLibraryBinding
 import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.views.FlowableRadioGroup
@@ -48,7 +48,7 @@ class LibraryFragment : Fragment() {
     lateinit var navigator: Navigator
 
     @Inject
-    lateinit var plexConfig: PlexConfig
+    lateinit var sourceManager: SourceManager
 
     override fun onAttach(context: Context) {
         (activity as MainActivity).activityComponent.inject(this)
@@ -62,7 +62,7 @@ class LibraryFragment : Fragment() {
         Timber.i("Lib frag view create")
         val binding = FragmentLibraryBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
-        binding.plexConfig = plexConfig
+        binding.plexConfig = plexLibrarySource
         binding.libraryGrid.adapter =
             AudiobookAdapter(prefsRepo.bookCoverStyle == "Square", true, object : AudiobookClick {
                 override fun onClick(audiobook: Audiobook) {
@@ -144,7 +144,7 @@ class LibraryFragment : Fragment() {
     }
 
     private fun openAudiobookDetails(audiobook: Audiobook) {
-        navigator.showDetails(audiobook.id, audiobook.isCached)
+        navigator.showDetails(audiobook.id, audiobook.isCached, audiobook.source)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -195,7 +195,7 @@ class LibraryFragment : Fragment() {
             R.id.menu_filter -> viewModel.setFilterMenuVisible(
                 viewModel.isFilterShown.value?.not() ?: false
             )
-            R.id.download_all -> viewModel.promptDownloadAll()
+//            R.id.download_all -> viewModel.promptDownloadAll()
             R.id.search -> {
             } // handled by listeners in onCreateView
             else -> throw NoWhenBranchMatchedException("Unknown menu item selected!")

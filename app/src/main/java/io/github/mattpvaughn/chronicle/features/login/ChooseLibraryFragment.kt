@@ -1,6 +1,5 @@
 package io.github.mattpvaughn.chronicle.features.login
 
-import android.app.Activity
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,11 +8,10 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import io.github.mattpvaughn.chronicle.application.ChronicleApplication
+import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.databinding.OnboardingPlexChooseLibraryBinding
 import io.github.mattpvaughn.chronicle.util.Event
 import timber.log.Timber
@@ -37,25 +35,26 @@ class ChooseLibraryFragment : Fragment() {
     private lateinit var libraryAdapter: LibraryListAdapter
 
     @Inject
-    lateinit var plexConfig: PlexConfig
-
-    @Inject
-    lateinit var plexPrefs: PlexPrefsRepo
-
-    @Inject
-    lateinit var plexLoginRepo: IPlexLoginRepo
+    lateinit var sourceManager: SourceManager
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        ((activity as Activity).application as ChronicleApplication).appComponent.inject(this)
+        (requireActivity() as MainActivity).activityComponent.inject(this)
         super.onCreate(savedInstanceState)
 
         val binding = OnboardingPlexChooseLibraryBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
 
+        val source = sourceManager.getSourcesOfType<PlexLibrarySource>().firstOrNull {
+            !it.isAuthorized()
+        }
+
+        checkNotNull(source) { "No source found! Crashing is probably the wrong behavior but..." }
+
+        viewModelFactory.source = source
         viewModel = ViewModelProvider(
             viewModelStore,
             viewModelFactory
@@ -63,12 +62,11 @@ class ChooseLibraryFragment : Fragment() {
 
         binding.chooseLibraryViewModel = viewModel
 
-        libraryAdapter =
-            LibraryListAdapter(
-                LibraryClickListener { library ->
-                    Timber.i("Library name: $library")
-                    plexLoginRepo.chooseLibrary(library)
-                })
+        libraryAdapter = LibraryListAdapter(
+            LibraryClickListener { library ->
+                Timber.i("Library clicked: $library")
+                source.chooseLibrary(library)
+            })
 
         binding.libraryList.adapter = libraryAdapter
 

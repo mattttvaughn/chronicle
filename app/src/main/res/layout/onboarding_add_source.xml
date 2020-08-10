@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="io.github.mattpvaughn.chronicle.features.login.LoginViewModel" />
+
+        <import type="io.github.mattpvaughn.chronicle.application.ConstantsKt" />
+
+        <import type="android.view.View" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimaryDark">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/oauth_login"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableStart="@drawable/ic_lock_white_24dp"
+            android:onClick="@{ () -> viewModel.loginWithPlexOAuth()}"
+            android:paddingLeft="@dimen/plex_button_padding_horizontal"
+            android:paddingTop="@dimen/plex_button_padding_vertical"
+            android:paddingRight="@dimen/plex_button_padding_horizontal"
+            android:paddingBottom="@dimen/plex_button_padding_vertical"
+            android:text="@string/login_with_plex"
+            android:textColor="@color/textPrimary"
+            app:backgroundTint="@color/accent_plex"
+            app:layout_constraintBottom_toTopOf="@id/add_jellyfin"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginBottom="@dimen/spacing_normal"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/add_jellyfin"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingLeft="@dimen/plex_button_padding_horizontal"
+            android:layout_marginBottom="@dimen/spacing_normal"
+            android:backgroundTint="@color/jellyfin"
+            android:paddingTop="@dimen/plex_button_padding_vertical"
+            android:paddingRight="@dimen/plex_button_padding_horizontal"
+            android:paddingBottom="@dimen/plex_button_padding_vertical"
+            android:text="@string/login_with_jellyfin"
+            android:textColor="@color/textPrimary"
+            app:layout_constraintBottom_toTopOf="@id/add_directory"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/oauth_login"
+            app:layout_constraintVertical_chainStyle="packed" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/add_directory"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_marginBottom="@dimen/spacing_normal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingLeft="@dimen/plex_button_padding_horizontal"
+            android:paddingTop="@dimen/plex_button_padding_vertical"
+            android:paddingRight="@dimen/plex_button_padding_horizontal"
+            android:paddingBottom="@dimen/plex_button_padding_vertical"
+            android:text="@string/folder_source"
+            android:textColor="@color/textPrimary"
+            app:backgroundTint="@android:color/holo_blue_dark"
+            app:layout_constraintBottom_toTopOf="@id/demo_library"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/add_jellyfin"
+            app:layout_constraintVertical_chainStyle="packed" />
+
+        <TextView
+            android:id="@+id/demo_library"
+            style="@style/TextAppearance.Body1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:autoLink="all"
+            android:linksClickable="false"
+            android:onClick="@{() -> viewModel.addDemoLibrary()}"
+            android:selectAllOnFocus="false"
+            android:text="@string/source_demo_library"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/add_directory" />
+
+        <ProgressBar
+            android:id="@+id/loading"
+            android:layout_width="@dimen/fab_size_imageview"
+            android:layout_height="@dimen/fab_size_imageview"
+            android:layout_gravity="center"
+            android:layout_margin="@dimen/margin_normal"
+            android:visibility="@{viewModel.isLoading().booleanValue() ? View.VISIBLE : View.GONE}"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/oauth_login" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/enable_auto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/margin_large"
+            android:checked="@{viewModel.allowAuto}"
+            android:text="@string/allow_auto"
+            android:textColor="@color/textPrimary"
+            android:visibility="@{ConstantsKt.FEATURE_FLAG_IS_AUTO_ENABLED ? View.VISIBLE : View.GONE}"
+            app:buttonTint="@color/textPrimary"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/demo_library" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

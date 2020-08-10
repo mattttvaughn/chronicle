@@ -7,16 +7,15 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
 import androidx.lifecycle.*
-import com.github.michaelbull.result.Ok
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager.CacheStatus.*
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
@@ -44,7 +43,7 @@ class AudiobookDetailsViewModel(
     private val inputAudiobook: Audiobook,
     private val mediaServiceConnection: MediaServiceConnection,
     private val progressUpdater: ProgressUpdater,
-    private val plexConfig: PlexConfig,
+    private val plexLibrarySource: PlexLibrarySource,
     private val prefsRepo: PrefsRepo,
     private val plexMediaService: PlexMediaService
 ) : ViewModel() {
@@ -56,7 +55,7 @@ class AudiobookDetailsViewModel(
         private val cachedFileManager: ICachedFileManager,
         private val mediaServiceConnection: MediaServiceConnection,
         private val progressUpdater: ProgressUpdater,
-        private val plexConfig: PlexConfig,
+        private val plexLibrarySource: PlexLibrarySource,
         private val prefsRepo: PrefsRepo,
         private val plexMediaService: PlexMediaService
     ) : ViewModelProvider.Factory {
@@ -71,7 +70,7 @@ class AudiobookDetailsViewModel(
                     inputAudiobook,
                     mediaServiceConnection,
                     progressUpdater,
-                    plexConfig,
+                    plexLibrarySource,
                     prefsRepo,
                     plexMediaService
                 ) as T
@@ -81,6 +80,7 @@ class AudiobookDetailsViewModel(
         }
     }
 
+    val sourceId = inputAudiobook.source
     val audiobook: LiveData<Audiobook?> = bookRepository.getAudiobook(inputAudiobook.id)
     val tracks = trackRepository.getTracksForAudiobook(inputAudiobook.id)
 
@@ -225,7 +225,9 @@ class AudiobookDetailsViewModel(
         return@map lines == lineCountSummaryMaximized
     }
 
-    val serverConnection = Transformations.map(plexConfig.connectionState) { it }
+    val serverConnection = Transformations.map(plexLibrarySource.connectedSources) {
+        it.contains(sourceId)
+    }
 
     fun onToggleSummaryView() {
         _summaryLinesShown.value =
@@ -235,7 +237,7 @@ class AudiobookDetailsViewModel(
     @InternalCoroutinesApi
     fun connectToServer() {
         viewModelScope.launch(Dispatchers.IO) {
-            plexConfig.connectToServer(plexMediaService)
+            plexLibrarySource.connectToServer(plexMediaService)
         }
     }
 
@@ -246,7 +248,7 @@ class AudiobookDetailsViewModel(
     }
 
     init {
-        plexConfig.isConnected.observeForever(networkObserver)
+        plexLibrarySource.isConnected.observeForever(networkObserver)
     }
 
     /**
@@ -262,10 +264,11 @@ class AudiobookDetailsViewModel(
                 _isLoadingTracks.value =
                     tracks.value?.isNullOrEmpty() == true && chapters.value?.isNullOrEmpty() == true
                 val trackRequest = trackRepository.loadTracksForAudiobook(bookId)
-                if (trackRequest is Ok) {
+                val track = trackRequest.getOrNull()
+                if (track != null) {
                     val audiobook = bookRepository.getAudiobookAsync(bookId)
                     audiobook?.let {
-                        bookRepository.loadChapterData(audiobook, trackRequest.value)
+                        bookRepository.loadChapterData(audiobook, track)
                     }
                 }
                 _isLoadingTracks.value = false
@@ -290,7 +293,7 @@ class AudiobookDetailsViewModel(
         when (cacheStatus.value) {
             NOT_CACHED -> {
                 Timber.i("Caching tracks for \"${audiobook.value?.title}\"")
-                if (plexConfig.isConnected.value != true) {
+                if (plexLibrarySource.isConnected.value != true) {
                     showUserMessage("Unable to cache audiobook \"${audiobook.value?.title}\", not connected to server")
                     _manualCacheStatus.postValue(NOT_CACHED)
                 } else {
@@ -339,7 +342,7 @@ class AudiobookDetailsViewModel(
     }
 
     fun pausePlayButtonClicked() {
-        if (plexConfig.isConnected.value != true && audiobook.value?.isCached == false) {
+        if (plexLibrarySource.isConnected.value != true && audiobook.value?.isCached == false) {
             _messageForUser.postEvent("Cannot play media- not connected to any server!")
             return
         }
@@ -484,7 +487,7 @@ class AudiobookDetailsViewModel(
     }
 
     override fun onCleared() {
-        plexConfig.isConnected.removeObserver(networkObserver)
+        plexLibrarySource.isConnected.removeObserver(networkObserver)
         super.onCleared()
     }
 }

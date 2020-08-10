@@ -14,7 +14,7 @@ class AudiobookAdapter(
     private val audiobookClick: LibraryFragment.AudiobookClick
 ) : ListAdapter<Audiobook, AudiobookAdapter.ViewHolder>(AudiobookDiffCallback()) {
 
-    private var serverConnected: Boolean = false
+    private var connectedServerIds: List<Long> = emptyList()
 
     override fun getItemId(position: Int): Long {
         return getItem(position).id.toLong()
@@ -25,11 +25,11 @@ class AudiobookAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position), audiobookClick, serverConnected)
+        holder.bind(getItem(position), audiobookClick, connectedServerIds)
     }
 
-    fun setServerConnected(serverConnected: Boolean) {
-        this.serverConnected = serverConnected
+    fun setActiveConnections(connections: List<Long>) {
+        this.connectedServerIds = connections
         notifyDataSetChanged()
     }
 
@@ -41,13 +41,13 @@ class AudiobookAdapter(
         fun bind(
             audiobook: Audiobook,
             audiobookClick: LibraryFragment.AudiobookClick,
-            serverConnected: Boolean
+            connectedServerIds: List<Long>
         ) {
             binding.isSquare = isSquare
             binding.audiobook = audiobook
             binding.isVertical = isVertical
             binding.audiobookClick = audiobookClick
-            binding.serverConnected = serverConnected
+            binding.serverConnected = connectedServerIds.contains(audiobook.source)
             binding.executePendingBindings()
         }
 

@@ -1,6 +1,5 @@
 package io.github.mattpvaughn.chronicle.features.login
 
-import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,8 +10,10 @@ import android.widget.Toast.LENGTH_SHORT
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import io.github.mattpvaughn.chronicle.application.ChronicleApplication
+import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.model.ServerModel
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.databinding.OnboardingPlexChooseServerBinding
 import javax.inject.Inject
 
@@ -30,12 +31,13 @@ class ChooseServerFragment : Fragment() {
     lateinit var viewModelFactory: ChooseServerViewModel.Factory
     private lateinit var viewModel: ChooseServerViewModel
 
+    @Inject
+    lateinit var sourceManager: SourceManager
+
     private lateinit var serverAdapter: ServerListAdapter
 
     override fun onAttach(context: Context) {
-        ((activity as Activity).application as ChronicleApplication)
-            .appComponent
-            .inject(this)
+        (requireActivity() as MainActivity).activityComponent.inject(this)
         super.onAttach(context)
     }
 
@@ -49,6 +51,13 @@ class ChooseServerFragment : Fragment() {
         val binding = OnboardingPlexChooseServerBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
 
+        val source = sourceManager.getSourcesOfType<PlexLibrarySource>().firstOrNull {
+            !it.isAuthorized()
+        }
+
+        checkNotNull(source) { "No source found! Crashing is probably the wrong behavior but..." }
+
+        viewModelFactory.plexLibrarySource = source
         viewModel = ViewModelProvider(
             viewModelStore,
             viewModelFactory

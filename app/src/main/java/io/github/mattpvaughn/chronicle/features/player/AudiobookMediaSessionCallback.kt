@@ -6,7 +6,6 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import android.view.KeyEvent.*
-import com.github.michaelbull.result.Ok
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -17,9 +16,8 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.getMediaItemUri
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID
@@ -34,9 +32,7 @@ import javax.inject.Inject
 
 @ServiceScope
 class AudiobookMediaSessionCallback @Inject constructor(
-    private val plexPrefsRepo: PlexPrefsRepo,
     private val prefsRepo: PrefsRepo,
-    private val plexConfig: PlexConfig,
     private val mediaController: MediaControllerCompat,
     private val dataSourceFactory: DefaultDataSourceFactory,
     private val trackRepository: ITrackRepository,
@@ -45,6 +41,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val trackListStateManager: TrackListStateManager,
     private val serviceController: ForegroundServiceController,
     private val mediaSession: MediaSessionCompat,
+    private val sourceManager: SourceManager,
     defaultPlayer: SimpleExoPlayer
 ) : MediaSessionCompat.Callback() {
 
@@ -194,7 +191,6 @@ class AudiobookMediaSessionCallback @Inject constructor(
         }
         Timber.i("Starting playback in the background")
 
-
         serviceScope.launch {
             val tracks = withContext(Dispatchers.IO) {
                 trackRepository.getTracksForAudiobookAsync(bookId.toInt())
@@ -204,11 +200,20 @@ class AudiobookMediaSessionCallback @Inject constructor(
                 return@launch
             }
 
+            // Return if no book found- no reason to setup playback if there's no book
+            val book = withContext(Dispatchers.IO) {
+                return@withContext bookRepository.getAudiobookAsync(bookId.toInt())
+            }
+            requireNotNull(book) { "Book required for playback" }
+
+            val source = sourceManager.getSourceById(book.source)
+            requireNotNull(source) { "MediaSource required for playback" }
+
             Timber.i("Starting playback for $bookId: $tracks")
             // seeking to track if our [startingTrackId] exists
             val seekingToTrack = startingTrackId in tracks.map { it.id }
             trackListStateManager.trackList = tracks
-            val metadataList = buildPlaylist(tracks, plexConfig)
+            val metadataList = buildPlaylist(tracks, source)
 
             // set desired starting track position in trackListStateManager
             val startingTrack = tracks.getTrackContainingOffset(startTimeOffsetMillis)
@@ -260,11 +265,6 @@ class AudiobookMediaSessionCallback @Inject constructor(
                 }
             }
 
-            // Return if no book found- no reason to setup playback if there's no book
-            val book = withContext(Dispatchers.IO) {
-                return@withContext bookRepository.getAudiobookAsync(bookId.toInt())
-            }
-
             // Auto-rewind depending on last listened time for the book. Don't rewind if we're
             // starting a new chapter/track of a book
             val rewindDurationMillis: Long =
@@ -293,14 +293,9 @@ class AudiobookMediaSessionCallback @Inject constructor(
             )
 
             // Inform plex server that audio playback session has started
-            val serverId = plexPrefsRepo.server?.serverId
-            if (serverId == null) {
-                Timber.w("Unknown server id. Cannot start active session. Media playback may not be saved")
-            } else {
+            if (source is PlexLibrarySource) {
                 try {
-                    Injector.get().plexMediaService().startMediaSession(
-                        getMediaItemUri(serverId, bookId)
-                    )
+                    source.startMediaSession(bookId)
                 } catch (e: Throwable) {
                     Timber.e("Failed to start media session: $e")
                 }
@@ -315,15 +310,17 @@ class AudiobookMediaSessionCallback @Inject constructor(
     ) {
         Timber.i("No known tracks for book: $bookId, attempting to fetch them")
         // Tracks haven't been loaded by UI for this track, so load it here
-        val networkTracks = withContext(Dispatchers.IO) {
+        val networkResult = withContext(Dispatchers.IO) {
             trackRepository.loadTracksForAudiobook(bookId.toInt())
         }
-        if (networkTracks is Ok) {
+        val networkTracks = networkResult.getOrNull()
+
+        if (networkTracks != null) {
             bookRepository.updateTrackData(
                 bookId.toInt(),
-                networkTracks.value.getProgress(),
-                networkTracks.value.getDuration(),
-                networkTracks.value.size
+                networkTracks.getProgress(),
+                networkTracks.getDuration(),
+                networkTracks.size
             )
             val audiobook = bookRepository.getAudiobookAsync(bookId.toInt())
             if (audiobook != null) {
@@ -363,7 +360,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private fun resumePlayFromEmpty(playWhenReady: Boolean) {
         // This is ugly but the callback shares the lifecycle of the service, so as long as the
         // method is only called once we're okay...
-        plexConfig.isConnected.observeForever {
+        plexLibrarySource.isConnected.observeForever {
             // Don't try starting playback until we've connected to a server
             if (!it) {
                 return@observeForever

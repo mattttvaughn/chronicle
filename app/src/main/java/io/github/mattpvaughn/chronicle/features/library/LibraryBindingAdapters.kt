@@ -16,10 +16,10 @@ fun bindRecyclerView(recyclerView: RecyclerView, data: List<Audiobook>?) {
     adapter.submitList(data)
 }
 
-@BindingAdapter("serverConnected")
-fun bindRecyclerView(recyclerView: RecyclerView, serverConnected: Boolean) {
+@BindingAdapter("sourceConnections")
+fun bindConnectedServerIds(recyclerView: RecyclerView, connectedSourceIds: List<Long>) {
     val adapter = recyclerView.adapter as AudiobookAdapter
-    adapter.setServerConnected(serverConnected)
+    adapter.setActiveConnections(connectedSourceIds)
 }
 
 @BindingAdapter("overrideWidth")

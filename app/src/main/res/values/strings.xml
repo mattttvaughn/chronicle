@@ -14,6 +14,8 @@
 
     <!-- Login page -->
     <string name="login_with_plex">Login with Plex</string>
+    <string name="login_with_jellyfin">Jellyfin</string>
+    <string name="folder_source">Folder source</string>
     <string name="title_activity_login">Sign in</string>
     <string name="prompt_username">Email/Username</string>
     <string name="prompt_password">Password</string>
@@ -180,6 +182,8 @@
     <string name="settings_clear_downloads_warning">This will delete your downloaded files. Continue?</string>
     <string name="settings_shake_to_snooze_title">Shake to snooze</string>
     <string name="settings_shake_to_snooze_explanation">Shaking device will snooze sleep timer by 5 minutes</string>
+    <string name="settings_sources_title">Sources</string>
+    <string name="settings_sources_explanation">Add additional accounts, directories, and libraries</string>
     <string name="prompt_clear_downloads_allow_retain">Would you like to keep your downloaded files?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
@@ -195,7 +199,7 @@
     <string name="auto_category_recently_added">Recently added</string>
     <string name="auto_category_offline">Offline</string>
     <string name="auto_category_library">Library</string>
-    <string name="auto_access_error_not_logged_in">Not logged in to Chronicle</string>
+    <string name="auto_access_error_no_sources">No sources added</string>
     <string name="auto_access_error_no_server_chosen">No server chosen. Please return to Chronicle and choose a server and library</string>
     <string name="auto_access_error_no_user_chosen">No user chosen. Please return to Chronicle and finish logging in</string>
     <string name="auto_access_error_no_library_chosen">No library chosen. Please return to Chronicle and choose a library</string>
@@ -204,4 +208,9 @@
     <string name="submit">Submit</string>
     <string name="enter_pin">Enter pin</string>
     <string name="pin">Pin</string>
+
+    <!-- Sources -->
+    <string name="sources">Sources</string>
+    <string name="no_sources_found">No sources found</string>
+    <string name="source_demo_library"><u>Demo library</u></string>
 </resources>

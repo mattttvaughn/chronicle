@@ -6,10 +6,10 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.features.library.AudiobookSearchAdapter
 
 
-@BindingAdapter("serverConnectedSearch")
-fun bindSearchRecyclerView(recyclerView: RecyclerView, serverConnected: Boolean) {
+@BindingAdapter("sourceConnectionsSearch")
+fun bindSearchRecyclerViewConnections(recyclerView: RecyclerView, connectedSourceIds: List<Long>) {
     val adapter = recyclerView.adapter as AudiobookSearchAdapter
-    adapter.setServerConnected(serverConnected)
+    adapter.setActiveConnections(connectedSourceIds)
 }
 
 @BindingAdapter("searchBookList")

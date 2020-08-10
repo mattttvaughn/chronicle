@@ -10,7 +10,6 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
 import androidx.lifecycle.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.github.michaelbull.result.Ok
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
@@ -21,7 +20,6 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRA
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
@@ -44,8 +42,7 @@ class CurrentlyPlayingViewModel(
     private val trackRepository: ITrackRepository,
     private val localBroadcastManager: LocalBroadcastManager,
     private val mediaServiceConnection: MediaServiceConnection,
-    private val prefsRepo: PrefsRepo,
-    private val plexConfig: PlexConfig
+    private val prefsRepo: PrefsRepo
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -54,9 +51,9 @@ class CurrentlyPlayingViewModel(
         private val trackRepository: ITrackRepository,
         private val localBroadcastManager: LocalBroadcastManager,
         private val mediaServiceConnection: MediaServiceConnection,
-        private val prefsRepo: PrefsRepo,
-        private val plexConfig: PlexConfig
+        private val prefsRepo: PrefsRepo
     ) : ViewModelProvider.Factory {
+
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
                 return CurrentlyPlayingViewModel(
@@ -64,8 +61,7 @@ class CurrentlyPlayingViewModel(
                     trackRepository,
                     localBroadcastManager,
                     mediaServiceConnection,
-                    prefsRepo,
-                    plexConfig
+                    prefsRepo
                 ) as T
             } else {
                 throw IllegalArgumentException("Incorrect class type provided")
@@ -256,7 +252,7 @@ class CurrentlyPlayingViewModel(
 
     init {
         mediaServiceConnection.nowPlaying.observeForever(playbackObserver)
-        plexConfig.isConnected.observeForever(networkObserver)
+//        plexLibrarySource.isConnected.observeForever(networkObserver)
 
         // Listen for changes in SharedPreferences that could effect playback
         prefsRepo.registerPrefsListener(prefsChangeListener)
@@ -272,16 +268,17 @@ class CurrentlyPlayingViewModel(
                 if (tracks.value?.size == null) {
                     _isLoadingTracks.value = true
                 }
-                val tracks = trackRepository.loadTracksForAudiobook(bookId)
-                if (tracks is Ok) {
+                val result = trackRepository.loadTracksForAudiobook(bookId)
+                val tracks = result.getOrNull()
+                if (tracks != null) {
                     bookRepository.updateTrackData(
                         bookId,
-                        tracks.value.getProgress(),
-                        tracks.value.getDuration(),
-                        tracks.value.size
+                        tracks.getProgress(),
+                        tracks.getDuration(),
+                        tracks.size
                     )
                     audiobook.value?.let {
-                        bookRepository.loadChapterData(it, tracks.value)
+                        bookRepository.loadChapterData(it, tracks)
                     }
                 }
                 _isLoadingTracks.value = false
@@ -591,7 +588,7 @@ class CurrentlyPlayingViewModel(
     override fun onCleared() {
         mediaServiceConnection.nowPlaying.removeObserver(playbackObserver)
         prefsRepo.unregisterPrefsListener(prefsChangeListener)
-        plexConfig.isConnected.removeObserver(networkObserver)
+//        plexLibrarySource.isConnected.removeObserver(networkObserver)
         super.onCleared()
     }
 

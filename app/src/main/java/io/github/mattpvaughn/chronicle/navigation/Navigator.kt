@@ -7,9 +7,10 @@ import androidx.lifecycle.Observer
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_ID
+import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_SOURCE_ID
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_IS_AUDIOBOOK_CACHED
 import io.github.mattpvaughn.chronicle.features.home.HomeFragment
 import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
@@ -18,6 +19,7 @@ import io.github.mattpvaughn.chronicle.features.login.ChooseServerFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseUserFragment
 import io.github.mattpvaughn.chronicle.features.login.LoginFragment
 import io.github.mattpvaughn.chronicle.features.settings.SettingsFragment
+import io.github.mattpvaughn.chronicle.features.sources.SourceManagerFragment
 import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
 import timber.log.Timber
 import javax.inject.Inject
@@ -33,7 +35,7 @@ import javax.inject.Inject
 @ActivityScope
 class Navigator @Inject constructor(
     private val fragmentManager: FragmentManager,
-    private val plexConfig: PlexConfig,
+    private val plexLibrarySource: PlexLibrarySource,
     plexLoginRepo: IPlexLoginRepo,
     activity: AppCompatActivity
 ) {
@@ -62,7 +64,7 @@ class Navigator @Inject constructor(
     }
 
     fun showLogin() {
-        plexConfig.clear()
+        plexLibrarySource.clear()
         val frag = LoginFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, frag)
@@ -70,9 +72,9 @@ class Navigator @Inject constructor(
     }
 
     fun showUserChooser() {
-        plexConfig.clearServer()
-        plexConfig.clearLibrary()
-        plexConfig.clearUser()
+        plexLibrarySource.clearServer()
+        plexLibrarySource.clearLibrary()
+        plexLibrarySource.clearUser()
         val frag = ChooseUserFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, frag, ChooseUserFragment.TAG)
@@ -80,8 +82,8 @@ class Navigator @Inject constructor(
     }
 
     fun showServerChooser() {
-        plexConfig.clearServer()
-        plexConfig.clearLibrary()
+        plexLibrarySource.clearServer()
+        plexLibrarySource.clearLibrary()
         val frag = ChooseServerFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, frag, ChooseServerFragment.TAG)
@@ -89,7 +91,7 @@ class Navigator @Inject constructor(
     }
 
     fun showLibraryChooser() {
-        plexConfig.clearLibrary()
+        plexLibrarySource.clearLibrary()
         val frag = ChooseLibraryFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, frag, ChooseLibraryFragment.TAG)
@@ -127,17 +129,34 @@ class Navigator @Inject constructor(
         fragmentManager.beginTransaction().replace(R.id.fragNavHost, settingsFragment).commit()
     }
 
-    fun showDetails(audiobookId: Int, isAudiobookCached: Boolean) {
+    fun showDetails(audiobookId: Int, isAudiobookCached: Boolean, sourceId: Long) {
         val detailsFrag = AudiobookDetailsFragment.newInstance().apply {
             if (arguments == null) {
                 arguments = Bundle()
             }
             requireArguments().putInt(ARG_AUDIOBOOK_ID, audiobookId)
+            requireArguments().putLong(ARG_AUDIOBOOK_SOURCE_ID, sourceId)
             requireArguments().putBoolean(ARG_IS_AUDIOBOOK_CACHED, isAudiobookCached)
         }
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, detailsFrag)
             .addToBackStack(AudiobookDetailsFragment.TAG)
+            .commit()
+    }
+
+    fun showSourcesManager() {
+        val sourceManagerFragment = SourceManagerFragment.newInstance()
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, sourceManagerFragment)
+            .addToBackStack(SourceManagerFragment.TAG)
+            .commit()
+    }
+
+    fun addSource() {
+        val loginFragment = LoginFragment.newInstance()
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, loginFragment)
+            .addToBackStack(LoginFragment.TAG)
             .commit()
     }
 
@@ -156,12 +175,12 @@ class Navigator @Inject constructor(
                 true
             }
             isFragmentWithTagVisible(ChooseServerFragment.TAG) -> {
-                plexConfig.clearUser()
+                plexLibrarySource.clearUser()
                 showUserChooser()
                 true
             }
             isFragmentWithTagVisible(ChooseLibraryFragment.TAG) -> {
-                plexConfig.clearServer()
+                plexLibrarySource.clearServer()
                 showServerChooser()
                 true
             }
@@ -186,4 +205,5 @@ class Navigator @Inject constructor(
     private fun isFragmentWithTagVisible(tag: String): Boolean {
         return fragmentManager.findFragmentByTag(tag)?.isVisible == true
     }
+
 }
