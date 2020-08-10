@@ -117,23 +117,41 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
-        if (mediaButtonEvent != null) {
-            val ke: KeyEvent? = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
-            // Media button events usually come in either an "ACTION_DOWN" + "ACTION_UP" pair, or
-            // as a single ACTION_DOWN. Just take ACTION_DOWNs
-            if (ke?.action == ACTION_DOWN) {
-                when (ke.keyCode) {
-                    KEYCODE_MEDIA_NEXT, KEYCODE_MEDIA_SKIP_FORWARD -> skipForwards()
-                    KEYCODE_MEDIA_PREVIOUS, KEYCODE_MEDIA_SKIP_BACKWARD -> skipBackwards()
-                    KEYCODE_MEDIA_PAUSE -> onPause()
-                    KEYCODE_MEDIA_PLAY -> onPlay()
-                    KEYCODE_MEDIA_STOP -> {
-                        onStop()
-                    }
+        if (mediaButtonEvent == null) {
+            return false
+        }
+        val ke: KeyEvent? = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+        Timber.i("Media button event: $ke")
+        // Media button events usually come in either an "ACTION_DOWN" + "ACTION_UP" pair, or
+        // as a single ACTION_DOWN. Just take ACTION_DOWNs
+        if (ke?.action == ACTION_DOWN) {
+            // These really handle bluetooth media actions only, but the framework handles
+            // pause/play for inline wired headphones
+            return when (ke.keyCode) {
+                KEYCODE_MEDIA_NEXT, KEYCODE_MEDIA_SKIP_FORWARD -> {
+                    skipForwards()
+                    true
                 }
+                KEYCODE_MEDIA_PREVIOUS, KEYCODE_MEDIA_SKIP_BACKWARD -> {
+                    skipBackwards()
+                    true
+                }
+                KEYCODE_MEDIA_PAUSE -> {
+                    onPause()
+                    true
+                }
+                KEYCODE_MEDIA_PLAY -> {
+                    onPlay()
+                    true
+                }
+                KEYCODE_MEDIA_STOP -> {
+                    onStop()
+                    true
+                }
+                else -> false
             }
         }
-        return true
+        return false
     }
 
     override fun onPlay() {
