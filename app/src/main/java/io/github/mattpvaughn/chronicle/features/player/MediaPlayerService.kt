@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import android.view.KeyEvent.*
 import androidx.lifecycle.Observer
@@ -245,10 +246,22 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
      * Singleton we don't need to keep track of state here
      */
     private fun changeServer() {
-        mediaSessionCallback.onPlayFromMediaId(
-            trackListManager.trackList.map { it.id }.firstOrNull { true }.toString(),
-            Bundle().apply { putLong(KEY_START_TIME_OFFSET, ACTIVE_TRACK) }
-        )
+        when (mediaController.playbackState.state) {
+            PlaybackStateCompat.STATE_PLAYING -> {
+                mediaSessionCallback.onPlayFromMediaId(
+                    trackListManager.trackList.map { it.id }.firstOrNull { true }.toString(),
+                    Bundle().apply { putLong(KEY_START_TIME_OFFSET, ACTIVE_TRACK) }
+                )
+            }
+            PlaybackStateCompat.STATE_PAUSED, PlaybackStateCompat.STATE_BUFFERING -> {
+                mediaSessionCallback.onPrepareFromMediaId(
+                    trackListManager.trackList.map { it.id }.firstOrNull { true }.toString(),
+                    Bundle().apply { putLong(KEY_START_TIME_OFFSET, ACTIVE_TRACK) }
+                )
+            }
+            else -> {
+            } // if there isn't playback, there's nothing to change
+        }
     }
 
     private fun invalidatePlaybackParams() {
@@ -570,8 +583,6 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
         invalidatePlaybackParams()
     }
-
-
 }
 
 interface ServiceController {
@@ -580,5 +591,5 @@ interface ServiceController {
 
 interface ForegroundServiceController {
     fun startForeground(nowPlayingNotification: Int, notification: Notification)
-    fun stopForeground(notificationActive: Boolean)
+    fun stopForeground(removeNotification: Boolean)
 }
