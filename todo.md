@@ -71,6 +71,10 @@ Release 0.50:
 
 (August 11th):
  - [X] added new view styles for library
+ - [X] prevent network changes for force-resuming 
+ - [X] fix forced scroll-to-top in library following db changes
+ - [X] fixed unclearable notification issues
+      - [X] added a manual "cancel notification" button just in case
 
 (August 10th):
  - [X] fixed pause/play for wired headphones
