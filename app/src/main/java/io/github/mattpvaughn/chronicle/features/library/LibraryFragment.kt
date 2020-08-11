@@ -12,16 +12,23 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.BOOK_COVER_STYLE_SQUARE
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_COVER_GRID
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_DETAILS_LIST
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_TEXT_LIST
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.databinding.FragmentLibraryBinding
 import io.github.mattpvaughn.chronicle.navigation.Navigator
+import io.github.mattpvaughn.chronicle.util.observeOnce
 import io.github.mattpvaughn.chronicle.views.FlowableRadioGroup
 import io.github.mattpvaughn.chronicle.views.checkRadioButtonWithTag
 import timber.log.Timber
@@ -55,6 +62,13 @@ class LibraryFragment : Fragment() {
         super.onAttach(context)
     }
 
+    var adapter: AudiobookAdapter? = null
+
+    override fun onDestroyView() {
+        adapter = null
+        super.onDestroyView()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -63,12 +77,51 @@ class LibraryFragment : Fragment() {
         val binding = FragmentLibraryBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
         binding.plexConfig = plexConfig
-        binding.libraryGrid.adapter =
-            AudiobookAdapter(prefsRepo.bookCoverStyle == "Square", true, object : AudiobookClick {
+
+        adapter = AudiobookAdapter(
+            prefsRepo.libraryBookViewStyle,
+            true,
+            prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
+            object : AudiobookClick {
                 override fun onClick(audiobook: Audiobook) {
                     openAudiobookDetails(audiobook)
                 }
             })
+
+        viewModel.books.observe(viewLifecycleOwner, Observer { books ->
+            adapter?.submitList(books)
+        })
+
+        plexConfig.isConnected.observe(viewLifecycleOwner, Observer { isConnected ->
+            adapter?.setServerConnected(isConnected)
+        })
+
+        viewModel.viewStyle.observe(viewLifecycleOwner, Observer { style ->
+            Timber.i("View style is: $style")
+            val isGrid = when (style) {
+                VIEW_STYLE_COVER_GRID -> true
+                VIEW_STYLE_DETAILS_LIST, VIEW_STYLE_TEXT_LIST -> false
+                else -> throw IllegalStateException("Unknown view style")
+            }
+            binding.libraryGrid.layoutManager = if (isGrid) {
+                GridLayoutManager(requireContext(), 3)
+            } else {
+                LinearLayoutManager(requireContext())
+            }
+            adapter = AudiobookAdapter(
+                style,
+                true,
+                prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
+                object : AudiobookClick {
+                    override fun onClick(audiobook: Audiobook) {
+                        openAudiobookDetails(audiobook)
+                    }
+                })
+            binding.libraryGrid.adapter = adapter
+            viewModel.books.observeOnce(Observer {
+                adapter?.submitList(it)
+            })
+        })
         binding.libraryGrid.itemAnimator?.changeDuration = 0
         binding.lifecycleOwner = viewLifecycleOwner
         binding.searchResultsList.adapter = AudiobookSearchAdapter(object : AudiobookClick {
@@ -85,7 +138,7 @@ class LibraryFragment : Fragment() {
             binding.swipeToRefresh.isRefreshing = it
         })
 
-        viewModel.scrollToItem.observe(viewLifecycleOwner, Observer {
+        viewModel.scrollToTop.observe(viewLifecycleOwner, Observer {
             if (!it.hasBeenHandled) {
                 it.getContentIfNotHandled()
                 binding.libraryGrid.postDelayed({
@@ -98,6 +151,12 @@ class LibraryFragment : Fragment() {
         binding.sortByOptions.setOnCheckedChangeListener { group: FlowableRadioGroup, checkedId ->
             val key = group.findViewById<AppCompatRadioButton>(checkedId).tag as String
             prefsRepo.bookSortKey = key
+        }
+
+        binding.viewStyles.checkRadioButtonWithTag(prefsRepo.libraryBookViewStyle)
+        binding.viewStyles.setOnCheckedChangeListener { group: FlowableRadioGroup, checkedId ->
+            val key = group.findViewById<AppCompatRadioButton>(checkedId).tag as String
+            prefsRepo.libraryBookViewStyle = key
         }
 
 //        binding.viewByOptions.checkRadioButtonWithTag(prefsRepo.libraryViewTypeKey)

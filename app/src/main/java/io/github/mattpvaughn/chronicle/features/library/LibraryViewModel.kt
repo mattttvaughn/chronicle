@@ -10,6 +10,7 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_VIEW_STYLE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_OFFLINE_MODE
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_AUTHOR
@@ -75,8 +76,14 @@ class LibraryViewModel(
     val isSearchActive: LiveData<Boolean>
         get() = _isSearchActive
 
+    val viewStyle = StringPreferenceLiveData(
+        KEY_LIBRARY_VIEW_STYLE,
+        prefsRepo.libraryBookViewStyle,
+        sharedPreferences
+    )
+
     private var _scrollToItem = MutableLiveData<Event<Unit>>()
-    val scrollToItem: LiveData<Event<Unit>>
+    val scrollToTop: LiveData<Event<Unit>>
         get() = _scrollToItem
 
     private var _isFilterShown = MutableLiveData(false)

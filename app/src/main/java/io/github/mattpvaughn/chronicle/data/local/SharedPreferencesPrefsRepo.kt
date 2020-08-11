@@ -13,7 +13,8 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_DOWNLO
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_PREMIUM
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LAST_REFRESH
-import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_VIEW_TYPE
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_MEDIA_TYPE
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_VIEW_STYLE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_OFFLINE_MODE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PLAYBACK_SPEED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PREMIUM_TOKEN
@@ -22,6 +23,8 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SHAKE_
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SKIP_SILENCE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SYNC_DIR_PATH
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.NO_PREMIUM_TOKEN
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLES
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_COVER_GRID
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
@@ -72,7 +75,10 @@ interface PrefsRepo {
     var bookSortKey: String
 
     /** The type of elements shown in the library view. One of [MediaType.TYPES]*/
-    var libraryViewTypeKey: String
+    var libraryMediaType: String
+
+    /** The style of view display in the library view (e.g. book cover, text only, etc.) */
+    var libraryBookViewStyle: String
 
     /** Whether the library is sorted in descending (true) or ascending (false) order */
     var isLibrarySortedDescending: Boolean
@@ -128,8 +134,20 @@ interface PrefsRepo {
         const val KEY_PREMIUM_TOKEN = "key_premium_token"
         const val KEY_BOOK_SORT_BY = "key_sort_by"
         const val KEY_IS_LIBRARY_SORT_DESCENDING = "key_is_sort_descending"
-        const val KEY_LIBRARY_VIEW_TYPE = "key_view_type"
+        const val KEY_LIBRARY_MEDIA_TYPE = "key_media_type"
+        const val KEY_LIBRARY_VIEW_STYLE = "key_library_view_style"
+        const val VIEW_STYLE_COVER_GRID = "view_style_cover_grid"
+        const val VIEW_STYLE_TEXT_LIST = "view_style_text_list"
+        const val VIEW_STYLE_DETAILS_LIST = "view_style_details_list"
+        val VIEW_STYLES = listOf(
+            VIEW_STYLE_COVER_GRID,
+            VIEW_STYLE_DETAILS_LIST,
+            VIEW_STYLE_TEXT_LIST
+        )
         const val KEY_DOWNLOAD_IDS = "key_download_ids"
+
+        const val BOOK_COVER_STYLE_RECT = "Rectangular"
+        const val BOOK_COVER_STYLE_SQUARE = "Square"
     }
 }
 
@@ -252,15 +270,25 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
     private val viewTypeCollection = "collection"
     private val viewTypes = listOf(viewTypeBook, viewTypeAuthor, viewTypeFolder, viewTypeCollection)
     private val defaultLibraryViewType = viewTypeBook
-    override var libraryViewTypeKey: String
-        get() = getString(KEY_LIBRARY_VIEW_TYPE, defaultLibraryViewType)
+    override var libraryMediaType: String
+        get() = getString(KEY_LIBRARY_MEDIA_TYPE, defaultLibraryViewType)
         set(value) {
             if (value !in viewTypes) {
                 throw IllegalArgumentException("Unknown view type key: $value")
             }
-            sharedPreferences.edit().putString(KEY_LIBRARY_VIEW_TYPE, value).apply()
+            sharedPreferences.edit().putString(KEY_LIBRARY_MEDIA_TYPE, value).apply()
         }
 
+
+    private val defaultLibraryViewStyle = VIEW_STYLE_COVER_GRID
+    override var libraryBookViewStyle: String
+        get() = getString(KEY_LIBRARY_VIEW_STYLE, defaultLibraryViewStyle)
+        set(value) {
+            if (value !in VIEW_STYLES) {
+                throw IllegalArgumentException("Unknown view type key: $value")
+            }
+            sharedPreferences.edit().putString(KEY_LIBRARY_VIEW_STYLE, value).apply()
+        }
 
     private val debugDisableLocalProgressTracking = false
     override var debugOnlyDisableLocalProgressTracking: Boolean

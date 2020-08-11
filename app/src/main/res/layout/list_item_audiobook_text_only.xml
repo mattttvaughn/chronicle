@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="audiobook"
+            type="io.github.mattpvaughn.chronicle.data.model.Audiobook" />
+
+        <variable
+            name="audiobookClick"
+            type="io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick" />
+
+        <import type="android.view.View" />
+
+        <import type="android.text.format.DateUtils" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:onClick="@{() -> audiobookClick.onClick(audiobook)}"
+        android:paddingLeft="@dimen/screen_horizontal_padding"
+        android:paddingTop="@dimen/spacing_normal"
+        android:paddingRight="@dimen/screen_horizontal_padding"
+        android:paddingBottom="@dimen/spacing_normal"
+        tools:background="@color/colorPrimaryDark">
+
+        <TextView
+            android:id="@+id/title"
+            style="@style/TextAppearance.Body1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:maxLines="2"
+            android:paddingBottom="@dimen/spacing_micro"
+            android:text="@{audiobook.title}"
+            android:textAlignment="textStart"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Series name - Author name - more unnecessary metadata - The world's longest book title in the whole world"
+            tools:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/author"
+            style="@style/TextAppearance.Body2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:lines="1"
+            android:text="@{audiobook.author}"
+            android:textAlignment="textStart"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHorizontal_chainStyle="spread"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toLeftOf="@id/book_progress"
+            app:layout_constraintTop_toBottomOf="@id/title"
+            tools:text="Author name" />
+
+        <TextView
+            android:id="@+id/book_progress"
+            style="@style/TextAppearance.Body2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_normal"
+            android:text="@{ DateUtils.formatElapsedTime(audiobook.progress / 1000) + `/` + DateUtils.formatElapsedTime(audiobook.duration / 1000) }"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHorizontal_chainStyle="spread"
+            app:layout_constraintLeft_toRightOf="@id/author"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/title"
+            tools:text="00:00/21:00:15" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

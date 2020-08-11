@@ -40,6 +40,9 @@
     <dimen name="audiobook_listened_indicator_size">16dp</dimen>
     <dimen name="audiobook_image_width">96dp</dimen>
 
+    <!-- Library audiobook list item | details -->
+    <dimen name="library_details_audiobook_height">64dp</dimen>
+
     <!-- Track list item -->
     <dimen name="track_list_item_height">48dp</dimen>
     <dimen name="track_list_item_indicator_size">24dp</dimen>

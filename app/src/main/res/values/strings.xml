@@ -60,6 +60,10 @@
     <string name="sort_by_date_played">Date played</string>
     <string name="sort_by_plays">Plays</string>
     <string name="sort_by_duration">Duration</string>
+    <string name="view_style">View style</string>
+    <string name="view_style_book_cover">Book cover</string>
+    <string name="view_style_text_list">Text</string>
+    <string name="view_style_cover_and_text_list">Details</string>
 
     <!-- Book details-->
     <string name="audiobook_info">Audiobook info</string>

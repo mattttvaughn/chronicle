@@ -10,6 +10,10 @@
     <string name="key_sort_by_plays">plays</string>
     <string name="key_sort_by_duration">duration</string>
 
+    <string name="key_view_style_cover_grid">view_style_cover_grid</string>
+    <string name="key_view_style_text_only">view_style_text_list</string>
+    <string name="key_view_style_details">view_style_details_list</string>
+
     <string name="key_view_by_book">book</string>
     <string name="key_view_by_author">author</string>
     <string name="key_view_by_folder">folder</string>

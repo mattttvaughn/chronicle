@@ -9,7 +9,6 @@ Message redditors:
 
 High priority:
  - [ ] issues caching track (or chapter) start/end times  (Unable to reproduce)
- - [ ] wired headphone media buttons possibly not working
 
 Medium priority: 
  - [ ] Synced plex progress for 90% problem? Test with a ~30hr book
@@ -69,6 +68,14 @@ Low priority
 ## DONE:
 
 Release 0.50:
+
+(August 11th):
+ - [X] added new view styles for library
+
+(August 10th):
+ - [X] fixed pause/play for wired headphones
+ - [X] fixed syncing + 90% issue
+ - [X] allowed multiline titles in book details screen 
 
 (July 30th):
  - [X] Fix playback issues for multi-track audiobooks (seeking, jump to chapter)
