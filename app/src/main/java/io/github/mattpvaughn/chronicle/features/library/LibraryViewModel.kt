@@ -113,7 +113,8 @@ class LibraryViewModel(
         if (_books.isNullOrEmpty()) {
             return@QuadLiveDataAsync emptyList<Audiobook>()
         }
-        // Use defaults if _isDescending or _sortKey are null
+
+        // Use defaults if provided null values
         val desc = _isDescending ?: true
         val key = _sortKey ?: SORT_KEY_TITLE
         val offline = _isOffline ?: false
@@ -134,8 +135,10 @@ class LibraryViewModel(
                 }
             })
 
-        withContext(Dispatchers.Main) {
-            _scrollToItem.postEvent(Unit)
+        if (prevBooks.map { it.id } != results.map { it.id }) {
+            withContext(Dispatchers.Main) {
+                _scrollToItem.postEvent(Unit)
+            }
         }
 
         prevBooks = results
