@@ -43,7 +43,8 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val bookRepository: IBookRepository,
     private val serviceScope: CoroutineScope,
     private val trackListStateManager: TrackListStateManager,
-    private val serviceController: ForegroundServiceController,
+    private val foregroundServiceController: ForegroundServiceController,
+    private val serviceController: ServiceController,
     private val mediaSession: MediaSessionCompat,
     defaultPlayer: SimpleExoPlayer
 ) : MediaSessionCompat.Callback() {
@@ -402,9 +403,10 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     override fun onStop() {
+        Timber.i("Stopping media playback")
         currentPlayer.stop()
         mediaSession.setPlaybackState(EMPTY_PLAYBACK_STATE)
-        serviceController.stopForeground(false)
+        foregroundServiceController.stopForeground(true)
     }
 }
 

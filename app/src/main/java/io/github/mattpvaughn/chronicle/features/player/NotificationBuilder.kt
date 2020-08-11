@@ -116,7 +116,7 @@ class NotificationBuilder(
 
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
 
-        // Only add actions for skip back, play/pause, skip forward, based on what's enabled.
+        // Only add actions depending on playback status
         builder.addAction(skipBackwardsAction)
         if (playbackState.isPlaying) {
             builder.addAction(pauseAction)
@@ -124,6 +124,12 @@ class NotificationBuilder(
             builder.addAction(playAction)
         }
         builder.addAction(skipForwardsAction)
+        // Add a button to manually kill the notification + service
+        builder.addAction(
+            R.drawable.ic_close_white,
+            context.getString(R.string.cancel),
+            stopPendingIntent
+        )
 
         val mediaStyle = MediaStyle()
             .setCancelButtonIntent(stopPendingIntent)
