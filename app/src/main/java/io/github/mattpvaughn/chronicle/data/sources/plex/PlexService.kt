@@ -1,5 +1,7 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
+import io.github.mattpvaughn.chronicle.data.MEDIA_TYPE_ALBUM
+import io.github.mattpvaughn.chronicle.data.MEDIA_TYPE_TRACK
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.*
 import okhttp3.ResponseBody
 import retrofit2.http.*

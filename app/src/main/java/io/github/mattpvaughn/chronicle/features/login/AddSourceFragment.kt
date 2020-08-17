@@ -16,18 +16,23 @@ import androidx.lifecycle.ViewModelProvider
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+import io.github.mattpvaughn.chronicle.data.sources.MediaSourceFactory
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.OAuthResponse
 import io.github.mattpvaughn.chronicle.databinding.OnboardingAddSourceBinding
+import io.github.mattpvaughn.chronicle.injection.components.AppComponent.Companion.USER_AGENT
 import timber.log.Timber
 import javax.inject.Inject
+import javax.inject.Named
 
-
-class LoginFragment : Fragment() {
+/** Fragment responsible for starting the process of adding a new [MediaSource] */
+class AddSourceFragment : Fragment() {
 
     companion object {
         @JvmStatic
-        fun newInstance() = LoginFragment()
-
+        fun newInstance() = AddSourceFragment()
         const val TAG: String = "Login tag"
     }
 
@@ -35,9 +40,21 @@ class LoginFragment : Fragment() {
     lateinit var prefsRepo: PrefsRepo
 
     @Inject
-    lateinit var viewModelFactory: LoginViewModel.Factory
+    lateinit var viewModelFactory: AddSourceViewModel.Factory
 
-    private lateinit var loginViewModel: LoginViewModel
+    @Inject
+    lateinit var sourceManager: SourceManager
+
+    @Inject
+    lateinit var mediaSourceFactory: MediaSourceFactory
+
+
+    @Inject
+    @Named(USER_AGENT)
+    lateinit var userAgent: String
+
+
+    private lateinit var addSourceViewModel: AddSourceViewModel
 
     override fun onAttach(context: Context) {
         (requireActivity() as MainActivity).activityComponent.inject(this)
@@ -50,16 +67,22 @@ class LoginFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
 
-        loginViewModel = ViewModelProvider(
+        val potentialPlexSource = mediaSourceFactory.create(
+            sourceManager.generateUniqueId(),
+            PlexLibrarySource.TAG
+        ) as PlexLibrarySource
+        viewModelFactory.potentialPlexSource = potentialPlexSource
+
+        addSourceViewModel = ViewModelProvider(
             this,
             viewModelFactory
-        ).get(LoginViewModel::class.java)
+        ).get(AddSourceViewModel::class.java)
 
         val binding = OnboardingAddSourceBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
-        binding.viewModel = loginViewModel
+        binding.viewModel = addSourceViewModel
 
-        loginViewModel.authEvent.observe(viewLifecycleOwner, Observer { authRequestEvent ->
+        addSourceViewModel.authEvent.observe(viewLifecycleOwner, Observer { authRequestEvent ->
             val oAuthPin = authRequestEvent.getContentIfNotHandled()
             if (oAuthPin != null) {
                 showPlexLoginWindow(oAuthPin)
@@ -76,6 +99,7 @@ class LoginFragment : Fragment() {
         val backButtonBitmap: Bitmap? =
             if (backButton is BitmapDrawable) backButton.bitmap else null
 
+        @Suppress("DEPRECATION")
         val customTabsIntentBuilder =
             CustomTabsIntent.Builder()
                 .setToolbarColor(
@@ -94,15 +118,15 @@ class LoginFragment : Fragment() {
         val customTabsIntent = customTabsIntentBuilder.build()
 
         // make login url
-        val url = loginViewModel.makePlexOAuthLoginUrl(oAuthPin.clientIdentifier, oAuthPin.code)
+        val url = addSourceViewModel.makePlexOAuthLoginUrl(oAuthPin.clientIdentifier, oAuthPin.code)
 
-        loginViewModel.setLaunched(true)
+        addSourceViewModel.setLaunched(true)
         customTabsIntent.launchUrl(requireContext(), url)
     }
 
     override fun onResume() {
         Timber.i("RESUMING LoginFragment")
-        loginViewModel.checkForAccess()
+        addSourceViewModel.checkForAccess()
         super.onResume()
     }
 }

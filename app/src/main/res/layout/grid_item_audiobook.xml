@@ -22,6 +22,10 @@
             type="Boolean" />
 
         <variable
+            name="source"
+            type="io.github.mattpvaughn.chronicle.data.sources.MediaSource" />
+
+        <variable
             name="isSquare"
             type="Boolean" />
 
@@ -71,6 +75,7 @@
                 android:id="@+id/book_cover_img"
                 serverConnected="@{serverConnected}"
                 srcRounded="@{audiobook.thumb}"
+                mediaSource="@{source}"
                 android:contentDescription="@{audiobook.title}"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"

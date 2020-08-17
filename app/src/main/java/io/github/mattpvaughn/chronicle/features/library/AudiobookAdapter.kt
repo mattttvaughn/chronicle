@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.databinding.GridItemAudiobookBinding
 
@@ -43,6 +44,8 @@ class AudiobookAdapter(
             audiobookClick: LibraryFragment.AudiobookClick,
             connectedServerIds: List<Long>
         ) {
+            val source = Injector.get().sourceManager()
+            binding.source = source.getSourceById(audiobook.source)
             binding.isSquare = isSquare
             binding.audiobook = audiobook
             binding.isVertical = isVertical

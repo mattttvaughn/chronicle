@@ -8,6 +8,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.data.ConnectionState
 import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.ICachedFileManager.CacheStatus.*
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
@@ -15,8 +16,8 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
+import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID
@@ -43,9 +44,8 @@ class AudiobookDetailsViewModel(
     private val inputAudiobook: Audiobook,
     private val mediaServiceConnection: MediaServiceConnection,
     private val progressUpdater: ProgressUpdater,
-    private val plexLibrarySource: PlexLibrarySource,
-    private val prefsRepo: PrefsRepo,
-    private val plexMediaService: PlexMediaService
+    private val mediaSource: MediaSource,
+    private val prefsRepo: PrefsRepo
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -55,13 +55,15 @@ class AudiobookDetailsViewModel(
         private val cachedFileManager: ICachedFileManager,
         private val mediaServiceConnection: MediaServiceConnection,
         private val progressUpdater: ProgressUpdater,
-        private val plexLibrarySource: PlexLibrarySource,
-        private val prefsRepo: PrefsRepo,
-        private val plexMediaService: PlexMediaService
+        private val prefsRepo: PrefsRepo
     ) : ViewModelProvider.Factory {
+
         lateinit var inputAudiobook: Audiobook
+        lateinit var source: MediaSource
+
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             check(this::inputAudiobook.isInitialized) { "Input audiobook not provided!" }
+            check(this::source.isInitialized) { "Source not provided" }
             if (modelClass.isAssignableFrom(AudiobookDetailsViewModel::class.java)) {
                 return AudiobookDetailsViewModel(
                     bookRepository,
@@ -70,9 +72,8 @@ class AudiobookDetailsViewModel(
                     inputAudiobook,
                     mediaServiceConnection,
                     progressUpdater,
-                    plexLibrarySource,
-                    prefsRepo,
-                    plexMediaService
+                    source,
+                    prefsRepo
                 ) as T
             } else {
                 throw IllegalStateException("Wrong class provided to ${this.javaClass.name}")
@@ -225,10 +226,6 @@ class AudiobookDetailsViewModel(
         return@map lines == lineCountSummaryMaximized
     }
 
-    val serverConnection = Transformations.map(plexLibrarySource.connectedSources) {
-        it.contains(sourceId)
-    }
-
     fun onToggleSummaryView() {
         _summaryLinesShown.value =
             if (_summaryLinesShown.value == lineCountSummaryMinimized) lineCountSummaryMaximized else lineCountSummaryMinimized
@@ -237,25 +234,37 @@ class AudiobookDetailsViewModel(
     @InternalCoroutinesApi
     fun connectToServer() {
         viewModelScope.launch(Dispatchers.IO) {
-            plexLibrarySource.connectToServer(plexMediaService)
+            if (mediaSource is HttpMediaSource) {
+                mediaSource.connectToRemote()
+            }
         }
     }
 
-    private val networkObserver = Observer<Boolean> { isConnected ->
-        if (isConnected) {
-            refreshChapterInfo(inputAudiobook.id)
+    val connectionState = if (mediaSource is HttpMediaSource) {
+        mediaSource.connectionState
+    } else {
+        MutableLiveData(ConnectionState.CONNECTED)
+    }
+
+    private val networkObserver = Observer<ConnectionState> { connection ->
+        if (connection == ConnectionState.CONNECTED) {
+            if (mediaSource is HttpMediaSource) {
+                refreshChapterInfo(mediaSource, inputAudiobook.id)
+            }
         }
     }
 
     init {
-        plexLibrarySource.isConnected.observeForever(networkObserver)
+        if (mediaSource is HttpMediaSource) {
+            mediaSource.connectionState.observeForever(networkObserver)
+        }
     }
 
     /**
      * Refresh the tracks for the current audiobook. Mostly important because we want to refresh
      * the progress in the audiobook is there's a new
      */
-    private fun refreshChapterInfo(bookId: Int) {
+    private fun refreshChapterInfo(source: HttpMediaSource, bookId: Int) {
         Timber.i("Refreshing tracks!")
         viewModelScope.launch {
             try {
@@ -263,13 +272,11 @@ class AudiobookDetailsViewModel(
                 // loaded, don't replace chapter view with loading view
                 _isLoadingTracks.value =
                     tracks.value?.isNullOrEmpty() == true && chapters.value?.isNullOrEmpty() == true
-                val trackRequest = trackRepository.loadTracksForAudiobook(bookId)
+                val trackRequest = trackRepository.loadTracksForAudiobook(source, bookId)
                 val track = trackRequest.getOrNull()
                 if (track != null) {
                     val audiobook = bookRepository.getAudiobookAsync(bookId)
-                    audiobook?.let {
-                        bookRepository.loadChapterData(audiobook, track)
-                    }
+                    audiobook?.let { bookRepository.loadChapterData(source, it, track) }
                 }
                 _isLoadingTracks.value = false
             } catch (e: Throwable) {
@@ -293,7 +300,7 @@ class AudiobookDetailsViewModel(
         when (cacheStatus.value) {
             NOT_CACHED -> {
                 Timber.i("Caching tracks for \"${audiobook.value?.title}\"")
-                if (plexLibrarySource.isConnected.value != true) {
+                if (mediaSource is HttpMediaSource && mediaSource.connectionState.value == ConnectionState.CONNECTED) {
                     showUserMessage("Unable to cache audiobook \"${audiobook.value?.title}\", not connected to server")
                     _manualCacheStatus.postValue(NOT_CACHED)
                 } else {
@@ -342,9 +349,11 @@ class AudiobookDetailsViewModel(
     }
 
     fun pausePlayButtonClicked() {
-        if (plexLibrarySource.isConnected.value != true && audiobook.value?.isCached == false) {
-            _messageForUser.postEvent("Cannot play media- not connected to any server!")
-            return
+        if (audiobook.value?.isCached == false) {
+            if (mediaSource is HttpMediaSource && mediaSource.connectionState.value != ConnectionState.CONNECTED) {
+                _messageForUser.postEvent("Cannot play media- not connected to any server!")
+                return
+            }
         }
 
         val pausePlayAction =
@@ -487,7 +496,9 @@ class AudiobookDetailsViewModel(
     }
 
     override fun onCleared() {
-        plexLibrarySource.isConnected.removeObserver(networkObserver)
+        if (mediaSource is HttpMediaSource) {
+            mediaSource.connectionState.removeObserver(networkObserver)
+        }
         super.onCleared()
     }
 }

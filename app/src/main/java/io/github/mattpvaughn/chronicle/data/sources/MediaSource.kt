@@ -1,10 +1,12 @@
 package io.github.mattpvaughn.chronicle.data.sources
 
+import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import android.graphics.Bitmap
 import android.net.Uri
+import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.features.home.HomeFragment
@@ -14,7 +16,7 @@ import io.github.mattpvaughn.chronicle.navigation.Navigator
  * A source which provides [Audiobook]s and [MediaItemTrack]s. May require setup via [setup] before
  * media can be accessed. Each source is responsible for maintaining its own persistent state
  */
-abstract class MediaSource(private val application: ChronicleApplication) {
+abstract class MediaSource constructor(private val applicationContext: Context) {
 
     /** An ID uniquely representing a specific source. */
     abstract val id: Long
@@ -26,14 +28,14 @@ abstract class MediaSource(private val application: ChronicleApplication) {
     abstract val icon: Int
 
     fun prefs(): SharedPreferences {
-        return application.getSharedPreferences(id.toString(), MODE_PRIVATE)
+        return applicationContext.getSharedPreferences(id.toString(), MODE_PRIVATE)
     }
 
     /**
      * Expose a [DefaultDataSourceFactory] which can transform a [List<MediaItemTrack>] into a
      * [com.google.android.exoplayer2.source.ConcatenatingMediaSource]
      */
-    abstract val dataSourceFactory: DefaultDataSourceFactory
+    abstract val dataSourceFactory: DataSource.Factory
 
     /** Fetch all audiobooks */
     abstract suspend fun fetchBooks(): Result<List<Audiobook>>
@@ -54,6 +56,9 @@ abstract class MediaSource(private val application: ChronicleApplication) {
 
     /** Creates a [Uri] from thumb src [Audiobook.thumb] */
     abstract fun makeThumbUri(src: String): Uri?
+
+    /** Fetches a bitmap corresponding to a Uri (with permissions approved and auth included) */
+    abstract fun getBitmapForThumb(uri: Uri): Bitmap?
 
     /**
      * Whether books provided by the source can be downloaded. For example, we could consider

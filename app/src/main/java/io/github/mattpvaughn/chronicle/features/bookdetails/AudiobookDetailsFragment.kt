@@ -76,6 +76,7 @@ class AudiobookDetailsFragment : Fragment() {
 
         val mediaSource = sourceManager.getSourceById(sourceId)
         checkNotNull(mediaSource) { "Non-null MediaSource required" }
+        viewModelFactory.source = mediaSource
 
         viewModelFactory.inputAudiobook = Audiobook(
             id = inputId,

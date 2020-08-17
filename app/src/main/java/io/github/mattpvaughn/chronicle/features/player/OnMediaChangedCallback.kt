@@ -7,8 +7,12 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
 import androidx.core.app.NotificationManagerCompat
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.local.IBookRepository
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -21,14 +25,23 @@ class OnMediaChangedCallback @Inject constructor(
     private val becomingNoisyReceiver: BecomingNoisyReceiver,
     private val notificationManager: NotificationManagerCompat,
     private val foregroundServiceController: ForegroundServiceController,
-    private val serviceController: ServiceController
+    private val serviceController: ServiceController,
+    private val bookRepository: IBookRepository,
+    private val sourceManager: SourceManager
 ) : MediaControllerCompat.Callback() {
+
+    var sourceId: Long? = null
 
     override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
         Timber.i("METADATA CHANGE")
         mediaController.playbackState?.let { state ->
             serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
                 updateNotification(state.state)
+                withContext(Dispatchers.IO) {
+                    val bookId = metadata?.description?.mediaId?.toIntOrNull() ?: return@withContext
+                    val book = bookRepository.getAudiobookAsync(bookId) ?: return@withContext
+                    sourceId = book.source
+                }
             }
         }
     }
@@ -44,8 +57,9 @@ class OnMediaChangedCallback @Inject constructor(
     }
 
     private suspend fun updateNotification(state: Int) {
-        val notification = if (mediaController.metadata != null) {
-            notificationBuilder.buildNotification(mediaSession.sessionToken)
+        val source = sourceId?.let { sourceManager.getSourceById(it) }
+        val notification = if (mediaController.metadata != null && source != null) {
+            notificationBuilder.buildNotification(mediaSession.sessionToken, source)
         } else {
             null
         }

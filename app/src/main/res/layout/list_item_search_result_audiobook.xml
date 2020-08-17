@@ -14,6 +14,10 @@
             type="Boolean" />
 
         <variable
+            name="source"
+            type="io.github.mattpvaughn.chronicle.data.sources.MediaSource" />
+
+        <variable
             name="searchResultClick"
             type="io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick" />
 
@@ -33,6 +37,7 @@
             android:id="@+id/book_cover_img"
             srcRounded="@{audiobook.thumb}"
             serverConnected="@{serverConnected}"
+            mediaSource="@{source}"
             android:contentDescription="@{audiobook.title}"
             android:layout_width="@dimen/list_icon_size"
             android:layout_height="@dimen/list_icon_size"
@@ -46,7 +51,7 @@
             style="@style/TextAppearance.Body1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/margin_normal"
+            android:layout_marginStart="@dimen/margin_normal"
             android:lines="1"
             android:text="@{audiobook.title}"
             app:layout_constraintBottom_toTopOf="@id/author"
@@ -61,7 +66,7 @@
             style="@style/TextAppearance.Body2"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/margin_normal"
+            android:layout_marginStart="@dimen/margin_normal"
             android:lines="1"
             android:text="@{audiobook.author}"
             app:layout_constraintBottom_toBottomOf="parent"

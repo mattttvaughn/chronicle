@@ -7,9 +7,9 @@ import android.support.v4.media.MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
 import android.support.v4.media.MediaDescriptionCompat
 import androidx.annotation.DrawableRes
 import io.github.mattpvaughn.chronicle.BuildConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.CONTENT_STYLE_BROWSABLE_HINT
-import io.github.mattpvaughn.chronicle.data.sources.plex.CONTENT_STYLE_LIST_ITEM_HINT_VALUE
-import io.github.mattpvaughn.chronicle.data.sources.plex.CONTENT_STYLE_SUPPORTED
+import io.github.mattpvaughn.chronicle.data.CONTENT_STYLE_BROWSABLE_HINT
+import io.github.mattpvaughn.chronicle.data.CONTENT_STYLE_LIST_ITEM_HINT_VALUE
+import io.github.mattpvaughn.chronicle.data.CONTENT_STYLE_SUPPORTED
 
 /** Create a basic browsable item for Auto */
 fun makeBrowsable(
@@ -26,7 +26,10 @@ fun makeBrowsable(
     mediaDescription.setMediaId(title)
     val extras = Bundle()
     extras.putBoolean(CONTENT_STYLE_SUPPORTED, true)
-    extras.putInt(CONTENT_STYLE_BROWSABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE)
+    extras.putInt(
+        CONTENT_STYLE_BROWSABLE_HINT,
+        CONTENT_STYLE_LIST_ITEM_HINT_VALUE
+    )
     mediaDescription.setExtras(extras)
     return MediaItem(mediaDescription.build(), FLAG_BROWSABLE)
 }

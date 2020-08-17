@@ -22,6 +22,7 @@ import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.*
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
@@ -32,7 +33,7 @@ import io.github.mattpvaughn.chronicle.data.model.getProgress
 import io.github.mattpvaughn.chronicle.data.model.toMediaItem
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_ACTION
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_DURATION_MILLIS
@@ -46,7 +47,7 @@ import javax.inject.Inject
 
 /** The service responsible for media playback, notification */
 class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceController,
-    SleepTimer.SleepTimerBroadcaster {
+    SleepTimer.SleepTimerBroadcaster, SourceController {
 
     val serviceJob: CompletableJob = SupervisorJob()
     val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
@@ -140,7 +141,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
     lateinit var progressUpdater: ProgressUpdater
 
     @Inject
-    lateinit var mediaSource: PlexMediaRepository
+    lateinit var mediaRepository: ChronicleMediaRepository
 
     @Inject
     lateinit var localBroadcastManager: LocalBroadcastManager
@@ -163,7 +164,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
         prefsRepo.registerPrefsListener(prefsListener)
 
-        serviceScope.launch(Injector.get().unhandledExceptionHandler()) { mediaSource.load() }
+        serviceScope.launch(Injector.get().unhandledExceptionHandler()) { mediaRepository.load() }
 
         mediaSession.setPlaybackState(EMPTY_PLAYBACK_STATE)
         mediaSession.setCallback(mediaSessionCallback)
@@ -185,7 +186,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         // full metadata here, should launch a notification with whatever it is we have...
         serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
             val notification = withContext(Dispatchers.IO) {
-                notificationBuilder.buildNotification(mediaSession.sessionToken)
+                notificationBuilder.buildNotification(mediaSession.sessionToken, currentSource)
             }
             startForeground(NOW_PLAYING_NOTIFICATION, notification)
         }
@@ -227,7 +228,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         }
     }
 
-    private val serverChangedListener = Observer<PlexLibrarySource.ConnectionState> {
+    private val serverChangedListener = Observer<ConnectionState> {
         if (mediaController.playbackState.isPrepared) {
             // Only can change server when playback is prepared because otherwise we would be
             // attempting to load data on a null/empty tracklist
@@ -236,8 +237,10 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
     }
 
     /**
-     * Change the tracks in the player to refer to the new server url. Because [PlexLibrarySource] is a
-     * Singleton we don't need to keep track of state here
+     * Change the tracks in the player to refer to the new server url.
+     *
+     * TODO: below no longer true \/ \/ \/ \/
+     * Because [PlexLibrarySource] is a Singleton we don't need to keep track of state here
      */
     private fun changeServer() {
         mediaSessionCallback.onPlayFromMediaId(
@@ -328,7 +331,8 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         // itself being removed (KEYCODE_MEDIA_STOP)
         if (ke?.keyCode != KEYCODE_MEDIA_STOP) {
             serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                val notification = notificationBuilder.buildNotification(mediaSession.sessionToken)
+                val notification =
+                    notificationBuilder.buildNotification(mediaSession.sessionToken, currentSource)
                 startForeground(NOW_PLAYING_NOTIFICATION, notification)
             }
         }
@@ -432,8 +436,14 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                 isClientLegal && prefsRepo.allowAuto && sourceManager.hasAnyAuthorizedSources()
             )
             putBoolean(CONTENT_STYLE_SUPPORTED, true)
-            putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE)
-            putInt(CONTENT_STYLE_BROWSABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE)
+            putInt(
+                CONTENT_STYLE_PLAYABLE_HINT,
+                CONTENT_STYLE_LIST_ITEM_HINT_VALUE
+            )
+            putInt(
+                CONTENT_STYLE_BROWSABLE_HINT,
+                CONTENT_STYLE_LIST_ITEM_HINT_VALUE
+            )
         }
 
         return when {
@@ -449,7 +459,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
-            sourceManager.hasAnyAuthorizedSources() -> {
+            !sourceManager.hasAnyAuthorizedSources() -> {
                 mediaSessionConnector.setCustomErrorMessage(
                     getString(R.string.auto_access_error_no_sources)
                 )
@@ -548,7 +558,13 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         invalidatePlaybackParams()
     }
 
+    override fun setSource(source: MediaSource) {
+        currentSource = source
+    }
+}
 
+interface SourceController {
+    fun setSource(source: MediaSource)
 }
 
 interface ServiceController {

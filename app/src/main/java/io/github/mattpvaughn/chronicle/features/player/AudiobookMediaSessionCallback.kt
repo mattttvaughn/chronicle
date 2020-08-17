@@ -9,14 +9,15 @@ import android.view.KeyEvent.*
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
+import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.data.sources.demo.DemoMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
@@ -34,7 +35,6 @@ import javax.inject.Inject
 class AudiobookMediaSessionCallback @Inject constructor(
     private val prefsRepo: PrefsRepo,
     private val mediaController: MediaControllerCompat,
-    private val dataSourceFactory: DefaultDataSourceFactory,
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val serviceScope: CoroutineScope,
@@ -42,6 +42,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val serviceController: ForegroundServiceController,
     private val mediaSession: MediaSessionCompat,
     private val sourceManager: SourceManager,
+    private val sourceController: SourceController,
     defaultPlayer: SimpleExoPlayer
 ) : MediaSessionCompat.Callback() {
 
@@ -195,10 +196,6 @@ class AudiobookMediaSessionCallback @Inject constructor(
             val tracks = withContext(Dispatchers.IO) {
                 trackRepository.getTracksForAudiobookAsync(bookId.toInt())
             }
-            if (tracks.isNullOrEmpty()) {
-                handlePlayBookWithNoTracks(bookId, tracks, extras)
-                return@launch
-            }
 
             // Return if no book found- no reason to setup playback if there's no book
             val book = withContext(Dispatchers.IO) {
@@ -208,6 +205,18 @@ class AudiobookMediaSessionCallback @Inject constructor(
 
             val source = sourceManager.getSourceById(book.source)
             requireNotNull(source) { "MediaSource required for playback" }
+
+            sourceController.setSource(source)
+
+            if (tracks.isNullOrEmpty()) {
+                if (source is HttpMediaSource) {
+                    TODO("Tracks null or empty")
+                    handlePlayBookWithNoTracks(source, bookId, tracks, extras)
+                } else {
+                    Timber.i("Unable to fetch tracks for source, not an HttpMediaSource")
+                }
+                return@launch
+            }
 
             Timber.i("Starting playback for $bookId: $tracks")
             // seeking to track if our [startingTrackId] exists
@@ -258,10 +267,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
                     if (startingTrackIndex > trackListStateManager.trackList.size || startingTrackIndex < 0) {
                         trackListStateManager.trackList = tracks
                     }
-                    trackListStateManager.updatePosition(
-                        startingTrackIndex,
-                        trackStartOffsetMillis
-                    )
+                    trackListStateManager.updatePosition(startingTrackIndex, trackStartOffsetMillis)
                 }
             }
 
@@ -278,11 +284,15 @@ class AudiobookMediaSessionCallback @Inject constructor(
             Timber.i("Rewound position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
 
             currentPlayer.playWhenReady = playWhenReady
+
+            val exoMediaSource = when (source) {
+                is HttpMediaSource -> metadataList.toMediaSource(source.dataSourceFactory)
+                is DemoMediaSource -> metadataList.
+            }
             val player = currentPlayer
             when (player) {
                 is ExoPlayer -> {
-                    val mediaSource = metadataList.toMediaSource(dataSourceFactory)
-                    player.prepare(mediaSource)
+                    player.prepare(exoMediaSource)
                 }
                 else -> throw NoWhenBranchMatchedException("Unknown media player")
             }
@@ -304,6 +314,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private suspend fun handlePlayBookWithNoTracks(
+        source: HttpMediaSource,
         bookId: String,
         tracks: List<MediaItemTrack>,
         extras: Bundle
@@ -311,7 +322,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
         Timber.i("No known tracks for book: $bookId, attempting to fetch them")
         // Tracks haven't been loaded by UI for this track, so load it here
         val networkResult = withContext(Dispatchers.IO) {
-            trackRepository.loadTracksForAudiobook(bookId.toInt())
+            trackRepository.loadTracksForAudiobook(source, bookId.toInt())
         }
         val networkTracks = networkResult.getOrNull()
 
@@ -324,7 +335,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
             )
             val audiobook = bookRepository.getAudiobookAsync(bookId.toInt())
             if (audiobook != null) {
-                bookRepository.loadChapterData(audiobook, tracks)
+                bookRepository.loadChapterData(source, audiobook, tracks)
             }
             playBook(bookId, extras, true)
         }
@@ -360,24 +371,25 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private fun resumePlayFromEmpty(playWhenReady: Boolean) {
         // This is ugly but the callback shares the lifecycle of the service, so as long as the
         // method is only called once we're okay...
-        plexLibrarySource.isConnected.observeForever {
-            // Don't try starting playback until we've connected to a server
-            if (!it) {
-                return@observeForever
-            }
-
-            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                val mostRecentBook = bookRepository.getMostRecentlyPlayed()
-                if (mostRecentBook == EMPTY_AUDIOBOOK) {
-                    return@launch
-                }
-                if (playWhenReady) {
-                    onPlayFromMediaId(mostRecentBook.id.toString(), null)
-                } else {
-                    onPrepareFromMediaId(mostRecentBook.id.toString(), null)
-                }
-            }
-        }
+        TODO("Not supported yet")
+//        plexLibrarySource.isConnected.observeForever {
+//            // Don't try starting playback until we've connected to a server
+//            if (!it) {
+//                return@observeForever
+//            }
+//
+//            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+//                val mostRecentBook = bookRepository.getMostRecentlyPlayed()
+//                if (mostRecentBook == EMPTY_AUDIOBOOK) {
+//                    return@launch
+//                }
+//                if (playWhenReady) {
+//                    onPlayFromMediaId(mostRecentBook.id.toString(), null)
+//                } else {
+//                    onPrepareFromMediaId(mostRecentBook.id.toString(), null)
+//                }
+//            }
+//        }
     }
 
     override fun onStop() {

@@ -169,7 +169,7 @@
     <string name="settings_skip_silent_audio">Skip silent audio</string>
     <string name="settings_auto_rewind">Enable auto-rewind</string>
     <string name="settings_auto_rewind_explanation">When resuming playback, Chronicle will rewind between 0 and 20 seconds, depending on how long ago you last listened.</string>
-    <string name="settings_category_account">Account</string>
+    <string name="settings_category_account">Accounts</string>
     <string name="settings_change_library">Change library</string>
     <string name="settings_change_server">Change server</string>
     <string name="settings_change_user">Switch user</string>

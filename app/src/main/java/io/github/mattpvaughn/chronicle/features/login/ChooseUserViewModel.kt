@@ -5,6 +5,7 @@ import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
@@ -12,9 +13,13 @@ import retrofit2.HttpException
 import timber.log.Timber
 import javax.inject.Inject
 
-class ChooseUserViewModel(private val plexLibrarySource: PlexLibrarySource) : ViewModel() {
+class ChooseUserViewModel(
+    private val plexLibrarySource: PlexLibrarySource,
+    private val navigator: Navigator
+) : ViewModel() {
 
-    class Factory @Inject constructor() : ViewModelProvider.Factory {
+    class Factory @Inject constructor(private val navigator: Navigator) :
+        ViewModelProvider.Factory {
         lateinit var plexLibrarySource: PlexLibrarySource
 
         @Suppress("UNCHECKED_CAST")
@@ -23,7 +28,7 @@ class ChooseUserViewModel(private val plexLibrarySource: PlexLibrarySource) : Vi
                 throw IllegalStateException("Source not initialized")
             }
             if (modelClass.isAssignableFrom(ChooseUserViewModel::class.java)) {
-                return ChooseUserViewModel(plexLibrarySource) as T
+                return ChooseUserViewModel(plexLibrarySource, navigator) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }
@@ -109,24 +114,32 @@ class ChooseUserViewModel(private val plexLibrarySource: PlexLibrarySource) : Vi
     }
 
     private suspend fun submitPin(uuid: String, pin: String?) {
-        try {
-            _pinLoadingStatus.postValue(LoadingStatus.LOADING)
-            val responseUser: PlexUser = plexLibrarySource.pickUser(uuid, pin ?: "")
-            if (responseUser.authToken.isNullOrEmpty()) {
-                throw IllegalStateException("Pin submitted but no auth token received")
+        _pinLoadingStatus.postValue(LoadingStatus.LOADING)
+        val pickUserResult: Result<PlexUser> = plexLibrarySource.pickUser(uuid, pin ?: "")
+        val userQueryFailure = pickUserResult.exceptionOrNull()
+        if (userQueryFailure != null) {
+            if (userQueryFailure is HttpException) {
+                when (userQueryFailure.code()) {
+                    403 -> _userMessage.postEvent("Incorrect pin submitted. Try again")
+                    else -> _userMessage.postEvent("Error code (${userQueryFailure.code()}). Try again")
+                }
+            } else {
+                userQueryFailure.message?.let {
+                    _userMessage.postEvent(it)
+                }
             }
-            plexLibrarySource.chooseUser(responseUser)
-            _pinLoadingStatus.postValue(LoadingStatus.DONE)
-        } catch (t: HttpException) {
-            when (t.code()) {
-                403 -> _userMessage.postEvent("Incorrect pin submitted. Try again")
-                else -> _userMessage.postEvent("Error submitting pin (${t.code()}). Try again")
+            return
+        }
+        val user = pickUserResult.getOrNull()
+        when {
+            user == null -> _userMessage.postEvent("Null user")
+            user.authToken.isNullOrEmpty() -> _userMessage.postEvent("Server did not return an auth token")
+            else -> {
+                // Success
+                plexLibrarySource.chooseUser(user)
+                _pinLoadingStatus.postValue(LoadingStatus.DONE)
+                navigator.showServerChooser()
             }
-            _pinLoadingStatus.postValue(LoadingStatus.ERROR)
-        } catch (t: Throwable) {
-            _userMessage.postEvent("Error occurred when submitting pin. Try again")
-            Timber.e("Failed to submit pin: $t")
-            _pinLoadingStatus.postValue(LoadingStatus.ERROR)
         }
     }
 

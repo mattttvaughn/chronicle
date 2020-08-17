@@ -12,10 +12,10 @@ data class Media(@Json(name = "Part") val part: List<Part> = emptyList())
 @JsonClass(generateAdapter = true)
 data class Part(val key: String = "", val size: Long = 0)
 
-fun List<PlexDirectory>?.asMediaItemTracks(): List<MediaItemTrack> {
+fun List<PlexDirectory>?.asMediaItemTracks(sourceId: Long): List<MediaItemTrack> {
     // Rewrite indices to reflect their order in audiobook, ignoring numbers passed from server
     return this?.map { song ->
-        MediaItemTrack.fromPlexModel(networkTrack = song)
+        MediaItemTrack.fromPlexModel(sourceId = sourceId, networkTrack = song)
     } ?: emptyList()
 }
 

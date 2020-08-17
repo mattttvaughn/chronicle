@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.Event
 import kotlinx.coroutines.InternalCoroutinesApi
 import javax.inject.Inject
@@ -13,15 +14,22 @@ import javax.inject.Inject
 
 @OptIn(InternalCoroutinesApi::class)
 class SourceManagerViewModel @Inject constructor(
-    private val sourceManager: SourceManager
+    sourceManager: SourceManager,
+    private val navigator: Navigator
 ) : ViewModel() {
 
-    class Factory @Inject constructor(private val sourceManager: SourceManager) :
-        ViewModelProvider.Factory {
+    fun addSource() {
+        navigator.addSource()
+    }
+
+    class Factory @Inject constructor(
+        private val sourceManager: SourceManager,
+        private val navigator: Navigator
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(SourceManagerViewModel::class.java)) {
-                return SourceManagerViewModel(sourceManager) as T
+                return SourceManagerViewModel(sourceManager, navigator) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }

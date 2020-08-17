@@ -39,7 +39,7 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import timber.log.Timber
 
@@ -50,8 +50,7 @@ const val NOW_PLAYING_NOTIFICATION: Int = 0xb32229
 @ServiceScope
 class NotificationBuilder(
     private val context: Context,
-    private val controller: MediaControllerCompat,
-    private val plexLibrarySource: PlexLibrarySource
+    private val controller: MediaControllerCompat
 ) {
 
     private val platformNotificationManager: NotificationManager =
@@ -106,7 +105,10 @@ class NotificationBuilder(
 
     var bookTitleBitmapPair: Pair<String, Bitmap?>? = null
 
-    suspend fun buildNotification(sessionToken: MediaSessionCompat.Token): Notification {
+    suspend fun buildNotification(
+        sessionToken: MediaSessionCompat.Token,
+        mediaSource: MediaSource?
+    ): Notification {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -143,9 +145,9 @@ class NotificationBuilder(
             ?: controller.metadata.displayIconUri
         Timber.i("Art uri is $artUri")
         // Only load bitmap on changes to the title
-        if (bookTitleBitmapPair?.first != description.title) {
+        if (bookTitleBitmapPair?.first != description.title && mediaSource != null) {
             Timber.i("Loading art uri")
-            val largeIcon = plexLibrarySource.getBitmapFromServer(artUri.toString())
+            val largeIcon = mediaSource.getBitmapForThumb(artUri)
             if (largeIcon != null) {
                 bookTitleBitmapPair = Pair(description?.title?.toString() ?: "", largeIcon)
             }

@@ -3,6 +3,7 @@ package io.github.mattpvaughn.chronicle.data.sources
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
+import io.github.mattpvaughn.chronicle.data.ConnectionState
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
@@ -23,7 +24,13 @@ class SourceManager @Inject constructor(
     private val sourcesObservable = MutableLiveData<List<MediaSource>>(sources)
 
     init {
-        sources.addAll(prefsRepo.sources.map { mediaSourceFactory.create(it.second, it.first) })
+        // Forget sources which have been fully created
+        val savedSources =
+            prefsRepo.sources.map { mediaSourceFactory.create(it.first, it.second) }
+                .filter {
+                    if (it is HttpMediaSource) it.isAuthorized() else true
+                }
+        sources.addAll(savedSources)
     }
 
     /** Generates an ID for a new media source which is not used by any [sources] */
@@ -43,6 +50,10 @@ class SourceManager @Inject constructor(
         return sources.toList()
     }
 
+    fun sourceCount(): Int {
+        return sources.size
+    }
+
     fun getSourceById(id: Long): MediaSource? {
         return sources.firstOrNull { it.id == id }
     }
@@ -51,7 +62,7 @@ class SourceManager @Inject constructor(
     val connectedSourceIds = Transformations.map(sourcesObservable) {
         it.filter { source ->
             if (source is HttpMediaSource) {
-                source.isReachable()
+                source.connectionState.value == ConnectionState.CONNECTED
             } else {
                 true
             }

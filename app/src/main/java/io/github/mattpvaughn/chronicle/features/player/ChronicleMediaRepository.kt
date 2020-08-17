@@ -1,14 +1,13 @@
-package io.github.mattpvaughn.chronicle.data.sources.plex
+package io.github.mattpvaughn.chronicle.features.player
 
 import android.support.v4.media.MediaMetadataCompat
 import androidx.lifecycle.LiveData
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.toAlbumMediaMetadata
-import io.github.mattpvaughn.chronicle.features.player.AbstractMediaSource
 import javax.inject.Inject
 
-class PlexMediaRepository @Inject constructor(private val bookRepository: IBookRepository) :
+class ChronicleMediaRepository @Inject constructor(private val bookRepository: IBookRepository) :
     AbstractMediaSource() {
 
     private val bookIndex = 0

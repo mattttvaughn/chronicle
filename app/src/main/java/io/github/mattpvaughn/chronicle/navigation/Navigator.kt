@@ -3,25 +3,20 @@ package io.github.mattpvaughn.chronicle.navigation
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager
-import androidx.lifecycle.Observer
 import io.github.mattpvaughn.chronicle.R
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_ID
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_SOURCE_ID
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_IS_AUDIOBOOK_CACHED
 import io.github.mattpvaughn.chronicle.features.home.HomeFragment
 import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
+import io.github.mattpvaughn.chronicle.features.login.AddSourceFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseLibraryFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseServerFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseUserFragment
-import io.github.mattpvaughn.chronicle.features.login.LoginFragment
 import io.github.mattpvaughn.chronicle.features.settings.SettingsFragment
 import io.github.mattpvaughn.chronicle.features.sources.SourceManagerFragment
 import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
-import timber.log.Timber
 import javax.inject.Inject
 
 /**
@@ -35,46 +30,17 @@ import javax.inject.Inject
 @ActivityScope
 class Navigator @Inject constructor(
     private val fragmentManager: FragmentManager,
-    private val plexLibrarySource: PlexLibrarySource,
-    plexLoginRepo: IPlexLoginRepo,
     activity: AppCompatActivity
 ) {
 
-    init {
-        // never remove observer, but this is a singleton so it's okay
-        plexLoginRepo.loginEvent.observe(activity, Observer { event ->
-            if (event.hasBeenHandled) {
-                return@Observer
-            }
-            Timber.i("Login event changed to $event")
-            when (event.getContentIfNotHandled()) {
-                LOGGED_IN_NO_USER_CHOSEN -> showUserChooser()
-                LOGGED_IN_NO_SERVER_CHOSEN -> showServerChooser()
-                LOGGED_IN_NO_LIBRARY_CHOSEN -> showLibraryChooser()
-                LOGGED_IN_FULLY -> showHome()
-                FAILED_TO_LOG_IN -> {
-                }
-                NOT_LOGGED_IN -> showLogin()
-                AWAITING_LOGIN_RESULTS -> {
-                }
-                else -> throw NoWhenBranchMatchedException("Unknown login event: $event")
-            }
-        })
-
-    }
-
     fun showLogin() {
-        plexLibrarySource.clear()
-        val frag = LoginFragment.newInstance()
+        val frag = AddSourceFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, frag)
             .commit()
     }
 
     fun showUserChooser() {
-        plexLibrarySource.clearServer()
-        plexLibrarySource.clearLibrary()
-        plexLibrarySource.clearUser()
         val frag = ChooseUserFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, frag, ChooseUserFragment.TAG)
@@ -82,8 +48,6 @@ class Navigator @Inject constructor(
     }
 
     fun showServerChooser() {
-        plexLibrarySource.clearServer()
-        plexLibrarySource.clearLibrary()
         val frag = ChooseServerFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, frag, ChooseServerFragment.TAG)
@@ -91,7 +55,6 @@ class Navigator @Inject constructor(
     }
 
     fun showLibraryChooser() {
-        plexLibrarySource.clearLibrary()
         val frag = ChooseLibraryFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, frag, ChooseLibraryFragment.TAG)
@@ -153,10 +116,10 @@ class Navigator @Inject constructor(
     }
 
     fun addSource() {
-        val loginFragment = LoginFragment.newInstance()
+        val loginFragment = AddSourceFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, loginFragment)
-            .addToBackStack(LoginFragment.TAG)
+            .addToBackStack(AddSourceFragment.TAG)
             .commit()
     }
 
@@ -172,16 +135,6 @@ class Navigator @Inject constructor(
                 } else {
                     showLogin()
                 }
-                true
-            }
-            isFragmentWithTagVisible(ChooseServerFragment.TAG) -> {
-                plexLibrarySource.clearUser()
-                showUserChooser()
-                true
-            }
-            isFragmentWithTagVisible(ChooseLibraryFragment.TAG) -> {
-                plexLibrarySource.clearServer()
-                showServerChooser()
                 true
             }
             else -> false

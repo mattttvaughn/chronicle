@@ -6,7 +6,6 @@ import android.content.Context
 import android.hardware.SensorManager
 import android.media.AudioManager
 import android.media.ToneGenerator
-import android.os.Build
 import android.support.v4.media.RatingCompat.RATING_NONE
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -17,19 +16,13 @@ import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
-import com.google.android.exoplayer2.util.Util
 import dagger.Module
 import dagger.Provides
-import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
+import io.github.mattpvaughn.chronicle.data.APP_NAME
 import io.github.mattpvaughn.chronicle.data.CachedFileManager
 import io.github.mattpvaughn.chronicle.data.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import io.github.mattpvaughn.chronicle.util.PackageValidator
@@ -79,7 +72,10 @@ class ServiceModule(private val service: MediaPlayerService) {
     @Provides
     @ServiceScope
     fun mediaSession(launchActivityPendingIntent: PendingIntent): MediaSessionCompat =
-        MediaSessionCompat(service, APP_NAME).apply {
+        MediaSessionCompat(
+            service,
+            APP_NAME
+        ).apply {
             // Enable callbacks from MediaButtons and TransportControls
             setFlags(FLAG_HANDLES_MEDIA_BUTTONS or FLAG_HANDLES_TRANSPORT_CONTROLS or FLAG_HANDLES_QUEUE_COMMANDS)
             service.sessionToken = sessionToken
@@ -118,11 +114,8 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun notificationBuilder(
-        controller: MediaControllerCompat,
-        plexLibrarySource: PlexLibrarySource
-    ) =
-        NotificationBuilder(service, controller, plexLibrarySource)
+    fun notificationBuilder(controller: MediaControllerCompat) =
+        NotificationBuilder(service, controller)
 
     @Provides
     @ServiceScope
@@ -137,26 +130,6 @@ class ServiceModule(private val service: MediaPlayerService) {
     @ServiceScope
     fun serviceController() = object : ServiceController {
         override fun stopService() = service.stopSelf()
-    }
-
-    @Provides
-    @ServiceScope
-    fun plexDataSourceFactory(plexPrefs: PlexPrefsRepo): DefaultDataSourceFactory {
-        val dataSourceFactory = DefaultHttpDataSourceFactory(Util.getUserAgent(service, APP_NAME))
-
-        val props = dataSourceFactory.defaultRequestProperties
-        props.set("X-Plex-Platform", "Android")
-        props.set("X-Plex-Provides", "player")
-        props.set("X-Plex_Client-Name", APP_NAME)
-        props.set("X-Plex-Client-Identifier", plexPrefs.uuid) // TODO add a read UUID
-        props.set("X-Plex-Version", BuildConfig.VERSION_NAME)
-        props.set("X-Plex-Product", APP_NAME)
-        props.set("X-Plex-Platform-Version", Build.VERSION.RELEASE)
-        props.set("X-Plex-Device", Build.MODEL)
-        props.set("X-Plex-Device-Name", Build.MODEL)
-        props.set("X-Plex-Token", plexPrefs.user?.authToken ?: plexPrefs.accountAuthToken)
-
-        return DefaultDataSourceFactory(service, dataSourceFactory)
     }
 
     @Provides
@@ -188,6 +161,10 @@ class ServiceModule(private val service: MediaPlayerService) {
     @Provides
     @ServiceScope
     fun toneManager() = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+
+    @Provides
+    @ServiceScope
+    fun sourceController(): SourceController = service
 }
 
 

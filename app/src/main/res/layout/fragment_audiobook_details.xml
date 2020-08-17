@@ -27,7 +27,7 @@
 
         <import type="io.github.mattpvaughn.chronicle.data.ICachedFileManager.CacheStatus" />
 
-        <import type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource.ConnectionState" />
+        <import type="io.github.mattpvaughn.chronicle.data.ConnectionState" />
 
         <import type="android.view.View" />
     </data>
@@ -247,7 +247,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:indeterminate="true"
-                            android:visibility="@{viewModel.serverConnection == ConnectionState.CONNECTING ? View.VISIBLE: View.GONE}"
+                            android:visibility="@{viewModel.connectionState != ConnectionState.CONNECTED ? View.VISIBLE: View.GONE }"
                             app:indicatorColor="@color/colorAccent"
                             app:indicatorType="linear" />
 
@@ -262,7 +262,7 @@
                             android:padding="@dimen/spacing_normal"
                             android:text="@string/failed_to_connect_to_server"
                             android:textAlignment="center"
-                            android:visibility="@{viewModel.serverConnection == ConnectionState.CONNECTION_FAILED ? View.VISIBLE : View.GONE}" />
+                            android:visibility="@{viewModel.connectionState == ConnectionState.CONNECTION_FAILED ? View.VISIBLE : View.GONE}" />
                     </FrameLayout>
 
                     <androidx.appcompat.widget.Toolbar

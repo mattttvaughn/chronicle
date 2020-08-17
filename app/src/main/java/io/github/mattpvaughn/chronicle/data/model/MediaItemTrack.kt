@@ -29,7 +29,10 @@ data class MediaItemTrack(
     val discNumber: Int = 1,
     /** The duration of the track in milliseconds */
     val duration: Long = 0L,
-    /** Path to the media file in the form "/library/parts/[id]/SOME_NUMBER/file.mp3" */
+    /**
+     * For network sources: Relative path to the media file, like "/library/parts/[id]/SOME_NUMBER/file.mp3"
+     * For local sources: Absolute path to the media file
+     */
     val media: String = "",
     val album: String = "",
     val artist: String = "",
@@ -92,7 +95,10 @@ data class MediaItemTrack(
         }
 
         /** Create a [MediaItemTrack] from a Plex model and an index */
-        fun fromPlexModel(networkTrack: PlexDirectory): MediaItemTrack {
+        fun fromPlexModel(
+            networkTrack: PlexDirectory,
+            sourceId: Long
+        ): MediaItemTrack {
             return MediaItemTrack(
                 id = networkTrack.ratingKey.toInt(),
                 parentKey = networkTrack.parentRatingKey,
@@ -107,7 +113,8 @@ data class MediaItemTrack(
                 album = networkTrack.parentTitle,
                 lastViewedAt = networkTrack.lastViewedAt,
                 updatedAt = networkTrack.updatedAt,
-                size = networkTrack.media[0].part[0].size
+                size = networkTrack.media[0].part[0].size,
+                source = sourceId
             )
         }
 
@@ -120,16 +127,15 @@ data class MediaItemTrack(
     }
 
     fun getTrackSource(): String {
-        return if (cached) {
-            File(Injector.get().prefsRepo().cachedMediaDir, getCachedFileName()).absolutePath
-        } else {
-            val source = Injector.get().sourceManager().getSourceById(source)
-            return if (source is HttpMediaSource) {
-                source.toServerString(media)
-            } else {
-                // TODO: how to handle for local and demo?
-                media
-            }
+        val source = Injector.get().sourceManager().getSourceById(source)
+        return when {
+            cached -> File(
+                Injector.get().prefsRepo().cachedMediaDir,
+                getCachedFileName()
+            ).absolutePath
+            source is HttpMediaSource -> source.toServerString(media)
+            source !is HttpMediaSource -> media
+            else -> throw IllegalStateException("Cannot find source for track")
         }
     }
 

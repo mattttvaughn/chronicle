@@ -13,7 +13,9 @@ import io.github.mattpvaughn.chronicle.data.sources.MediaSourceFactory
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.injection.modules.AppModule
 import kotlinx.coroutines.CoroutineExceptionHandler
+import okhttp3.logging.HttpLoggingInterceptor
 import java.io.File
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
@@ -26,6 +28,7 @@ interface AppComponent {
     fun sharedPrefs(): SharedPreferences
     fun trackDao(): TrackDao
     fun bookDao(): BookDao
+    fun loggingInterceptor(): HttpLoggingInterceptor
     fun moshi(): Moshi
     fun prefsRepo(): PrefsRepo
     fun trackRepo(): ITrackRepository
@@ -37,5 +40,12 @@ interface AppComponent {
     fun sourceManager(): SourceManager
     fun billingManager(): ChronicleBillingManager
 
+    @Named(USER_AGENT)
+    fun userAgent(): String
+
     fun inject(chronicleApplication: ChronicleApplication)
+
+    companion object {
+        const val USER_AGENT = "USER_AGENT_NAME"
+    }
 }

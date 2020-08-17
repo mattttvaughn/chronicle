@@ -27,6 +27,6 @@ fun PlexMediaContainer.asAudiobooks(id: Long): List<Audiobook> {
     return metadata.map { Audiobook.from(it, id) }
 }
 
-fun PlexMediaContainer.asTrackList(): List<MediaItemTrack> {
-    return metadata.asMediaItemTracks()
+fun PlexMediaContainer.asTrackList(sourceId: Long): List<MediaItemTrack> {
+    return metadata.asMediaItemTracks(sourceId)
 }

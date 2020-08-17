@@ -24,9 +24,9 @@ fun bindImageRounded(
     imageView: ImageView,
     src: String?,
     serverConnected: Boolean,
-    mediaSource: MediaSource
+    mediaSource: MediaSource?
 ) {
-    if ((imageView.context as Activity).isDestroyed) {
+    if ((imageView.context as Activity).isDestroyed || mediaSource == null) {
         return
     }
     if (src.isNullOrEmpty()) {

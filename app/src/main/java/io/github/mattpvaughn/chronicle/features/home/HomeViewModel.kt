@@ -10,7 +10,6 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.features.library.LibraryViewModel
 import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
@@ -21,7 +20,6 @@ import timber.log.Timber
 import javax.inject.Inject
 
 class HomeViewModel(
-    private val plexLibrarySource: PlexLibrarySource,
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
     private val prefsRepo: PrefsRepo,
@@ -31,7 +29,6 @@ class HomeViewModel(
 
     @Suppress("UNCHECKED_CAST")
     class Factory @Inject constructor(
-        private val plexLibrarySource: PlexLibrarySource,
         private val bookRepository: IBookRepository,
         private val trackRepository: ITrackRepository,
         private val prefsRepo: PrefsRepo,
@@ -41,7 +38,6 @@ class HomeViewModel(
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
                 return HomeViewModel(
-                    plexLibrarySource,
                     bookRepository,
                     trackRepository,
                     prefsRepo,
@@ -110,8 +106,10 @@ class HomeViewModel(
             }
         }
 
-    private val serverConnectionObserver = Observer<Boolean> { isConnectedToServer ->
-        if (isConnectedToServer) {
+    private val serverConnectionObserver = Observer<List<Long>> { connectedSources ->
+        // TODO: this is not a smart approach, a better one would...
+        // Don't try to fetch sources until all sources are active
+        if (connectedSources.size == sourceManager.sourceCount()) {
             viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
                 val millisSinceLastRefresh =
                     System.currentTimeMillis() - prefsRepo.lastRefreshTimeStamp
@@ -129,11 +127,7 @@ class HomeViewModel(
 
     init {
         Timber.i("HomeViewModel init")
-        if (plexLibrarySource.isConnected.value == true) {
-            // if already connected, call it just once
-            serverConnectionObserver.onChanged(true)
-        }
-        plexLibrarySource.isConnected.observeForever(serverConnectionObserver)
+        sourceManager.connectedSourceIds.observeForever(serverConnectionObserver)
         prefsRepo.registerPrefsListener(offlineModeListener)
 
         viewModelScope.launch {
@@ -142,7 +136,7 @@ class HomeViewModel(
     }
 
     override fun onCleared() {
-        plexLibrarySource.isConnected.removeObserver(serverConnectionObserver)
+        sourceManager.connectedSourceIds.removeObserver(serverConnectionObserver)
         prefsRepo.unregisterPrefsListener(offlineModeListener)
         super.onCleared()
     }

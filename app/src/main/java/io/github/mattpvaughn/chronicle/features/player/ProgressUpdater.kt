@@ -15,7 +15,8 @@ import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
 import io.github.mattpvaughn.chronicle.data.model.getTrackStartTime
-import io.github.mattpvaughn.chronicle.data.sources.plex.RemoteSyncScrobbleWorker
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
+import io.github.mattpvaughn.chronicle.data.sources.RemoteSyncScrobbleWorker
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.ProgressUpdater.Companion.NETWORK_CALL_FREQUENCY
 import kotlinx.coroutines.CoroutineScope
@@ -134,6 +135,8 @@ class SimpleProgressUpdater @Inject constructor(
             val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
             val bookProgress = tracks.getTrackStartTime(track) + progress
 
+            val sourceId = bookRepository.getAudiobookAsync(bookId)?.source ?: NO_SOURCE_FOUND
+
             // Update local DB
             if (!prefsRepo.debugOnlyDisableLocalProgressTracking) {
                 updateLocalProgress(
@@ -154,7 +157,8 @@ class SimpleProgressUpdater @Inject constructor(
                     playbackState,
                     progress,
                     currentTime,
-                    bookProgress
+                    bookProgress,
+                    sourceId
                 )
             }
         }
@@ -165,7 +169,8 @@ class SimpleProgressUpdater @Inject constructor(
         playbackState: String,
         trackProgress: Long,
         currentTime: Long,
-        bookProgress: Long
+        bookProgress: Long,
+        sourceId: Long
     ) {
         val syncWorkerConstraints =
             Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
@@ -174,7 +179,8 @@ class SimpleProgressUpdater @Inject constructor(
             playbackState = playbackState,
             trackProgress = trackProgress,
             playbackTimeStamp = currentTime,
-            bookProgress = bookProgress
+            bookProgress = bookProgress,
+            sourceId = sourceId
         )
         val worker = OneTimeWorkRequestBuilder<RemoteSyncScrobbleWorker>()
             .setInputData(inputData)

@@ -68,9 +68,10 @@
                     android:id="@+id/currently_playing_thumb"
                     serverConnected="@{sourceManager.isSourceConnected(viewModel.audiobook.source)}"
                     srcRounded="@{viewModel.audiobook.thumb}"
-                    android:contentDescription="@{viewModel.audiobook.title}"
+                    mediaSource="@{sourceManager.getSourceById(viewModel.audiobook.source)}"
                     android:layout_width="@dimen/app_bar_height"
                     android:layout_height="@dimen/app_bar_height"
+                    android:contentDescription="@{viewModel.audiobook.title}"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
@@ -81,7 +82,7 @@
                     style="@style/TextAppearance.Body1"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/margin_normal"
+                    android:layout_marginStart="@dimen/margin_normal"
                     android:lines="1"
                     android:text="@{viewModel.currentTrackTitle}"
                     app:layout_constraintBottom_toTopOf="@id/book_title"
@@ -126,7 +127,6 @@
                 tools:layout="@layout/fragment_currently_playing" />
 
         </FrameLayout>
-
 
         <androidx.constraintlayout.widget.Guideline
             android:id="@+id/currently_playing_collapsed_top"

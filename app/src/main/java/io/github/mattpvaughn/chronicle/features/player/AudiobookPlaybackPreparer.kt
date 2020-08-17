@@ -12,13 +12,12 @@ import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.toMediaMetadata
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaRepository
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import javax.inject.Inject
 
 @ServiceScope
 class AudiobookPlaybackPreparer @Inject constructor(
-    private val mediaSource: PlexMediaRepository,
+    private val mediaSource: ChronicleMediaRepository,
     private val mediaSessionCallback: MediaSessionCompat.Callback
 ) : MediaSessionConnector.PlaybackPreparer {
 

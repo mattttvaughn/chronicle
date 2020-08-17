@@ -2,9 +2,9 @@ package io.github.mattpvaughn.chronicle.data.local
 
 import androidx.lifecycle.LiveData
 import io.github.mattpvaughn.chronicle.data.model.*
+import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -12,6 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** A repository abstracting all [Audiobook]s from all [MediaSource]s */
+@Singleton
 interface IBookRepository {
     /** Return all [Audiobook]s in the DB, sorted by [Audiobook.titleSort] */
     fun getAllBooks(): LiveData<List<Audiobook>>
@@ -106,7 +107,12 @@ interface IBookRepository {
      *
      * @return true if chapter data was found and added to db, otherwise false
      */
-    suspend fun loadChapterData(audiobook: Audiobook, tracks: List<MediaItemTrack>): Boolean
+    suspend fun loadChapterData(
+        source: HttpMediaSource,
+        audiobook: Audiobook,
+        tracks: List<MediaItemTrack>
+    ): Boolean
+
     suspend fun update(audiobook: Audiobook)
 }
 
@@ -114,7 +120,6 @@ interface IBookRepository {
 class BookRepository @Inject constructor(
     private val bookDao: BookDao,
     private val prefsRepo: PrefsRepo,
-    private val plexLibrarySource: PlexLibrarySource,
     private val sourceManager: SourceManager
 ) : IBookRepository {
 
@@ -283,12 +288,13 @@ class BookRepository @Inject constructor(
     }
 
     override suspend fun loadChapterData(
+        source: HttpMediaSource,
         audiobook: Audiobook,
         tracks: List<MediaItemTrack>
     ): Boolean {
         val chapters: List<Chapter> = withContext(Dispatchers.IO) {
             try {
-                plexLibrarySource.fetchChapterInfo(audiobook.isCached, tracks)
+                source.fetchChapterInfo(audiobook.isCached, tracks)
             } catch (t: Throwable) {
                 Timber.e("Failed to load chapters: $t")
                 emptyList<Chapter>()

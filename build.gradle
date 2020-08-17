@@ -5,7 +5,7 @@ buildscript {
         kotlinVersion = "1.3.72"
         coroutinesVersion = "1.3.5"
         archLifecycleVersion = "1.1.1"
-        gradleVersion = "4.0.0"
+        gradleVersion = '4.0.1'
         supportlibVersion = "1.1.0"
         materialLibVersion = '1.3.0-alpha02'
         retrofitVersion = "2.9.0"

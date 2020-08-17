@@ -14,6 +14,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser
 import io.github.mattpvaughn.chronicle.databinding.OnboardingPlexChooseUserBinding
 import javax.inject.Inject
@@ -47,6 +48,11 @@ class ChooseUserFragment : Fragment() {
 
         val binding = OnboardingPlexChooseUserBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
+
+        viewModelFactory.plexLibrarySource =
+            sourceManager.getSourcesOfType<PlexLibrarySource>().firstOrNull {
+                !it.isAuthorized()
+            }!!
 
         viewModel = ViewModelProvider(
             viewModelStore,

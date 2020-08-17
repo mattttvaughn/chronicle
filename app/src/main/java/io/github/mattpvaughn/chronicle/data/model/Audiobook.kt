@@ -8,13 +8,10 @@ import android.support.v4.media.MediaMetadataCompat
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
+import io.github.mattpvaughn.chronicle.data.*
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.EXTRA_IS_DOWNLOADED
-import io.github.mattpvaughn.chronicle.data.sources.plex.EXTRA_PLAY_COMPLETION_STATE
-import io.github.mattpvaughn.chronicle.data.sources.plex.STATUS_NOT_PLAYED
-import io.github.mattpvaughn.chronicle.data.sources.plex.STATUS_PARTIALLY_PLAYED
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.toChapter
 import io.github.mattpvaughn.chronicle.features.player.*

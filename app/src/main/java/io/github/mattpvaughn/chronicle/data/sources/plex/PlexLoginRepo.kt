@@ -1,8 +1,6 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
 import android.net.Uri
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
 import io.github.mattpvaughn.chronicle.data.model.ServerModel
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState
@@ -12,8 +10,6 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexInterceptor.Compani
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.OAuthResponse
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.UsersResponse
-import io.github.mattpvaughn.chronicle.util.Event
-import io.github.mattpvaughn.chronicle.util.postEvent
 import timber.log.Timber
 
 interface IPlexLoginRepo {
@@ -23,28 +19,17 @@ interface IPlexLoginRepo {
 
     /**
      * Chooses a user, updates the auth token to match the user in the [PlexLibrarySource], sets
-     * [PlexPrefsRepo.user] to [responseUser], changes [loginEvent] to [LOGGED_IN_NO_SERVER_CHOSEN]
+     * [PlexPrefsRepo.user] to [responseUser]
      *
      * [responseUser] must have a valid auth token
      */
     fun chooseUser(responseUser: PlexUser)
 
-    /**
-     * Chooses a server, sets it in the [PlexPrefsRepo], changes [loginEvent] to
-     * [LOGGED_IN_NO_LIBRARY_CHOSEN]
-     */
+    /** Chooses a server, sets it in the [PlexPrefsRepo] */
     fun chooseServer(serverModel: ServerModel)
 
     /** Chooses a library, sets it in the [PlexPrefsRepo], changes state to [LOGGED_IN_FULLY] */
     fun chooseLibrary(plexLibrary: PlexLibrary)
-
-    /**
-     * Determines the current [LoginState] based on information stored in [PlexPrefsRepo] and
-     * updates the [loginEvent] to reflect that
-     */
-    fun determineLoginState()
-
-    val loginEvent: LiveData<Event<LoginState>>
 
     enum class LoginState {
         NOT_LOGGED_IN,
@@ -52,12 +37,12 @@ interface IPlexLoginRepo {
         LOGGED_IN_NO_USER_CHOSEN,
         LOGGED_IN_NO_SERVER_CHOSEN,
         LOGGED_IN_NO_LIBRARY_CHOSEN,
-        LOGGED_IN_FULLY,
-        AWAITING_LOGIN_RESULTS
+        LOGGED_IN_FULLY
     }
 
     fun makeOAuthUrl(clientId: String, code: String): Uri
-    suspend fun checkForOAuthAccessToken()
+    suspend fun checkForOAuthAccessToken(): Result<LoginState>
+    fun determineLoginState(): LoginState
 }
 
 /**
@@ -69,19 +54,13 @@ class PlexLoginRepo(
     private val plexLoginService: PlexLoginService
 ) : IPlexLoginRepo {
 
-    private var _loginState = MutableLiveData<Event<LoginState>>()
-    override val loginEvent: LiveData<Event<LoginState>>
-        get() = _loginState
-
     override suspend fun postOAuthPin(): OAuthResponse? {
         return try {
-            _loginState.postEvent(AWAITING_LOGIN_RESULTS)
             val pin = plexLoginService.postAuthPin()
             plexPrefsRepo.oAuthTempId = pin.id
             pin
         } catch (e: Throwable) {
             Timber.e("Failed to log in: $e")
-            _loginState.postEvent(FAILED_TO_LOG_IN)
             null
         }
     }
@@ -89,7 +68,6 @@ class PlexLoginRepo(
     override fun chooseUser(responseUser: PlexUser) {
         check(!responseUser.authToken.isNullOrEmpty())
         plexPrefsRepo.user = responseUser
-        _loginState.postEvent(LOGGED_IN_NO_SERVER_CHOSEN)
     }
 
     override fun makeOAuthUrl(clientId: String, code: String): Uri {
@@ -107,49 +85,47 @@ class PlexLoginRepo(
         )
     }
 
-    override suspend fun checkForOAuthAccessToken() {
+    override suspend fun checkForOAuthAccessToken(): Result<LoginState> {
         val authToken = try {
             plexLoginService.getAuthPin(plexPrefsRepo.oAuthTempId).authToken ?: ""
         } catch (t: Throwable) {
             plexPrefsRepo.oAuthTempId = -1L
             Timber.i("Failed to get OAuth access token: ${t.message}")
-            ""
+            return Result.failure(t)
         }
-        if (authToken.isNotEmpty()) {
-            plexPrefsRepo.accountAuthToken = authToken
 
-            // now check if we should show user screen:
-            try {
-                val userResponse: UsersResponse = plexLoginService.getUsersForAccount()
-                if (userResponse.users.size == 1) {
-                    // if there is only one user, there's no need to choose it
-                    chooseUser(userResponse.users[0])
-                } else {
-                    // now we proceed to choose user
-                    _loginState.postEvent(LOGGED_IN_NO_USER_CHOSEN)
-                }
-            } catch (t: Throwable) {
-                Timber.e(t, "Failed to load users, cannot proceed to profile")
+        if (authToken.isEmpty()) {
+            return Result.failure(Exception("No auth token found"))
+        }
+        plexPrefsRepo.accountAuthToken = authToken
+
+        // now check if we should show user screen:
+        return try {
+            val userResponse: UsersResponse = plexLoginService.getUsersForAccount()
+            if (userResponse.users.size == 1) {
+                // if there is only one user, there's no need to choose it
+                chooseUser(userResponse.users[0])
+                Result.success(LOGGED_IN_NO_LIBRARY_CHOSEN)
+            } else {
+                // now we proceed to choose user
+                Result.success(LOGGED_IN_NO_USER_CHOSEN)
             }
+        } catch (t: Throwable) {
+            Timber.e(t, "Failed to load users, cannot proceed to profile")
+            Result.failure(t)
         }
     }
 
     override fun chooseServer(serverModel: ServerModel) {
         Timber.i("Chose server: $serverModel")
         plexPrefsRepo.server = serverModel
-        _loginState.postEvent(LOGGED_IN_NO_LIBRARY_CHOSEN)
     }
 
     override fun chooseLibrary(plexLibrary: PlexLibrary) {
         plexPrefsRepo.library = plexLibrary
-        _loginState.postEvent(LOGGED_IN_FULLY)
     }
 
-    init {
-        determineLoginState()
-    }
-
-    override fun determineLoginState() {
+    override fun determineLoginState(): LoginState {
         val token = plexPrefsRepo.accountAuthToken
         val user: PlexUser? = plexPrefsRepo.user
         val server: ServerModel? = plexPrefsRepo.server
@@ -160,18 +136,16 @@ class PlexLoginRepo(
                     |server token = ${server?.accessToken},
                     |library = ${library?.name}""".trimMargin()
         )
-        _loginState.postEvent(
-            when {
-                token.isEmpty() -> NOT_LOGGED_IN
-                server != null && library != null -> LOGGED_IN_FULLY // Migrating from v0.41, impossible otherwise
-                user == null -> LOGGED_IN_NO_USER_CHOSEN
-                server == null -> LOGGED_IN_NO_SERVER_CHOSEN
-                library == null -> LOGGED_IN_NO_LIBRARY_CHOSEN
-                else -> {
-                    Timber.i("Fully logged in branch, awaiting server checks")
-                    LOGGED_IN_FULLY
-                }
+        return when {
+            token.isEmpty() -> NOT_LOGGED_IN
+            server != null && library != null -> LOGGED_IN_FULLY // Migrating from v0.41, impossible otherwise
+            user == null -> LOGGED_IN_NO_USER_CHOSEN
+            server == null -> LOGGED_IN_NO_SERVER_CHOSEN
+            library == null -> LOGGED_IN_NO_LIBRARY_CHOSEN
+            else -> {
+                Timber.i("Fully logged in branch, awaiting server checks")
+                LOGGED_IN_FULLY
             }
-        )
+        }
     }
 }

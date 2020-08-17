@@ -8,7 +8,9 @@ import androidx.recyclerview.widget.RecyclerView
 import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
 import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
 import io.github.mattpvaughn.chronicle.data.model.ServerModel
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser
+import io.github.mattpvaughn.chronicle.features.sources.SourceListAdapter
 import timber.log.Timber
 
 @BindingAdapter("loadingStatus")
@@ -43,6 +45,12 @@ fun bindLoadingStatus(
         LoadingStatus.DONE -> progressBar.visibility = View.GONE
         LoadingStatus.LOADING -> progressBar.visibility = View.VISIBLE
     }
+}
+
+@BindingAdapter("sources")
+fun bindSources(recyclerView: RecyclerView, data: List<MediaSource>) {
+    val adapter = recyclerView.adapter as SourceListAdapter
+    adapter.submitList(data)
 }
 
 @BindingAdapter("listData")

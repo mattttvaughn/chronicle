@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.databinding.ListItemSearchResultAudiobookBinding
 import io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick
@@ -32,6 +33,8 @@ class AudiobookSearchAdapter(private val audiobookClick: AudiobookClick) : ListA
             searchResultClick: AudiobookClick,
             connectedSourceIds: List<Long>
         ) {
+            val source = Injector.get().sourceManager().getSourceById(audiobook.source)
+            binding.source = source
             binding.audiobook = audiobook
             binding.searchResultClick = searchResultClick
             binding.serverConnected = connectedSourceIds.contains(audiobook.source)

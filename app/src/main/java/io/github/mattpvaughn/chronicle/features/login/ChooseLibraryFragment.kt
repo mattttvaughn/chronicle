@@ -65,7 +65,7 @@ class ChooseLibraryFragment : Fragment() {
         libraryAdapter = LibraryListAdapter(
             LibraryClickListener { library ->
                 Timber.i("Library clicked: $library")
-                source.chooseLibrary(library)
+                viewModel.chooseLibrary(library)
             })
 
         binding.libraryList.adapter = libraryAdapter

@@ -62,7 +62,7 @@ class LibraryFragment : Fragment() {
         Timber.i("Lib frag view create")
         val binding = FragmentLibraryBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
-        binding.plexConfig = plexLibrarySource
+        binding.sourceManager = sourceManager
         binding.libraryGrid.adapter =
             AudiobookAdapter(prefsRepo.bookCoverStyle == "Square", true, object : AudiobookClick {
                 override fun onClick(audiobook: Audiobook) {

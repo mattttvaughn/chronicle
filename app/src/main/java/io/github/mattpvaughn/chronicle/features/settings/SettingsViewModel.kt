@@ -153,6 +153,19 @@ class SettingsViewModel(
             },
             PreferenceModel(
                 PreferenceType.TITLE,
+                FormattableString.from(R.string.settings_category_account)
+            ),
+            PreferenceModel(
+                type = PreferenceType.CLICKABLE,
+                title = FormattableString.from(R.string.settings_sources_title),
+                explanation = FormattableString.from(R.string.settings_sources_explanation),
+                click = object : PreferenceClick {
+                    override fun onClick() {
+                        navigator.showSourcesManager()
+                    }
+                }),
+            PreferenceModel(
+                PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_appearance)
             ),
             PreferenceModel(
@@ -378,19 +391,6 @@ class SettingsViewModel(
             ),
             PreferenceModel(
                 PreferenceType.TITLE,
-                FormattableString.from(R.string.settings_category_account)
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_sources_title),
-                explanation = FormattableString.from(R.string.settings_sources_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        navigator.showSourcesManager()
-                    }
-                }),
-            PreferenceModel(
-                PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_etc)
             ),
             PreferenceModel(
@@ -510,10 +510,7 @@ class SettingsViewModel(
         }
     }
 
-    /**
-     * Clears the server cached data, and navigates to reset the data on a chooser depending on the
-     * [navigateTo] provided
-     */
+    /** Clears the server cached data, and stops playback */
     private fun clearDB() {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             withContext(Dispatchers.IO) {

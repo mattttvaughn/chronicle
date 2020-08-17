@@ -20,6 +20,8 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRA
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
+import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
@@ -33,7 +35,9 @@ import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerActi
 import io.github.mattpvaughn.chronicle.util.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -42,7 +46,8 @@ class CurrentlyPlayingViewModel(
     private val trackRepository: ITrackRepository,
     private val localBroadcastManager: LocalBroadcastManager,
     private val mediaServiceConnection: MediaServiceConnection,
-    private val prefsRepo: PrefsRepo
+    private val prefsRepo: PrefsRepo,
+    private val sourceManager: SourceManager
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -51,7 +56,8 @@ class CurrentlyPlayingViewModel(
         private val trackRepository: ITrackRepository,
         private val localBroadcastManager: LocalBroadcastManager,
         private val mediaServiceConnection: MediaServiceConnection,
-        private val prefsRepo: PrefsRepo
+        private val prefsRepo: PrefsRepo,
+        private val sourceManager: SourceManager
     ) : ViewModelProvider.Factory {
 
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -61,7 +67,8 @@ class CurrentlyPlayingViewModel(
                     trackRepository,
                     localBroadcastManager,
                     mediaServiceConnection,
-                    prefsRepo
+                    prefsRepo,
+                    sourceManager
                 ) as T
             } else {
                 throw IllegalArgumentException("Incorrect class type provided")
@@ -268,7 +275,13 @@ class CurrentlyPlayingViewModel(
                 if (tracks.value?.size == null) {
                     _isLoadingTracks.value = true
                 }
-                val result = trackRepository.loadTracksForAudiobook(bookId)
+                val book = withContext(Dispatchers.IO) {
+                    bookRepository.getAudiobookAsync(bookId)
+                } ?: return@launch
+                val source = sourceManager.getSourceById(book.source)
+                // No need to refresh track progress if source isn't remote
+                if (source !is HttpMediaSource) return@launch
+                val result = trackRepository.loadTracksForAudiobook(source, bookId)
                 val tracks = result.getOrNull()
                 if (tracks != null) {
                     bookRepository.updateTrackData(
@@ -277,9 +290,7 @@ class CurrentlyPlayingViewModel(
                         tracks.getDuration(),
                         tracks.size
                     )
-                    audiobook.value?.let {
-                        bookRepository.loadChapterData(it, tracks)
-                    }
+                    bookRepository.loadChapterData(source, book, tracks)
                 }
                 _isLoadingTracks.value = false
             } catch (e: Throwable) {

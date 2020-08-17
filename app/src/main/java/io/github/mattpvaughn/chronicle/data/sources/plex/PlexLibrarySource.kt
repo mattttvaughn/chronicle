@@ -1,34 +1,39 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
 import android.app.DownloadManager
+import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Transformations
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.squareup.moshi.Moshi
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
-import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.APP_NAME
+import io.github.mattpvaughn.chronicle.data.ConnectionState
+import io.github.mattpvaughn.chronicle.data.ConnectionState.*
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.LOGGED_IN_NO_SERVER_CHOSEN
+import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.LOGGED_IN_NO_USER_CHOSEN
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource.ConnectionResult.Failure
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource.ConnectionResult.Success
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource.ConnectionState.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.*
 import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.views.GlideUrlRelativeCacheKey
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
+import okhttp3.internal.userAgent
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -37,85 +42,75 @@ import java.net.URL
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
-/**
- * A [MediaSource] responsible for interacting with a remote Plex library.
- *
- * TODO: Should be the sole interface for interacting with the Plex remote source. Interfaces such
- *       PlexLoginRepo, PlexMediaRepository, and PlexPrefsRepo should no longer be exposed, having
- *       to be accessed through here
- */
-class PlexLibrarySource(
-    id: Long,
-    application: ChronicleApplication,
+/** A [MediaSource] responsible for interacting with a remote Plex library */
+class PlexLibrarySource constructor(
+    override val id: Long,
+    applicationContext: Context,
     loggingInterceptor: HttpLoggingInterceptor,
     moshi: Moshi
-) : HttpMediaSource(application) {
+) : HttpMediaSource(applicationContext) {
 
     private val connectionSet = mutableSetOf<Connection>()
 
     var url: String = PLACEHOLDER_URL
 
-    private val _isConnected = MutableLiveData(false)
-    val isConnected: LiveData<Boolean>
-        get() = _isConnected
-
-    private val _connectedSources = MutableLiveData<List<Long>>(emptyList())
-    val connectedSources: LiveData<List<Long>>
-        get() = _connectedSources
-
-    private val _networkConnection = object : MutableLiveData<ConnectionState>(NOT_CONNECTED) {
-        override fun postValue(value: ConnectionState?) {
-            _isConnected.postValue(value == CONNECTED)
-            super.postValue(value)
-        }
-
-        override fun setValue(value: ConnectionState?) {
-            _isConnected.postValue(value == CONNECTED)
-            super.setValue(value)
-        }
-    }
-
-
-    val connectionState: LiveData<ConnectionState>
-        get() = _networkConnection
-
-    enum class ConnectionState {
-        CONNECTING,
-        NOT_CONNECTED,
-        CONNECTED,
-        CONNECTION_FAILED
-    }
+    private val _connectionState = MutableLiveData<ConnectionState>(NOT_CONNECTED)
+    override val connectionState: LiveData<ConnectionState>
+        get() = _connectionState
 
     val sessionIdentifier = Random.nextInt(until = 10000).toString()
 
-    /** Prepends the current server url to [relativePath], accounting for trailing/leading `/`s */
-    override fun toServerString(relativePath: String): String {
+    /** Prepends the current server url to [relativePathForResource], accounting for trailing/leading `/`s */
+    override fun toServerString(relativePathForResource: String): String {
         val baseEndsWith = url.endsWith('/')
-        val pathStartsWith = relativePath.startsWith('/')
+        val pathStartsWith = relativePathForResource.startsWith('/')
         return if (baseEndsWith && pathStartsWith) {
-            "$url/${relativePath.substring(1)}"
+            "$url/${relativePathForResource.substring(1)}"
         } else if (!baseEndsWith && !pathStartsWith) {
-            "$url/$relativePath"
+            "$url/$relativePathForResource"
         } else {
-            "$url$relativePath"
+            "$url$relativePathForResource"
         }
     }
 
-    override val id: Long = id
-
     override val name: String
-        get() = "Plex "
+        get() = plexPrefsRepo.library?.name.takeIf { !it.isNullOrEmpty() } ?: "Plex library"
 
     override val icon: Int
         get() = R.drawable.ic_library_music
 
-    override val dataSourceFactory: DefaultDataSourceFactory
-        get() = TODO("Not yet implemented")
-
     private val plexPrefsRepo: PlexPrefsRepo = SharedPreferencesPlexPrefsRepo(
-        application.getSharedPreferences(id.toString(), MODE_PRIVATE),
+        applicationContext.getSharedPreferences(id.toString(), MODE_PRIVATE),
         moshi
     )
+
+    private val defaultHttpFactory = DefaultHttpDataSourceFactory(userAgent).also {
+        val props = it.defaultRequestProperties
+        props.set("X-Plex-Platform", "Android")
+        props.set("X-Plex-Provides", "player")
+        props.set(
+            "X-Plex_Client-Name",
+            APP_NAME
+        )
+        props.set("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
+        props.set("X-Plex-Version", BuildConfig.VERSION_NAME)
+        props.set(
+            "X-Plex-Product",
+            APP_NAME
+        )
+        props.set("X-Plex-Platform-Version", Build.VERSION.RELEASE)
+        props.set("X-Plex-Device", Build.MODEL)
+        props.set("X-Plex-Device-Name", Build.MODEL)
+        props.set(
+            "X-Plex-Token",
+            plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken
+        )
+    }
+
+    // Handles http and local files
+    override val dataSourceFactory: DefaultDataSourceFactory =
+        DefaultDataSourceFactory(Injector.get().applicationContext(), defaultHttpFactory)
+
 
     private val plexMediaInterceptor = PlexInterceptor(plexPrefsRepo, this, isLoginService = false)
     private val plexLoginInterceptor = PlexInterceptor(plexPrefsRepo, this, isLoginService = true)
@@ -159,16 +154,16 @@ class PlexLibrarySource(
             val response = mediaService.retrieveAllAlbums(libraryId)
             Result.success(response.plexMediaContainer.asAudiobooks(id))
         } catch (t: Throwable) {
-            Result.failure<List<Audiobook>>(t)
+            Result.failure(t)
         }
     }
 
     override suspend fun fetchTracks(): Result<List<MediaItemTrack>> {
         return try {
             val response = mediaService.retrieveAllTracksInLibrary(plexPrefsRepo.library?.id!!)
-            Result.success(response.plexMediaContainer.asTrackList())
+            Result.success(response.plexMediaContainer.asTrackList(id))
         } catch (t: Throwable) {
-            Result.failure<List<MediaItemTrack>>(t)
+            Result.failure(t)
         }
     }
 
@@ -179,6 +174,10 @@ class PlexLibrarySource(
 
     override fun type(): String {
         return TAG
+    }
+
+    override fun getBitmapForThumb(uri: Uri): Bitmap? {
+        TODO("Not yet implemented")
     }
 
     override val isDownloadable: Boolean = true
@@ -257,8 +256,13 @@ class PlexLibrarySource(
         return loginService.getUsersForAccount()
     }
 
-    suspend fun pickUser(uuid: String, pin: String): PlexUser {
-        return loginService.pickUser(uuid, pin)
+    suspend fun pickUser(uuid: String, pin: String): Result<PlexUser> {
+        return try {
+            val user = loginService.pickUser(uuid, pin)
+            Result.success(user)
+        } catch (t: Throwable) {
+            Result.failure(t)
+        }
     }
 
     override suspend fun updateProgress(
@@ -283,23 +287,29 @@ class PlexLibrarySource(
         )
     }
 
+    override suspend fun fetchTracksForBook(bookId: Int): List<MediaItemTrack> {
+        return mediaService.retrieveTracksForAlbum(bookId).plexMediaContainer.asTrackList(id)
+    }
+
 //    override suspend fun sendMediaSessionStartCommand() {
 //        TODO("Not yet implemented")
 //    }
-
-    override fun isReachable(): Boolean {
-        return isConnected.value == true
-    }
 
     override fun makeDownloadRequest(trackUrl: String): DownloadManager.Request {
         Timber.i("Preparing download request for: ${Uri.parse(toServerString(trackUrl))}")
         return DownloadManager.Request(Uri.parse(toServerString(trackUrl)))
             .addRequestHeader("X-Plex-Platform", "Android")
             .addRequestHeader("X-Plex-Provides", "player,timeline")
-            .addRequestHeader("X-Plex-Client-Name", APP_NAME)
+            .addRequestHeader(
+                "X-Plex-Client-Name",
+                APP_NAME
+            )
             .addRequestHeader("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
             .addRequestHeader("X-Plex-Version", BuildConfig.VERSION_NAME)
-            .addRequestHeader("X-Plex-Product", APP_NAME)
+            .addRequestHeader(
+                "X-Plex-Product",
+                APP_NAME
+            )
             .addRequestHeader("X-Plex-Platform-Version", Build.VERSION.RELEASE)
             .addRequestHeader("X-Plex-Device", Build.MODEL)
             .addRequestHeader("X-Plex-Device-Name", Build.MODEL)
@@ -322,17 +332,12 @@ class PlexLibrarySource(
             ).build()
     }
 
-    fun setPotentialConnections(connections: List<Connection>) {
-        connectionSet.clear()
-        connectionSet.addAll(connections)
-    }
-
     /**
      * Indicates to observers that connectivity has been lost, but does not update URL yet, as
      * querying a possibly dead url has a better chance of success than querying no url
      */
     override fun connectionHasBeenLost() {
-        _networkConnection.value = NOT_CONNECTED
+        _connectionState.value = NOT_CONNECTED
     }
 
     private var prevConnectToServerJob: CompletableJob? = null
@@ -342,7 +347,7 @@ class PlexLibrarySource(
         connectionSet.clear()
         connectionSet.addAll(plexPrefsRepo.server?.connections ?: emptyList())
         prevConnectToServerJob?.cancel("Killing previous connection attempt")
-        _networkConnection.postValue(CONNECTING)
+        _connectionState.postValue(CONNECTING)
         prevConnectToServerJob = Job().also {
             val context = CoroutineScope(it + Dispatchers.Main)
             context.launch {
@@ -350,10 +355,10 @@ class PlexLibrarySource(
                 Timber.i("Returned connection $connectionResult")
                 if (connectionResult is Success && connectionResult.url != PLACEHOLDER_URL) {
                     url = connectionResult.url
-                    _networkConnection.postValue(CONNECTED)
+                    _connectionState.postValue(CONNECTED)
                     Timber.i("Connection success: $url")
                 } else {
-                    _networkConnection.postValue(CONNECTION_FAILED)
+                    _connectionState.postValue(CONNECTION_FAILED)
                 }
             }
         }
@@ -362,13 +367,13 @@ class PlexLibrarySource(
     /** Clear server data from [plexPrefsRepo] and [url] managed by [PlexLibrarySource] */
     fun clear() {
         plexPrefsRepo.clear()
-        _networkConnection.postValue(NOT_CONNECTED)
+        _connectionState.postValue(NOT_CONNECTED)
         url = PLACEHOLDER_URL
         connectionSet.clear()
     }
 
     fun clearServer() {
-        _networkConnection.postValue(NOT_CONNECTED)
+        _connectionState.postValue(NOT_CONNECTED)
         url = PLACEHOLDER_URL
         plexPrefsRepo.server = null
         plexPrefsRepo.library = null
@@ -447,7 +452,8 @@ class PlexLibrarySource(
     }
 
     fun chooseServer(serverModel: ServerModel) {
-        setPotentialConnections(serverModel.connections)
+        connectionSet.clear()
+        connectionSet.addAll(serverModel.connections)
         plexLoginRepo.chooseServer(serverModel)
     }
 
@@ -460,11 +466,12 @@ class PlexLibrarySource(
     }
 
     override fun isAuthorized(): Boolean {
-        return plexPrefsRepo.server?.accessToken != null
+        return plexPrefsRepo.server?.accessToken != null && plexPrefsRepo.library != null
     }
 
-    override fun isAuthorizedObservable() = Transformations.map(plexLoginRepo.loginEvent) {
-        it.peekContent() == IPlexLoginRepo.LoginState.LOGGED_IN_FULLY
+    private var isAuthorizedLiveData = MutableLiveData<Boolean>(false)
+    override fun isAuthorizedObservable(): LiveData<Boolean> {
+        return isAuthorizedLiveData
     }
 
     override suspend fun watched(mediaKey: Int) {
@@ -477,8 +484,46 @@ class PlexLibrarySource(
         mediaService.startMediaSession(serverUri)
     }
 
+    suspend fun postOAuthPin(): OAuthResponse? {
+        return plexLoginRepo.postOAuthPin()
+    }
+
+    fun makeOAuthUrl(id: String, code: String): Uri {
+        return plexLoginRepo.makeOAuthUrl(id, code)
+    }
+
+    suspend fun checkForOAuthAccessToken(navigator: Navigator): Result<IPlexLoginRepo.LoginState> {
+        val result = plexLoginRepo.checkForOAuthAccessToken()
+        if (result.isFailure) {
+            return result
+        }
+        when (result.getOrNull()) {
+            LOGGED_IN_NO_USER_CHOSEN -> {
+                // multiple users available- so show user chooser
+                navigator.showUserChooser()
+            }
+            LOGGED_IN_NO_SERVER_CHOSEN -> {
+                // only one user was available, so skipping directly to server picker
+                navigator.showServerChooser()
+            }
+            else -> {
+                return Result.failure(IllegalStateException("Impossible network state: neither NO_USERS_CHOSEN nor NO_SERVER_CHOSEN"))
+            }
+        }
+        return Result.success(result.getOrElse { IPlexLoginRepo.LoginState.FAILED_TO_LOG_IN })
+    }
+
     companion object {
         const val TAG = "PlexLibrarySource"
+
+        /**
+         * Creates a URI uniquely identifying a media item with id [mediaId] on a server with machine
+         * identifier [machineIdentifier]
+         */
+        fun getMediaItemUri(machineIdentifier: String, mediaId: String): String {
+            return "server://$machineIdentifier/com.plexapp.plugins.library/library/metadata/$mediaId"
+        }
+
     }
 
 }

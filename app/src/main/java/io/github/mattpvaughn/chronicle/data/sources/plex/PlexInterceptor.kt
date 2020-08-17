@@ -2,9 +2,9 @@ package io.github.mattpvaughn.chronicle.data.sources.plex
 
 import android.os.Build
 import io.github.mattpvaughn.chronicle.BuildConfig
+import io.github.mattpvaughn.chronicle.data.APP_NAME
 import okhttp3.Interceptor
 import okhttp3.Response
-import timber.log.Timber
 
 
 /**
@@ -17,14 +17,6 @@ class PlexInterceptor(
     private val plexLibrarySource: PlexLibrarySource,
     private val isLoginService: Boolean
 ) : Interceptor {
-
-    init {
-        if (isLoginService) {
-            Timber.i("Inited login intercepter")
-        } else {
-            Timber.i("Inited media intercepter")
-        }
-    }
 
     companion object {
         const val PLATFORM = "Android"
@@ -45,7 +37,10 @@ class PlexInterceptor(
             .header("X-Plex-Product", PRODUCT)
             .header("X-Plex-Platform-Version", Build.VERSION.RELEASE)
             .header("X-Plex-Session-Identifier", plexLibrarySource.sessionIdentifier)
-            .header("X-Plex-Client-Name", APP_NAME)
+            .header(
+                "X-Plex-Client-Name",
+                APP_NAME
+            )
             .header("X-Plex-Device", DEVICE)
             .header("X-Plex-Device-Name", Build.MODEL)
             .url(interceptedUrl)

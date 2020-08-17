@@ -2,11 +2,13 @@ package io.github.mattpvaughn.chronicle.features.login
 
 import androidx.lifecycle.*
 import androidx.lifecycle.Observer
+import io.github.mattpvaughn.chronicle.data.ConnectionState
 import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
 import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType.Companion.ARTIST
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.asLibrary
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -17,18 +19,20 @@ import javax.inject.Inject
 
 
 @OptIn(InternalCoroutinesApi::class)
-class ChooseLibraryViewModel(private val source: PlexLibrarySource) : ViewModel() {
+class ChooseLibraryViewModel(
+    private val source: PlexLibrarySource,
+    private val navigator: Navigator
+) : ViewModel() {
 
-    class Factory @Inject constructor() : ViewModelProvider.Factory {
+    class Factory @Inject constructor(private val navigator: Navigator) :
+        ViewModelProvider.Factory {
         lateinit var source: PlexLibrarySource
 
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (this::source.isInitialized) {
-                throw IllegalStateException("No source provided!")
-            }
+            check(this::source.isInitialized) { "No source provided!" }
             if (modelClass.isAssignableFrom(ChooseLibraryViewModel::class.java)) {
-                return ChooseLibraryViewModel(source) as T
+                return ChooseLibraryViewModel(source, navigator) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }
@@ -46,8 +50,8 @@ class ChooseLibraryViewModel(private val source: PlexLibrarySource) : ViewModel(
     val loadingStatus: LiveData<LoadingStatus>
         get() = _loadingStatus
 
-    private val networkObserver = Observer<Boolean> { isConnected ->
-        if (isConnected) {
+    private val networkObserver = Observer<ConnectionState> { connection ->
+        if (connection == ConnectionState.CONNECTED) {
             Timber.i("Connected to server at ${source.url}")
             getLibraries()
         }
@@ -55,19 +59,18 @@ class ChooseLibraryViewModel(private val source: PlexLibrarySource) : ViewModel(
 
     init {
         viewModelScope.launch {
-            // chooseViableConnections must be called here because it won't be called in
-            // ChronicleApplication if we have just logged in
+            // connectToRemote must be called here because it won't be called in ChronicleApplication
             try {
                 source.connectToRemote()
             } catch (t: Throwable) {
                 Timber.i("Failed to return result!")
             }
         }
-        source.isConnected.observeForever(networkObserver)
+        source.connectionState.observeForever(networkObserver)
     }
 
     override fun onCleared() {
-        source.isConnected.removeObserver(networkObserver)
+        source.connectionState.removeObserver(networkObserver)
         super.onCleared()
     }
 
@@ -91,7 +94,12 @@ class ChooseLibraryViewModel(private val source: PlexLibrarySource) : ViewModel(
     }
 
     fun refresh() {
-        source.isConnected.removeObserver(networkObserver)
-        source.isConnected.observeForever(networkObserver)
+        source.connectionState.removeObserver(networkObserver)
+        source.connectionState.observeForever(networkObserver)
+    }
+
+    fun chooseLibrary(library: PlexLibrary) {
+        source.chooseLibrary(library)
+        navigator.showHome()
     }
 }

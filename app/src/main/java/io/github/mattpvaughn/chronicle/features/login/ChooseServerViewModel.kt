@@ -6,15 +6,20 @@ import io.github.mattpvaughn.chronicle.data.model.LoadingStatus
 import io.github.mattpvaughn.chronicle.data.model.ServerModel
 import io.github.mattpvaughn.chronicle.data.model.asServer
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-class ChooseServerViewModel(private val plexLibrarySource: PlexLibrarySource) : ViewModel() {
+class ChooseServerViewModel(
+    private val plexLibrarySource: PlexLibrarySource,
+    private val navigator: Navigator
+) : ViewModel() {
 
-    class Factory @Inject constructor() : ViewModelProvider.Factory {
+    class Factory @Inject constructor(private val navigator: Navigator) :
+        ViewModelProvider.Factory {
 
         lateinit var plexLibrarySource: PlexLibrarySource
 
@@ -24,7 +29,7 @@ class ChooseServerViewModel(private val plexLibrarySource: PlexLibrarySource) : 
                 throw IllegalStateException("No source provided!")
             }
             if (modelClass.isAssignableFrom(ChooseServerViewModel::class.java)) {
-                return ChooseServerViewModel(plexLibrarySource) as T
+                return ChooseServerViewModel(plexLibrarySource, navigator) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }
@@ -70,5 +75,6 @@ class ChooseServerViewModel(private val plexLibrarySource: PlexLibrarySource) : 
 
     fun chooseServer(serverModel: ServerModel) {
         plexLibrarySource.chooseServer(serverModel)
+        navigator.showLibraryChooser()
     }
 }

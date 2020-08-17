@@ -1,4 +1,4 @@
-package io.github.mattpvaughn.chronicle.data.sources.plex
+package io.github.mattpvaughn.chronicle.data
 
 const val MEDIA_TYPE_ALBUM = 9
 const val MEDIA_TYPE_TRACK = 10

@@ -62,7 +62,7 @@ android {
         abortOnError false
     }
     kotlinOptions {
-        freeCompilerArgs = ["-Xallow-result-return-type"]
+        freeCompilerArgs = ["-Xallow-result-return-type", "-Xopt-in=kotlin.RequiresOptin"]
     }
 }
 

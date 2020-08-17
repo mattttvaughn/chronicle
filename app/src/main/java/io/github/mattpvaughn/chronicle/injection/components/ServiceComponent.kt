@@ -7,10 +7,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import dagger.Component
 import io.github.mattpvaughn.chronicle.data.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaRepository
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.injection.modules.ServiceModule
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
@@ -31,14 +29,14 @@ interface ServiceComponent {
     fun notificationBuilder(): NotificationBuilder
     fun becomingNoisyReceiver(): BecomingNoisyReceiver
     fun mediaSessionCallback(): AudiobookMediaSessionCallback
-    fun mediaSource(): PlexMediaRepository
+    fun mediaSource(): ChronicleMediaRepository
     fun mediaSessionConnector(): MediaSessionConnector
     fun serviceScope(): CoroutineScope
     fun serviceController(): ServiceController
-    fun plexDataSourceFactory(): DefaultDataSourceFactory
     fun packageValidator(): PackageValidator
     fun playbackErrorHandler(): PlaybackErrorHandler
     fun foregroundServiceController(): ForegroundServiceController
+    fun sourceController(): SourceController
     fun trackListManager(): TrackListStateManager
     fun mediaController(): MediaControllerCompat
 

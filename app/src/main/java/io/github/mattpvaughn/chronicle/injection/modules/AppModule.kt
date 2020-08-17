@@ -8,18 +8,21 @@ import android.content.SharedPreferences
 import androidx.core.content.ContextCompat
 import androidx.work.WorkManager
 import com.android.billingclient.api.BillingClient
+import com.google.android.exoplayer2.util.Util
 import com.squareup.moshi.Moshi
 import dagger.Module
 import dagger.Provides
 import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.application.ChronicleBillingManager
 import io.github.mattpvaughn.chronicle.application.LOG_NETWORK_REQUESTS
+import io.github.mattpvaughn.chronicle.data.APP_NAME
 import io.github.mattpvaughn.chronicle.data.local.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.APP_NAME
+import io.github.mattpvaughn.chronicle.injection.components.AppComponent.Companion.USER_AGENT
 import kotlinx.coroutines.CoroutineExceptionHandler
 import okhttp3.logging.HttpLoggingInterceptor
 import timber.log.Timber
 import java.io.File
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -100,5 +103,13 @@ class AppModule(private val app: ChronicleApplication) {
     fun exceptionHandler(): CoroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
         Timber.e("Caught unhandled exception! $e")
     }
+
+    @Provides
+    @Singleton
+    @Named(USER_AGENT)
+    fun userAgent(context: Context): String = Util.getUserAgent(
+        context,
+        APP_NAME
+    )
 
 }

@@ -3,11 +3,10 @@ package io.github.mattpvaughn.chronicle.data.local
 import androidx.lifecycle.LiveData
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
+import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.asTrackList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -20,7 +19,10 @@ interface ITrackRepository {
      * Load all tracks from the network corresponding to the book with id == [bookId], add them to
      * the local [TrackDatabase], and return them
      */
-    suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>>
+    suspend fun loadTracksForAudiobook(
+        source: HttpMediaSource,
+        bookId: Int
+    ): Result<List<MediaItemTrack>>
 
     /**
      * Update the value of [MediaItemTrack.cached] to [isCached] for a [MediaItemTrack] with
@@ -96,7 +98,6 @@ interface ITrackRepository {
 class TrackRepository @Inject constructor(
     private val trackDao: TrackDao,
     private val prefsRepo: PrefsRepo,
-    private val plexMediaService: PlexMediaService,
     private val sourceManager: SourceManager
 ) : ITrackRepository {
 
@@ -130,13 +131,14 @@ class TrackRepository @Inject constructor(
         }
     }
 
-    override suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>> {
+    override suspend fun loadTracksForAudiobook(
+        source: HttpMediaSource,
+        bookId: Int
+    ): Result<List<MediaItemTrack>> {
         return withContext(Dispatchers.IO) {
             val localTracks = trackDao.getAllTracksAsync()
             try {
-                val networkTracks =
-                    plexMediaService.retrieveTracksForAlbum(bookId).plexMediaContainer.asTrackList()
-
+                val networkTracks = source.fetchTracksForBook(bookId)
                 val mergedTracks = mergeNetworkTracks(networkTracks, localTracks)
                 trackDao.insertAll(mergedTracks)
                 Result.success(mergedTracks)

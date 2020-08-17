@@ -11,10 +11,10 @@ import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayin
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingViewModel
 import io.github.mattpvaughn.chronicle.features.home.HomeFragment
 import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
+import io.github.mattpvaughn.chronicle.features.login.AddSourceFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseLibraryFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseServerFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseUserFragment
-import io.github.mattpvaughn.chronicle.features.login.LoginFragment
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.ProgressUpdater
 import io.github.mattpvaughn.chronicle.features.settings.SettingsFragment
@@ -45,7 +45,7 @@ interface ActivityComponent {
     fun inject(settingsFragment: SettingsFragment)
     fun inject(currentlyPlayingFragment: CurrentlyPlayingFragment)
     fun inject(sourceManagerFragment: SourceManagerFragment)
-    fun inject(loginFragment: LoginFragment)
+    fun inject(addSourceFragment: AddSourceFragment)
     fun inject(chooseLibraryFragment: ChooseLibraryFragment)
     fun inject(chooseUserFragment: ChooseUserFragment)
     fun inject(chooseServerActivity: ChooseServerFragment)

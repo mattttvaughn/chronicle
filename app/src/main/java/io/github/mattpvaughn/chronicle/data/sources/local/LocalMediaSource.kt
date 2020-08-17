@@ -1,5 +1,7 @@
 package io.github.mattpvaughn.chronicle.data.sources.local
 
+import android.graphics.Bitmap
+import android.net.Uri
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
@@ -50,6 +52,14 @@ class LocalMediaSource(application: ChronicleApplication) : MediaSource(applicat
     }
 
     override fun type(): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun makeThumbUri(src: String): Uri? {
+        TODO("Not yet implemented")
+    }
+
+    override fun getBitmapForThumb(uri: Uri): Bitmap? {
         TODO("Not yet implemented")
     }
 
