@@ -39,7 +39,7 @@ data class MediaItemTrack(
     val lastViewedAt: Long = 0L,
     val updatedAt: Long = 0L,
     val size: Long = 0L
-) {
+) : Comparable<MediaItemTrack> {
     companion object {
         fun from(metadata: MediaMetadataCompat): MediaItemTrack {
             return MediaItemTrack(
@@ -127,6 +127,14 @@ data class MediaItemTrack(
     /** A string representing the index but padded to [length] characters with zeroes */
     fun paddedIndex(length: Int): String {
         return index.toString().padStart(length, '0')
+    }
+
+    override fun compareTo(other: MediaItemTrack): Int {
+        val discCompare = discNumber.compareTo(other.discNumber)
+        if (discCompare != 0) {
+            return discCompare
+        }
+        return index.compareTo(other.index)
     }
 }
 
@@ -216,17 +224,20 @@ fun MediaItemTrack.toMediaMetadata(plexConfig: PlexConfig): MediaMetadataCompat 
 
 
 fun List<MediaItemTrack>.asChapterList(): List<Chapter> {
-    return this.map { track ->
-        Chapter(
-            title = track.title,
-            id = track.id.toLong(),
-            index = track.index.toLong(),
-            discNumber = track.discNumber,
-            startTimeOffset = this.getTrackStartTime(track),
-            endTimeOffset = this.getTrackStartTime(track) + track.duration,
-            downloaded = track.cached
-        )
-    }
+    return this.map { it.asChapter() }
+}
+
+fun MediaItemTrack.asChapter(): Chapter {
+    return Chapter(
+        title = title,
+        id = id.toLong(),
+        index = index.toLong(),
+        discNumber = discNumber,
+        startTimeOffset = 0L,
+        endTimeOffset = duration,
+        downloaded = cached,
+        trackId = id.toLong()
+    )
 }
 
 val EMPTY_TRACK = MediaItemTrack(id = TRACK_NOT_FOUND)

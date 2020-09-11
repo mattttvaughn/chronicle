@@ -9,6 +9,7 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType.Companion.ARTIST
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.asLibrary
+import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -51,9 +52,21 @@ class ChooseLibraryViewModel @Inject constructor(
     val libraries: LiveData<List<PlexLibrary>>
         get() = _libraries
 
+    /**
+     * LoadingStatus represents the status of the "connected to server" state as well as the
+     * "fetched libraries" state
+     */
     private var _loadingStatus = MutableLiveData(LoadingStatus.LOADING)
-    val loadingStatus: LiveData<LoadingStatus>
-        get() = _loadingStatus
+    val loadingStatus: LiveData<LoadingStatus> =
+        DoubleLiveData(plexConfig.connectionState, _loadingStatus) { serverConn, loadingConn ->
+            when (serverConn) {
+                PlexConfig.ConnectionState.CONNECTING -> LoadingStatus.LOADING
+                PlexConfig.ConnectionState.NOT_CONNECTED -> LoadingStatus.LOADING
+                PlexConfig.ConnectionState.CONNECTED -> loadingConn
+                PlexConfig.ConnectionState.CONNECTION_FAILED -> LoadingStatus.ERROR
+                null -> throw IllegalStateException("Cannot have a null server connection!")
+            }
+        }
 
     private val networkObserver = Observer<Boolean> { isConnected ->
         if (isConnected) {
@@ -61,6 +74,7 @@ class ChooseLibraryViewModel @Inject constructor(
             getLibraries()
         }
     }
+
 
     init {
         viewModelScope.launch {

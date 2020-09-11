@@ -1,9 +1,11 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
 import android.app.DownloadManager
+import android.content.Context
 import com.bumptech.glide.load.model.LazyHeaders
 import com.github.michaelbull.result.Result
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
@@ -16,7 +18,8 @@ class PlexMediaSource @Inject constructor(
     private val plexConfig: PlexConfig,
     private val plexMediaService: PlexMediaService,
     private val plexLoginRepo: IPlexLoginRepo,
-    defaultDataSourceFactory: DefaultDataSourceFactory
+    private val appContext: Context,
+    defaultDataSourceFactory: DefaultHttpDataSourceFactory
 ) : HttpMediaSource {
 
     override val id: Long = MEDIA_SOURCE_ID_PLEX
@@ -25,7 +28,7 @@ class PlexMediaSource @Inject constructor(
         const val MEDIA_SOURCE_ID_PLEX: Long = 0L
     }
 
-    override val dataSourceFactory: DefaultDataSourceFactory = defaultDataSourceFactory
+    override val dataSourceFactory: DefaultDataSourceFactory = DefaultDataSourceFactory(appContext, defaultDataSourceFactory)
 
     override val isDownloadable: Boolean = true
 

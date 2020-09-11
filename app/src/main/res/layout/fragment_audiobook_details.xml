@@ -200,7 +200,7 @@
 
                     <Button
                         android:id="@+id/info_expand_summary"
-                        style="@style/Widget.AppCompat.Button.Borderless"
+                        style="@style/TextAppearance.Button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:onClick="@{() -> viewModel.onToggleSummaryView()}"

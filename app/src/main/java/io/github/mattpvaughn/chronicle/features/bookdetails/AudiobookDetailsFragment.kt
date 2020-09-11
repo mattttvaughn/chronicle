@@ -87,7 +87,8 @@ class AudiobookDetailsFragment : Fragment() {
 
         val adapter = ChapterListAdapter(object : TrackClickListener {
             override fun onClick(chapter: Chapter) {
-                viewModel.jumpToChapter(chapter.startTimeOffset, chapter.id.toInt())
+                Timber.i("Starting chapter with name: ${chapter.title}")
+                viewModel.jumpToChapter(offset = chapter.startTimeOffset, trackId = chapter.trackId)
             }
         })
         binding.tracks.adapter = adapter

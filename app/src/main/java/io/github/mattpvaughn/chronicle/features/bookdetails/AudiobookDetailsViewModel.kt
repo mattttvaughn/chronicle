@@ -21,9 +21,9 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID
-import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_OFFSET
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_TRACK_OFFSET
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.PLEX_STATE_STOPPED
-import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_TRACK_ID
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_SAVED_TRACK_PROGRESS
 import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.mapAsync
@@ -40,7 +40,7 @@ class AudiobookDetailsViewModel(
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
     private val cachedFileManager: ICachedFileManager,
-    // Just a skeleton of an audiobook. Only guaranteed to contain a correct [Audiobook.id]
+    // Just the skeleton of an audiobook. Only guaranteed to contain a correct [Audiobook.id]
     private val inputAudiobook: Audiobook,
     private val mediaServiceConnection: MediaServiceConnection,
     private val progressUpdater: ProgressUpdater,
@@ -115,17 +115,14 @@ class AudiobookDetailsViewModel(
      *
      * Special case: if [_manualCacheStatus] is [CACHING], use that value
      */
-    val cacheStatus = DoubleLiveData(_manualCacheStatus, audiobook) { default, _audiobook ->
+    val cacheStatus = DoubleLiveData(_manualCacheStatus, audiobook) { manualCache, _audiobook ->
         if (_audiobook?.isCached == true) {
             return@DoubleLiveData CACHED
         }
-        if (default == CACHING) {
+        if (manualCache == CACHING) {
             return@DoubleLiveData CACHING
         }
-        return@DoubleLiveData when (_audiobook?.isCached) {
-            false -> NOT_CACHED
-            else -> default
-        }
+        return@DoubleLiveData if (_audiobook?.isCached == false) NOT_CACHED else manualCache
     }
 
     val cacheIconTint: LiveData<Int> = Transformations.map(cacheStatus) { status ->
@@ -241,7 +238,7 @@ class AudiobookDetailsViewModel(
 
     private val networkObserver = Observer<Boolean> { isConnected ->
         if (isConnected) {
-            refreshChapterInfo(inputAudiobook.id)
+            updateBookDetails(inputAudiobook.id)
         }
     }
 
@@ -250,10 +247,10 @@ class AudiobookDetailsViewModel(
     }
 
     /**
-     * Refresh the tracks for the current audiobook. Mostly important because we want to refresh
-     * the progress in the audiobook is there's a new
+     * Refresh details for the current audiobook. Mostly important because we want to refresh the
+     * progress in the audiobook is there has been new playback
      */
-    private fun refreshChapterInfo(bookId: Int) {
+    private fun updateBookDetails(bookId: Int) {
         Timber.i("Refreshing tracks!")
         viewModelScope.launch {
             try {
@@ -328,9 +325,10 @@ class AudiobookDetailsViewModel(
 
     private fun uncacheFiles() {
         viewModelScope.launch {
-            val result =
-                cachedFileManager.deleteCachedBook(tracks.value ?: emptyList())
-            _manualCacheStatus.postValue(NOT_CACHED)
+            val result = cachedFileManager.deleteCachedBook(tracks.value ?: emptyList())
+            if (result.isSuccess) {
+                _manualCacheStatus.postValue(NOT_CACHED)
+            }
             if (result.isFailure) {
                 val messageString = result.exceptionOrNull()?.message ?: return@launch
                 _messageForUser.postEvent(messageString)
@@ -344,8 +342,14 @@ class AudiobookDetailsViewModel(
             return
         }
 
-        val pausePlayAction =
-            { pausePlay(inputAudiobook.id.toString(), startTimeOffset = ACTIVE_TRACK) }
+        val pausePlayAction = {
+            pausePlay(
+                bookId = inputAudiobook.id.toString(),
+                trackId = ACTIVE_TRACK,
+                startTimeOffset = USE_SAVED_TRACK_PROGRESS,
+                forcePlayFromMediaId = false
+            )
+        }
         if (mediaServiceConnection.isConnected.value != true) {
             mediaServiceConnection.connect(pausePlayAction)
         } else {
@@ -362,37 +366,34 @@ class AudiobookDetailsViewModel(
      * Play behavior: start/resume playback from [startTimeOffset] milliseconds from the start of
      * the book. [startTimeOffset] == [ACTIVE_TRACK] indicates that playback should be resumed from
      * the most recent playback location
+     *
+     * [forcePlayFromMediaId] == true indicates to ignore playback state and play the book from the
+     * given [trackId] and [startTimeOffset] provided, otherwise pause/play/resume depending on
+     * playback state
      */
     private fun pausePlay(
         bookId: String,
-        startTimeOffset: Long = ACTIVE_TRACK,
-        trackId: Int = TRACK_NOT_FOUND,
+        startTimeOffset: Long = USE_SAVED_TRACK_PROGRESS,
+        trackId: Long = ACTIVE_TRACK,
         forcePlayFromMediaId: Boolean = false
     ) {
+        check(mediaServiceConnection.isConnected.value == true) { "MediaServiceConnection not connected" }
         updateProgressIfChangingBook()
 
         val transportControls = mediaServiceConnection.transportControls ?: return
 
         val extras = Bundle().apply {
-            putLong(KEY_START_TIME_OFFSET, startTimeOffset)
-            putInt(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
+            putLong(KEY_START_TIME_TRACK_OFFSET, startTimeOffset)
+            putLong(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
         }
         Timber.i(
             "is this book playing? ${isBookInViewPlaying.value}, this this book active? ${isBookInViewActive.value}"
         )
         when {
-            forcePlayFromMediaId -> {
-                transportControls.playFromMediaId(bookId, extras)
-            }
-            isBookInViewPlaying.value == true -> {
-                transportControls.pause()
-            }
-            isBookInViewActive.value == true -> {
-                transportControls.play()
-            }
-            else -> {
-                transportControls.playFromMediaId(bookId, extras)
-            }
+            forcePlayFromMediaId -> transportControls.playFromMediaId(bookId, extras)
+            isBookInViewPlaying.value == true -> transportControls.pause()
+            isBookInViewActive.value == true -> transportControls.play()
+            else -> transportControls.playFromMediaId(bookId, extras)
         }
     }
 
@@ -427,8 +428,8 @@ class AudiobookDetailsViewModel(
 
     /** Jumps to a chapter starting [offset] milliseconds into the audiobook */
     fun jumpToChapter(
-        offset: Long = USE_TRACK_ID,
-        trackId: Int = TRACK_NOT_FOUND,
+        offset: Long = 0,
+        trackId: Long = TRACK_NOT_FOUND.toLong(),
         hasUserConfirmation: Boolean = false
     ) {
         if (!hasUserConfirmation) {

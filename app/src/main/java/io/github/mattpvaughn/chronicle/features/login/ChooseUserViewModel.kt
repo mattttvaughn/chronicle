@@ -25,10 +25,7 @@ class ChooseUserViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ChooseUserViewModel::class.java)) {
-                return ChooseUserViewModel(
-                    plexLoginService,
-                    plexLoginRepo
-                ) as T
+                return ChooseUserViewModel(plexLoginService, plexLoginRepo) as T
             }
             throw IllegalArgumentException("Unknown ViewHolder class")
         }

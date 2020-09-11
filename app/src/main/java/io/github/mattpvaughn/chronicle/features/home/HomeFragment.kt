@@ -90,7 +90,7 @@ class HomeFragment : Fragment() {
 
     private fun makeAudiobookAdapter(): AudiobookAdapter {
         return AudiobookAdapter(
-            viewStyle = VIEW_STYLE_COVER_GRID,
+            initialViewStyle = VIEW_STYLE_COVER_GRID,
             isVertical = false,
             isSquare = prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
             audiobookClick = object : AudiobookClick {

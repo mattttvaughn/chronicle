@@ -64,10 +64,10 @@ interface TrackDao {
     @Query("SELECT * FROM MediaItemTrack WHERE id = :id LIMIT 1")
     suspend fun getTrackAsync(id: Int): MediaItemTrack?
 
-    @Query("SELECT * FROM MediaItemTrack WHERE parentKey = :bookId AND cached >= :isOfflineMode ORDER BY `index` ASC")
+    @Query("SELECT * FROM MediaItemTrack WHERE parentKey = :bookId AND cached >= :isOfflineMode ORDER BY `discNumber` ASC, `index` ASC")
     fun getTracksForAudiobook(bookId: Int, isOfflineMode: Boolean): LiveData<List<MediaItemTrack>>
 
-    @Query("SELECT * FROM MediaItemTrack WHERE parentKey = :id AND cached >= :offlineModeActive ORDER BY `index` ASC")
+    @Query("SELECT * FROM MediaItemTrack WHERE parentKey = :id AND cached >= :offlineModeActive ORDER BY `discNumber` ASC, `index` ASC")
     suspend fun getTracksForAudiobookAsync(id: Int, offlineModeActive: Boolean): List<MediaItemTrack>
 
     @Query("SELECT COUNT(*) FROM MediaItemTrack WHERE parentKey = :bookId")
@@ -80,7 +80,7 @@ interface TrackDao {
     fun clear()
 
     @Query("UPDATE MediaItemTrack SET cached = :isCached WHERE id = :trackId")
-    fun updateCachedStatus(trackId: Int, isCached: Boolean)
+    fun updateCachedStatus(trackId: Int, isCached: Boolean) : Int
 
     @Query("SELECT * FROM MediaItemTrack WHERE cached = :isCached")
     fun getCachedTracksAsync(isCached: Boolean = true): List<MediaItemTrack>

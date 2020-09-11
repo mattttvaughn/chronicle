@@ -139,13 +139,14 @@ class PlexLoginRepo @Inject constructor(
     }
 
     override fun chooseServer(serverModel: ServerModel) {
-        Timber.i("Chose server: $serverModel")
+        Timber.i("User chose server: $serverModel")
         plexConfig.setPotentialConnections(serverModel.connections)
         plexPrefsRepo.server = serverModel
         _loginState.postEvent(LOGGED_IN_NO_LIBRARY_CHOSEN)
     }
 
     override fun chooseLibrary(plexLibrary: PlexLibrary) {
+        Timber.i("User chose library: $plexLibrary")
         plexPrefsRepo.library = plexLibrary
         _loginState.postEvent(LOGGED_IN_FULLY)
     }

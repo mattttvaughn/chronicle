@@ -92,6 +92,9 @@
     <string name="pause_play_button">Pause/Play button</string>
     <string name="warning_jump_to_chapter_will_clear_progress">This will clear your saved progress. Continue?</string>
     <string name="playback_error">Playback error: %1$s</string>
+    <string name="playback_error_401">Playback error (401): Not authorized</string>
+    <string name="playback_error_503">Playback error (503): Server unavailable</string>
+    <string name="playback_error_404">Playback error (404): Track not found</string>
 
     <!-- Downloads -->
     <string name="download_all">Download all</string>
@@ -208,4 +211,7 @@
     <string name="submit">Submit</string>
     <string name="enter_pin">Enter pin</string>
     <string name="pin">Pin</string>
+    <string name="playback_error_unknown">Unknown playback error</string>
+
+
 </resources>

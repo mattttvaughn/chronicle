@@ -13,10 +13,7 @@ import android.view.KeyEvent.*
 import androidx.lifecycle.Observer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.media.MediaBrowserServiceCompat
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.PlaybackParameters
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import io.github.mattpvaughn.chronicle.BuildConfig
@@ -43,16 +40,16 @@ import io.github.mattpvaughn.chronicle.util.PackageValidator
 import kotlinx.coroutines.*
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.time.ExperimentalTime
+import kotlin.time.seconds
 
 /** The service responsible for media playback, notification */
-class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceController,
+@OptIn(ExperimentalTime::class)
+class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceController, ServiceController,
     SleepTimer.SleepTimerBroadcaster {
 
     val serviceJob: CompletableJob = SupervisorJob()
     val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
-
-    @Inject
-    lateinit var playbackErrorHandler: PlaybackErrorHandler
 
     @Inject
     lateinit var onMediaChangedCallback: OnMediaChangedCallback
@@ -119,22 +116,48 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         const val PLEX_STATE_STOPPED = "stopped"
         const val PLEX_STATE_PAUSED = "paused"
 
+        /** Strings used to indicate playback errors */
+        const val ACTION_PLAYBACK_ERROR = "playback error action intent"
+        const val PLAYBACK_ERROR_MESSAGE = "playback error message"
+
         /**
-         * Key indicating playback offset relative entire audiobook duration (only use for, m4b
-         * chapters, as mp3 durations are generally too imprecise)
+         * Key indicating playback start time offset relative to the start of the track being
+         * played (only use for, m4b chapters, as mp3 durations are generally too imprecise)
          */
-        const val KEY_START_TIME_OFFSET = "track index bundle 2939829 tubers"
+        const val KEY_START_TIME_TRACK_OFFSET = "track index bundle 2939829 tubers"
 
         // Key indicating the ID of the track to begin playback at
         const val KEY_SEEK_TO_TRACK_WITH_ID = "MediaPlayerService.key_seek_to_track_with_id"
 
         // Value indicating to begin playback at the most recently listened position
         const val ACTIVE_TRACK = Long.MIN_VALUE + 22233L
-        const val USE_TRACK_ID = Long.MIN_VALUE + 22250L
+        const val USE_SAVED_TRACK_PROGRESS = Long.MIN_VALUE + 22250L
 
         private const val CHRONICLE_MEDIA_ROOT_ID = "chronicle_media_root_id"
         private const val CHRONICLE_MEDIA_EMPTY_ROOT = "empty root"
         private const val CHRONICLE_MEDIA_SEARCH_SUPPORTED = "android.media.browse.SEARCH_SUPPORTED"
+
+        /**
+         * Exoplayer back-buffer (millis to keep of playback prior to current location)
+         *
+         * @see DefaultLoadControl.Builder.setBufferDurationsMs
+         */
+        val EXOPLAYER_BACK_BUFFER_DURATION_MILLIS: Int = 120.seconds.toLongMilliseconds().toInt()
+
+        /**
+         * Exoplayer min-buffer (the minimum millis of buffer which exo will attempt to keep in
+         * memory)
+         *
+         * @see DefaultLoadControl.Builder.setBufferDurationsMs
+         */
+        val EXOPLAYER_MIN_BUFFER_DURATION_MILLIS: Int = 10.seconds.toLongMilliseconds().toInt()
+
+        /**
+         * Exoplayer max-buffer (the maximum duration of buffer which Exoplayer will store in memory)
+         *
+         * @see DefaultLoadControl.Builder.setBufferDurationsMs
+         */
+        val EXOPLAYER_MAX_BUFFER_DURATION_MILLIS: Int = 360.seconds.toLongMilliseconds().toInt()
     }
 
     @Inject
@@ -161,7 +184,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
             .build()
             .inject(this)
 
-        Timber.i("Service created!")
+        Timber.i("Service created! $this")
 
         exoPlayer.setAudioAttributes(audioAttrs, true)
 
@@ -237,7 +260,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         if (mediaController.playbackState.isPrepared) {
             // Only can change server when playback is prepared because otherwise we would be
             // attempting to load data on a null/empty tracklist
-            changeServer()
+            onChangeConnection()
         }
     }
 
@@ -245,18 +268,24 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
      * Change the tracks in the player to refer to the new server url. Because [PlexConfig] is a
      * Singleton we don't need to keep track of state here
      */
-    private fun changeServer() {
+    private fun onChangeConnection() {
         when (mediaController.playbackState.state) {
             PlaybackStateCompat.STATE_PLAYING -> {
                 mediaSessionCallback.onPlayFromMediaId(
                     trackListManager.trackList.map { it.id }.firstOrNull { true }.toString(),
-                    Bundle().apply { putLong(KEY_START_TIME_OFFSET, ACTIVE_TRACK) }
+                    Bundle().apply {
+                        putLong(KEY_SEEK_TO_TRACK_WITH_ID, ACTIVE_TRACK)
+                        putLong(KEY_START_TIME_TRACK_OFFSET, USE_SAVED_TRACK_PROGRESS)
+                    }
                 )
             }
             PlaybackStateCompat.STATE_PAUSED, PlaybackStateCompat.STATE_BUFFERING -> {
                 mediaSessionCallback.onPrepareFromMediaId(
                     trackListManager.trackList.map { it.id }.firstOrNull { true }.toString(),
-                    Bundle().apply { putLong(KEY_START_TIME_OFFSET, ACTIVE_TRACK) }
+                    Bundle().apply {
+                        putLong(KEY_SEEK_TO_TRACK_WITH_ID, ACTIVE_TRACK)
+                        putLong(KEY_START_TIME_TRACK_OFFSET, USE_SAVED_TRACK_PROGRESS)
+                    }
                 )
             }
             else -> {
@@ -499,6 +528,14 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
     private val playerEventListener = object : Player.EventListener {
 
+        override fun onPlayerError(error: ExoPlaybackException) {
+            Timber.e("Exoplayer playback error: $error")
+            val errorIntent = Intent(ACTION_PLAYBACK_ERROR)
+            errorIntent.putExtra(PLAYBACK_ERROR_MESSAGE, error.message)
+            localBroadcastManager.sendBroadcast(errorIntent)
+            super.onPlayerError(error)
+        }
+
         override fun onPositionDiscontinuity(reason: Int) {
             super.onPositionDiscontinuity(reason)
             Timber.i("Player discontinuity!!!!!")
@@ -512,9 +549,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                             val bookId = trackRepository.getBookIdForTrack(trackId.toInt())
                             val track = trackRepository.getTrackAsync(trackId.toInt())
                             val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
-                            val isBookFinished =
-                                tracks.getDuration() == tracks.getProgress()
-                            if (isBookFinished) {
+                            if (tracks.getDuration() == tracks.getProgress()) {
                                 mediaController.transportControls.stop()
                             }
                             progressUpdater.updateProgress(
@@ -531,6 +566,10 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
         override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
             super.onPlayerStateChanged(playWhenReady, playbackState)
+            if (playbackState != PlaybackStateCompat.STATE_ERROR) {
+                // clear errors if playback is proceeding correctly
+                mediaSessionConnector.setCustomErrorMessage(null)
+            }
             if (playbackState != Player.STATE_ENDED) {
                 return
             }
@@ -582,6 +621,11 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         }
 
         invalidatePlaybackParams()
+    }
+
+    override fun stopService() {
+        stopForeground(true)
+        stopSelf()
     }
 }
 

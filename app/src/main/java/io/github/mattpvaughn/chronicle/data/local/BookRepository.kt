@@ -289,35 +289,29 @@ class BookRepository @Inject constructor(
         audiobook: Audiobook,
         tracks: List<MediaItemTrack>
     ): Boolean {
+        Timber.i("Loading chapter data. Bookid is ${audiobook.id}, tracks are $tracks")
         val chapters: List<Chapter> = withContext(Dispatchers.IO) {
             try {
-                tracks.flatMap {
-                    plexMediaService.retrieveChapterInfo(it.id).plexMediaContainer.metadata
-                        .firstOrNull()
-                        ?.plexChapters
-                        // TODO: below won't work for books made of multiple m4b files
-                        ?.map { plexChapter -> plexChapter.toChapter(audiobook.isCached) }
-                        ?: emptyList()
-                }
+                tracks.flatMap {track ->
+                    val networkChapters = plexMediaService.retrieveChapterInfo(track.id)
+                        .plexMediaContainer.metadata.firstOrNull()?.plexChapters
+                    Timber.i("Network chapters: $networkChapters")
+                    // If no chapters for this track, make a chapter from the current track
+                    networkChapters?.map { plexChapter ->
+                        plexChapter.toChapter(track.id.toLong(), track.discNumber, audiobook.isCached)
+                    }.takeIf { !it.isNullOrEmpty() } ?: listOf(track.asChapter())
+                }.sorted()
             } catch (t: Throwable) {
                 Timber.e("Failed to load chapters: $t")
-                emptyList<Chapter>()
+                emptyList()
             }
         }
-        return if (chapters.isNotEmpty()) {
-            // Update [Audiobook.chapters] in the local db
-            val replacementBook = audiobook.copy(chapters = chapters)
-            withContext(Dispatchers.IO) {
-                bookDao.update(replacementBook)
-            }
-            true
-        } else {
-            // no good chapter data found- use the track data instead
-            val replacementBook = audiobook.copy(chapters = tracks.asChapterList())
-            withContext(Dispatchers.IO) {
-                bookDao.update(replacementBook)
-            }
-            false
+        Timber.i("Loaded chapters: ${chapters.map{ "[${it.index}/${it.discNumber}]" }}")
+        // Update [Audiobook.chapters] in the local db
+        val replacementBook = audiobook.copy(chapters = chapters)
+        withContext(Dispatchers.IO) {
+            bookDao.update(replacementBook)
         }
+        return true
     }
 }

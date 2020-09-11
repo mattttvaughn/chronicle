@@ -31,9 +31,7 @@ import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserLis
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString.ResourceString
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -81,10 +79,6 @@ class LibraryViewModel(
         prefsRepo.libraryBookViewStyle,
         sharedPreferences
     )
-
-    private var _scrollToItem = MutableLiveData<Event<Unit>>()
-    val scrollToTop: LiveData<Event<Unit>>
-        get() = _scrollToItem
 
     private var _isFilterShown = MutableLiveData(false)
     val isFilterShown: LiveData<Boolean>
@@ -135,10 +129,9 @@ class LibraryViewModel(
                 }
             })
 
-        if (prevBooks.map { it.id } != results.map { it.id }) {
-            withContext(Dispatchers.Main) {
-                _scrollToItem.postEvent(Unit)
-            }
+        // If nothing has changed, return prevBooks
+        if (prevBooks.map { it.id } == results.map { it.id }) {
+            return@QuadLiveDataAsync prevBooks
         }
 
         prevBooks = results

@@ -29,7 +29,7 @@ interface ITrackRepository {
      * Update the value of [MediaItemTrack.cached] to [isCached] for a [MediaItemTrack] with
      * [MediaItemTrack.id] == [trackId] in the [TrackDatabase]
      */
-    suspend fun updateCachedStatus(trackId: Int, isCached: Boolean)
+    suspend fun updateCachedStatus(trackId: Int, isCached: Boolean): Int
 
     /** Return all tracks in the [TrackDatabase]  */
     fun getAllTracks(): LiveData<List<MediaItemTrack>>
@@ -135,8 +135,8 @@ class TrackRepository @Inject constructor(
         }
     }
 
-    override suspend fun updateCachedStatus(trackId: Int, isCached: Boolean) {
-        withContext(Dispatchers.IO) {
+    override suspend fun updateCachedStatus(trackId: Int, isCached: Boolean) : Int {
+        return withContext(Dispatchers.IO) {
             trackDao.updateCachedStatus(trackId, isCached)
         }
     }

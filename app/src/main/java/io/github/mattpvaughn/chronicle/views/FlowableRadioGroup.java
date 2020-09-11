@@ -5,17 +5,13 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.Build;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.autofill.AutofillManager;
-import android.view.autofill.AutofillValue;
 import android.widget.CompoundButton;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
 import androidx.annotation.IdRes;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatRadioButton;
 
 import com.google.android.material.internal.FlowLayout;
@@ -40,10 +36,6 @@ public class FlowableRadioGroup extends FlowLayout {
     private OnCheckedChangeListener mOnCheckedChangeListener;
     private PassThroughHierarchyChangeListener mPassThroughListener;
 
-    // Indicates whether the child was set from resources or dynamically, so it can be used
-    // to sanitize autofill requests.
-    private int mInitialCheckedId = View.NO_ID;
-
     /**
      * {@inheritDoc}
      */
@@ -57,13 +49,6 @@ public class FlowableRadioGroup extends FlowLayout {
      */
     public FlowableRadioGroup(Context context, AttributeSet attrs) {
         super(context, attrs);
-
-        // RadioGroup is important by default, unless app developer overrode attribute.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (getImportantForAutofill() == IMPORTANT_FOR_AUTOFILL_AUTO) {
-                setImportantForAutofill(IMPORTANT_FOR_AUTOFILL_YES);
-            }
-        }
 
         // retrieve selected radio button as requested by the user in the
         // XML layout file
@@ -170,15 +155,6 @@ public class FlowableRadioGroup extends FlowLayout {
 
         if (mOnCheckedChangeListener != null) {
             mOnCheckedChangeListener.onCheckedChanged(this, mCheckedId);
-        }
-        if (changed) {
-            final AutofillManager afm;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                afm = getContext().getSystemService(AutofillManager.class);
-                if (afm != null) {
-                    afm.notifyValueChanged(this);
-                }
-            }
         }
     }
 
@@ -397,47 +373,4 @@ public class FlowableRadioGroup extends FlowLayout {
         }
     }
 
-
-    // suppress lint to remove dependency on Timber in case this library is used in other projects
-    @SuppressLint("LogNotTimber")
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    @Override
-    public void autofill(AutofillValue value) {
-        if (!isEnabled()) return;
-
-        if (!value.isList()) {
-            Log.w(LOG_TAG, value + " could not be autofilled into " + this);
-            return;
-        }
-
-        final int index = value.getListValue();
-        final View child = getChildAt(index);
-        if (child == null) {
-            Log.w(VIEW_LOG_TAG, "RadioGroup.autoFill(): no child with index " + index);
-            return;
-        }
-
-        check(child.getId());
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    @Override
-    public int getAutofillType() {
-        return isEnabled() ? AUTOFILL_TYPE_LIST : AUTOFILL_TYPE_NONE;
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    @Override
-    public AutofillValue getAutofillValue() {
-        if (!isEnabled()) return null;
-
-        final int count = getChildCount();
-        for (int i = 0; i < count; i++) {
-            final View child = getChildAt(i);
-            if (child.getId() == mCheckedId) {
-                return AutofillValue.forList(i);
-            }
-        }
-        return null;
-    }
 }

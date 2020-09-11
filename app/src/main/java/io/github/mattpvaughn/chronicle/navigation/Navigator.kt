@@ -176,6 +176,7 @@ class Navigator @Inject constructor(
             if (fragmentManager.backStackEntryCount == 0) {
                 false
             } else {
+                Timber.i("Popping backstack!")
                 fragmentManager.popBackStack()
                 true
             }

@@ -14,7 +14,7 @@ import io.github.mattpvaughn.chronicle.databinding.ListItemAudiobookTextOnlyBind
 import io.github.mattpvaughn.chronicle.databinding.ListItemAudiobookWithDetailsBinding
 
 class AudiobookAdapter(
-    viewStyle: String,
+    initialViewStyle: String,
     private val isVertical: Boolean,
     private val isSquare: Boolean,
     private val audiobookClick: LibraryFragment.AudiobookClick
@@ -23,12 +23,24 @@ class AudiobookAdapter(
     private val COVER_GRID = 1
     private val TEXT_ONLY = 2
     private val DETAILS = 3
-    private val viewStyleInt = when (viewStyle) {
+    var viewStyle: String = initialViewStyle
+        set(value) {
+            viewStyleInt = when (value) {
+                VIEW_STYLE_COVER_GRID -> COVER_GRID
+                VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
+                VIEW_STYLE_DETAILS_LIST -> DETAILS
+                else -> throw IllegalStateException("Unknown view style")
+            }
+            notifyDataSetChanged()
+            field = value
+        }
+    private var viewStyleInt: Int = when (initialViewStyle) {
         VIEW_STYLE_COVER_GRID -> COVER_GRID
         VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
         VIEW_STYLE_DETAILS_LIST -> DETAILS
         else -> throw IllegalStateException("Unknown view style")
     }
+
 
     private var serverConnected: Boolean = false
 

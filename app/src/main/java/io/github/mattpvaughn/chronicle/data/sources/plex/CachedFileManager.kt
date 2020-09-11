@@ -71,6 +71,8 @@ class CachedFileManager @Inject constructor(
                     val deleted = destFile.delete()
                     if (!deleted) {
                         Timber.e("Failed to delete previously cached file. Download will fail!")
+                    } else {
+                        Timber.e("Succeeding in deleting cached file")
                     }
                 }
                 val dest = Uri.parse("file://${destFile.absolutePath}")
@@ -117,7 +119,9 @@ class CachedFileManager @Inject constructor(
         val results: List<Result<Unit>> = tracks.map { track ->
             val cachedFile = File(cacheLoc, track.getCachedFileName())
             if (!cachedFile.exists()) {
-                return@map Result.failure<Unit>(NoSuchFileException(cachedFile))
+                // If the cached file is already deleted, that's a success
+                trackRepository.updateCachedStatus(track.id, false)
+                return@map Result.success(Unit)
             }
             val deleted = cachedFile.delete()
             if (!deleted) {
@@ -159,7 +163,7 @@ class CachedFileManager @Inject constructor(
     override suspend fun handleDownloadedTrack(downloadId: Long): Result<Long> {
         val result = getTrackIdForDownload(downloadId)
         if (result.isFailure) {
-            Timber.e("Download failed due to: ${result.exceptionOrNull()}")
+            Timber.e(result.exceptionOrNull())
             return result
         }
 
@@ -202,16 +206,10 @@ class CachedFileManager @Inject constructor(
         }
         val statusColumnIndex = cur.getColumnIndex(COLUMN_STATUS)
         if (STATUS_SUCCESSFUL != cur.getInt(statusColumnIndex)) {
-            val reasonColumnIndex = cur.getColumnIndex(COLUMN_REASON)
-            val titleColumnIndex = cur.getColumnIndex(COLUMN_TITLE)
+            val errorReason = cur.getInt(cur.getColumnIndex(COLUMN_REASON))
+            val titleColumn = cur.getString(cur.getColumnIndex(COLUMN_TITLE))
             return Result.failure(
-                Exception(
-                    "Download failed for \"$titleColumnIndex\". " +
-                            when (val errorReason = cur.getInt(reasonColumnIndex)) {
-                                1008 -> "due to server issues (ERROR_CANNOT_RESUME). Please clear failed downloads from your Downloads app and try again"
-                                else -> "Error code: ($errorReason)"
-                            }
-                )
+                Exception("Download failed for \"$titleColumn\". Error code: ($errorReason)")
             )
         }
         val downloadedFilePath = cur.getString(cur.getColumnIndex(COLUMN_LOCAL_URI))
@@ -225,13 +223,12 @@ class CachedFileManager @Inject constructor(
             val trackFileName = trackId + downloadedTrack.extension
             val newTrackFile = File(downloadedTrack.parentFile, trackFileName)
             downloadedTrack.renameTo(newTrackFile)
+            Timber.i("Renamed download to: ${newTrackFile.absolutePath}")
             return if (newTrackFile.exists()) {
                 Result.success(trackId.toLong())
             } else {
                 Result.failure(
-                    IllegalStateException(
-                        "Downloaded file already exists and could not replace it"
-                    )
+                    IllegalStateException("Downloaded file already exists and could not replace it")
                 )
             }
         }
@@ -246,45 +243,63 @@ class CachedFileManager @Inject constructor(
 
     /** Update [trackRepository] and [bookRepository] to reflect download files */
     override suspend fun refreshTrackDownloadedStatus() {
-        val keysCachedOnDisk = prefsRepo.cachedMediaDir.listFiles(FileFilter {
+        val idToFileMap = HashMap<Int, File>()
+        val trackIdsFoundOnDisk = prefsRepo.cachedMediaDir.listFiles(FileFilter {
             MediaItemTrack.cachedFilePattern.matches(it.name)
         })?.map {
-            MediaItemTrack.getTrackIdFromFileName(it.name)
+            val id = MediaItemTrack.getTrackIdFromFileName(it.name)
+            idToFileMap[id] = it
+            id
         } ?: emptyList()
 
         val reportedCachedKeys = trackRepository.getCachedTracks().map { it.id }
 
+        val alteredTracks = mutableListOf<Int>()
+
         // Exists in DB but not in cache- remove from DB!
-        reportedCachedKeys.filter { !keysCachedOnDisk.contains(it) }
-            .forEach {
-                Timber.i("Removed track: $it")
-                trackRepository.updateCachedStatus(it, false)
-            }
+        reportedCachedKeys.filter {
+            !trackIdsFoundOnDisk.contains(it)
+        }.forEach {
+            Timber.i("Removed track: $it")
+            alteredTracks.add(it)
+            trackRepository.updateCachedStatus(it, false)
+        }
 
         // Exists in cache but not in DB- add to DB!
-        keysCachedOnDisk.filter { !reportedCachedKeys.contains(it) }
-            .forEach { trackRepository.updateCachedStatus(it, true) }
-
-        // Update book cached status
-        keysCachedOnDisk.map { trackRepository.getBookIdForTrack(it) }
-            .distinct()
-            .forEach { bookId: Int ->
-                Timber.i("Book: $bookId")
-                if (bookId == NO_AUDIOBOOK_FOUND_ID) {
-                    return@forEach
-                }
-                val bookTrackCacheCount =
-                    trackRepository.getCachedTrackCountForBookAsync(bookId)
-                val bookTrackCount = trackRepository.getTrackCountForBookAsync(bookId)
-                val isBookCached = bookTrackCacheCount == bookTrackCount && bookTrackCount > 0
-                val book = bookRepository.getAudiobookAsync(bookId)
-                if (book != null) {
-                    bookRepository.update(book.copy(
-                        isCached = isBookCached,
-                        chapters = book.chapters.map { it.copy(downloaded = isBookCached) }
-                    ))
-                }
+        trackIdsFoundOnDisk.filter {
+            !reportedCachedKeys.contains(it)
+        }.forEach {
+            val rowsUpdated = trackRepository.updateCachedStatus(it, true)
+            if (rowsUpdated == 0) {
+                // TODO: this will be relevant when multiple sources is implemented, but for now
+                //       we just have to trust, as they could be from other libraries
+//                // File has been orphaned- no longer exists in DB, remove it from file system!
+//                idToFileMap[it]?.delete()
+            } else {
+                alteredTracks.add(it)
             }
+        }
+
+        // Update cached status for the books containing any added/removed tracks
+        alteredTracks.map {
+            trackRepository.getBookIdForTrack(it)
+        }.distinct().forEach { bookId: Int ->
+            Timber.i("Book: $bookId")
+            if (bookId == NO_AUDIOBOOK_FOUND_ID) {
+                return@forEach
+            }
+            val bookTrackCacheCount =
+                trackRepository.getCachedTrackCountForBookAsync(bookId)
+            val bookTrackCount = trackRepository.getTrackCountForBookAsync(bookId)
+            val isBookCached = bookTrackCacheCount == bookTrackCount && bookTrackCount > 0
+            val book = bookRepository.getAudiobookAsync(bookId)
+            if (book != null) {
+                bookRepository.update(book.copy(
+                    isCached = isBookCached,
+                    chapters = book.chapters.map { it.copy(downloaded = isBookCached) }
+                ))
+            }
+        }
     }
 }
 

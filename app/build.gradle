@@ -11,8 +11,8 @@ android {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 17
-        versionName "0.42.2"
+        versionCode 18
+        versionName "0.50.0"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
@@ -64,6 +64,9 @@ android {
     }
     kotlinOptions {
         freeCompilerArgs = ["-Xallow-result-return-type"]
+        freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
+        freeCompilerArgs += ["-Xopt-in=kotlin.time.ExperimentalTime"]
+        freeCompilerArgs += ["-Xopt-in=kotlinx.coroutines.InternalCoroutinesApi"]
     }
 }
 
@@ -76,6 +79,7 @@ dependencies {
     // Material components
     implementation "com.google.android.material:material:$materialLibVersion"
     implementation "androidx.appcompat:appcompat:$supportlibVersion"
+    implementation "androidx.recyclerview:recyclerview:1.2.0-alpha05"
     implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
 
     // AndroidX

@@ -35,10 +35,7 @@ interface SleepTimer {
     }
 
     enum class SleepTimerAction {
-        BEGIN,
-        EXTEND,
-        CANCEL,
-        UPDATE
+        BEGIN, EXTEND, CANCEL, UPDATE
     }
 
     interface SleepTimerBroadcaster {
@@ -75,17 +72,12 @@ class SimpleSleepTimer @Inject constructor(
         }
     })
 
+    // TODO: handle changes to playback speed?
     override fun handleAction(action: SleepTimer.SleepTimerAction, durationMillis: Long) {
         when (action) {
-            UPDATE -> {
-                update(durationMillis)
-            }
-            EXTEND -> {
-                extend(durationMillis)
-            }
-            CANCEL -> {
-                cancel()
-            }
+            UPDATE -> update(durationMillis)
+            EXTEND -> extend(durationMillis)
+            CANCEL -> cancel()
             BEGIN -> {
                 update(durationMillis)
                 start(true)

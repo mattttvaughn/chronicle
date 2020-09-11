@@ -44,10 +44,10 @@ class ChooseServerViewModel @Inject constructor(
         get() = _loadingStatus
 
     init {
-        getServers()
+        loadServers()
     }
 
-    private fun getServers() {
+    private fun loadServers() {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             try {
                 _loadingStatus.value = LoadingStatus.LOADING
@@ -66,7 +66,7 @@ class ChooseServerViewModel @Inject constructor(
     }
 
     fun refresh() {
-        getServers()
+        loadServers()
     }
 
     fun chooseServer(serverModel: ServerModel) {

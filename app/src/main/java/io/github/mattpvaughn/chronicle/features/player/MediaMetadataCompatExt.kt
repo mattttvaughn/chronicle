@@ -26,7 +26,9 @@ import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DataSource
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.util.toUri
+import timber.log.Timber
 
 
 /** Useful extensions for [MediaMetadataCompat]. */
@@ -298,11 +300,15 @@ fun MediaDescriptionCompat.toMediaMetadataCompat(): MediaMetadataCompat {
  * of [MediaMetadataCompat] objects.
  */
 fun List<MediaMetadataCompat>.toMediaSource(
+    plexPrefsRepo: PlexPrefsRepo,
     dataSourceFactory: DataSource.Factory
 ): ConcatenatingMediaSource {
 
     val concatenatingMediaSource = ConcatenatingMediaSource()
     forEach {
+        Timber.i("Media uri is: ${it.mediaUri}," +
+                "server auth token is ${plexPrefsRepo.server?.accessToken}," +
+                "user is ${plexPrefsRepo.accountAuthToken}")
         concatenatingMediaSource.addMediaSource(it.toMediaSource(dataSourceFactory))
     }
     return concatenatingMediaSource

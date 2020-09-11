@@ -39,19 +39,31 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
+import io.github.mattpvaughn.chronicle.data.local.IBookRepository
+import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
+import io.github.mattpvaughn.chronicle.data.model.asChapterList
+import io.github.mattpvaughn.chronicle.data.model.getActiveTrack
+import io.github.mattpvaughn.chronicle.data.model.getChapterAt
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import timber.log.Timber
+import javax.inject.Inject
 
 const val NOW_PLAYING_CHANNEL: String = "io.github.mattpvaughn.chronicle"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb32229
 
 /** Helper class to encapsulate code for building notifications. */
 @ServiceScope
-class NotificationBuilder(
+class NotificationBuilder @Inject constructor(
     private val context: Context,
     private val controller: MediaControllerCompat,
-    private val plexConfig: PlexConfig
+    private val session: MediaSessionCompat,
+    private val plexConfig: PlexConfig,
+    private val trackRepo: ITrackRepository,
+    private val bookRepo: IBookRepository
 ) {
 
     private val platformNotificationManager: NotificationManager =
@@ -143,6 +155,41 @@ class NotificationBuilder(
             R.drawable.ic_notification_icon_paused
         }
 
+        val trackId: Int = try {
+            session.controller.metadata.id?.toInt() ?: TRACK_NOT_FOUND
+        } catch (t: Throwable) {
+            TRACK_NOT_FOUND
+        }
+        Timber.i("Track id is: $trackId")
+        val bookId = withContext(Dispatchers.IO) { trackRepo.getBookIdForTrack(trackId) }
+        val book = withContext(Dispatchers.IO) { bookRepo.getAudiobookAsync(bookId) }
+        Timber.i("Book is $book")
+        val tracks = withContext(Dispatchers.IO) {
+            trackRepo.getTracksForAudiobookAsync(bookId)
+        }
+        Timber.i("Tracks are $tracks")
+        val chapterTitle = if (book != null && tracks.isNotEmpty()) {
+            val chapters = book.chapters.takeIf { it.isNotEmpty() } ?: tracks.asChapterList()
+            val activeTrack = tracks.getActiveTrack()
+            val currentTrackProgress: Long = activeTrack.progress
+            chapters.filter {
+                it.trackId.toInt() == activeTrack.id
+            }.getChapterAt(currentTrackProgress).title
+        } else {
+            ""
+        }
+        Timber.i("Chapter title is: $chapterTitle")
+        val title = chapterTitle.takeIf { it.isNotEmpty() } ?: description.title
+        val subtitle = if (book != null && chapterTitle.isNotEmpty()) {
+            // if we have a chapter title, the subtitle should be book name
+            book.title
+        } else {
+            // o/w use the author name from [description]
+            description.subtitle
+        }
+        Timber.i("Title is: $title")
+        Timber.i("Subtitle is: $subtitle")
+
         // Because I'm not sure which one I usually set
         val artUri = controller.metadata.albumArtUri.takeIf { it != Uri.EMPTY }
             ?: controller.metadata.artUri.takeIf { it != Uri.EMPTY }
@@ -157,8 +204,8 @@ class NotificationBuilder(
             }
         }
 
-        builder.setContentText(description.subtitle)
-            .setContentTitle(description.title)
+        builder.setContentText(subtitle)
+            .setContentTitle(title)
             .setContentIntent(controller.sessionActivity)
             .setDeleteIntent(stopPendingIntent)
             .setOnlyAlertOnce(true)

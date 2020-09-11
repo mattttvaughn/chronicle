@@ -17,7 +17,6 @@ import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import dagger.Module
@@ -25,18 +24,30 @@ import dagger.Provides
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
-import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.APP_NAME
+import io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.features.player.*
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.EXOPLAYER_BACK_BUFFER_DURATION_MILLIS
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.EXOPLAYER_MAX_BUFFER_DURATION_MILLIS
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.EXOPLAYER_MIN_BUFFER_DURATION_MILLIS
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import io.github.mattpvaughn.chronicle.util.PackageValidator
 import kotlinx.coroutines.CompletableJob
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @Module
 class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
     fun service(): Service = service
+
+    @Provides
+    @ServiceScope
+    fun serviceController(): ServiceController = service
 
     @Provides
     @ServiceScope
@@ -50,10 +61,10 @@ class ServiceModule(private val service: MediaPlayerService) {
     @ServiceScope
     fun simpleExoPlayer(): SimpleExoPlayer = SimpleExoPlayer.Builder(service).setLoadControl(
         // increase buffer size across the board as ExoPlayer defaults are set for video
-        DefaultLoadControl.Builder().setBackBuffer(60 * 1000, true)
+        DefaultLoadControl.Builder().setBackBuffer(EXOPLAYER_BACK_BUFFER_DURATION_MILLIS, true)
             .setBufferDurationsMs(
-                10 * 1000,
-                180 * 1000,
+                EXOPLAYER_MIN_BUFFER_DURATION_MILLIS,
+                EXOPLAYER_MAX_BUFFER_DURATION_MILLIS,
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
             )
@@ -114,11 +125,6 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun notificationBuilder(controller: MediaControllerCompat, plexConfig: PlexConfig) =
-        NotificationBuilder(service, controller, plexConfig)
-
-    @Provides
-    @ServiceScope
     fun becomingNoisyReceiver(session: MediaSessionCompat) =
         BecomingNoisyReceiver(service, session.sessionToken)
 
@@ -128,28 +134,25 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun serviceController() = object : ServiceController {
-        override fun stopService() = service.stopSelf()
-    }
-
-    @Provides
-    @ServiceScope
-    fun plexDataSourceFactory(plexPrefs: PlexPrefsRepo): DefaultDataSourceFactory {
+    fun plexDataSourceFactory(plexPrefs: PlexPrefsRepo): DefaultHttpDataSourceFactory {
         val dataSourceFactory = DefaultHttpDataSourceFactory(Util.getUserAgent(service, APP_NAME))
 
         val props = dataSourceFactory.defaultRequestProperties
         props.set("X-Plex-Platform", "Android")
         props.set("X-Plex-Provides", "player")
         props.set("X-Plex_Client-Name", APP_NAME)
-        props.set("X-Plex-Client-Identifier", plexPrefs.uuid) // TODO add a read UUID
+        props.set("X-Plex-Client-Identifier", plexPrefs.uuid)
         props.set("X-Plex-Version", BuildConfig.VERSION_NAME)
         props.set("X-Plex-Product", APP_NAME)
         props.set("X-Plex-Platform-Version", Build.VERSION.RELEASE)
         props.set("X-Plex-Device", Build.MODEL)
         props.set("X-Plex-Device-Name", Build.MODEL)
-        props.set("X-Plex-Token", plexPrefs.user?.authToken ?: plexPrefs.accountAuthToken)
+        props.set(
+            "X-Plex-Token",
+            plexPrefs.server?.accessToken ?: plexPrefs.user?.authToken ?: plexPrefs.accountAuthToken
+        )
 
-        return DefaultDataSourceFactory(service, dataSourceFactory)
+        return dataSourceFactory
     }
 
     @Provides

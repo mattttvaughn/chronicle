@@ -26,9 +26,9 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.databinding.ActivityMainBinding
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingFragment
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTION_PLAYBACK_ERROR
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.PLAYBACK_ERROR_MESSAGE
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
-import io.github.mattpvaughn.chronicle.features.player.PlaybackErrorHandler.Companion.ACTION_PLAYBACK_ERROR
-import io.github.mattpvaughn.chronicle.features.player.PlaybackErrorHandler.Companion.PLAYBACK_ERROR_MESSAGE
 import io.github.mattpvaughn.chronicle.injection.components.ActivityComponent
 import io.github.mattpvaughn.chronicle.injection.components.DaggerActivityComponent
 import io.github.mattpvaughn.chronicle.injection.modules.ActivityModule
@@ -235,23 +235,23 @@ open class MainActivity : AppCompatActivity() {
             //Fetching the download id received with the broadcast
             when (intent.action) {
                 ACTION_PLAYBACK_ERROR -> {
-                    val errorMessage =
-                        intent.getStringExtra(PLAYBACK_ERROR_MESSAGE) ?: "Unknown error"
+                    val errorMessage = intent.getStringExtra(PLAYBACK_ERROR_MESSAGE)
+                        ?: getString(R.string.playback_error_unknown)
                     val userMessage = when {
                         errorMessage.contains("404") -> {
-                            "Playback error (404): Track not found"
+                            getString(R.string.playback_error_404)
                         }
                         errorMessage.contains("503") -> {
-                            "Playback error (503): Server unavailable"
+                            getString(R.string.playback_error_503)
                         }
                         errorMessage.contains("401") -> {
-                            "Playback error (401): Not authorized"
+                            getString(R.string.playback_error_401)
                         }
                         else -> errorMessage
                     }
                     viewModel.showUserMessage(userMessage)
                 }
-                else -> throw NoWhenBranchMatchedException("Unknown playback error")
+                else -> throw NoWhenBranchMatchedException(getString(R.string.playback_error_unknown))
             }
         }
     }

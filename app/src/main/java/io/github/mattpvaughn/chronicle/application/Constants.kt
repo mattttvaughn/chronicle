@@ -8,7 +8,6 @@ const val MILLIS_PER_SECOND = 1000L
 const val SECONDS_PER_MINUTE = 60L
 const val USE_STRICT_MODE = false
 
-// include constant true/false in case BuildConfig is wrong I guess, saw somewhere it could happen
-val LOG_NETWORK_REQUESTS = true && BuildConfig.DEBUG
+val LOG_NETWORK_REQUESTS = BuildConfig.DEBUG
 const val PREMIUM_IAP_SKU = "premium"
 val IAP_SKU_LIST = listOf(PREMIUM_IAP_SKU)

@@ -26,8 +26,8 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID
-import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_OFFSET
-import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_TRACK_ID
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_TRACK_OFFSET
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_SAVED_TRACK_PROGRESS
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_ACTION
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_DURATION_MILLIS
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerAction
@@ -131,8 +131,7 @@ class CurrentlyPlayingViewModel(
         }
 
     val currentTrack: LiveData<MediaItemTrack> = Transformations.map(tracks) { trackList ->
-        val track = trackList.takeIf { it.isNotEmpty() }?.getActiveTrack() ?: EMPTY_TRACK
-        return@map track
+        return@map trackList.takeIf { it.isNotEmpty() }?.getActiveTrack() ?: EMPTY_TRACK
     }
 
     val currentChapter = DoubleLiveData(
@@ -144,25 +143,23 @@ class CurrentlyPlayingViewModel(
         if (_tracks == null || _tracks.isEmpty() || _chapters == null || _chapters.isEmpty()) {
             return@DoubleLiveData EMPTY_CHAPTER
         }
-        val currentTrackProgress: Long = _tracks.getActiveTrack().progress
-        val currentTrackOffset: Long = _tracks.getTrackStartTime(_tracks.getActiveTrack())
-        return@DoubleLiveData _chapters.getChapterAt(currentTrackOffset + currentTrackProgress)
+        val activeTrack = _tracks.getActiveTrack()
+        return@DoubleLiveData _chapters.filter {
+            it.trackId.toInt() == activeTrack.id
+        }.getChapterAt(activeTrack.progress)
     }
 
-    val chapterProgress = DoubleLiveData(
+    val chapterProgress = TripleLiveData(
         currentChapter,
-        currentTrack
-    ) { _chapter, _track ->
-        if (_chapter == null || _chapter == EMPTY_CHAPTER || _track == null || _track == EMPTY_TRACK) {
-            return@DoubleLiveData -1L
+        currentTrack,
+        tracks
+    ) { _chapter, _track, _tracks ->
+        if (_chapter == null || _chapter == EMPTY_CHAPTER || _track == null ||
+            _track == EMPTY_TRACK || _tracks.isNullOrEmpty() || _track !in _tracks
+        ) {
+            return@TripleLiveData 0L
         }
-        // get the offset of current progress w.r.t. the entire audiobook
-        val tempTracks = tracks.value ?: emptyList()
-        if (tempTracks.isNullOrEmpty() || !tempTracks.contains(_track)) {
-            return@DoubleLiveData -1L
-        }
-        val audiobookProgress = _track.progress + tempTracks.getTrackStartTime(_track)
-        return@DoubleLiveData audiobookProgress - _chapter.startTimeOffset
+        return@TripleLiveData _track.progress - _chapter.startTimeOffset
     }
 
     val chapterProgressString = Transformations.map(chapterProgress) { progress ->
@@ -299,21 +296,25 @@ class CurrentlyPlayingViewModel(
                 _showUserMessage.postEvent("Audiobook is null. Try restarting the app and trying again")
                 return
             }
-            pausePlay(audiobook.value!!.id.toString(), startTimeOffset = ACTIVE_TRACK)
+            pausePlay(
+                bookId = audiobook.value!!.id.toString(),
+                trackId = ACTIVE_TRACK,
+                startTimeOffset = ACTIVE_TRACK
+            )
         }
     }
 
     private fun pausePlay(
         bookId: String,
-        startTimeOffset: Long = ACTIVE_TRACK,
+        startTimeOffset: Long = USE_SAVED_TRACK_PROGRESS,
         forcePlay: Boolean = false,
-        trackId: Int = TRACK_NOT_FOUND
+        trackId: Long = ACTIVE_TRACK
     ) {
         val transportControls = mediaServiceConnection.transportControls
 
         val extras = Bundle().apply {
-            putLong(KEY_START_TIME_OFFSET, startTimeOffset)
-            putInt(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
+            putLong(KEY_START_TIME_TRACK_OFFSET, startTimeOffset)
+            putLong(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
         }
         if (transportControls != null) {
             mediaServiceConnection.playbackState.value?.let { playbackState ->
@@ -371,7 +372,7 @@ class CurrentlyPlayingViewModel(
 
     /** Jumps to a given track with [MediaItemTrack.id] == [trackId] */
     fun jumpToChapter(
-        startTimeOffset: Long = USE_TRACK_ID,
+        startTimeOffset: Long = 0,
         trackId: Int = TRACK_NOT_FOUND,
         hasUserConfirmation: Boolean = false
     ) {
@@ -397,7 +398,7 @@ class CurrentlyPlayingViewModel(
                 pausePlay(
                     book.id.toString(),
                     startTimeOffset = startTimeOffset,
-                    trackId = trackId,
+                    trackId = trackId.toLong(),
                     forcePlay = true
                 )
             }
@@ -599,27 +600,30 @@ class CurrentlyPlayingViewModel(
         val id: String = (audiobookId.value ?: TRACK_NOT_FOUND).toString()
         if (currentChapter.value == EMPTY_CHAPTER) {
             // Seeking by track length
-            tracks.value?.let { _tracks ->
+            currentTrack.value?.let { curr ->
                 val extras = Bundle().apply {
-                    putInt(KEY_SEEK_TO_TRACK_WITH_ID, currentTrack.value?.id ?: TRACK_NOT_FOUND)
+                    putLong(KEY_SEEK_TO_TRACK_WITH_ID, curr.id.toLong())
                 }
                 mediaServiceConnection.transportControls?.playFromMediaId(id, extras)
             }
         } else {
             // Seeking by chapter length
             Timber.i("Seeking by chapter length")
-            currentChapter.value?.let { chapter ->
-                val chapterDuration = chapter.endTimeOffset - chapter.startTimeOffset
-                val startTimeOffset =
-                    chapter.startTimeOffset + (percentProgress * chapterDuration).toLong()
-                Timber.i("Scrub time offset (from book start in ms): $startTimeOffset")
-                val extras = Bundle().apply {
-                    putLong(KEY_START_TIME_OFFSET, startTimeOffset)
-                }
-                if (mediaServiceConnection.playbackState.value?.isPlaying == true) {
-                    mediaServiceConnection.transportControls?.playFromMediaId(id, extras)
-                } else {
-                    mediaServiceConnection.transportControls?.prepareFromMediaId(id, extras)
+            currentTrack.value?.let { currTrack ->
+                currentChapter.value?.let { chapter ->
+                    val chapterDuration = chapter.endTimeOffset - chapter.startTimeOffset
+                    val startTimeOffset =
+                        chapter.startTimeOffset + (percentProgress * chapterDuration).toLong()
+                    Timber.i("Scrub time offset (from book start in ms): $startTimeOffset")
+                    val extras = Bundle().apply {
+                        putLong(KEY_START_TIME_TRACK_OFFSET, startTimeOffset)
+                        putLong(KEY_SEEK_TO_TRACK_WITH_ID, currTrack.id.toLong())
+                    }
+                    if (mediaServiceConnection.playbackState.value?.isPlaying == true) {
+                        mediaServiceConnection.transportControls?.playFromMediaId(id, extras)
+                    } else {
+                        mediaServiceConnection.transportControls?.prepareFromMediaId(id, extras)
+                    }
                 }
             }
         }

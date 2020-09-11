@@ -27,6 +27,10 @@
         <item name="android:fontFamily">@font/lato_bold</item>
     </style>
 
+    <style name="TextAppearance.Button" parent="Widget.AppCompat.Button">
+        <item name="android:textColor">@color/textPrimary</item>
+    </style>
+
     <style name="Option" parent="TextAppearance.Body1">
         <item name="android:button">@null</item>
         <item name="android:paddingLeft">16dp</item>

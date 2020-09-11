@@ -3,35 +3,53 @@
 Message redditors:
   - on auto release
  
-(STOPSHIP) Bug fixes:
     
 ## Bug fixes:
 
-High priority:
+STOPSHIP:
+ - [ ] Some tracks skip back to themselves
+    - chapter changes/disk grouping related?, see BOOK, PogChamp in Test Library
+
+Cannot reproduce:
+ - [ ] issues caching track (or chapter) start/end times
+ - [ ] book durations sometimes stuck at 00:00?
  - [ ] issues caching track (or chapter) start/end times  (Unable to reproduce)
+ - [ ] Possible memory leaks (reported on op 6t)
+    - [ ] ViewBinding?
+    - [ ] MediaServiceConnection?
+ 
+Need to test:
+ - [ ] Downloading to SD card fails?
+ - [ ] Playback issues on older devices (5.0 - possibly 9.0)
+ - [ ] Filter/sort buttons broken for maybe API 26 and below
+    - possibly fixed
+
+High priority:
+ - [ ] Notification doesn't get "proc"ed on chapter change
 
 Medium priority: 
- - [ ] Synced plex progress for 90% problem? Test with a ~30hr book
+ - [ ] OOM for big files (4gb+ m4b files reported)
+    - Need to dig deeper into either aac spec to learn about how it chunks (or how ExoPlayer
+      requests? or how the server chunks?)
+    - Solutions: largeHeap="true" in manifest?
+ - [ ] 
+ - [ ]
 
 Low priority
+ - [ ] sleep timer "end of chapter" doesn't account for changes in playback speed
  - [/] issues loading huge libraries
        - [X] stopgap fix: timeout for media queries has been increased from 15s to 30s
-       - [ ] real fix: incremental library loading for larger libraries
+       - [ ] real fix: incremental library loading 
     
 ## High priority:
 
  - [ ] Synced plex progress for 90% problem
  - [ ] Android Auto (mostly done, but unable to release until support for demo libraries has been added)
  - [ ] Casting
- - [ ] Networking improvements
-       - [X] Automatically change Plex connection when device connection changes
-       - [ ] Show ribbon at top of book details screen when no connection
-           - (Ribbon either shows "connecting" or "connection failed, retry?")
 
 ## Medium priority:
 
  - [ ] Manually set watched/unwatched
- - [ ] Add list items as an alternative to grid items
  - [ ] Add more narrator to audiobook page: narrator
  - [ ] Highlight current chapter in chapter lists
  - [/] Filter/Sort/`View type` UI for library
@@ -48,8 +66,7 @@ Low priority
  - [ ] Tablet/landscape support
  - [ ] Next/previous chapter buttons in "currently playing" screen
  - [ ] Show more recently listened book in bottom bar like Spotify does
- - [ ] Support for multiple libraries at the same time
- - [ ] More metadata in chapters list (start/end times or duration or something)
+ - [ ] More metadata in chapter list (start/end times or duration or something)
  - [ ] Favorites
 
 ## Low priority:
@@ -68,6 +85,20 @@ Low priority
 ## DONE:
 
 Release 0.50:
+
+(September 10th):
+ - [X] fix: library now retains scroll position after returning from a book
+ - [X] switching servers and then starting playback will not longer cause a 401 error
+ - [X] removed MINOR memory leak during the plex user chooser process
+ - [X] library UI not always restoring properly (scroll state for library list lost)
+ 
+
+(August 30th):
+ - [X] potential track playback ordering related to disk number metadata?
+ - [X] multiple M4Bs play back in incorrect order
+ - [X] wired headphone media buttons possibly not working
+ - [X] make more button white text
+ - [X] jumping to track/chapter might accidentally rewind sometimes
 
 (August 11th):
  - [X] added new view styles for library

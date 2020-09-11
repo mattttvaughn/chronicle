@@ -30,6 +30,7 @@ class ChooseUserFragment : Fragment() {
         const val TAG = "Choose user fragment"
     }
 
+
     @Inject
     lateinit var viewModelFactory: ChooseUserViewModel.Factory
     private lateinit var viewModel: ChooseUserViewModel
@@ -42,6 +43,19 @@ class ChooseUserFragment : Fragment() {
 
     private lateinit var userListAdapter: UserListAdapter
 
+    private var binding: OnboardingPlexChooseUserBinding? = null
+
+    private val pinListener = object : TextWatcher {
+        override fun afterTextChanged(s: Editable?) {}
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            if (s != null && this@ChooseUserFragment::viewModel.isInitialized) {
+                viewModel.setPinData(s)
+            }
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -52,8 +66,8 @@ class ChooseUserFragment : Fragment() {
             .inject(this)
         super.onCreate(savedInstanceState)
 
-        val binding = OnboardingPlexChooseUserBinding.inflate(inflater, container, false)
-        binding.lifecycleOwner = viewLifecycleOwner
+        val tempBinding = OnboardingPlexChooseUserBinding.inflate(inflater, container, false)
+        tempBinding.lifecycleOwner = viewLifecycleOwner
 
         viewModel = ViewModelProvider(
             viewModelStore,
@@ -63,18 +77,9 @@ class ChooseUserFragment : Fragment() {
         userListAdapter = UserListAdapter(UserClickListener { user ->
             viewModel.pickUser(user)
         })
-        binding.userList.adapter = userListAdapter
+        tempBinding.userList.adapter = userListAdapter
 
-        binding.pinEdittext.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {}
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                if (s != null) {
-                    viewModel.setPinData(s)
-                }
-            }
-        })
+        tempBinding.pinEdittext.addTextChangedListener(pinListener)
 
         viewModel.userMessage.observe(viewLifecycleOwner, Observer {
             if (it.hasBeenHandled) {
@@ -83,11 +88,11 @@ class ChooseUserFragment : Fragment() {
             Toast.makeText(requireContext(), it.getContentIfNotHandled(), LENGTH_SHORT).show()
         })
 
-        binding.pinToolbar.setNavigationOnClickListener {
+        tempBinding.pinToolbar.setNavigationOnClickListener {
             hidePinEntryScreen()
         }
 
-        binding.pinEdittext.setOnEditorActionListener { _, actionId, _ ->
+        tempBinding.pinEdittext.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 viewModel.submitPin()
                 return@setOnEditorActionListener true
@@ -97,14 +102,21 @@ class ChooseUserFragment : Fragment() {
 
         viewModel.pinErrorMessage.observe(viewLifecycleOwner, Observer {
             if (!it.isNullOrEmpty()) {
-                binding.pinEdittext.error = it
+                tempBinding.pinEdittext.error = it
             } else {
-                binding.pinEdittext.error = null
+                tempBinding.pinEdittext.error = null
             }
         })
 
-        binding.viewModel = viewModel
-        return binding.root
+        tempBinding.viewModel = viewModel
+        binding = tempBinding
+        return tempBinding.root
+    }
+
+    override fun onDestroyView() {
+        binding?.pinEdittext?.removeTextChangedListener(pinListener)
+        binding = null
+        super.onDestroyView()
     }
 
     fun isPinEntryScreenVisible(): Boolean {
