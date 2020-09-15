@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED
 import android.text.format.DateUtils
 import androidx.lifecycle.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -299,7 +300,8 @@ class CurrentlyPlayingViewModel(
             pausePlay(
                 bookId = audiobook.value!!.id.toString(),
                 trackId = ACTIVE_TRACK,
-                startTimeOffset = ACTIVE_TRACK
+                startTimeOffset = ACTIVE_TRACK,
+                forcePlay = false
             )
         }
     }
@@ -318,12 +320,12 @@ class CurrentlyPlayingViewModel(
         }
         if (transportControls != null) {
             mediaServiceConnection.playbackState.value?.let { playbackState ->
-                if (!playbackState.isPlaying || forcePlay) {
-                    Timber.i("Playing!")
-                    transportControls.playFromMediaId(bookId, extras)
-                } else {
-                    Timber.i("Pausing!")
-                    transportControls.pause()
+                when {
+                    forcePlay -> transportControls.playFromMediaId(bookId, extras)
+                    playbackState.state == STATE_PAUSED -> transportControls.play()
+                    playbackState.isPlaying -> transportControls.pause()
+                    else -> {
+                    } // do nothing?
                 }
             }
         }
@@ -608,23 +610,11 @@ class CurrentlyPlayingViewModel(
             }
         } else {
             // Seeking by chapter length
-            Timber.i("Seeking by chapter length")
-            currentTrack.value?.let { currTrack ->
-                currentChapter.value?.let { chapter ->
-                    val chapterDuration = chapter.endTimeOffset - chapter.startTimeOffset
-                    val startTimeOffset =
-                        chapter.startTimeOffset + (percentProgress * chapterDuration).toLong()
-                    Timber.i("Scrub time offset (from book start in ms): $startTimeOffset")
-                    val extras = Bundle().apply {
-                        putLong(KEY_START_TIME_TRACK_OFFSET, startTimeOffset)
-                        putLong(KEY_SEEK_TO_TRACK_WITH_ID, currTrack.id.toLong())
-                    }
-                    if (mediaServiceConnection.playbackState.value?.isPlaying == true) {
-                        mediaServiceConnection.transportControls?.playFromMediaId(id, extras)
-                    } else {
-                        mediaServiceConnection.transportControls?.prepareFromMediaId(id, extras)
-                    }
-                }
+            currentChapter.value?.let { chapter ->
+                // seek relative to start of current track
+                val chapterDuration = chapter.endTimeOffset - chapter.startTimeOffset
+                val offset = chapter.startTimeOffset + (percentProgress * chapterDuration).toLong()
+                mediaServiceConnection.transportControls?.seekTo(offset)
             }
         }
     }

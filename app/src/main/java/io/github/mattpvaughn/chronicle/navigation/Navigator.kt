@@ -44,7 +44,7 @@ class Navigator @Inject constructor(
             if (event.hasBeenHandled) {
                 return@Observer
             }
-            Timber.i("Login event changed to $event")
+            Timber.i("Login event changed to ${event.peekContent()}")
             when (event.getContentIfNotHandled()) {
                 LOGGED_IN_NO_USER_CHOSEN -> showUserChooser()
                 LOGGED_IN_NO_SERVER_CHOSEN -> showServerChooser()
@@ -58,7 +58,6 @@ class Navigator @Inject constructor(
                 else -> throw NoWhenBranchMatchedException("Unknown login event: $event")
             }
         })
-
     }
 
     fun showLogin() {

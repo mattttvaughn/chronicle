@@ -174,7 +174,7 @@ fun List<MediaItemTrack>?.getTrackContainingOffset(offset: Long): MediaItemTrack
     if (isNullOrEmpty()) {
         return EMPTY_TRACK
     }
-    this?.fold(offset) { acc: Long, track: MediaItemTrack ->
+    this.fold(offset) { acc: Long, track: MediaItemTrack ->
         val tempAcc: Long = acc - track.duration
         if (tempAcc <= 0) {
             return track
@@ -201,7 +201,7 @@ fun List<MediaItemTrack>.getProgress(): Long {
  */
 fun List<MediaItemTrack>.getActiveTrack(): MediaItemTrack {
     check(this.isNotEmpty()) { "Cannot get active track of empty list!" }
-    return maxBy { it.lastViewedAt } ?: get(0)
+    return maxByOrNull { it.lastViewedAt } ?: get(0)
 }
 
 /** Converts the metadata of a [MediaItemTrack] to a [MediaMetadataCompat]. */

@@ -22,6 +22,7 @@ import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomS
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.LOGGED_IN_FULLY
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.databinding.ActivityMainBinding
@@ -73,7 +74,12 @@ open class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var mediaServiceConnection: MediaServiceConnection
 
-    lateinit var activityComponent: ActivityComponent
+    var activityComponent: ActivityComponent? = null
+
+    override fun onDestroy() {
+        activityComponent = null
+        super.onDestroy()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Timber.i("MainActivity onCreate()")
@@ -81,7 +87,7 @@ open class MainActivity : AppCompatActivity() {
             .appComponent((application as ChronicleApplication).appComponent)
             .activityModule(ActivityModule(this))
             .build()
-        activityComponent.inject(this)
+        activityComponent!!.inject(this)
 
         super.onCreate(savedInstanceState)
 
@@ -103,15 +109,9 @@ open class MainActivity : AppCompatActivity() {
 
         binding.bottomNav.setOnNavigationItemSelectedListener {
             when (it.itemId) {
-                R.id.nav_settings -> {
-                    navigator.showSettings()
-                }
-                R.id.nav_library -> {
-                    navigator.showLibrary()
-                }
-                R.id.nav_home -> {
-                    navigator.showHome()
-                }
+                R.id.nav_settings -> navigator.showSettings()
+                R.id.nav_library -> navigator.showLibrary()
+                R.id.nav_home -> navigator.showHome()
                 else -> throw NoWhenBranchMatchedException("Unknown bottom tab id: ${it.itemId}")
             }
             viewModel.minimizeCurrentlyPlaying()
@@ -120,6 +120,11 @@ open class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             setupCurrentlyPlaying()
+            plexLoginRepo.loginEvent.value?.let {
+                if (it.peekContent() == LOGGED_IN_FULLY) {
+                    navigator.showHome()
+                }
+            }
         }
 
         // If the app is being launched by voice assistant with a query
@@ -142,7 +147,13 @@ open class MainActivity : AppCompatActivity() {
         // default to activity back stack if navigator did not handle anything
         if (!navigator.onBackPressed()) {
             Timber.i("MainActivity super.onBackPressed()")
-            super.onBackPressed()
+            if (supportFragmentManager.backStackEntryCount == 0) {
+                // The prevent Q+ from leaking the activity internally, don't call
+                // super.onBackPressed() if at base fragment, manually end...
+                finishAfterTransition()
+            } else {
+                super.onBackPressed()
+            }
         }
     }
 
@@ -238,15 +249,9 @@ open class MainActivity : AppCompatActivity() {
                     val errorMessage = intent.getStringExtra(PLAYBACK_ERROR_MESSAGE)
                         ?: getString(R.string.playback_error_unknown)
                     val userMessage = when {
-                        errorMessage.contains("404") -> {
-                            getString(R.string.playback_error_404)
-                        }
-                        errorMessage.contains("503") -> {
-                            getString(R.string.playback_error_503)
-                        }
-                        errorMessage.contains("401") -> {
-                            getString(R.string.playback_error_401)
-                        }
+                        errorMessage.contains("404") -> getString(R.string.playback_error_404)
+                        errorMessage.contains("503") -> getString(R.string.playback_error_503)
+                        errorMessage.contains("401") -> getString(R.string.playback_error_401)
                         else -> errorMessage
                     }
                     viewModel.showUserMessage(userMessage)

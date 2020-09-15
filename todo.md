@@ -7,13 +7,10 @@ Message redditors:
 ## Bug fixes:
 
 STOPSHIP:
- - [ ] Some tracks skip back to themselves
-    - chapter changes/disk grouping related?, see BOOK, PogChamp in Test Library
 
 Cannot reproduce:
  - [ ] issues caching track (or chapter) start/end times
  - [ ] book durations sometimes stuck at 00:00?
- - [ ] issues caching track (or chapter) start/end times  (Unable to reproduce)
  - [ ] Possible memory leaks (reported on op 6t)
     - [ ] ViewBinding?
     - [ ] MediaServiceConnection?
@@ -25,27 +22,29 @@ Need to test:
     - possibly fixed
 
 High priority:
- - [ ] Notification doesn't get "proc"ed on chapter change
+ - [ ]
 
 Medium priority: 
  - [ ] OOM for big files (4gb+ m4b files reported)
     - Need to dig deeper into either aac spec to learn about how it chunks (or how ExoPlayer
       requests? or how the server chunks?)
     - Solutions: largeHeap="true" in manifest?
- - [ ] 
- - [ ]
-
-Low priority
- - [ ] sleep timer "end of chapter" doesn't account for changes in playback speed
+ - [ ] Notification doesn't get "proc"ed on chapter change
  - [/] issues loading huge libraries
        - [X] stopgap fix: timeout for media queries has been increased from 15s to 30s
        - [ ] real fix: incremental library loading 
+ - [ ] Playback progress in library view not updated in real-time, only on library refreshes
+ - [ ] 
+
+Low priority
+ - [ ] sleep timer "end of chapter" doesn't account for changes in playback speed
+ - [ ] 
     
 ## High priority:
 
- - [ ] Synced plex progress for 90% problem
  - [ ] Android Auto (mostly done, but unable to release until support for demo libraries has been added)
  - [ ] Casting
+ - [ ] 
 
 ## Medium priority:
 
@@ -80,18 +79,17 @@ Low priority
  - [ ] Widget?
 
 
-
-
 ## DONE:
 
 Release 0.50:
 
 (September 10th):
- - [X] fix: library now retains scroll position after returning from a book
+ - [X] fix: scroll position no longer lost after returning from a book
  - [X] switching servers and then starting playback will not longer cause a 401 error
  - [X] removed MINOR memory leak during the plex user chooser process
  - [X] library UI not always restoring properly (scroll state for library list lost)
- 
+ - [X] Sometimes skipping forwards will loop back to start of current track
+ - [X] Seeking will no longer requires a rebuffer if content is loaded
 
 (August 30th):
  - [X] potential track playback ordering related to disk number metadata?
@@ -123,6 +121,9 @@ Release 0.50:
  - [X] Audiobook screen now shows connection state, and allows retries on fails
  - [X] App now automatically reconnects to server on changes to network
  - [X] Better messages shown for download errors
+ 
+ 
+Release 0.43:
 
 (July 21st):
  - [X] Allow audiobooks to be retained between library changes (but not server!)

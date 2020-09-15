@@ -41,14 +41,8 @@ import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
-import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
-import io.github.mattpvaughn.chronicle.data.model.asChapterList
-import io.github.mattpvaughn.chronicle.data.model.getActiveTrack
-import io.github.mattpvaughn.chronicle.data.model.getChapterAt
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -155,38 +149,41 @@ class NotificationBuilder @Inject constructor(
             R.drawable.ic_notification_icon_paused
         }
 
-        val trackId: Int = try {
-            session.controller.metadata.id?.toInt() ?: TRACK_NOT_FOUND
-        } catch (t: Throwable) {
-            TRACK_NOT_FOUND
-        }
-        Timber.i("Track id is: $trackId")
-        val bookId = withContext(Dispatchers.IO) { trackRepo.getBookIdForTrack(trackId) }
-        val book = withContext(Dispatchers.IO) { bookRepo.getAudiobookAsync(bookId) }
-        Timber.i("Book is $book")
-        val tracks = withContext(Dispatchers.IO) {
-            trackRepo.getTracksForAudiobookAsync(bookId)
-        }
-        Timber.i("Tracks are $tracks")
-        val chapterTitle = if (book != null && tracks.isNotEmpty()) {
-            val chapters = book.chapters.takeIf { it.isNotEmpty() } ?: tracks.asChapterList()
-            val activeTrack = tracks.getActiveTrack()
-            val currentTrackProgress: Long = activeTrack.progress
-            chapters.filter {
-                it.trackId.toInt() == activeTrack.id
-            }.getChapterAt(currentTrackProgress).title
-        } else {
-            ""
-        }
-        Timber.i("Chapter title is: $chapterTitle")
-        val title = chapterTitle.takeIf { it.isNotEmpty() } ?: description.title
-        val subtitle = if (book != null && chapterTitle.isNotEmpty()) {
-            // if we have a chapter title, the subtitle should be book name
-            book.title
-        } else {
-            // o/w use the author name from [description]
-            description.subtitle
-        }
+        // TODO: not needed until we get metadata refreshes on Chapter change
+//        val trackId: Int = try {
+//            session.controller.metadata.id?.toInt() ?: TRACK_NOT_FOUND
+//        } catch (t: Throwable) {
+//            TRACK_NOT_FOUND
+//        }
+//        Timber.i("Track id is: $trackId")
+//        val bookId = withContext(Dispatchers.IO) { trackRepo.getBookIdForTrack(trackId) }
+//        val book = withContext(Dispatchers.IO) { bookRepo.getAudiobookAsync(bookId) }
+//        Timber.i("Book is $book")
+//        val tracks = withContext(Dispatchers.IO) {
+//            trackRepo.getTracksForAudiobookAsync(bookId)
+//        }
+//        Timber.i("Tracks are $tracks")
+//        val chapterTitle = if (book != null && tracks.isNotEmpty()) {
+//            val chapters = book.chapters.takeIf { it.isNotEmpty() } ?: tracks.asChapterList()
+//            val activeTrack = tracks.getActiveTrack()
+//            val currentTrackProgress: Long = activeTrack.progress
+//            chapters.filter {
+//                it.trackId.toInt() == activeTrack.id
+//            }.getChapterAt(currentTrackProgress).title
+//        } else {
+//            ""
+//        }
+//        Timber.i("Chapter title is: $chapterTitle")
+//        val title = chapterTitle.takeIf { it.isNotEmpty() } ?: description.title
+//        val subtitle = if (book != null && chapterTitle.isNotEmpty()) {
+//            // if we have a chapter title, the subtitle should be book name
+//            book.title
+//        } else {
+//            // o/w use the author name from [description]
+//            description.subtitle
+//        }
+        val title = description.title
+        val subtitle = description.subtitle
         Timber.i("Title is: $title")
         Timber.i("Subtitle is: $subtitle")
 

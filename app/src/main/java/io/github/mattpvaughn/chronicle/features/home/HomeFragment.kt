@@ -40,7 +40,7 @@ class HomeFragment : Fragment() {
     lateinit var plexConfig: PlexConfig
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        (requireActivity() as MainActivity).activityComponent.inject(this)
+        (requireActivity() as MainActivity).activityComponent!!.inject(this)
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this, viewModelFactory).get(HomeViewModel::class.java)
         setHasOptionsMenu(true)

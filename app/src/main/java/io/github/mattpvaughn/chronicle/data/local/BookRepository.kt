@@ -1,6 +1,7 @@
 package io.github.mattpvaughn.chronicle.data.local
 
 import androidx.lifecycle.LiveData
+import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
@@ -295,10 +296,18 @@ class BookRepository @Inject constructor(
                 tracks.flatMap {track ->
                     val networkChapters = plexMediaService.retrieveChapterInfo(track.id)
                         .plexMediaContainer.metadata.firstOrNull()?.plexChapters
-                    Timber.i("Network chapters: $networkChapters")
+                    if (BuildConfig.DEBUG) {
+                        // prevent networkChapters from toString()ing and being slow even if timber
+                        // tree isn't attached in the release build
+                        Timber.i("Network chapters: $networkChapters")
+                    }
                     // If no chapters for this track, make a chapter from the current track
                     networkChapters?.map { plexChapter ->
-                        plexChapter.toChapter(track.id.toLong(), track.discNumber, audiobook.isCached)
+                        plexChapter.toChapter(
+                            track.id.toLong(),
+                            track.discNumber,
+                            audiobook.isCached
+                        )
                     }.takeIf { !it.isNullOrEmpty() } ?: listOf(track.asChapter())
                 }.sorted()
             } catch (t: Throwable) {

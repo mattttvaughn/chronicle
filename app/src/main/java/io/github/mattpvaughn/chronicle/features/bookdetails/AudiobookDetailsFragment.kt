@@ -57,7 +57,7 @@ class AudiobookDetailsFragment : Fragment() {
     lateinit var viewModelFactory: AudiobookDetailsViewModel.Factory
 
     override fun onAttach(context: Context) {
-        (requireActivity() as MainActivity).activityComponent.inject(this)
+        (requireActivity() as MainActivity).activityComponent!!.inject(this)
         Timber.i("AudiobookDetailsFragment onAttach()")
         super.onAttach(context)
     }

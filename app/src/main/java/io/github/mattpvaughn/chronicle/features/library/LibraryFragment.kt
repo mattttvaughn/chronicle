@@ -72,6 +72,18 @@ class LibraryFragment : Fragment() {
         binding.viewModel = viewModel
         binding.plexConfig = plexConfig
 
+        adapter = AudiobookAdapter(
+            prefsRepo.libraryBookViewStyle,
+            true,
+            prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
+            object : AudiobookClick {
+                override fun onClick(audiobook: Audiobook) {
+                    openAudiobookDetails(audiobook)
+                }
+            }).apply {
+            stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
+        }
+
         binding.libraryGrid.adapter = adapter
 
         viewModel.books.observe(viewLifecycleOwner) { books ->
@@ -247,28 +259,14 @@ class LibraryFragment : Fragment() {
     }
 
     override fun onAttach(context: Context) {
-        (activity as MainActivity).activityComponent.inject(this)
+        (activity as MainActivity).activityComponent!!.inject(this)
         super.onAttach(context)
-
         Timber.i("Reattached!")
-
-        adapter = AudiobookAdapter(
-            prefsRepo.libraryBookViewStyle,
-            true,
-            prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
-            object : AudiobookClick {
-                override fun onClick(audiobook: Audiobook) {
-                    openAudiobookDetails(audiobook)
-                }
-            }).apply {
-            stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
-        }
-
     }
 
-    override fun onDestroy() {
+    override fun onDestroyView() {
         adapter = null
-        super.onDestroy()
+        super.onDestroyView()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

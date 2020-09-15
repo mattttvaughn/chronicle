@@ -81,12 +81,11 @@ class ChooseUserFragment : Fragment() {
 
         tempBinding.pinEdittext.addTextChangedListener(pinListener)
 
-        viewModel.userMessage.observe(viewLifecycleOwner, Observer {
-            if (it.hasBeenHandled) {
-                return@Observer
+        viewModel.userMessage.observe(viewLifecycleOwner) {
+            if (!it.hasBeenHandled) {
+                Toast.makeText(requireContext(), it.getContentIfNotHandled(), LENGTH_SHORT).show()
             }
-            Toast.makeText(requireContext(), it.getContentIfNotHandled(), LENGTH_SHORT).show()
-        })
+        }
 
         tempBinding.pinToolbar.setNavigationOnClickListener {
             hidePinEntryScreen()
@@ -100,7 +99,8 @@ class ChooseUserFragment : Fragment() {
             return@setOnEditorActionListener false
         }
 
-        viewModel.pinErrorMessage.observe(viewLifecycleOwner, Observer {
+        viewModel.pinErrorMessage.observe(viewLifecycleOwner, Observer
+        {
             if (!it.isNullOrEmpty()) {
                 tempBinding.pinEdittext.error = it
             } else {
@@ -115,7 +115,10 @@ class ChooseUserFragment : Fragment() {
 
     override fun onDestroyView() {
         binding?.pinEdittext?.removeTextChangedListener(pinListener)
+        binding?.pinEdittext?.setOnEditorActionListener(null)
+        binding?.pinToolbar?.setNavigationOnClickListener(null)
         binding = null
+
         super.onDestroyView()
     }
 

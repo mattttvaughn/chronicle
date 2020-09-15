@@ -49,7 +49,7 @@ class CurrentlyPlayingFragment : Fragment() {
 
     override fun onAttach(context: Context) {
         currentlyPlayingInterface = (context as MainActivity).getCurrentlyPlayingInterface()
-        context.activityComponent.inject(this)
+        context.activityComponent!!.inject(this)
         super.onAttach(context as Context)
     }
 

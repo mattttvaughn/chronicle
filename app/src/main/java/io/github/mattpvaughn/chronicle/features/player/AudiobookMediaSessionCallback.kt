@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.text.format.DateUtils
 import android.view.KeyEvent
 import android.view.KeyEvent.*
 import com.github.michaelbull.result.Ok
@@ -170,6 +171,11 @@ class AudiobookMediaSessionCallback @Inject constructor(
         }
     }
 
+    override fun onSeekTo(pos: Long) {
+        Timber.i("Seeking to: ${DateUtils.formatElapsedTime(pos)}")
+        currentPlayer.seekTo(trackListStateManager.currentTrackIndex, pos)
+    }
+
     override fun onCustomAction(action: String?, extras: Bundle?) {
         Timber.i("Custom action")
         when (action) {
@@ -237,6 +243,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
             }
 
             trackListStateManager.trackList = tracks
+            Timber.i("Tracks: $tracks")
             val metadataList = buildPlaylist(tracks, plexConfig)
 
             check(startingTrackId != ACTIVE_TRACK || startingTrackId.toInt() !in tracks.map { it.id }) { "Track not found! " }
