@@ -176,7 +176,7 @@
                         android:layout_marginTop="@dimen/margin_normal"
                         android:drawableTop="@drawable/ic_error_outline_white"
                         android:text="@string/no_tracks_found"
-                        android:visibility="@{(viewModel.tracks.isEmpty() &amp;&amp; !viewModel.isLoadingTracks()) ? View.VISIBLE : View.GONE}"
+                        android:visibility="@{(viewModel.chapters.isEmpty() &amp;&amp; !viewModel.isLoadingTracks()) ? View.VISIBLE : View.GONE}"
                         app:layout_constraintLeft_toLeftOf="parent"
                         app:layout_constraintRight_toRightOf="parent"
                         app:layout_constraintTop_toBottomOf="@id/play_button_container"

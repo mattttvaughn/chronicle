@@ -1,10 +1,10 @@
 package io.github.mattpvaughn.chronicle.injection.components
 
-import android.app.DownloadManager
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.work.WorkManager
 import com.squareup.moshi.Moshi
+import com.tonyodev.fetch2.Fetch
 import dagger.Component
 import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.application.ChronicleBillingManager
@@ -35,11 +35,12 @@ interface AppComponent {
     fun trackRepo(): ITrackRepository
     fun bookRepo(): IBookRepository
     fun workManager(): WorkManager
-    fun downloadManager(): DownloadManager
     fun unhandledExceptionHandler(): CoroutineExceptionHandler
     fun plexConfig(): PlexConfig
     fun plexLoginService(): PlexLoginService
     fun plexMediaService(): PlexMediaService
+    fun cachedFileManager(): ICachedFileManager
+    fun fetch(): Fetch
 
     //    fun plexMediaSource(): PlexMediaSource
     fun billingManager(): ChronicleBillingManager

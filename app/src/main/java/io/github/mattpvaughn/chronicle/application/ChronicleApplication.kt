@@ -16,6 +16,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
+import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
@@ -65,6 +66,9 @@ open class ChronicleApplication : Application() {
     @Inject
     lateinit var unhandledExceptionHandler: CoroutineExceptionHandler
 
+    @Inject
+    lateinit var cachedFileManager: ICachedFileManager
+
     override fun onCreate() {
         if (USE_STRICT_MODE && BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
@@ -94,7 +98,16 @@ open class ChronicleApplication : Application() {
         appComponent.inject(this)
         setupNetwork(plexPrefs)
         setupBilling()
+        fixDownloadState()
         super.onCreate()
+    }
+
+    private fun fixDownloadState() {
+        applicationScope.launch {
+            withContext(Dispatchers.IO) {
+                cachedFileManager.refreshTrackDownloadedStatus()
+            }
+        }
     }
 
     private var billingSetupAttempts = 0

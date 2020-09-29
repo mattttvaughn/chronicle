@@ -11,7 +11,7 @@ inline fun <T> LiveData<Event<T>>.observeEvent(
     owner: LifecycleOwner,
     crossinline onEventUnhandledContent: (T) -> Unit
 ) {
-    observe(owner, Observer { it?.getContentIfNotHandled()?.let(onEventUnhandledContent) })
+    observe(owner) { it?.getContentIfNotHandled()?.let(onEventUnhandledContent) }
 }
 
 fun <T> MutableLiveData<Event<T>>.postEvent(value: T) {

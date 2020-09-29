@@ -25,8 +25,6 @@ import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.sources.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.EXOPLAYER_BACK_BUFFER_DURATION_MILLIS
@@ -114,10 +112,6 @@ class ServiceModule(private val service: MediaPlayerService) {
     ): ProgressUpdater = updater.apply {
         mediaController = mediaControllerCompat
     }
-
-    @Provides
-    @ServiceScope
-    fun provideCachedFileManager(cacheManager: CachedFileManager): ICachedFileManager = cacheManager
 
     @Provides
     @ServiceScope

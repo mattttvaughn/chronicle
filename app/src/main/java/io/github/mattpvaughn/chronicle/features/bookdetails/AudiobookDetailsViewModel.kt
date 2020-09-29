@@ -8,6 +8,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
 import androidx.lifecycle.*
 import com.github.michaelbull.result.Ok
+import com.tonyodev.fetch2.Fetch
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
@@ -40,13 +41,14 @@ class AudiobookDetailsViewModel(
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
     private val cachedFileManager: ICachedFileManager,
-    // Just the skeleton of an audiobook. Only guaranteed to contain a correct [Audiobook.id]
+    // Just the skeleton of an audiobook. Only guaranteed to contain a correct [Audiobook.id], [Audiobook.title]
     private val inputAudiobook: Audiobook,
     private val mediaServiceConnection: MediaServiceConnection,
     private val progressUpdater: ProgressUpdater,
     private val plexConfig: PlexConfig,
     private val prefsRepo: PrefsRepo,
-    private val plexMediaService: PlexMediaService
+    private val plexMediaService: PlexMediaService,
+    private val fetch: Fetch
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -58,7 +60,8 @@ class AudiobookDetailsViewModel(
         private val progressUpdater: ProgressUpdater,
         private val plexConfig: PlexConfig,
         private val prefsRepo: PrefsRepo,
-        private val plexMediaService: PlexMediaService
+        private val plexMediaService: PlexMediaService,
+        private val fetch: Fetch
     ) : ViewModelProvider.Factory {
         lateinit var inputAudiobook: Audiobook
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -73,7 +76,8 @@ class AudiobookDetailsViewModel(
                     progressUpdater,
                     plexConfig,
                     prefsRepo,
-                    plexMediaService
+                    plexMediaService,
+                    fetch
                 ) as T
             } else {
                 throw IllegalStateException("Wrong class provided to ${this.javaClass.name}")
@@ -94,6 +98,7 @@ class AudiobookDetailsViewModel(
             audiobook,
             tracksAsChaptersCache
         ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
+            Timber.i("Chapter data updated! ")
             if (_audiobook?.chapters?.isNotEmpty() == true) {
                 _audiobook.chapters
             } else {
@@ -105,24 +110,27 @@ class AudiobookDetailsViewModel(
     val messageForUser: LiveData<Event<String>>
         get() = _messageForUser
 
-    // Default cache status if [tracks] hasn't loaded, or an override if currently caching
-    private var _manualCacheStatus =
-        MutableLiveData(if (inputAudiobook.isCached) CACHED else NOT_CACHED)
-
     /**
      * Cache status of the current audiobook. Reflects the cache status of [tracks] if they've
      * been loaded, otherwise default to [_manualCacheStatus].
      *
      * Special case: if [_manualCacheStatus] is [CACHING], use that value
      */
-    val cacheStatus = DoubleLiveData(_manualCacheStatus, audiobook) { manualCache, _audiobook ->
+    val cacheStatus = DoubleLiveData(
+        cachedFileManager.activeBookDownloads,
+        audiobook
+    ) { downloadingIds: Set<Int>?, _audiobook: Audiobook? ->
         if (_audiobook?.isCached == true) {
+            Timber.i("Cache status: CACHED")
             return@DoubleLiveData CACHED
         }
-        if (manualCache == CACHING) {
+        if (inputAudiobook.id in (downloadingIds ?: emptyList())) {
+            Timber.i("Active downloads: $downloadingIds, book uniqueId: ${_audiobook?.uniqueId()}, book id: ${_audiobook?.id}")
+            Timber.i("Cache status: CACHING")
             return@DoubleLiveData CACHING
         }
-        return@DoubleLiveData if (_audiobook?.isCached == false) NOT_CACHED else manualCache
+        Timber.i("Cache status: NOT_CACHED")
+        return@DoubleLiveData NOT_CACHED
     }
 
     val cacheIconTint: LiveData<Int> = Transformations.map(cacheStatus) { status ->
@@ -276,7 +284,6 @@ class AudiobookDetailsViewModel(
     private fun cancelCaching() {
         // Cancel queued downloads
         cachedFileManager.cancelCaching()
-        _manualCacheStatus.postValue(NOT_CACHED)
     }
 
     fun onCacheButtonClick() {
@@ -289,14 +296,18 @@ class AudiobookDetailsViewModel(
                 Timber.i("Caching tracks for \"${audiobook.value?.title}\"")
                 if (plexConfig.isConnected.value != true) {
                     showUserMessage("Unable to cache audiobook \"${audiobook.value?.title}\", not connected to server")
-                    _manualCacheStatus.postValue(NOT_CACHED)
                 } else {
-                    _manualCacheStatus.postValue(CACHING)
-                    cachedFileManager.downloadTracks(tracks.value ?: emptyList())
+                    cachedFileManager.downloadTracks(inputAudiobook.id, inputAudiobook.title)
                 }
             }
-            CACHED -> promptUserToUncache()
-            CACHING -> cancelCaching()
+            CACHED -> {
+                Timber.i("Already cached. Uncache?")
+                promptUserToUncache()
+            }
+            CACHING -> {
+                Timber.i("Cancel download")
+                cancelCaching()
+            }
             else -> throw NoWhenBranchMatchedException("Unknown cache status. Don't know how to proceed")
         }
     }
@@ -325,14 +336,7 @@ class AudiobookDetailsViewModel(
 
     private fun uncacheFiles() {
         viewModelScope.launch {
-            val result = cachedFileManager.deleteCachedBook(tracks.value ?: emptyList())
-            if (result.isSuccess) {
-                _manualCacheStatus.postValue(NOT_CACHED)
-            }
-            if (result.isFailure) {
-                val messageString = result.exceptionOrNull()?.message ?: return@launch
-                _messageForUser.postEvent(messageString)
-            }
+            cachedFileManager.deleteCachedBook(inputAudiobook.id)
         }
     }
 
@@ -489,3 +493,4 @@ class AudiobookDetailsViewModel(
         super.onCleared()
     }
 }
+

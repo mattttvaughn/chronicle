@@ -110,7 +110,15 @@ interface IBookRepository {
      * @return true if chapter data was found and added to db, otherwise false
      */
     suspend fun loadChapterData(audiobook: Audiobook, tracks: List<MediaItemTrack>): Boolean
+
+    /** Updates the column uniquely identified by [Audiobook.id] to the new [Audiobook] */
     suspend fun update(audiobook: Audiobook)
+
+    /**
+     * Updates the [Audiobook.isCached] column to be true for the [Audiobook] uniquely identified
+     * by [Audiobook.id] == [bookId]
+     */
+    suspend fun updateCachedStatus(bookId: Int, isCached: Boolean)
 }
 
 @Singleton
@@ -248,6 +256,17 @@ class BookRepository @Inject constructor(
         }
     }
 
+    override suspend fun updateCachedStatus(bookId: Int, isCached: Boolean) {
+        withContext(Dispatchers.IO) {
+            // set the chapters stored in the db to also be cached
+            bookDao.updateCachedStatus(bookId, isCached)
+            val audiobook = bookDao.getAudiobookAsync(bookId)
+            audiobook?.let { book ->
+                bookDao.update(book.copy(chapters = book.chapters.map { it.copy(downloaded = false) }))
+            }
+        }
+    }
+
     override suspend fun getMostRecentlyPlayed(): Audiobook {
         return bookDao.getMostRecent() ?: EMPTY_AUDIOBOOK
     }
@@ -293,7 +312,7 @@ class BookRepository @Inject constructor(
         Timber.i("Loading chapter data. Bookid is ${audiobook.id}, tracks are $tracks")
         val chapters: List<Chapter> = withContext(Dispatchers.IO) {
             try {
-                tracks.flatMap {track ->
+                tracks.flatMap { track ->
                     val networkChapters = plexMediaService.retrieveChapterInfo(track.id)
                         .plexMediaContainer.metadata.firstOrNull()?.plexChapters
                     if (BuildConfig.DEBUG) {
@@ -315,7 +334,7 @@ class BookRepository @Inject constructor(
                 emptyList()
             }
         }
-        Timber.i("Loaded chapters: ${chapters.map{ "[${it.index}/${it.discNumber}]" }}")
+        Timber.i("Loaded chapters: ${chapters.map { "[${it.index}/${it.discNumber}]" }}")
         // Update [Audiobook.chapters] in the local db
         val replacementBook = audiobook.copy(chapters = chapters)
         withContext(Dispatchers.IO) {

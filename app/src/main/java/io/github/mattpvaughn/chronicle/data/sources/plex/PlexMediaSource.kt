@@ -1,11 +1,11 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
-import android.app.DownloadManager
 import android.content.Context
 import com.bumptech.glide.load.model.LazyHeaders
 import com.github.michaelbull.result.Result
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
+import com.tonyodev.fetch2.Request
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
@@ -60,7 +60,7 @@ class PlexMediaSource @Inject constructor(
         TODO("Not yet implemented")
     }
 
-    override fun makeDownloadRequest(trackUrl: String): DownloadManager.Request {
+    override fun makeDownloadRequest(trackUrl: String): Request {
         TODO("Not yet implemented")
     }
 

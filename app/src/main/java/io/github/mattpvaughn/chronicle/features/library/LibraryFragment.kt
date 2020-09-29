@@ -212,7 +212,7 @@ class LibraryFragment : Fragment() {
     }
 
     private fun openAudiobookDetails(audiobook: Audiobook) {
-        navigator.showDetails(audiobook.id, audiobook.isCached)
+        navigator.showDetails(audiobook.id, audiobook.title, audiobook.isCached)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

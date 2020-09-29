@@ -32,6 +32,7 @@
             </intent-filter>
         </activity>
 
+
         <service
             android:name="io.github.mattpvaughn.chronicle.features.player.MediaPlayerService"
             android:enabled="true"
@@ -44,6 +45,11 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </service>
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
         <receiver android:name="androidx.media.session.MediaButtonReceiver">
             <intent-filter>

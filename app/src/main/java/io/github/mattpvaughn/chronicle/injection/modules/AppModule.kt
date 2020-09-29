@@ -1,8 +1,6 @@
 package io.github.mattpvaughn.chronicle.injection.modules
 
 import android.app.Application
-import android.app.DownloadManager
-import android.app.Service
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
@@ -10,6 +8,8 @@ import androidx.core.content.ContextCompat
 import androidx.work.WorkManager
 import com.android.billingclient.api.BillingClient
 import com.squareup.moshi.Moshi
+import com.tonyodev.fetch2.Fetch
+import com.tonyodev.fetch2.FetchConfiguration
 import dagger.Module
 import dagger.Provides
 import io.github.mattpvaughn.chronicle.application.ChronicleBillingManager
@@ -29,6 +29,11 @@ import javax.inject.Singleton
 
 @Module
 class AppModule(private val app: Application) {
+    companion object {
+        const val OKHTTP_CLIENT_MEDIA = "Media"
+        const val OKHTTP_CLIENT_LOGIN = "Login"
+    }
+
     @Provides
     @Singleton
     fun provideContext(): Context = app.applicationContext
@@ -80,8 +85,14 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun downloadManager(): DownloadManager =
-        app.getSystemService(Service.DOWNLOAD_SERVICE) as DownloadManager
+    fun fetchConfig(appContext: Context): FetchConfiguration =
+        FetchConfiguration.Builder(appContext)
+            .setDownloadConcurrentLimit(3)
+            .build()
+
+    @Provides
+    @Singleton
+    fun fetch(fetchConfig: FetchConfiguration): Fetch = Fetch.Impl.getInstance(fetchConfig)
 
     @Provides
     @Singleton
@@ -94,7 +105,7 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    @Named("Media")
+    @Named(OKHTTP_CLIENT_MEDIA)
     fun mediaOkHttpClient(
         plexConfig: PlexConfig,
         loggingInterceptor: HttpLoggingInterceptor
@@ -108,7 +119,7 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    @Named("Login")
+    @Named(OKHTTP_CLIENT_LOGIN)
     fun loginOkHttpClient(
         plexConfig: PlexConfig,
         loggingInterceptor: HttpLoggingInterceptor
@@ -121,22 +132,24 @@ class AppModule(private val app: Application) {
         .build()
 
     @Provides
-    @Named("Media")
+    @Named(OKHTTP_CLIENT_MEDIA)
     @Singleton
-    fun mediaRetrofit(@Named("Media") okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
-        .addConverterFactory(MoshiConverterFactory.create())
-        .client(okHttpClient)
-        .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
-        .build()
+    fun mediaRetrofit(@Named(OKHTTP_CLIENT_MEDIA) okHttpClient: OkHttpClient): Retrofit =
+        Retrofit.Builder()
+            .addConverterFactory(MoshiConverterFactory.create())
+            .client(okHttpClient)
+            .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
+            .build()
 
     @Provides
-    @Named("Login")
+    @Named(OKHTTP_CLIENT_LOGIN)
     @Singleton
-    fun loginRetrofit(@Named("Login") okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
-        .addConverterFactory(MoshiConverterFactory.create())
-        .client(okHttpClient)
-        .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
-        .build()
+    fun loginRetrofit(@Named(OKHTTP_CLIENT_LOGIN) okHttpClient: OkHttpClient): Retrofit =
+        Retrofit.Builder()
+            .addConverterFactory(MoshiConverterFactory.create())
+            .client(okHttpClient)
+            .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
+            .build()
 
     @Provides
     @Singleton
@@ -144,12 +157,12 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun plexMediaService(@Named("Media") mediaRetrofit: Retrofit): PlexMediaService =
+    fun plexMediaService(@Named(OKHTTP_CLIENT_MEDIA) mediaRetrofit: Retrofit): PlexMediaService =
         mediaRetrofit.create(PlexMediaService::class.java)
 
     @Provides
     @Singleton
-    fun plexLoginService(@Named("Login") loginRetrofit: Retrofit): PlexLoginService =
+    fun plexLoginService(@Named(OKHTTP_CLIENT_LOGIN) loginRetrofit: Retrofit): PlexLoginService =
         loginRetrofit.create(PlexLoginService::class.java)
 
     @Provides
@@ -165,5 +178,9 @@ class AppModule(private val app: Application) {
     fun exceptionHandler(): CoroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
         Timber.e("Caught unhandled exception! $e")
     }
+
+    @Provides
+    @Singleton
+    fun provideCachedFileManager(cacheManager: CachedFileManager): ICachedFileManager = cacheManager
 
 }

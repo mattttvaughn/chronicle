@@ -9,7 +9,6 @@ import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import dagger.Component
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaRepository
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaSource
 import io.github.mattpvaughn.chronicle.features.player.*
@@ -21,7 +20,6 @@ import kotlinx.coroutines.CoroutineScope
 @ServiceScope
 @Component(dependencies = [AppComponent::class], modules = [ServiceModule::class])
 interface ServiceComponent {
-    fun cachedFileManager(): ICachedFileManager
     fun progressUpdater(): ProgressUpdater
     fun exoPlayer(): ExoPlayer
     fun mediaSession(): MediaSessionCompat

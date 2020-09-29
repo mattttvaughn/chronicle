@@ -1,7 +1,7 @@
 package io.github.mattpvaughn.chronicle.data.sources
 
-import android.app.DownloadManager
 import com.bumptech.glide.load.model.LazyHeaders
+import com.tonyodev.fetch2.Request
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import okhttp3.ResponseBody
 
@@ -25,8 +25,8 @@ interface HttpMediaSource : MediaSource {
     /** Return true if the media source can currently be accessed, false otherwise */
     suspend fun isReachable(): Boolean
 
-    /** Makes a [DownloadManager.Request] with the needed HTTP headers */
-    fun makeDownloadRequest(trackUrl: String): DownloadManager.Request
+    /** Makes a [Request] with the needed HTTP headers */
+    fun makeDownloadRequest(trackUrl: String): Request
 
     /** Makes a [LazyHeaders] with the needed HTTP headers */
     fun makeGlideHeaders(): LazyHeaders

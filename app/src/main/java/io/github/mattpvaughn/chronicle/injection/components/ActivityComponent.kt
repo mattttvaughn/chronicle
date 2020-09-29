@@ -4,7 +4,6 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.Component
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsViewModel
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingFragment
@@ -22,7 +21,6 @@ import io.github.mattpvaughn.chronicle.navigation.Navigator
 @ActivityScope
 @Component(dependencies = [AppComponent::class], modules = [ActivityModule::class])
 interface ActivityComponent {
-    fun cachedFileManager(): ICachedFileManager
     fun navigator(): Navigator
     fun progressUpdater(): ProgressUpdater
     fun localBroadcastManager(): LocalBroadcastManager

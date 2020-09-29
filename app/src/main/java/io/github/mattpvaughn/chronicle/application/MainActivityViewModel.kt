@@ -9,7 +9,6 @@ import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomS
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.LOGGED_IN_FULLY
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
@@ -29,7 +28,6 @@ class MainActivityViewModel(
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val mediaServiceConnection: MediaServiceConnection,
-    private val cachedFileManager: ICachedFileManager
 ) : ViewModel(), MainActivity.CurrentlyPlayingInterface {
 
     @Suppress("UNCHECKED_CAST")
@@ -38,7 +36,6 @@ class MainActivityViewModel(
         private val trackRepository: ITrackRepository,
         private val bookRepository: IBookRepository,
         private val mediaServiceConnection: MediaServiceConnection,
-        private val cachedFileManager: ICachedFileManager
     ) : ViewModelProvider.Factory {
 
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -47,8 +44,7 @@ class MainActivityViewModel(
                     loginRepo,
                     trackRepository,
                     bookRepository,
-                    mediaServiceConnection,
-                    cachedFileManager
+                    mediaServiceConnection
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from MainActivityViewModel.Factory")
@@ -145,9 +141,6 @@ class MainActivityViewModel(
     init {
         mediaServiceConnection.nowPlaying.observeForever(metadataObserver)
         mediaServiceConnection.playbackState.observeForever(playbackObserver)
-        viewModelScope.launch {
-            cachedFileManager.refreshTrackDownloadedStatus()
-        }
     }
 
     private suspend fun setAudiobook(trackId: Int) {
@@ -233,18 +226,6 @@ class MainActivityViewModel(
     fun onCurrentlyPlayingHandleDragged() {
         if (currentlyPlayingLayoutState.value == COLLAPSED) {
             _currentlyPlayingLayoutState.postValue(EXPANDED)
-        }
-    }
-
-    fun handleDownloadedTrack(id: Long) {
-        viewModelScope.launch {
-            val downloadResult = cachedFileManager.handleDownloadedTrack(id)
-            if (downloadResult.isFailure) {
-                val downloadFailureMessage = downloadResult.exceptionOrNull()?.message
-                if (downloadFailureMessage != null) {
-                    _errorMessage.postEvent(downloadFailureMessage)
-                }
-            }
         }
     }
 }

@@ -222,7 +222,6 @@ fun MediaItemTrack.toMediaMetadata(plexConfig: PlexConfig): MediaMetadataCompat 
     return metadataBuilder.build()
 }
 
-
 fun List<MediaItemTrack>.asChapterList(): List<Chapter> {
     return this.map { it.asChapter() }
 }
@@ -238,6 +237,12 @@ fun MediaItemTrack.asChapter(): Chapter {
         downloaded = cached,
         trackId = id.toLong()
     )
+}
+
+// Produces an ID unique to a track and source
+// TODO: after merging multiple sources branch: make this a hash of source and track id
+fun MediaItemTrack.uniqueId(): Int {
+    return id
 }
 
 val EMPTY_TRACK = MediaItemTrack(id = TRACK_NOT_FOUND)

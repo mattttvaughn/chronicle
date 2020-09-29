@@ -10,6 +10,7 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginSta
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_ID
+import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_TITLE
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_IS_AUDIOBOOK_CACHED
 import io.github.mattpvaughn.chronicle.features.home.HomeFragment
 import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
@@ -126,12 +127,13 @@ class Navigator @Inject constructor(
         fragmentManager.beginTransaction().replace(R.id.fragNavHost, settingsFragment).commit()
     }
 
-    fun showDetails(audiobookId: Int, isAudiobookCached: Boolean) {
+    fun showDetails(audiobookId: Int, audiobookTitle: String, isAudiobookCached: Boolean) {
         val detailsFrag = AudiobookDetailsFragment.newInstance().apply {
             if (arguments == null) {
                 arguments = Bundle()
             }
             requireArguments().putInt(ARG_AUDIOBOOK_ID, audiobookId)
+            requireArguments().putString(ARG_AUDIOBOOK_TITLE, audiobookTitle)
             requireArguments().putBoolean(ARG_IS_AUDIOBOOK_CACHED, isAudiobookCached)
         }
         fragmentManager.beginTransaction()

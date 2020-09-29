@@ -255,7 +255,7 @@ class LibraryViewModel(
     }
 
     private fun downloadAll(tracks: List<MediaItemTrack>) {
-        cachedFileManager.downloadTracks(tracks)
+//        cachedFileManager.downloadTracks(tracks)
     }
 
     private fun showOptionsMenu(

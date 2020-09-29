@@ -167,6 +167,11 @@ fun Audiobook.toMediaItem(plexConfig: PlexConfig): MediaBrowserCompat.MediaItem 
     return MediaBrowserCompat.MediaItem(mediaDescription.build(), FLAG_PLAYABLE)
 }
 
+fun Audiobook.uniqueId(): Int {
+    return (source * id).toInt()
+}
+
 const val NO_AUDIOBOOK_FOUND_ID = -22321
 const val NO_AUDIOBOOK_FOUND_TITLE = "No audiobook found"
 val EMPTY_AUDIOBOOK = Audiobook(NO_AUDIOBOOK_FOUND_ID, NO_SOURCE_FOUND, NO_AUDIOBOOK_FOUND_TITLE)
+

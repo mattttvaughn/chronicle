@@ -9,7 +9,6 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.getProgress
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.library.LibraryViewModel
@@ -25,8 +24,7 @@ class HomeViewModel(
     private val plexConfig: PlexConfig,
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
-    private val prefsRepo: PrefsRepo,
-    private val cachedFileManager: ICachedFileManager
+    private val prefsRepo: PrefsRepo
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -35,7 +33,6 @@ class HomeViewModel(
         private val bookRepository: IBookRepository,
         private val trackRepository: ITrackRepository,
         private val prefsRepo: PrefsRepo,
-        private val cachedFileManager: ICachedFileManager
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
@@ -43,8 +40,7 @@ class HomeViewModel(
                     plexConfig,
                     bookRepository,
                     trackRepository,
-                    prefsRepo,
-                    cachedFileManager
+                    prefsRepo
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from HomeViewModel.Factory")
@@ -133,10 +129,6 @@ class HomeViewModel(
         }
         plexConfig.isConnected.observeForever(serverConnectionObserver)
         prefsRepo.registerPrefsListener(offlineModeListener)
-
-        viewModelScope.launch {
-            cachedFileManager.refreshTrackDownloadedStatus()
-        }
     }
 
     override fun onCleared() {

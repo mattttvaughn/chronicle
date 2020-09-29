@@ -32,6 +32,7 @@ class AudiobookDetailsFragment : Fragment() {
         fun newInstance() = AudiobookDetailsFragment()
         const val TAG = "details tag"
         const val ARG_AUDIOBOOK_ID = "audiobook_id"
+        const val ARG_AUDIOBOOK_TITLE = "ARG_AUDIOBOOK_TITLE"
         const val ARG_IS_AUDIOBOOK_CACHED = "is_audiobook_cached"
     }
 
@@ -71,10 +72,12 @@ class AudiobookDetailsFragment : Fragment() {
         val binding = FragmentAudiobookDetailsBinding.inflate(inflater, container, false)
 
         val inputId = requireArguments().getInt(ARG_AUDIOBOOK_ID)
+        val bookTitle = requireArguments().getString(ARG_AUDIOBOOK_TITLE) ?: ""
         val inputCached = requireArguments().getBoolean(ARG_IS_AUDIOBOOK_CACHED)
 
         viewModelFactory.inputAudiobook = Audiobook(
             id = inputId,
+            title = bookTitle,
             source = MediaSource.NO_SOURCE_FOUND,
             isCached = inputCached
         )

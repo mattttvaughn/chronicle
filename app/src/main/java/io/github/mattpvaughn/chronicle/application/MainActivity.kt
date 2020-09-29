@@ -1,7 +1,6 @@
 package io.github.mattpvaughn.chronicle.application
 
 import android.annotation.SuppressLint
-import android.app.DownloadManager
 import android.app.SearchManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -41,7 +40,7 @@ import javax.inject.Inject
 
 
 @ActivityScope
-open class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var localBroadcastManager: LocalBroadcastManager
@@ -196,18 +195,11 @@ open class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         Timber.i("MainActivity onStart()")
-        registerReceiver(
-            onDownloadComplete,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE).apply {
-                addAction(DownloadManager.ACTION_NOTIFICATION_CLICKED)
-            }
-        )
         localBroadcastManager.registerReceiver(onPlaybackError, IntentFilter(ACTION_PLAYBACK_ERROR))
     }
 
     override fun onStop() {
         Timber.i("MainActivity onStop()")
-        unregisterReceiver(onDownloadComplete)
         localBroadcastManager.unregisterReceiver(onPlaybackError)
         super.onStop()
     }
@@ -227,23 +219,9 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val onDownloadComplete = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                DownloadManager.ACTION_DOWNLOAD_COMPLETE -> {
-                    val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                    viewModel.handleDownloadedTrack(id)
-                }
-                DownloadManager.ACTION_NOTIFICATION_CLICKED -> {
-                    Timber.i("Clicked notification!")
-                }
-            }
-        }
-    }
 
     private val onPlaybackError = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            //Fetching the download id received with the broadcast
             when (intent.action) {
                 ACTION_PLAYBACK_ERROR -> {
                     val errorMessage = intent.getStringExtra(PLAYBACK_ERROR_MESSAGE)

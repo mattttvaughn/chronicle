@@ -1,6 +1,5 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
-import android.app.DownloadManager
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
@@ -10,6 +9,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import com.tonyodev.fetch2.Request
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
@@ -130,23 +130,26 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
             .build()
     }
 
-    fun makeDownloadRequest(trackSource: String): DownloadManager.Request {
+    fun makeDownloadRequest(trackSource: String, uniqueBookId: Int, downloadLoc: String): Request {
         Timber.i("Preparing download request for: ${Uri.parse(toServerString(trackSource))}")
-        return DownloadManager.Request(Uri.parse(toServerString(trackSource)))
-            .addRequestHeader("X-Plex-Platform", "Android")
-            .addRequestHeader("X-Plex-Provides", "player,timeline")
-            .addRequestHeader("X-Plex-Client-Name", APP_NAME)
-            .addRequestHeader("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
-            .addRequestHeader("X-Plex-Version", BuildConfig.VERSION_NAME)
-            .addRequestHeader("X-Plex-Product", APP_NAME)
-            .addRequestHeader("X-Plex-Platform-Version", Build.VERSION.RELEASE)
-            .addRequestHeader("X-Plex-Device", Build.MODEL)
-            .addRequestHeader("X-Plex-Device-Name", Build.MODEL)
-            .addRequestHeader("X-Plex-Session-Identifier", sessionIdentifier)
-            .addRequestHeader(
+        val remoteUri = toServerString(trackSource)
+        return Request(remoteUri, downloadLoc).apply {
+            groupId = uniqueBookId
+            addHeader("X-Plex-Platform", "Android")
+            addHeader("X-Plex-Provides", "player,timeline")
+            addHeader("X-Plex-Client-Name", APP_NAME)
+            addHeader("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
+            addHeader("X-Plex-Version", BuildConfig.VERSION_NAME)
+            addHeader("X-Plex-Product", APP_NAME)
+            addHeader("X-Plex-Platform-Version", Build.VERSION.RELEASE)
+            addHeader("X-Plex-Device", Build.MODEL)
+            addHeader("X-Plex-Device-Name", Build.MODEL)
+            addHeader("X-Plex-Session-Identifier", sessionIdentifier)
+            addHeader(
                 "X-Plex-Token",
                 plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken
             )
+        }
     }
 
     fun makeThumbUri(part: String): Uri {

@@ -46,7 +46,8 @@ import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import timber.log.Timber
 import javax.inject.Inject
 
-const val NOW_PLAYING_CHANNEL: String = "io.github.mattpvaughn.chronicle"
+const val NOW_PLAYING_CHANNEL: String =
+    "io.github.mattpvaughn.chronicle.features.player\$NOW_PLAYING_CHANNEL"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb32229
 
 /** Helper class to encapsulate code for building notifications. */

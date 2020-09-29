@@ -102,7 +102,12 @@
     <string name="delete_cache_files_prompt">Delete cached files?</string>
     <string name="download_failed">Download failed for %1$s %2$s</string>
     <string name="download_failed_reason_already_exists">because the download already exists</string>
-    <string name="download_failed_reason_error_code">Error code: %1%s</string>
+    <string name="download_failed_reason_error_code">Error code: %1$s</string>
+    <string name="download_notification_channel_id">Download</string>
+    <string name="download_notification_title">Downloading %1$s</string>
+    <string name="download_notification_cancel">Cancel</string>
+    <string name="download_starting">Downloading %1$s: (%2$d/%3$d)</string>
+    <string name="download_channel_description">Shows current downloads</string>
 
     <!-- Speed chooser -->
     <string name="playback_speed_desc">Playback speed: %1$s times normal speed</string>
