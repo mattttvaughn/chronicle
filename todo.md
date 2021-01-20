@@ -2,6 +2,43 @@
 
 Message redditors:
   - on auto release
+  
+  
+## SourceManager temp to do:
+ - [ ] SourceManager 
+     - [X] Refactor app to accommodate 
+     - [X] Implementation
+     - [ ] UI 
+         - [X] Add source
+         - [X] Remove source
+         - [ ] Edit source? Group? Reorder? (optional)
+     - [ ] Migrate from 0.50
+        - [ ] Create plex source, migrate all existing PlexPrefs into the source
+        - [ ] Add proper `Audiobook.source` and `MediaItemTrack.source` values for existing items
+        - [ ] Move cached files into correct directory
+     - [ ] show "add source" to "no books" screen
+     - [ ] Queue/start library fetch on new source added
+ - [ ] PlexLibrarySource
+     - [X] Login + auth
+     - [X] Fetch books + tracks
+     - [X] Playback
+     - [X] Offline caching
+     - [ ] Migrate from 0.50
+     - [ ] Test
+ - [ ] DemoSource
+     - [X] Playback
+     - [ ] Test
+ - [ ] LocalSource
+     - [ ] Add directory source + permissions
+     - [ ] Parse metadata
+     - [ ] Playback
+     - [ ] Test
+ - [ ] Jellyfin? Emby? 
+     - [ ] Login + auth
+     - [ ] Fetch books + tracks
+     - [ ] Playback
+     - [ ] Offline caching
+     - [ ] Test
  
     
 ## Bug fixes:
@@ -45,7 +82,7 @@ Low priority
 
  - [ ] Android Auto (mostly done, but unable to release until support for demo libraries has been added)
  - [ ] Casting
- - [ ] 
+ - [ ] Multiple library sources
 
 ## Medium priority:
 

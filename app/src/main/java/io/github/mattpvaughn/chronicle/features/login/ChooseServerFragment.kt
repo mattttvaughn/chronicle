@@ -10,11 +10,13 @@ import android.widget.Toast.LENGTH_SHORT
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.model.ServerModel
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.databinding.OnboardingPlexChooseServerBinding
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import javax.inject.Inject
 
 
@@ -34,10 +36,13 @@ class ChooseServerFragment : Fragment() {
     @Inject
     lateinit var sourceManager: SourceManager
 
+    @Inject
+    lateinit var navigator: Navigator
+
     private lateinit var serverAdapter: ServerListAdapter
 
     override fun onAttach(context: Context) {
-        (requireActivity() as MainActivity).activityComponent.inject(this)
+        (requireActivity() as MainActivity).activityComponent!!.inject(this)
         super.onAttach(context)
     }
 
@@ -51,13 +56,16 @@ class ChooseServerFragment : Fragment() {
         val binding = OnboardingPlexChooseServerBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
 
-        val source = sourceManager.getSourcesOfType<PlexLibrarySource>().firstOrNull {
+        val plexLibrarySource = sourceManager.getSourcesOfType<PlexLibrarySource>().firstOrNull {
             !it.isAuthorized()
         }
 
-        checkNotNull(source) { "No source found! Crashing is probably the wrong behavior but..." }
+        if (plexLibrarySource == null) {
+            navigator.showLoginError(requireContext().getString(R.string.no_plex_server_found))
+            return null
+        }
 
-        viewModelFactory.plexLibrarySource = source
+        viewModelFactory.plexLibrarySource = plexLibrarySource
         viewModel = ViewModelProvider(
             viewModelStore,
             viewModelFactory

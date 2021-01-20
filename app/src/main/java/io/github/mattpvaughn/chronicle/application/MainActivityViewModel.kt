@@ -62,7 +62,7 @@ class MainActivityViewModel(
         EXPANDED
     }
 
-    val isLoggedIn = sourceManager.isLoggedIn()
+    val isLoggedIn = !(sourceManager.anyUnauthorizedSources.value ?: false)
 
     private var _currentlyPlayingLayoutState = MutableLiveData(HIDDEN)
     val currentlyPlayingLayoutState: LiveData<BottomSheetState>
@@ -86,20 +86,31 @@ class MainActivityViewModel(
     val errorMessage: LiveData<Event<String>>
         get() = _errorMessage
 
-    val currentTrackTitle = DoubleLiveData(tracks, audiobook) { _tracks, _audiobook ->
-        val chapters: List<Chapter>? = _audiobook?.chapters
-        if (!chapters.isNullOrEmpty() && !_tracks.isNullOrEmpty()) {
-            val activeTrack = _tracks.getActiveTrack()
-            val currentTrackProgress: Long = activeTrack.progress
-            val currentTrackOffset: Long = _tracks.getTrackStartTime(activeTrack)
-            return@DoubleLiveData chapters.getChapterAt(currentTrackOffset + currentTrackProgress).title
-        }
-        if (!_tracks.isNullOrEmpty()) {
-            val activeTrack = _tracks.getActiveTrack()
-            return@DoubleLiveData activeTrack.title
+    // Used to cache tracks.asChapterList when tracks changes
+    private val tracksAsChaptersCache = mapAsync(tracks, viewModelScope) {
+        it.asChapterList()
+    }
+
+    val chapters: DoubleLiveData<Audiobook, List<Chapter>, List<Chapter>> = DoubleLiveData(
+        audiobook, tracksAsChaptersCache
+    ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
+        if (_audiobook?.chapters?.isNotEmpty() == true) {
+            // We would really prefer this because it doesn't have to be computed
+            _audiobook.chapters
         } else {
+            _tracksAsChapters ?: emptyList()
+        }
+    }
+
+    val currentChapterTitle= DoubleLiveData(tracks, chapters) { _tracks, _chapters ->
+        if (_chapters.isNullOrEmpty() || _tracks.isNullOrEmpty()) {
             return@DoubleLiveData "No track playing"
         }
+        val activeTrack = _tracks.getActiveTrack()
+        val currentTrackProgress: Long = activeTrack.progress
+        return@DoubleLiveData _chapters.filter {
+            it.trackId.toInt() == activeTrack.id
+        }.getChapterAt(currentTrackProgress).title
     }
 
     val isPlaying = Transformations.map(mediaServiceConnection.playbackState) {
@@ -198,6 +209,7 @@ class MainActivityViewModel(
 
 
     fun showUserMessage(errorMessage: String) {
+        Timber.i("Showing error message: $errorMessage")
         _errorMessage.postEvent(errorMessage)
     }
 

@@ -125,7 +125,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="@dimen/margin_normal"
-                        android:lines="1"
+                        android:maxLines="2"
                         android:text="@{viewModel.audiobook.title}"
                         app:layout_constraintBottom_toTopOf="@id/author"
                         app:layout_constraintLeft_toRightOf="@id/download_indicator_container"
@@ -207,7 +207,7 @@
 
                     <Button
                         android:id="@+id/info_expand_summary"
-                        style="@style/Widget.AppCompat.Button.Borderless"
+                        style="@style/TextAppearance.Button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:onClick="@{() -> viewModel.onToggleSummaryView()}"

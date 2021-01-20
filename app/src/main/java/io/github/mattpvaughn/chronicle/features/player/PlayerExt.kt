@@ -19,9 +19,7 @@ fun Player.seekRelative(trackListStateManager: TrackListStateManager, durationMi
         seekTo(currentPosition + durationMillis)
     } else {
         Timber.i("Seeking via trackliststatemanager")
-        if (!isLoading) {
-            trackListStateManager.updatePosition(currentWindowIndex, currentPosition)
-        }
+        trackListStateManager.updatePosition(currentWindowIndex, currentPosition)
         trackListStateManager.seekByRelative(durationMillis)
         seekTo(trackListStateManager.currentTrackIndex, trackListStateManager.currentTrackProgress)
     }

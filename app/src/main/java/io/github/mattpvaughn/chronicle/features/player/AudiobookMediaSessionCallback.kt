@@ -1,9 +1,11 @@
 package io.github.mattpvaughn.chronicle.features.player
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.text.format.DateUtils
 import android.view.KeyEvent
 import android.view.KeyEvent.*
 import com.google.android.exoplayer2.ExoPlayer
@@ -22,7 +24,8 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID
-import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_OFFSET
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_TRACK_OFFSET
+import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_SAVED_TRACK_PROGRESS
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,10 +42,12 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val bookRepository: IBookRepository,
     private val serviceScope: CoroutineScope,
     private val trackListStateManager: TrackListStateManager,
-    private val serviceController: ForegroundServiceController,
+    private val foregroundServiceController: ForegroundServiceController,
+    private val serviceController: ServiceController,
     private val mediaSession: MediaSessionCompat,
     private val sourceManager: SourceManager,
     private val sourceController: SourceController,
+    private val appContext: Context,
     defaultPlayer: SimpleExoPlayer
 ) : MediaSessionCompat.Callback() {
 
@@ -115,23 +120,41 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
-        if (mediaButtonEvent != null) {
-            val ke: KeyEvent? = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
-            // Media button events usually come in either an "ACTION_DOWN" + "ACTION_UP" pair, or
-            // as a single ACTION_DOWN. Just take ACTION_DOWNs
-            if (ke?.action == ACTION_DOWN) {
-                when (ke.keyCode) {
-                    KEYCODE_MEDIA_NEXT, KEYCODE_MEDIA_SKIP_FORWARD -> skipForwards()
-                    KEYCODE_MEDIA_PREVIOUS, KEYCODE_MEDIA_SKIP_BACKWARD -> skipBackwards()
-                    KEYCODE_MEDIA_PAUSE -> onPause()
-                    KEYCODE_MEDIA_PLAY -> onPlay()
-                    KEYCODE_MEDIA_STOP -> {
-                        onStop()
-                    }
+        if (mediaButtonEvent == null) {
+            return false
+        }
+        val ke: KeyEvent? = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+        Timber.i("Media button event: $ke")
+        // Media button events usually come in either an "ACTION_DOWN" + "ACTION_UP" pair, or
+        // as a single ACTION_DOWN. Just take ACTION_DOWNs
+        if (ke?.action == ACTION_DOWN) {
+            // These really handle bluetooth media actions only, but the framework handles
+            // pause/play for inline wired headphones
+            return when (ke.keyCode) {
+                KEYCODE_MEDIA_NEXT, KEYCODE_MEDIA_SKIP_FORWARD -> {
+                    skipForwards()
+                    true
                 }
+                KEYCODE_MEDIA_PREVIOUS, KEYCODE_MEDIA_SKIP_BACKWARD -> {
+                    skipBackwards()
+                    true
+                }
+                KEYCODE_MEDIA_PAUSE -> {
+                    onPause()
+                    true
+                }
+                KEYCODE_MEDIA_PLAY -> {
+                    onPlay()
+                    true
+                }
+                KEYCODE_MEDIA_STOP -> {
+                    onStop()
+                    true
+                }
+                else -> false
             }
         }
-        return true
+        return false
     }
 
     override fun onPlay() {
@@ -143,6 +166,11 @@ class AudiobookMediaSessionCallback @Inject constructor(
         } else {
             currentPlayer.playWhenReady = true
         }
+    }
+
+    override fun onSeekTo(pos: Long) {
+        Timber.i("Seeking to: ${DateUtils.formatElapsedTime(pos)}")
+        currentPlayer.seekTo(trackListStateManager.currentTrackIndex, pos)
     }
 
     override fun onCustomAction(action: String?, extras: Bundle?) {
@@ -166,7 +194,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
 
     /**
      * Assume mediaId refers to the audiobook as a whole, and there is an option string in the
-     * extras bundle referring to the specific track at key [KEY_START_TIME_OFFSET]
+     * extras bundle referring to the specific track at key [KEY_START_TIME_TRACK_OFFSET]
      */
     override fun onPlayFromMediaId(bookId: String?, extras: Bundle?) {
         if (bookId.isNullOrEmpty()) {
@@ -184,14 +212,23 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private fun playBook(bookId: String, extras: Bundle, playWhenReady: Boolean) {
-        val startingTrackId = extras.getInt(KEY_SEEK_TO_TRACK_WITH_ID, TRACK_NOT_FOUND)
-        val startTimeOffsetMillis = extras.getLong(KEY_START_TIME_OFFSET, ACTIVE_TRACK)
+        // The [MediaItemTrack.id] of the track to be played, either a unique non-negative ID from
+        // the DB, or ACTIVE_TRACK, indicating to use the most recently listened track in [bookId],
+        // or TRACK_NOT_FOUND if no track has been provided
+        val startingTrackId = extras.getLong(KEY_SEEK_TO_TRACK_WITH_ID, TRACK_NOT_FOUND.toLong())
+        check(startingTrackId != TRACK_NOT_FOUND.toLong()) { "No track id provided!" }
 
-        if (bookId == EMPTY_AUDIOBOOK.id.toString()) {
-            return
-        }
-        Timber.i("Starting playback in the background")
+        // If non-negative, an offset in terms of milliseconds from start of [startingTrackId]
+        // If [USE_SAVED_TRACK_PROGRESS], the current progress of track with
+        // [MediaItemTrack.id] == startingTrackId in the local DB
+        val startTimeOffsetMillis =
+            extras.getLong(KEY_START_TIME_TRACK_OFFSET, USE_SAVED_TRACK_PROGRESS)
 
+        check(bookId != EMPTY_AUDIOBOOK.id.toString()) { "Attempted to play empty audiobook" }
+
+        val readableTrackId = if (startingTrackId == ACTIVE_TRACK) "ACTIVE_TRACK" else startingTrackId
+        val readableOffset = startTimeOffsetMillis.takeIf { it != USE_SAVED_TRACK_PROGRESS} ?: "USE_SAVED_TRACK_PROGRESS"
+        Timber.i("Starting playback for book=$bookId track=$readableTrackId at offset $readableOffset")
         serviceScope.launch {
             val tracks = withContext(Dispatchers.IO) {
                 trackRepository.getTracksForAudiobookAsync(bookId.toInt())
@@ -207,6 +244,9 @@ class AudiobookMediaSessionCallback @Inject constructor(
             requireNotNull(source) { "MediaSource required for playback" }
 
             sourceController.setSource(source)
+            if (source is HttpMediaSource) {
+                source.refreshAuth()
+            }
 
             if (tracks.isNullOrEmpty()) {
                 if (source is HttpMediaSource) {
@@ -218,82 +258,48 @@ class AudiobookMediaSessionCallback @Inject constructor(
                 return@launch
             }
 
-            Timber.i("Starting playback for $bookId: $tracks")
-            // seeking to track if our [startingTrackId] exists
-            val seekingToTrack = startingTrackId in tracks.map { it.id }
             trackListStateManager.trackList = tracks
+            Timber.i("Tracks: $tracks")
             val metadataList = buildPlaylist(tracks, source)
 
-            // set desired starting track position in trackListStateManager
-            val startingTrack = tracks.getTrackContainingOffset(startTimeOffsetMillis)
-            when {
-                seekingToTrack -> {
-                    // in this case we always start from start of track
-                    Timber.i("Seeking to start of track with id: $startingTrackId")
-                    val seekToThisTrack =
-                        trackListStateManager.trackList.find { it.id == startingTrackId }
-                    if (seekToThisTrack == null) {
-                        val track = trackRepository.getTrackAsync(startingTrackId)
-                            ?: throw IllegalArgumentException("Unknown track id: $startingTrackId")
-                        val index = tracks.indexOf(track)
-                        trackListStateManager.updatePosition(index, 0)
-                    } else {
-                        val index = tracks.indexOf(seekToThisTrack)
-                        trackListStateManager.updatePosition(index, 0)
-                        Timber.i("New position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
-                    }
-                }
-                !seekingToTrack && startTimeOffsetMillis == ACTIVE_TRACK -> {
-                    Timber.i("Seeking to active track")
-                    trackListStateManager.seekToActiveTrack()
-                }
-                !seekingToTrack && startingTrack == EMPTY_TRACK -> {
-                    Timber.i("Seeking to first track")
-                    // problematic- it wants to seek to an unknown track, let's just seek
-                    // to the first track in this case
-                    trackListStateManager.trackList = tracks
-                    trackListStateManager.updatePosition(0, 0)
-                }
-                !seekingToTrack && startingTrack != EMPTY_TRACK -> {
-                    Timber.i("Seeking to normal track")
-                    // calculate offset in case startTimeOffsetMillis happens to be just barely
-                    // before the start of the correct track. This way we only start a few ms
-                    // before, rather restarting the entire previous track entirely
-                    val trackStartOffsetMillis =
-                        startTimeOffsetMillis - (tracks.getTrackStartTime(startingTrack))
-                    val startingTrackIndex = tracks.indexOf(startingTrack)
-                    // We will throw error in trackListStateManager if we call this outside the
-                    // bounds of manager.trackList, but we are certain it's
-                    if (startingTrackIndex > trackListStateManager.trackList.size || startingTrackIndex < 0) {
-                        trackListStateManager.trackList = tracks
-                    }
-                    trackListStateManager.updatePosition(startingTrackIndex, trackStartOffsetMillis)
-                }
+            check(startingTrackId != ACTIVE_TRACK || startingTrackId.toInt() !in tracks.map { it.id }) { "Track not found! " }
+
+            val startingTrack = if (startingTrackId == ACTIVE_TRACK) {
+                tracks.getActiveTrack()
+            } else {
+                tracks.find { it.id == startingTrackId.toInt() }
             }
+
+            checkNotNull(startingTrack) { "No starting track provided for $startingTrackId" }
+            val startingTrackIndex = tracks.sorted().indexOf(startingTrack)
+            val trueStartTimeOffsetMillis = if (startTimeOffsetMillis != USE_SAVED_TRACK_PROGRESS) {
+                startTimeOffsetMillis
+            } else {
+                startingTrack.progress
+            }
+            Timber.i("Starting at index: $startingTrackIndex, offset by $trueStartTimeOffsetMillis")
+            trackListStateManager.updatePosition(startingTrackIndex, trueStartTimeOffsetMillis)
 
             // Auto-rewind depending on last listened time for the book. Don't rewind if we're
             // starting a new chapter/track of a book
-            val rewindDurationMillis: Long =
-                if (trackListStateManager.currentTrackProgress != 0L) {
-                    calculateRewindDuration(book)
-                } else {
-                    0
-                }
-
-            trackListStateManager.seekByRelative(-1L * rewindDurationMillis)
-            Timber.i("Rewound position: ${trackListStateManager.currentTrackIndex}, ${trackListStateManager.currentTrackProgress}")
+            if (startTimeOffsetMillis == USE_SAVED_TRACK_PROGRESS) {
+                trackListStateManager.seekByRelative(-1L * calculateRewindDuration(book))
+            } else {
+                // Seek slightly forwards so previous track/chapter name isn't erroneously shown
+                trackListStateManager.seekByRelative(300)
+            }
 
             currentPlayer.playWhenReady = playWhenReady
 
             val exoMediaSource = when (source) {
                 is HttpMediaSource -> metadataList.toMediaSource(source.dataSourceFactory)
-                is DemoMediaSource -> metadataList.
+                is DemoMediaSource -> metadataList.toMediaSource(source.dataSourceFactory)
+                else -> throw NoWhenBranchMatchedException("Unknown media source type")
             }
             val player = currentPlayer
+
             when (player) {
-                is ExoPlayer -> {
-                    player.prepare(exoMediaSource)
-                }
+                is ExoPlayer -> player.prepare(exoMediaSource)
                 else -> throw NoWhenBranchMatchedException("Unknown media player")
             }
 
@@ -342,24 +348,14 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private fun calculateRewindDuration(book: Audiobook?): Long {
-        if (!prefsRepo.autoRewind) {
-            return 0L
-        }
+        if (!prefsRepo.autoRewind) return 0L
         val millisSinceLastListen = System.currentTimeMillis() - (book?.lastViewedAt ?: 0L)
         val secondsSinceLastListen = millisSinceLastListen / (1000)
         return when {
-            secondsSinceLastListen in 15..60 -> {
-                5 * 1000L
-            }
-            secondsSinceLastListen in 60..(60 * 60) -> {
-                10 * 1000L
-            }
-            secondsSinceLastListen > (60 * 60 * 24) -> {
-                20 * 1000L
-            }
-            else -> {
-                0L
-            }
+            secondsSinceLastListen in 15..60 -> 5 * 1000L
+            secondsSinceLastListen in 60..(60 * 60) -> 10 * 1000L
+            secondsSinceLastListen > (60 * 60 * 24) -> 20 * 1000L
+            else -> 0L
         }
     }
 
@@ -392,10 +388,14 @@ class AudiobookMediaSessionCallback @Inject constructor(
 //        }
     }
 
+    // Kill the playback service when stop() is called, so Service can be recreated when needed
+    // with the correct info from global storage
     override fun onStop() {
+        Timber.i("Stopping media playback")
         currentPlayer.stop()
         mediaSession.setPlaybackState(EMPTY_PLAYBACK_STATE)
-        serviceController.stopForeground(false)
+        foregroundServiceController.stopForeground(true)
+        serviceController.stopService()
     }
 }
 

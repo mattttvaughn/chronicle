@@ -12,6 +12,7 @@
     <dimen name="list_icon_size">32dp</dimen>
     <dimen name="list_item_height">56dp</dimen>
     <dimen name="keyline_x_offset">64dp</dimen>
+    <dimen name="big_list_icon_size">40dp</dimen>
 
     <!-- Style -->
     <dimen name="app_bar_height">72dp</dimen>
@@ -21,8 +22,6 @@
     <!-- Bottom navigation bar -->
     <dimen name="bottom_nav_bar_height">64dp</dimen>
     <dimen name="bottom_nav_bar_collapsed_height">0dp</dimen>
-
-
     <dimen name="bottom_nav_bar_height_plus_handle_height">136dp</dimen>
 
     <!-- From material guidelines-->
@@ -39,6 +38,9 @@
     <dimen name="audiobook_item_radius">8dp</dimen>
     <dimen name="audiobook_listened_indicator_size">16dp</dimen>
     <dimen name="audiobook_image_width">96dp</dimen>
+
+    <!-- Library audiobook list item | details -->
+    <dimen name="library_details_audiobook_height">64dp</dimen>
 
     <!-- Track list item -->
     <dimen name="track_list_item_height">48dp</dimen>

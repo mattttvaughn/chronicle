@@ -9,6 +9,7 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType.Companion.ARTIST
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.asLibrary
 import io.github.mattpvaughn.chronicle.navigation.Navigator
+import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -46,6 +47,10 @@ class ChooseLibraryViewModel(
     val libraries: LiveData<List<PlexLibrary>>
         get() = _libraries
 
+    /**
+     * LoadingStatus represents the status of the "connected to server" state as well as the
+     * "fetched libraries" state
+     */
     private var _loadingStatus = MutableLiveData(LoadingStatus.LOADING)
     val loadingStatus: LiveData<LoadingStatus>
         get() = _loadingStatus
@@ -56,6 +61,7 @@ class ChooseLibraryViewModel(
             getLibraries()
         }
     }
+
 
     init {
         viewModelScope.launch {

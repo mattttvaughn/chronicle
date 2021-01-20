@@ -8,11 +8,13 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.model.PlexLibrary
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.databinding.OnboardingPlexChooseLibraryBinding
+import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.Event
 import timber.log.Timber
 import javax.inject.Inject
@@ -37,24 +39,30 @@ class ChooseLibraryFragment : Fragment() {
     @Inject
     lateinit var sourceManager: SourceManager
 
+    @Inject
+    lateinit var navigator: Navigator
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        (requireActivity() as MainActivity).activityComponent.inject(this)
+        (requireActivity() as MainActivity).activityComponent!!.inject(this)
         super.onCreate(savedInstanceState)
 
         val binding = OnboardingPlexChooseLibraryBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
 
-        val source = sourceManager.getSourcesOfType<PlexLibrarySource>().firstOrNull {
+        val plexLibrarySource = sourceManager.getSourcesOfType<PlexLibrarySource>().firstOrNull {
             !it.isAuthorized()
         }
 
-        checkNotNull(source) { "No source found! Crashing is probably the wrong behavior but..." }
+        if (plexLibrarySource == null) {
+            navigator.showLoginError(requireContext().getString(R.string.no_plex_server_found))
+            return null
+        }
 
-        viewModelFactory.source = source
+        viewModelFactory.source = plexLibrarySource
         viewModel = ViewModelProvider(
             viewModelStore,
             viewModelFactory

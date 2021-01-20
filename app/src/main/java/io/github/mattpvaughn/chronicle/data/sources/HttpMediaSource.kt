@@ -73,4 +73,12 @@ abstract class HttpMediaSource(applicationContext: Context) : MediaSource(applic
      * add auth if needed
      */
     abstract override fun makeThumbUri(thumb: String): Uri?
+
+    /**
+     * Refreshes auth tokens in the [dataSourceFactory] to ensure they are the most recent version
+     * possible
+     */
+    abstract fun refreshAuth()
+
+
 }

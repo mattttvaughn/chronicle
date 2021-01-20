@@ -37,6 +37,7 @@
     <string name="no_user_found">No users found</string>
     <string name="no_servers_found">No servers found</string>
     <string name="refresh_list">Refresh list</string>
+    <string name="no_plex_server_found">No Plex server found, try again</string>
 
     <!-- Library screen -->
     <string name="library_title">Library</string>
@@ -62,6 +63,10 @@
     <string name="sort_by_date_played">Date played</string>
     <string name="sort_by_plays">Plays</string>
     <string name="sort_by_duration">Duration</string>
+    <string name="view_style">View style</string>
+    <string name="view_style_book_cover">Book cover</string>
+    <string name="view_style_text_list">Text</string>
+    <string name="view_style_cover_and_text_list">Details</string>
 
     <!-- Book details-->
     <string name="audiobook_info">Audiobook info</string>
@@ -90,6 +95,9 @@
     <string name="pause_play_button">Pause/Play button</string>
     <string name="warning_jump_to_chapter_will_clear_progress">This will clear your saved progress. Continue?</string>
     <string name="playback_error">Playback error: %1$s</string>
+    <string name="playback_error_401">Playback error (401): Not authorized</string>
+    <string name="playback_error_503">Playback error (503): Server unavailable</string>
+    <string name="playback_error_404">Playback error (404): Track not found</string>
 
     <!-- Downloads -->
     <string name="download_all">Download all</string>
@@ -213,4 +221,7 @@
     <string name="sources">Sources</string>
     <string name="no_sources_found">No sources found</string>
     <string name="source_demo_library"><u>Demo library</u></string>
+    <string name="playback_error_unknown">Unknown playback error</string>
+    <string name="delete">Delete</string>
+
 </resources>

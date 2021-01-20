@@ -12,7 +12,6 @@ import io.github.mattpvaughn.chronicle.databinding.ListItemDiscNumberSectionHead
 import io.github.mattpvaughn.chronicle.features.bookdetails.ChapterListAdapter.ChapterListModel.ChapterItemModel
 import io.github.mattpvaughn.chronicle.features.bookdetails.ChapterListAdapter.ChapterListModel.SectionHeaderWrapper
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser
-import timber.log.Timber
 
 class ChapterListAdapter(val clickListener: TrackClickListener) :
     ListAdapter<ChapterListAdapter.ChapterListModel, RecyclerView.ViewHolder>(
@@ -33,7 +32,6 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
     class SectionHeaderModel(val text: BottomSheetChooser.FormattableString)
 
     fun submitChapters(chapters: List<Chapter>?) {
-        Timber.i("Submitted chapters: $chapters")
         // Add disc headers only if necessary. We use disc numbers if the final track is owned by
         // a disc other than 1 (discNumber defaults to 1)
         if (!chapters.isNullOrEmpty() && chapters.last().discNumber > 1) {

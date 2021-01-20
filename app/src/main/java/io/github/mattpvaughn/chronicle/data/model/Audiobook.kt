@@ -13,7 +13,6 @@ import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.toChapter
 import io.github.mattpvaughn.chronicle.features.player.*
 
 @TypeConverters(ChapterListConverter::class)
@@ -66,8 +65,7 @@ data class Audiobook constructor(
                 updatedAt = dir.updatedAt,
                 lastViewedAt = dir.lastViewedAt,
                 viewedLeafCount = dir.viewedLeafCount,
-                leafCount = dir.leafCount,
-                chapters = dir.plexChapters.map { it.toChapter(false) }
+                leafCount = dir.leafCount
             )
         }
 

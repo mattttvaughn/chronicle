@@ -12,59 +12,116 @@
         <import type="android.view.View" />
     </data>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/colorPrimaryDark"
         tools:context=".features.sources.SourceManagerFragment">
 
-        <TextView
-            android:id="@+id/choose_source_title"
-            style="@style/TextAppearance.Title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/screen_horizontal_padding"
-            android:layout_marginTop="@dimen/app_bar_height"
-            android:layout_marginRight="@dimen/screen_horizontal_padding"
-            android:text="@string/sources"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/source_list"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginLeft="@dimen/screen_horizontal_padding"
-            android:layout_marginTop="@dimen/spacing_normal"
-            android:layout_marginRight="@dimen/screen_horizontal_padding"
-            android:layout_marginBottom="@dimen/screen_vertical_padding"
-            android:visibility="@{!viewModel.sources.empty  ? View.VISIBLE : View.GONE}"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/choose_source_title"
-            app:sources="@{viewModel.sources}"
-            tools:listitem="@layout/list_item_source" />
+            android:layout_height="match_parent">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/no_sources_found"
-            android:visibility="@{viewModel.sources.empty  ? View.VISIBLE : View.GONE}"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/choose_source_title" />
+            <TextView
+                android:id="@+id/choose_source_title"
+                style="@style/TextAppearance.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/screen_horizontal_padding"
+                android:layout_marginTop="@dimen/app_bar_height"
+                android:layout_marginRight="@dimen/screen_horizontal_padding"
+                android:text="@string/sources"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/source_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="@dimen/spacing_normal"
+                android:layout_marginBottom="@dimen/screen_vertical_padding"
+                android:visibility="@{!viewModel.sources.empty  ? View.VISIBLE : View.GONE}"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/choose_source_title"
+                app:sources="@{viewModel.sources}"
+                tools:listitem="@layout/list_item_source" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/no_sources_found"
+                android:visibility="@{viewModel.sources.empty  ? View.VISIBLE : View.GONE}"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/choose_source_title" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/add_new_source"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_add"
-            android:tint="@color/colorAccent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintRight_toRightOf="parent" />
+            android:layout_gravity="bottom|right"
+            android:layout_margin="@dimen/margin_normal"
+            android:src="@drawable/ic_add_no_outline"
+            app:tint="@color/icon" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/source_editor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/panelBackground"
+            android:elevation="8dp"
+            android:paddingLeft="@dimen/screen_horizontal_padding"
+            android:paddingTop="@dimen/margin_large"
+            android:paddingRight="@dimen/screen_horizontal_padding"
+            android:paddingBottom="@dimen/margin_large"
+            app:behavior_fitToContents="true"
+            app:behavior_hideable="true"
+            app:behavior_skipCollapsed="true"
+            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+            <ImageView
+                android:id="@+id/source_type_icon"
+                android:layout_width="@dimen/list_icon_size"
+                android:layout_height="@dimen/list_icon_size"
+                android:contentDescription="@{viewModel.source.type}"
+                android:src="@{viewModel.source.icon}"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/library_name"
+                style="@style/TextAppearance.Body1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/spacing_normal"
+                android:text="@{ viewModel.source.name }"
+                app:layout_constraintBottom_toBottomOf="@id/source_type_icon"
+                app:layout_constraintLeft_toRightOf="@id/source_type_icon"
+                app:layout_constraintTop_toTopOf="@id/source_type_icon"
+                tools:text="Audiobooks" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/remove_source"
+                android:layout_marginTop="@dimen/spacing_normal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/buttonDelete"
+                android:drawableStart="@drawable/ic_delete"
+                android:onClick="@{() -> viewModel.removeSource()}"
+                android:text="@string/delete"
+                android:textColor="@color/textPrimary"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/source_type_icon" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>

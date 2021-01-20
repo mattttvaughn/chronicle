@@ -12,6 +12,7 @@ import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.Event
@@ -37,7 +38,8 @@ class SettingsViewModel(
     private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
     private val cachedFileManager: ICachedFileManager,
-    private val navigator: Navigator
+    private val navigator: Navigator,
+    private val sourceManager: SourceManager
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -47,7 +49,8 @@ class SettingsViewModel(
         private val prefsRepo: PrefsRepo,
         private val mediaServiceConnection: MediaServiceConnection,
         private val cachedFileManager: ICachedFileManager,
-        private val navigator: Navigator
+        private val navigator: Navigator,
+        private val sourceManager: SourceManager
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
@@ -57,7 +60,8 @@ class SettingsViewModel(
                     mediaServiceConnection,
                     prefsRepo,
                     cachedFileManager,
-                    navigator
+                    navigator,
+                    sourceManager
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from SettingsViewModel.Factory")
@@ -427,6 +431,15 @@ class SettingsViewModel(
                         click = object : PreferenceClick {
                             override fun onClick() {
                                 prefsRepo.clearAll()
+                            }
+                        }),
+                    PreferenceModel(
+                        PreferenceType.CLICKABLE,
+                        FormattableString.from(string = "Clear sources"),
+                        click = object : PreferenceClick {
+                            override fun onClick() {
+                                sourceManager.clear()
+                                clearDB()
                             }
                         }),
                     PreferenceModel(

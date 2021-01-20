@@ -57,12 +57,12 @@ class TrackListStateManager {
         currentTrackProgress = activeTrack.progress
     }
 
-    /** Seeks forwards or backwards in the playlist by [offset] millis*/
-    fun seekByRelative(offset: Long) {
-        if (offset >= 0) {
-            seekForwards(offset)
+    /** Seeks forwards or backwards in the playlist by [offsetMillis] millis*/
+    fun seekByRelative(offsetMillis: Long) {
+        if (offsetMillis >= 0) {
+            seekForwards(offsetMillis)
         } else {
-            seekBackwards(abs(offset))
+            seekBackwards(abs(offsetMillis))
         }
     }
 

@@ -303,6 +303,9 @@ fun List<MediaMetadataCompat>.toMediaSource(
 
     val concatenatingMediaSource = ConcatenatingMediaSource()
     forEach {
+//        Timber.i("Media uri is: ${it.mediaUri}," +
+//                "server auth token is ${plexPrefsRepo.server?.accessToken}," +
+//                "user is ${plexPrefsRepo.accountAuthToken}")
         concatenatingMediaSource.addMediaSource(it.toMediaSource(dataSourceFactory))
     }
     return concatenatingMediaSource

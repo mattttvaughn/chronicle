@@ -21,15 +21,19 @@ class SourceManager @Inject constructor(
 ) {
 
     private val sources = mutableListOf<MediaSource>()
-    private val sourcesObservable = MutableLiveData<List<MediaSource>>(sources)
+
+    private val _sourcesObservable = MutableLiveData<List<MediaSource>>(sources)
+    val sourcesObservable: LiveData<List<MediaSource>>
+        get() = _sourcesObservable
 
     init {
-        // Forget sources which have been fully created
-        val savedSources =
-            prefsRepo.sources.map { mediaSourceFactory.create(it.first, it.second) }
-                .filter {
-                    if (it is HttpMediaSource) it.isAuthorized() else true
-                }
+        val savedSources = prefsRepo.sources.map {
+            mediaSourceFactory.create(it.first, it.second)
+        }.filter {
+            // Forget sources which have not been fully created
+            println(it)
+            if (it is HttpMediaSource) it.isAuthorized() else true
+        }
         sources.addAll(savedSources)
     }
 
@@ -59,7 +63,7 @@ class SourceManager @Inject constructor(
     }
 
     /** The [MediaSource.id] of all sources which we can access */
-    val connectedSourceIds = Transformations.map(sourcesObservable) {
+    val connectedSourceIds = Transformations.map(_sourcesObservable) {
         it.filter { source ->
             if (source is HttpMediaSource) {
                 source.connectionState.value == ConnectionState.CONNECTED
@@ -89,18 +93,28 @@ class SourceManager @Inject constructor(
 
     /** Adds a [MediaSource] to [sources], persists it to filesystem */
     fun addSource(mediaSource: MediaSource) {
-        sourcesObservable.postValue(emptyList())
+        val existing = getSourceById(mediaSource.id)
+        check(existing == null) { "Source with id (${mediaSource.id}) already exists: $existing" }
+        _sourcesObservable.postValue(emptyList())
         sources.add(mediaSource)
-        sourcesObservable.postValue(sources)
+        _sourcesObservable.postValue(sources)
         prefsRepo.sources = saveSources()
     }
 
+    fun clear() {
+        _sourcesObservable.postValue(emptyList())
+        sources.clear()
+        prefsRepo.sources = emptyList()
+    }
+
     /** Removes a [MediaSource] from [sources] */
-    fun removeSource(mediaSource: MediaSource) {
-        sourcesObservable.postValue(emptyList())
-        sources.remove(mediaSource)
-        sourcesObservable.postValue(sources)
+    fun removeSource(id: Long): Result<Unit> {
+        val source =
+            getSourceById(id) ?: return Result.failure(Exception("No source found with id: $id"))
+        sources.remove(source)
+        _sourcesObservable.postValue(sources)
         prefsRepo.sources = saveSources()
+        return Result.success(Unit)
     }
 
 
@@ -128,9 +142,9 @@ class SourceManager @Inject constructor(
         }
     }
 
-    /** Returns a [Boolean] if there are any sources in http [sources] which are not logged in */
-    fun isLoggedIn() = CombinedLiveData(
-        sourcesObservable,
+    /** A [LiveData] indicating whether any [HttpMediaSource]s are not finished logging in */
+    val anyUnauthorizedSources = CombinedLiveData(
+        _sourcesObservable,
         *sources.filterIsInstance<HttpMediaSource>()
             .map { it.isAuthorizedObservable() }.toTypedArray()
     ) {
@@ -175,6 +189,14 @@ class SourceManager @Inject constructor(
             if (source is HttpMediaSource) {
                 source.connectionHasBeenLost()
             }
+        }
+    }
+
+    fun removeUnauthorizedSources() {
+        getSourcesOfType<HttpMediaSource>().filter {
+            !it.isAuthorized()
+        }.forEach {
+            removeSource(it.id)
         }
     }
 

@@ -23,8 +23,8 @@ class DemoMediaSource(
     private val applicationContext: Context
 ) : MediaSource(applicationContext) {
 
-    private val draculaAudioAssetPath = "assets:///dracula_short.mp3"
-    private val draculaArtAssetPath = "assets:///cover_small.jpg"
+    private val draculaAudioAssetPath = "file:///android_asset/dracula_short.mp3"
+    private val draculaArtAssetPath = "file:///android_asset/cover_small.jpg"
 
     override val name: String
         get() = "Demo Library"
@@ -107,6 +107,10 @@ class DemoMediaSource(
             Timber.i("Failed to get demo bitmap")
             null
         }
+    }
+
+    override fun getTrackSource(track: MediaItemTrack): Uri? {
+        return Uri.parse(draculaAudioAssetPath)
     }
 
     // false as it's already on device

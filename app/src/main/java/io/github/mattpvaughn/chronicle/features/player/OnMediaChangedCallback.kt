@@ -81,21 +81,21 @@ class OnMediaChangedCallback @Inject constructor(
                 if (notification != null) {
                     notificationManager.notify(NOW_PLAYING_NOTIFICATION, notification)
                 }
-                // dismiss on swipe enabled
+                // Enables dismiss-on-swipe
                 foregroundServiceController.stopForeground(false)
             }
             STATE_STOPPED -> {
                 // If playback has ended, fully stop the service.
                 Timber.i("Playback has finished, stopping service!")
                 notificationManager.cancel(NOW_PLAYING_NOTIFICATION)
-                foregroundServiceController.stopForeground(false)
+                foregroundServiceController.stopForeground(true)
                 serviceController.stopService()
             }
             else -> {
                 // When not actively playing media, notification becomes cancellable on swipe and
                 // we stop listening for audio interruptions
                 becomingNoisyReceiver.unregister()
-                foregroundServiceController.stopForeground(false)
+                foregroundServiceController.stopForeground(true)
             }
         }
     }

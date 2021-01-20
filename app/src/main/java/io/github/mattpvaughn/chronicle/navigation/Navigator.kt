@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLoginRepo.Companion.ARG_ERROR_MESSAGE_NO_PLEX_SOURCE_FOUND
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_ID
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_SOURCE_ID
@@ -17,6 +18,7 @@ import io.github.mattpvaughn.chronicle.features.login.ChooseUserFragment
 import io.github.mattpvaughn.chronicle.features.settings.SettingsFragment
 import io.github.mattpvaughn.chronicle.features.sources.SourceManagerFragment
 import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
+import timber.log.Timber
 import javax.inject.Inject
 
 /**
@@ -71,6 +73,20 @@ class Navigator @Inject constructor(
         val homeFragment = HomeFragment.newInstance()
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, homeFragment, HomeFragment.TAG)
+            .commit()
+    }
+
+    fun showLoginError(message: String) {
+        clearBackStack()
+        // don't re-add home frag if it's already showing
+        if (isFragmentWithTagVisible(HomeFragment.TAG)) {
+            return
+        }
+        val sourceManagerFragment = SourceManagerFragment.newInstance()
+        sourceManagerFragment.arguments?.putString(ARG_ERROR_MESSAGE_NO_PLEX_SOURCE_FOUND, message)
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, sourceManagerFragment)
+            .addToBackStack(SourceManagerFragment.TAG)
             .commit()
     }
 
@@ -148,6 +164,7 @@ class Navigator @Inject constructor(
             if (fragmentManager.backStackEntryCount == 0) {
                 false
             } else {
+                Timber.i("Popping backstack!")
                 fragmentManager.popBackStack()
                 true
             }

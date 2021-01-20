@@ -38,6 +38,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import timber.log.Timber
+import java.io.File
 import java.net.URL
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -54,7 +55,7 @@ class PlexLibrarySource constructor(
 
     var url: String = PLACEHOLDER_URL
 
-    private val _connectionState = MutableLiveData<ConnectionState>(NOT_CONNECTED)
+    private val _connectionState = MutableLiveData(NOT_CONNECTED)
     override val connectionState: LiveData<ConnectionState>
         get() = _connectionState
 
@@ -77,39 +78,18 @@ class PlexLibrarySource constructor(
         get() = plexPrefsRepo.library?.name.takeIf { !it.isNullOrEmpty() } ?: "Plex library"
 
     override val icon: Int
-        get() = R.drawable.ic_library_music
+        get() = R.drawable.ic_plex_library_white
 
     private val plexPrefsRepo: PlexPrefsRepo = SharedPreferencesPlexPrefsRepo(
         applicationContext.getSharedPreferences(id.toString(), MODE_PRIVATE),
         moshi
     )
 
-    private val defaultHttpFactory = DefaultHttpDataSourceFactory(userAgent).also {
-        val props = it.defaultRequestProperties
-        props.set("X-Plex-Platform", "Android")
-        props.set("X-Plex-Provides", "player")
-        props.set(
-            "X-Plex_Client-Name",
-            APP_NAME
-        )
-        props.set("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
-        props.set("X-Plex-Version", BuildConfig.VERSION_NAME)
-        props.set(
-            "X-Plex-Product",
-            APP_NAME
-        )
-        props.set("X-Plex-Platform-Version", Build.VERSION.RELEASE)
-        props.set("X-Plex-Device", Build.MODEL)
-        props.set("X-Plex-Device-Name", Build.MODEL)
-        props.set(
-            "X-Plex-Token",
-            plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken
-        )
-    }
+    private val httpFactory = DefaultHttpDataSourceFactory(userAgent)
 
     // Handles http and local files
     override val dataSourceFactory: DefaultDataSourceFactory =
-        DefaultDataSourceFactory(Injector.get().applicationContext(), defaultHttpFactory)
+        DefaultDataSourceFactory(Injector.get().applicationContext(), httpFactory)
 
 
     private val plexMediaInterceptor = PlexInterceptor(plexPrefsRepo, this, isLoginService = false)
@@ -180,6 +160,19 @@ class PlexLibrarySource constructor(
         TODO("Not yet implemented")
     }
 
+    override fun getTrackSource(track: MediaItemTrack): Uri? {
+        return Uri.parse(
+            if (track.cached) {
+                File(
+                    Injector.get().prefsRepo().cachedMediaDir,
+                    track.getCachedFileName()
+                ).absolutePath
+            } else {
+                toServerString(track.media)
+            }
+        )
+    }
+
     override val isDownloadable: Boolean = true
 
     /** Attempt to load in a cached bitmap for the given thumbnail */
@@ -234,14 +227,21 @@ class PlexLibrarySource constructor(
         isAudiobookCached: Boolean,
         tracks: List<MediaItemTrack>
     ): List<Chapter> {
-        return tracks.flatMap {
-            mediaService.retrieveChapterInfo(it.id).plexMediaContainer.metadata
-                .firstOrNull()
-                ?.plexChapters
-                // TODO: below won't work for books made of multiple m4b files
-                ?.map { plexChapter -> plexChapter.toChapter(isAudiobookCached) }
-                ?: emptyList()
-        }
+        return tracks.flatMap { track ->
+            val networkChapters = mediaService.retrieveChapterInfo(track.id)
+                .plexMediaContainer.metadata.firstOrNull()?.plexChapters
+            if (BuildConfig.DEBUG) {
+                // prevent networkChapters from toString()ing and being slow even if timber
+                // tree isn't attached in the release build
+                Timber.i("Network chapters: $networkChapters")
+            }
+            // If no chapters for this track, make a chapter from the current track
+            networkChapters?.map { plexChapter ->
+                plexChapter.toChapter(track.id.toLong(), track.discNumber, track.cached)
+            }.takeIf {
+                !it.isNullOrEmpty()
+            } ?: listOf(track.asChapter())
+        }.sorted()
     }
 
     suspend fun fetchLibraries(): PlexMediaContainerWrapper {
@@ -332,6 +332,22 @@ class PlexLibrarySource constructor(
             ).build()
     }
 
+    override fun refreshAuth() {
+        with(httpFactory.defaultRequestProperties) {
+            set("X-Plex-Platform", "Android")
+            set("X-Plex-Provides", "player")
+            set("X-Plex_Client-Name", APP_NAME)
+            set("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
+            set("X-Plex-Version", BuildConfig.VERSION_NAME)
+            set("X-Plex-Product", APP_NAME)
+            set("X-Plex-Platform-Version", Build.VERSION.RELEASE)
+            set("X-Plex-Device", Build.MODEL)
+            set("X-Plex-Device-Name", Build.MODEL)
+            set("X-Plex-Token", plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken)
+        }
+
+    }
+
     /**
      * Indicates to observers that connectivity has been lost, but does not update URL yet, as
      * querying a possibly dead url has a better chance of success than querying no url
@@ -395,7 +411,8 @@ class PlexLibrarySource constructor(
     }
 
     /**
-     * Attempts to connect to all [Connection]s in [connectionSet] via [PlexMediaService.checkServer].
+     * Attempts to connect to all [Connection]s in [connectionSet] via
+     * [PlexMediaService.checkServer] (no auth required).
      *
      * On the first successful connection, return a [ConnectionResult.Success] with
      *   [ConnectionResult.Success.url] from the [Connection.uri]

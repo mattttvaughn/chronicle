@@ -63,9 +63,7 @@ class SettingsFragment : Fragment() {
     }
 
     override fun onAttach(context: Context) {
-        (requireActivity() as MainActivity)
-            .activityComponent
-            .inject(this)
+        (requireActivity() as MainActivity).activityComponent!!.inject(this)
         super.onAttach(context)
     }
 

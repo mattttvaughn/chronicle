@@ -62,7 +62,11 @@ class RemoteSyncScrobbleWorker(
                         playbackTime = playbackTimeStamp,
                         playQueueItemId = track.playQueueItemID,
                         key = "${MediaItemTrack.PARENT_KEY_PREFIX}$trackId",
-                        duration = track.duration,
+                        // IMPORTANT: Plex normally marks as watched at 90% progress, but it
+                        // calculates progress with respect to duration provided if a duration is
+                        // provided, so passing duration = actualDuration * 2 causes Plex to never
+                        // automatically mark as watched
+                        duration = track.duration * 2,
                         playState = playbackState,
                         hasMde = 1
                     )

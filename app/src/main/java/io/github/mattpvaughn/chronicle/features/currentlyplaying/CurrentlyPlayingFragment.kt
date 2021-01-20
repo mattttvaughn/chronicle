@@ -50,7 +50,7 @@ class CurrentlyPlayingFragment : Fragment() {
 
     override fun onAttach(context: Context) {
         currentlyPlayingInterface = (context as MainActivity).getCurrentlyPlayingInterface()
-        context.activityComponent.inject(this)
+        context.activityComponent!!.inject(this)
         super.onAttach(context as Context)
     }
 
@@ -84,7 +84,7 @@ class CurrentlyPlayingFragment : Fragment() {
 
         val adapter = ChapterListAdapter(object : TrackClickListener {
             override fun onClick(chapter: Chapter) {
-                viewModel.jumpToChapter(chapter.startTimeOffset, chapter.id.toInt())
+                viewModel.jumpToChapter(chapter.startTimeOffset, chapter.trackId.toInt())
             }
         })
         binding.chapterProgressSeekbar.setOnSeekBarChangeListener(object :

@@ -150,6 +150,9 @@ interface BookDao {
 
     @Query("SELECT * FROM Audiobook ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomBookAsync(): Audiobook?
+
+    @Query("DELETE FROM Audiobook WHERE source = :sourceId")
+    suspend fun removeWithSource(sourceId: Long)
 }
 
 

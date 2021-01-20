@@ -11,6 +11,8 @@ import androidx.lifecycle.ViewModelProvider
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.BOOK_COVER_STYLE_SQUARE
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_COVER_GRID
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.databinding.FragmentHomeBinding
@@ -38,7 +40,7 @@ class HomeFragment : Fragment() {
     lateinit var sourceManager: SourceManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        (requireActivity() as MainActivity).activityComponent.inject(this)
+        (requireActivity() as MainActivity).activityComponent!!.inject(this)
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this, viewModelFactory).get(HomeViewModel::class.java)
         setHasOptionsMenu(true)
@@ -88,8 +90,9 @@ class HomeFragment : Fragment() {
 
     private fun makeAudiobookAdapter(): AudiobookAdapter {
         return AudiobookAdapter(
-            isSquare = prefsRepo.bookCoverStyle == "Square",
+            initialViewStyle = VIEW_STYLE_COVER_GRID,
             isVertical = false,
+            isSquare = prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
             audiobookClick = object : AudiobookClick {
                 override fun onClick(audiobook: Audiobook) {
                     openAudiobookDetails(audiobook)

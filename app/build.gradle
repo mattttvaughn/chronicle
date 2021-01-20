@@ -11,13 +11,14 @@ android {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 17
-        versionName "0.42.2"
+        versionCode 18
+        versionName "0.44"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
         debug {
@@ -62,7 +63,10 @@ android {
         abortOnError false
     }
     kotlinOptions {
-        freeCompilerArgs = ["-Xallow-result-return-type", "-Xopt-in=kotlin.RequiresOptin"]
+        freeCompilerArgs = ["-Xallow-result-return-type"]
+        freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
+        freeCompilerArgs += ["-Xopt-in=kotlin.time.ExperimentalTime"]
+        freeCompilerArgs += ["-Xopt-in=kotlinx.coroutines.InternalCoroutinesApi"]
     }
 }
 
@@ -75,6 +79,7 @@ dependencies {
     // Material components
     implementation "com.google.android.material:material:$materialLibVersion"
     implementation "androidx.appcompat:appcompat:$supportlibVersion"
+    implementation "androidx.recyclerview:recyclerview:1.2.0-alpha05"
     implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
 
     // AndroidX
@@ -159,7 +164,7 @@ dependencies {
     // Seismic- for shake detection
     implementation "com.squareup:seismic:$seismicVersion"
 
-    // kotlin-result (ISC licensed: permissive like MIT license)
+    // Kotlin-result: TODO remove because Result is now accessible in our current build
     implementation "com.michael-bull.kotlin-result:kotlin-result:$kotlinResultVersion"
 
     // Test for memory leaks

@@ -42,11 +42,11 @@ class ChronicleBillingManager @Inject constructor(
         }
         val purchase = requireNotNull(billingClient).queryPurchases(INAPP)
         if (purchase.billingResult.responseCode == OK) {
-            if (purchase.purchasesList.isEmpty()) {
-                Timber.i("Retrieved purchase list but it was empty")
+            if (purchase.purchasesList.isNullOrEmpty()) {
+                Timber.i("Retrieved purchase list but it was empty or null: ${purchase.purchasesList}")
                 return
             }
-            val premiumSku = purchase.purchasesList.find { record -> record.sku == PREMIUM_IAP_SKU }
+            val premiumSku = purchase.purchasesList!!.find { record -> record.sku == PREMIUM_IAP_SKU }
             if (premiumSku != null && premiumSku.purchaseState == PURCHASED) {
                 Timber.i("Found premium SKU in user's history: $premiumSku")
                 prefsRepo.premiumPurchaseToken = premiumSku.purchaseToken

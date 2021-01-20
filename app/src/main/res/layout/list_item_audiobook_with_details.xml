@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="audiobook"
+            type="io.github.mattpvaughn.chronicle.data.model.Audiobook" />
+
+        <variable
+            name="audiobookClick"
+            type="io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick" />
+
+        <variable
+            name="isSquare"
+            type="Boolean" />
+
+        <variable
+            name="serverConnected"
+            type="Boolean" />
+
+        <import type="android.view.View" />
+
+        <import type="android.text.format.DateUtils" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        isSquare="@{isSquare}"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:onClick="@{() -> audiobookClick.onClick(audiobook)}"
+        android:paddingLeft="@dimen/screen_horizontal_padding"
+        android:paddingTop="@dimen/spacing_normal"
+        android:paddingRight="@dimen/screen_horizontal_padding"
+        android:paddingBottom="@dimen/spacing_normal"
+        tools:background="@color/colorPrimaryDark">
+
+<!--        <androidx.cardview.widget.CardView-->
+<!--            android:id="@+id/thumb_container"-->
+<!--            android:layout_width="@dimen/library_details_audiobook_height"-->
+<!--            android:layout_height="0dp"-->
+<!--            android:layout_marginRight="@dimen/spacing_normal"-->
+<!--            app:cardCornerRadius="@dimen/audiobook_item_radius"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            app:layout_constraintDimensionRatio="5:8"-->
+<!--            app:layout_constraintLeft_toLeftOf="parent"-->
+<!--            app:layout_constraintTop_toTopOf="parent">-->
+
+<!--            <androidx.core.widget.ContentLoadingProgressBar-->
+<!--                android:id="@+id/book_progress"-->
+<!--                style="@style/Widget.AppCompat.ProgressBar.Horizontal"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="4dp"-->
+<!--                android:layout_gravity="bottom"-->
+<!--                android:layout_margin="0dp"-->
+<!--                android:max="@{(int) audiobook.duration}"-->
+<!--                android:maxHeight="4dp"-->
+<!--                android:minHeight="4dp"-->
+<!--                android:progress="@{(int) audiobook.progress}"-->
+<!--                android:progressBackgroundTint="@color/progressTrackTintColor"-->
+<!--                android:progressTint="@color/progressTintColor"-->
+<!--                android:translationZ="2dp"-->
+<!--                android:visibility="@{audiobook.progress > 0L ? View.VISIBLE : View.GONE}" />-->
+
+<!--            <ImageView-->
+<!--                android:id="@+id/book_cover_img"-->
+<!--                serverConnected="@{serverConnected}"-->
+<!--                srcRounded="@{audiobook.thumb}"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="match_parent"-->
+<!--                android:layout_gravity="bottom"-->
+<!--                android:contentDescription="@{audiobook.title}"-->
+<!--                tools:src="@drawable/book_cover_missing_placeholder" />-->
+
+<!--        </androidx.cardview.widget.CardView>-->
+
+<!--        <TextView-->
+<!--            android:id="@+id/title"-->
+<!--            style="@style/TextAppearance.Body1"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginStart="@dimen/spacing_normal"-->
+<!--            android:maxLines="2"-->
+<!--            android:text="@{audiobook.title}"-->
+<!--            app:layout_constraintBottom_toTopOf="@id/author"-->
+<!--            app:layout_constraintLeft_toRightOf="@id/thumb_container"-->
+<!--            app:layout_constraintRight_toRightOf="parent"-->
+<!--            app:layout_constraintTop_toTopOf="parent"-->
+<!--            app:layout_constraintVertical_chainStyle="packed"-->
+<!--            tools:text="Series name - Author name - more unnecessary metadata - The world's longest book title in the whole world"-->
+<!--            tools:textColor="#FFFFFF" />-->
+
+<!--        <TextView-->
+<!--            android:id="@+id/author"-->
+<!--            style="@style/TextAppearance.Body2"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginStart="@dimen/spacing_normal"-->
+<!--            android:lines="1"-->
+<!--            android:text="@{audiobook.author}"-->
+<!--            app:layout_constraintBottom_toTopOf="@id/book_progress_string"-->
+<!--            app:layout_constraintLeft_toRightOf="@id/thumb_container"-->
+<!--            app:layout_constraintRight_toRightOf="parent"-->
+<!--            app:layout_constraintTop_toBottomOf="@id/title"-->
+<!--            app:layout_constraintVertical_chainStyle="packed"-->
+<!--            tools:text="Author name" />-->
+<!--        <TextView-->
+<!--            android:id="@+id/book_progress_string"-->
+<!--            style="@style/TextAppearance.Body2"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:text="@{ DateUtils.formatElapsedTime(audiobook.progress / 1000) + `/` + DateUtils.formatElapsedTime(audiobook.duration / 1000) }"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginStart="@dimen/spacing_normal"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            app:layout_constraintLeft_toRightOf="@id/thumb_container"-->
+<!--            app:layout_constraintRight_toRightOf="parent"-->
+<!--            app:layout_constraintTop_toBottomOf="@id/author"-->
+<!--            app:layout_constraintVertical_chainStyle="packed"-->
+<!--            tools:text="00:00/21:00:15" />-->
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

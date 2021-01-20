@@ -3,10 +3,8 @@ package io.github.mattpvaughn.chronicle.data.model
 import android.support.v4.media.MediaMetadataCompat
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
-import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
@@ -45,7 +43,7 @@ data class MediaItemTrack(
     val updatedAt: Long = 0L,
     val size: Long = 0L,
     val source: Long = NO_SOURCE_FOUND
-) {
+) : Comparable<MediaItemTrack> {
     companion object {
         fun from(metadata: MediaMetadataCompat): MediaItemTrack {
             return MediaItemTrack(
@@ -126,22 +124,17 @@ data class MediaItemTrack(
         return "$id.${File(media).extension}"
     }
 
-    fun getTrackSource(): String {
-        val source = Injector.get().sourceManager().getSourceById(source)
-        return when {
-            cached -> File(
-                Injector.get().prefsRepo().cachedMediaDir,
-                getCachedFileName()
-            ).absolutePath
-            source is HttpMediaSource -> source.toServerString(media)
-            source !is HttpMediaSource -> media
-            else -> throw IllegalStateException("Cannot find source for track")
-        }
-    }
-
     /** A string representing the index but padded to [length] characters with zeroes */
     fun paddedIndex(length: Int): String {
         return index.toString().padStart(length, '0')
+    }
+
+    override fun compareTo(other: MediaItemTrack): Int {
+        val discCompare = discNumber.compareTo(other.discNumber)
+        if (discCompare != 0) {
+            return discCompare
+        }
+        return index.compareTo(other.index)
     }
 }
 
@@ -181,7 +174,7 @@ fun List<MediaItemTrack>?.getTrackContainingOffset(offset: Long): MediaItemTrack
     if (isNullOrEmpty()) {
         return EMPTY_TRACK
     }
-    this?.fold(offset) { acc: Long, track: MediaItemTrack ->
+    this.fold(offset) { acc: Long, track: MediaItemTrack ->
         val tempAcc: Long = acc - track.duration
         if (tempAcc <= 0) {
             return track
@@ -208,18 +201,19 @@ fun List<MediaItemTrack>.getProgress(): Long {
  */
 fun List<MediaItemTrack>.getActiveTrack(): MediaItemTrack {
     check(this.isNotEmpty()) { "Cannot get active track of empty list!" }
-    return maxBy { it.lastViewedAt } ?: get(0)
+    return maxByOrNull { it.lastViewedAt } ?: get(0)
 }
 
 /** Converts the metadata of a [MediaItemTrack] to a [MediaMetadataCompat]. */
 fun MediaItemTrack.toMediaMetadata(mediaSource: MediaSource): MediaMetadataCompat {
+    Timber.i("Track source is: %s", mediaSource.getTrackSource(this)?.toString())
     val metadataBuilder = MediaMetadataCompat.Builder()
     metadataBuilder.id = this.id.toString()
     metadataBuilder.title = this.title
     metadataBuilder.displayTitle = this.album
     metadataBuilder.displaySubtitle = this.artist
     metadataBuilder.trackNumber = this.playQueueItemID
-    metadataBuilder.mediaUri = getTrackSource()
+    metadataBuilder.mediaUri = mediaSource.getTrackSource(this)?.toString() ?: ""
     metadataBuilder.albumArtUri = mediaSource.makeThumbUri(this.thumb ?: "").toString()
     metadataBuilder.trackNumber = this.index.toLong()
     metadataBuilder.duration = this.duration
@@ -231,17 +225,20 @@ fun MediaItemTrack.toMediaMetadata(mediaSource: MediaSource): MediaMetadataCompa
 
 
 fun List<MediaItemTrack>.asChapterList(): List<Chapter> {
-    return this.map { track ->
-        Chapter(
-            title = track.title,
-            id = track.id.toLong(),
-            index = track.index.toLong(),
-            discNumber = track.discNumber,
-            startTimeOffset = this.getTrackStartTime(track),
-            endTimeOffset = this.getTrackStartTime(track) + track.duration,
-            downloaded = track.cached
-        )
-    }
+    return this.map { it.asChapter() }
+}
+
+fun MediaItemTrack.asChapter(): Chapter {
+    return Chapter(
+        title = title,
+        id = id.toLong(),
+        index = index.toLong(),
+        discNumber = discNumber,
+        startTimeOffset = 0L,
+        endTimeOffset = duration,
+        downloaded = cached,
+        trackId = id.toLong()
+    )
 }
 
 val EMPTY_TRACK = MediaItemTrack(id = TRACK_NOT_FOUND)

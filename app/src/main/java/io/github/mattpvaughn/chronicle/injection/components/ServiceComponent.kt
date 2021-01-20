@@ -34,7 +34,6 @@ interface ServiceComponent {
     fun serviceScope(): CoroutineScope
     fun serviceController(): ServiceController
     fun packageValidator(): PackageValidator
-    fun playbackErrorHandler(): PlaybackErrorHandler
     fun foregroundServiceController(): ForegroundServiceController
     fun sourceController(): SourceController
     fun trackListManager(): TrackListStateManager

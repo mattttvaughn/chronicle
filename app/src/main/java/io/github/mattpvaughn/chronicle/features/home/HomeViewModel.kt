@@ -10,7 +10,6 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
-import io.github.mattpvaughn.chronicle.features.library.LibraryViewModel
 import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.observeOnce
@@ -167,8 +166,6 @@ class HomeViewModel(
      *
      * Update book info for fields where child tracks serve as source of truth, like how
      * [Audiobook.duration] serves as a delegate for [List<MediaItemTrack>.getDuration()]
-     *
-     * TODO: extract so code isn't duplicated b/w [HomeViewModel] and [LibraryViewModel]
      */
     fun refreshData() {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {

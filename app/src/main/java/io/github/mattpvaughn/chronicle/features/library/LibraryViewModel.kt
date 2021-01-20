@@ -12,6 +12,7 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_VIEW_STYLE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_OFFLINE_MODE
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_AUTHOR
@@ -27,9 +28,7 @@ import io.github.mattpvaughn.chronicle.views.BottomSheetChooser
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserListener
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -75,9 +74,11 @@ class LibraryViewModel(
     val isSearchActive: LiveData<Boolean>
         get() = _isSearchActive
 
-    private var _scrollToItem = MutableLiveData<Event<Unit>>()
-    val scrollToItem: LiveData<Event<Unit>>
-        get() = _scrollToItem
+    val viewStyle = StringPreferenceLiveData(
+        KEY_LIBRARY_VIEW_STYLE,
+        prefsRepo.libraryBookViewStyle,
+        sharedPreferences
+    )
 
     private var _isFilterShown = MutableLiveData(false)
     val isFilterShown: LiveData<Boolean>
@@ -106,7 +107,8 @@ class LibraryViewModel(
         if (_books.isNullOrEmpty()) {
             return@QuadLiveDataAsync emptyList<Audiobook>()
         }
-        // Use defaults if _isDescending or _sortKey are null
+
+        // Use defaults if provided null values
         val desc = _isDescending ?: true
         val key = _sortKey ?: SORT_KEY_TITLE
         val offline = _isOffline ?: false
@@ -127,8 +129,9 @@ class LibraryViewModel(
                 }
             })
 
-        withContext(Dispatchers.Main) {
-            _scrollToItem.postEvent(Unit)
+        // If nothing has changed, return prevBooks
+        if (prevBooks.map { it.id } == results.map { it.id }) {
+            return@QuadLiveDataAsync prevBooks
         }
 
         prevBooks = results

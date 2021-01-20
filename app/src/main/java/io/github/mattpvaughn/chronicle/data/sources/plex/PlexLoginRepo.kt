@@ -51,7 +51,7 @@ interface IPlexLoginRepo {
  */
 class PlexLoginRepo(
     private val plexPrefsRepo: PlexPrefsRepo,
-    private val plexLoginService: PlexLoginService
+    private val plexLoginService: PlexLoginService,
 ) : IPlexLoginRepo {
 
     override suspend fun postOAuthPin(): OAuthResponse? {
@@ -117,11 +117,12 @@ class PlexLoginRepo(
     }
 
     override fun chooseServer(serverModel: ServerModel) {
-        Timber.i("Chose server: $serverModel")
+        Timber.i("User chose server: $serverModel")
         plexPrefsRepo.server = serverModel
     }
 
     override fun chooseLibrary(plexLibrary: PlexLibrary) {
+        Timber.i("User chose library: $plexLibrary")
         plexPrefsRepo.library = plexLibrary
     }
 
@@ -147,5 +148,9 @@ class PlexLoginRepo(
                 LOGGED_IN_FULLY
             }
         }
+    }
+
+    companion object {
+        const val ARG_ERROR_MESSAGE_NO_PLEX_SOURCE_FOUND: String = "io.github.mattpvaughn.chronicle.data.sources.plex.PlexLoginRepo.ERROR_MESSAGE"
     }
 }

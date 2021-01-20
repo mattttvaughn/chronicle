@@ -60,6 +60,9 @@ abstract class MediaSource constructor(private val applicationContext: Context) 
     /** Fetches a bitmap corresponding to a Uri (with permissions approved and auth included) */
     abstract fun getBitmapForThumb(uri: Uri): Bitmap?
 
+    /** Returns the source of a track given whether the track is cached */
+    abstract fun getTrackSource(track: MediaItemTrack) : Uri?
+
     /**
      * Whether books provided by the source can be downloaded. For example, we could consider
      * local files to not be downloadable, while files provided by a server would be downloadable

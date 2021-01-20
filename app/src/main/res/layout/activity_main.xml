@@ -84,7 +84,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/margin_normal"
                     android:lines="1"
-                    android:text="@{viewModel.currentTrackTitle}"
+                    android:text="@{viewModel.currentChapterTitle}"
                     app:layout_constraintBottom_toTopOf="@id/book_title"
                     app:layout_constraintLeft_toRightOf="@id/currently_playing_thumb"
                     app:layout_constraintRight_toLeftOf="@id/pause_play_button"

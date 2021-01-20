@@ -34,18 +34,14 @@ fun bindImageRounded(
         return
     }
 
-    val glideUrl = if (mediaSource is HttpMediaSource) {
-        val url = URL(mediaSource.makeThumbUri(src).toString())
-        GlideUrlRelativeCacheKey(url, mediaSource.makeGlideHeaders())
-    } else {
-        // no headers needed for non-http sources
-        val url = URL(mediaSource.makeThumbUri(src).toString())
-        GlideUrl(url)
-    }
-
-    Glide.with(imageView)
-        .load(glideUrl)
-        .placeholder(R.drawable.book_cover_missing_placeholder)
+    Glide.with(imageView).load(
+        if (mediaSource is HttpMediaSource) {
+            val url = URL(mediaSource.makeThumbUri(src).toString())
+            GlideUrlRelativeCacheKey(url, mediaSource.makeGlideHeaders())
+        } else {
+            mediaSource.makeThumbUri(src)
+        }
+    ).placeholder(R.drawable.book_cover_missing_placeholder)
         .transition(DrawableTransitionOptions.withCrossFade())
         .transform(CenterCrop())
         .diskCacheStrategy(DiskCacheStrategy.ALL)

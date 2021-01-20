@@ -1,7 +1,10 @@
 package io.github.mattpvaughn.chronicle.data.local
 
 import androidx.lifecycle.LiveData
-import io.github.mattpvaughn.chronicle.data.model.*
+import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import io.github.mattpvaughn.chronicle.data.model.Chapter
+import io.github.mattpvaughn.chronicle.data.model.EMPTY_AUDIOBOOK
+import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
@@ -114,6 +117,9 @@ interface IBookRepository {
     ): Boolean
 
     suspend fun update(audiobook: Audiobook)
+
+    /** Removes all [Audiobook]s where [Audiobook.source] == [sourceId] */
+    suspend fun removeWithSource(sourceId: Long)
 }
 
 @Singleton
@@ -249,6 +255,13 @@ class BookRepository @Inject constructor(
         }
     }
 
+    override suspend fun removeWithSource(sourceId: Long) {
+        withContext(Dispatchers.IO) {
+            // set the chapters stored in the db to also be cached
+            bookDao.removeWithSource(sourceId)
+        }
+    }
+
     override suspend fun getMostRecentlyPlayed(): Audiobook {
         return bookDao.getMostRecent() ?: EMPTY_AUDIOBOOK
     }
@@ -292,28 +305,21 @@ class BookRepository @Inject constructor(
         audiobook: Audiobook,
         tracks: List<MediaItemTrack>
     ): Boolean {
+        Timber.i("Loading chapter data. Bookid is ${audiobook.id}, tracks are $tracks")
         val chapters: List<Chapter> = withContext(Dispatchers.IO) {
             try {
                 source.fetchChapterInfo(audiobook.isCached, tracks)
             } catch (t: Throwable) {
                 Timber.e("Failed to load chapters: $t")
-                emptyList<Chapter>()
+                emptyList()
             }
         }
-        return if (chapters.isNotEmpty()) {
-            // Update [Audiobook.chapters] in the local db
-            val replacementBook = audiobook.copy(chapters = chapters)
-            withContext(Dispatchers.IO) {
-                bookDao.update(replacementBook)
-            }
-            true
-        } else {
-            // no good chapter data found- use the track data instead
-            val replacementBook = audiobook.copy(chapters = tracks.asChapterList())
-            withContext(Dispatchers.IO) {
-                bookDao.update(replacementBook)
-            }
-            false
+        Timber.i("Loaded chapters: ${chapters.map{ "[${it.index}/${it.discNumber}]" }}")
+        // Update [Audiobook.chapters] in the local db
+        val replacementBook = audiobook.copy(chapters = chapters)
+        withContext(Dispatchers.IO) {
+            bookDao.update(replacementBook)
         }
+        return true
     }
 }

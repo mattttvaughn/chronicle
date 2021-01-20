@@ -17,6 +17,9 @@
     <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="@dimen/list_item_height"
+        android:paddingLeft="@dimen/screen_horizontal_padding"
+        android:paddingRight="@dimen/screen_horizontal_padding"
+        android:background="?android:attr/selectableItemBackground"
         android:onClick="@{() -> clickListener.onClick(source)}"
         android:orientation="vertical">
 

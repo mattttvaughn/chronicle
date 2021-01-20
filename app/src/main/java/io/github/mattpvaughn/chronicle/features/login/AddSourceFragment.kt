@@ -57,7 +57,7 @@ class AddSourceFragment : Fragment() {
     private lateinit var addSourceViewModel: AddSourceViewModel
 
     override fun onAttach(context: Context) {
-        (requireActivity() as MainActivity).activityComponent.inject(this)
+        (requireActivity() as MainActivity).activityComponent!!.inject(this)
         super.onAttach(context)
     }
 

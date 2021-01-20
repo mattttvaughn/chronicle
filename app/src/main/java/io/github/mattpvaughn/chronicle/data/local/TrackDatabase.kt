@@ -92,7 +92,7 @@ interface TrackDao {
     fun clear()
 
     @Query("UPDATE MediaItemTrack SET cached = :isCached WHERE id = :trackId")
-    fun updateCachedStatus(trackId: Int, isCached: Boolean)
+    fun updateCachedStatus(trackId: Int, isCached: Boolean) : Int
 
     @Query("SELECT * FROM MediaItemTrack WHERE cached = :isCached")
     fun getCachedTracksAsync(isCached: Boolean = true): List<MediaItemTrack>
@@ -105,6 +105,9 @@ interface TrackDao {
 
     @Query("SELECT * FROM MediaItemTrack WHERE title LIKE :title")
     suspend fun findTrackByTitle(title: String): MediaItemTrack?
+
+    @Query("DELETE FROM MediaItemTrack WHERE source = :sourceId")
+    suspend fun removeWithSource(sourceId: Long)
 
 
 }
