@@ -3,7 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
-
     <data>
 
         <variable
@@ -28,8 +27,8 @@
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/coordinator"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimaryDark">
 
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appBarLayout"
@@ -79,7 +78,7 @@
                         style="@style/TextAppearance.Body2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@{viewModel.progressString + '/' + viewModel.durationString}"
+                        android:text="@{viewModel.progressString}"
                         app:layout_constraintRight_toRightOf="@id/details_artwork"
                         app:layout_constraintTop_toBottomOf="@id/details_artwork"
                         tools:text="1:21/3:52" />
@@ -102,13 +101,13 @@
 
                         <ImageView
                             android:id="@+id/download"
-                            tintRes="@{viewModel.cacheIconTint}"
                             android:layout_width="@dimen/list_icon_size"
                             android:layout_height="@dimen/list_icon_size"
                             android:contentDescription="@string/download"
                             android:onClick="@{(view) -> viewModel.onCacheButtonClick()}"
                             android:src="@{viewModel.cacheIconDrawable}"
-                            android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHING ? View.INVISIBLE : View.VISIBLE}" />
+                            android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHING ? View.INVISIBLE : View.VISIBLE}"
+                            app:tint="@{viewModel.cacheIconTint}" />
 
                     </FrameLayout>
 
@@ -170,19 +169,6 @@
                     </FrameLayout>
 
                     <TextView
-                        style="@style/TextAppearance.Body1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/margin_normal"
-                        android:drawableTop="@drawable/ic_error_outline_white"
-                        android:text="@string/no_tracks_found"
-                        android:visibility="@{(viewModel.chapters.isEmpty() &amp;&amp; !viewModel.isLoadingTracks()) ? View.VISIBLE : View.GONE}"
-                        app:layout_constraintLeft_toLeftOf="parent"
-                        app:layout_constraintRight_toRightOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/play_button_container"
-                        tools:visibility="gone" />
-
-                    <TextView
                         android:id="@+id/info_summary"
                         style="@style/TextAppearance.Body2"
                         android:layout_width="0dp"
@@ -220,6 +206,16 @@
                         app:layout_constraintLeft_toLeftOf="parent"
                         app:layout_constraintTop_toBottomOf="@id/info_expand_summary" />
 
+                    <ProgressBar
+                        android:id="@+id/loading_tracks_spinner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/margin_normal"
+                        android:visibility="@{viewModel.isLoadingTracks() ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/chapters_title" />
+
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <LinearLayout
@@ -234,15 +230,13 @@
                         android:layout_height="wrap_content"
                         android:elevation="1dp">
 
-                        <com.google.android.material.progressindicator.ProgressIndicator
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
                             android:id="@+id/connecting_to_server_indicator"
-                            style="@style/Widget.MaterialComponents.ProgressIndicator.Linear.Indeterminate"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:indeterminate="true"
                             android:visibility="@{viewModel.serverConnection == ConnectionState.CONNECTING ? View.VISIBLE: View.GONE}"
-                            app:indicatorColor="@color/colorAccent"
-                            app:indicatorType="linear" />
+                            app:indicatorColor="@color/colorAccent" />
 
                         <androidx.appcompat.widget.AppCompatTextView
                             style="@style/TextAppearance.Body1"
@@ -256,6 +250,7 @@
                             android:text="@string/failed_to_connect_to_server"
                             android:textAlignment="center"
                             android:visibility="@{viewModel.serverConnection == ConnectionState.CONNECTION_FAILED ? View.VISIBLE : View.GONE}" />
+
                     </FrameLayout>
 
                     <androidx.appcompat.widget.Toolbar
@@ -271,26 +266,14 @@
             </com.google.android.material.appbar.CollapsingToolbarLayout>
         </com.google.android.material.appbar.AppBarLayout>
 
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/tracks"
             chapterList="@{viewModel.chapters}"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/colorPrimaryDark"
             android:overScrollMode="never"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
-        <ProgressBar
-            android:id="@+id/loading_tracks_spinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_marginTop="@dimen/margin_normal"
-            android:visibility="@{viewModel.isLoadingTracks() ? View.VISIBLE : View.GONE}"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior"
-            app:layout_constraintTop_toTopOf="@id/tracks" />
 
         <io.github.mattpvaughn.chronicle.views.BottomSheetChooser
             bottomChooserState="@{viewModel.bottomChooserState}"

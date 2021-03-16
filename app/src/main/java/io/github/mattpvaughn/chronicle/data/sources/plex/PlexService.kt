@@ -2,6 +2,7 @@ package io.github.mattpvaughn.chronicle.data.sources.plex
 
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.*
 import okhttp3.ResponseBody
+import retrofit2.Response
 import retrofit2.http.*
 
 
@@ -37,7 +38,7 @@ interface PlexLoginService {
 interface PlexMediaService {
     /** A basic check used to tell whether a server is online. Returns a lightweight response */
     @GET("{url}/identity")
-    suspend fun checkServer(@Path("url", encoded = true) url: String): PlexMediaContainer
+    suspend fun checkServer(@Path("url", encoded = true) url: String): Response<PlexMediaContainer>
 
     @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_ALBUM")
     suspend fun retrieveAllAlbums(
@@ -47,6 +48,12 @@ interface PlexMediaService {
     @GET("/library/metadata/{trackId}")
     suspend fun retrieveChapterInfo(
         @Path("trackId") trackId: Int,
+        @Query("includeChapters") includeChapters: Int = 1
+    ): PlexMediaContainerWrapper
+
+    @GET("/library/metadata/{albumId}")
+    suspend fun retrieveAlbum(
+        @Path("albumId") albumId: Int,
         @Query("includeChapters") includeChapters: Int = 1
     ): PlexMediaContainerWrapper
 
@@ -62,19 +69,19 @@ interface PlexMediaService {
         @Path(value = "url", encoded = true) url: String
     ): ResponseBody
 
-    /** Sets a media item to "watched" in the server */
-    @GET("/:/scrobble?identifier=com.plexapp.plugins.library")
+    /** Sets a media item to "watched" in the server. Works for both tracks and albums */
+    @GET("/:/scrobble")
     suspend fun watched(
         @Query("key") key: String,
         @Query("identifier") identifier: String = "com.plexapp.plugins.library"
     )
 
-    /** Sets a media item to "unwatched" in the server */
-    @GET("/:/unscrobble?identifier=com.plexapp.plugins.library")
+    /** Sets a media item to "unwatched" in the server. Works for both tracks and albums */
+    @GET("/:/unscrobble")
     suspend fun unwatched(
         @Query("key") key: String,
         @Query("identifier") identifier: String = "com.plexapp.plugins.library"
-    ): String
+    )
 
     /**
      * Updates the runtime of a media item with a corresponding [ratingKey] to [offset], the number

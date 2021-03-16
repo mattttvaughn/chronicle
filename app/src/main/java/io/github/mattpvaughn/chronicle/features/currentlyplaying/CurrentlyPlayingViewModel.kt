@@ -21,7 +21,6 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
@@ -36,17 +35,21 @@ import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerActi
 import io.github.mattpvaughn.chronicle.util.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+@ExperimentalCoroutinesApi
 class CurrentlyPlayingViewModel(
     private val bookRepository: IBookRepository,
     private val trackRepository: ITrackRepository,
     private val localBroadcastManager: LocalBroadcastManager,
     private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
-    private val plexConfig: PlexConfig
+    private val plexConfig: PlexConfig,
+    private val currentlyPlaying: CurrentlyPlaying
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -56,7 +59,8 @@ class CurrentlyPlayingViewModel(
         private val localBroadcastManager: LocalBroadcastManager,
         private val mediaServiceConnection: MediaServiceConnection,
         private val prefsRepo: PrefsRepo,
-        private val plexConfig: PlexConfig
+        private val plexConfig: PlexConfig,
+        private val currentlyPlaying: CurrentlyPlaying
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
@@ -66,7 +70,8 @@ class CurrentlyPlayingViewModel(
                     localBroadcastManager,
                     mediaServiceConnection,
                     prefsRepo,
-                    plexConfig
+                    plexConfig,
+                    currentlyPlaying
                 ) as T
             } else {
                 throw IllegalArgumentException("Incorrect class type provided")
@@ -78,10 +83,7 @@ class CurrentlyPlayingViewModel(
     val showUserMessage: LiveData<Event<String>>
         get() = _showUserMessage
 
-    // Placeholder til we figure out AssistedInject
-    private val inputAudiobookId = EMPTY_AUDIOBOOK.id
-
-    private var audiobookId = MutableLiveData<Int>()
+    private var audiobookId = MutableLiveData(EMPTY_AUDIOBOOK.id)
 
     val audiobook: LiveData<Audiobook?> = Transformations.switchMap(audiobookId) { id ->
         if (id == EMPTY_AUDIOBOOK.id) {
@@ -95,8 +97,6 @@ class CurrentlyPlayingViewModel(
     private val emptyTrackList = MutableLiveData<List<MediaItemTrack>>(emptyList())
 
     // TODO: expose combined track/chapter bits in ViewModel as "windowSomething" instead of in xml
-
-
     val tracks: LiveData<List<MediaItemTrack>> = Transformations.switchMap(audiobookId) { id ->
         if (id == EMPTY_AUDIOBOOK.id) {
             emptyTrackList
@@ -106,7 +106,7 @@ class CurrentlyPlayingViewModel(
     }
 
     // Used to cache tracks.asChapterList when tracks changes
-    private val tracksAsChaptersCache = mapAsync(tracks, viewModelScope) {
+    private val tracksAsChaptersCache: LiveData<List<Chapter>> = mapAsync(tracks, viewModelScope) {
         it.asChapterList()
     }
 
@@ -131,37 +131,15 @@ class CurrentlyPlayingViewModel(
             metadata.takeIf { !it.id.isNullOrEmpty() }?.id?.toInt() ?: TRACK_NOT_FOUND
         }
 
-    val currentTrack: LiveData<MediaItemTrack> = Transformations.map(tracks) { trackList ->
-        return@map trackList.takeIf { it.isNotEmpty() }?.getActiveTrack() ?: EMPTY_TRACK
-    }
+    val currentTrack: LiveData<MediaItemTrack> =
+        currentlyPlaying.track.asLiveData(viewModelScope.coroutineContext)
 
-    val currentChapter = DoubleLiveData(
-        tracks,
-        chapters
-    ) { _tracks, _chapters ->
-        // find the offset of the current track from the start of the audiobook, then find the
-        // chapter which contains that timestamp
-        if (_tracks == null || _tracks.isEmpty() || _chapters == null || _chapters.isEmpty()) {
-            return@DoubleLiveData EMPTY_CHAPTER
-        }
-        val activeTrack = _tracks.getActiveTrack()
-        return@DoubleLiveData _chapters.filter {
-            it.trackId.toInt() == activeTrack.id
-        }.getChapterAt(activeTrack.progress)
-    }
+    val currentChapter = currentlyPlaying.chapter.asLiveData(viewModelScope.coroutineContext)
 
-    val chapterProgress = TripleLiveData(
-        currentChapter,
-        currentTrack,
-        tracks
-    ) { _chapter, _track, _tracks ->
-        if (_chapter == null || _chapter == EMPTY_CHAPTER || _track == null ||
-            _track == EMPTY_TRACK || _tracks.isNullOrEmpty() || _track !in _tracks
-        ) {
-            return@TripleLiveData 0L
-        }
-        return@TripleLiveData _track.progress - _chapter.startTimeOffset
-    }
+    val chapterProgress = currentlyPlaying.chapter.combine(currentlyPlaying.track)
+    { chapter: Chapter, track: MediaItemTrack ->
+        track.progress - chapter.startTimeOffset
+    }.asLiveData(viewModelScope.coroutineContext)
 
     val chapterProgressString = Transformations.map(chapterProgress) { progress ->
         return@map DateUtils.formatElapsedTime(
@@ -211,6 +189,39 @@ class CurrentlyPlayingViewModel(
         return@map DateUtils.formatElapsedTime(StringBuilder(), it?.duration?.div(1000) ?: 0)
     }
 
+    private val cachedChapter = DoubleLiveData(
+        chapters,
+        tracks
+    ) { _chapters: List<Chapter>?, _tracks: List<MediaItemTrack>? ->
+        Timber.i("Cached chapters: $_chapters")
+        Timber.i("Cached progress: ${_tracks?.getProgress()}")
+
+        if (_tracks != null && _chapters != null) {
+            var offsetRemaining = _tracks.getProgress()
+            var currChapter: Chapter? = null
+            for (chapter in _chapters) {
+                if (offsetRemaining < chapter.endTimeOffset) {
+                    currChapter = chapter
+                    break
+                }
+                offsetRemaining -= (chapter.endTimeOffset - chapter.startTimeOffset)
+            }
+            currChapter ?: EMPTY_CHAPTER
+        } else {
+            EMPTY_CHAPTER
+        }
+    }.asFlow()
+
+    val activeChapter = currentlyPlaying.chapter.combine(cachedChapter)
+    { activeChapter: Chapter, cachedChapter: Chapter ->
+        Timber.i("Cached: $cachedChapter, active: $activeChapter")
+        if (activeChapter != EMPTY_CHAPTER && activeChapter.trackId == cachedChapter.trackId) {
+            activeChapter
+        } else {
+            cachedChapter
+        }
+    }.asLiveData(viewModelScope.coroutineContext)
+
     private var _isLoadingTracks = MutableLiveData(false)
     val isLoadingTracks: LiveData<Boolean>
         get() = _isLoadingTracks
@@ -231,7 +242,9 @@ class CurrentlyPlayingViewModel(
 
     private val networkObserver = Observer<Boolean> { isConnected ->
         if (isConnected) {
-            refreshTracks(inputAudiobookId)
+            audiobookId.value?.let {
+                refreshTracks(it)
+            }
         }
     }
 
@@ -279,7 +292,7 @@ class CurrentlyPlayingViewModel(
                         tracks.value.size
                     )
                     audiobook.value?.let {
-                        bookRepository.loadChapterData(it, tracks.value)
+                        bookRepository.syncAudiobook(it, tracks.value)
                     }
                 }
                 _isLoadingTracks.value = false
@@ -347,9 +360,9 @@ class CurrentlyPlayingViewModel(
                 Timber.i("Seeking!")
                 transportControls?.sendCustomAction(action, null)
             } else {
-                Timber.i("Updating progress manually!")
+                Timber.i("Updating DB progress!")
                 // Service is not alive, so update track repo directly
-                tracks.observeOnce(Observer { _tracks ->
+                tracks.observeOnce { _tracks ->
                     viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
                         // don't bother seeking if there aren't any files
                         if (_tracks.isEmpty()) {
@@ -366,7 +379,7 @@ class CurrentlyPlayingViewModel(
                             System.currentTimeMillis()
                         )
                     }
-                })
+                }
             }
         }
     }

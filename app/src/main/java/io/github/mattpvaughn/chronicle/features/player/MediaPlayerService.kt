@@ -14,6 +14,7 @@ import androidx.lifecycle.Observer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.media.MediaBrowserServiceCompat
 import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.C.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import io.github.mattpvaughn.chronicle.BuildConfig
@@ -31,6 +32,7 @@ import io.github.mattpvaughn.chronicle.data.model.toMediaItem
 import io.github.mattpvaughn.chronicle.data.sources.plex.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
+import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_ACTION
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_DURATION_MILLIS
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerAction
@@ -44,8 +46,10 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.seconds
 
 /** The service responsible for media playback, notification */
+@ExperimentalCoroutinesApi
 @OptIn(ExperimentalTime::class)
-class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceController, ServiceController,
+class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceController,
+    ServiceController,
     SleepTimer.SleepTimerBroadcaster {
 
     val serviceJob: CompletableJob = SupervisorJob()
@@ -81,10 +85,8 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
     @Inject
     lateinit var exoPlayer: SimpleExoPlayer
 
-    private val audioAttrs = AudioAttributes.Builder()
-        .setContentType(C.CONTENT_TYPE_SPEECH) // pauses playback on temporary audio focus loss
-        .setUsage(C.USAGE_MEDIA)
-        .build()
+    @Inject
+    lateinit var currentlyPlaying: CurrentlyPlaying
 
     @Inject
     lateinit var bookRepository: IBookRepository
@@ -186,7 +188,8 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
         Timber.i("Service created! $this")
 
-        exoPlayer.setAudioAttributes(audioAttrs, true)
+
+        updateAudioAttrs(simpleExoPlayer = exoPlayer)
 
         prefsRepo.registerPrefsListener(prefsListener)
 
@@ -253,7 +256,20 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
             PrefsRepo.KEY_SKIP_SILENCE, PrefsRepo.KEY_PLAYBACK_SPEED -> {
                 invalidatePlaybackParams()
             }
+            PrefsRepo.KEY_PAUSE_ON_FOCUS_LOST -> {
+                updateAudioAttrs(exoPlayer)
+            }
         }
+    }
+
+    private fun updateAudioAttrs(simpleExoPlayer: SimpleExoPlayer) {
+        simpleExoPlayer.setAudioAttributes(
+            AudioAttributes.Builder()
+                .setContentType(if (prefsRepo.pauseOnFocusLost) CONTENT_TYPE_SPEECH else CONTENT_TYPE_MUSIC)
+                .setUsage(USAGE_MEDIA)
+                .build(),
+            true
+        )
     }
 
     private val serverChangedListener = Observer<PlexConfig.ConnectionState> {
@@ -538,9 +554,9 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
 
         override fun onPositionDiscontinuity(reason: Int) {
             super.onPositionDiscontinuity(reason)
-            Timber.i("Player discontinuity!!!!!")
             serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
                 if (reason == Player.DISCONTINUITY_REASON_PERIOD_TRANSITION) {
+                    Timber.i("Playing next track")
                     // Update track progress
                     val trackId = mediaController.metadata.id
                     if (trackId != null && trackId != TRACK_NOT_FOUND.toString()) {
@@ -549,6 +565,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                             val bookId = trackRepository.getBookIdForTrack(trackId.toInt())
                             val track = trackRepository.getTrackAsync(trackId.toInt())
                             val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
+
                             if (tracks.getDuration() == tracks.getProgress()) {
                                 mediaController.transportControls.stop()
                             }

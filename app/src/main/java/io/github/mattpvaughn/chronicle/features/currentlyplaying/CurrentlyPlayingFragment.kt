@@ -21,11 +21,12 @@ import io.github.mattpvaughn.chronicle.features.bookdetails.ChapterListAdapter
 import io.github.mattpvaughn.chronicle.features.bookdetails.TrackClickListener
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer
 import io.github.mattpvaughn.chronicle.util.observeEvent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import timber.log.Timber
 import javax.inject.Inject
 
-/**
- *
- */
+/** Responsible for playback controls and displaying the currently playing media */
+@ExperimentalCoroutinesApi
 class CurrentlyPlayingFragment : Fragment() {
 
     private lateinit var currentlyPlayingInterface: MainActivity.CurrentlyPlayingInterface
@@ -97,6 +98,15 @@ class CurrentlyPlayingFragment : Fragment() {
                 }
             }
         })
+
+        viewModel.activeChapter.observe(viewLifecycleOwner) { chapter ->
+            Timber.i("Updating current chapter: (${chapter.trackId}, ${chapter.discNumber}, ${chapter.index})")
+            adapter.updateCurrentChapter(
+                trackId = chapter.trackId,
+                discNumber = chapter.discNumber,
+                chapterIndex = chapter.index
+            )
+        }
 
         binding.tracks.adapter = adapter
 

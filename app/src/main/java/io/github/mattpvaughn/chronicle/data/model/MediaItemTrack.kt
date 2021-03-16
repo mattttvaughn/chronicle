@@ -60,6 +60,7 @@ data class MediaItemTrack(
 
         val EMPTY_TRACK = MediaItemTrack(TRACK_NOT_FOUND)
 
+        /** The pattern representing a downloaded track on the file system */
         val cachedFilePattern = Regex("\\d*\\..+")
         fun getTrackIdFromFileName(fileName: String): Int {
             return fileName.substringBefore('.').toInt()
@@ -72,20 +73,19 @@ data class MediaItemTrack(
          *
          * Always retains [cached] field from local copy
          */
-        fun merge(network: MediaItemTrack, local: MediaItemTrack): MediaItemTrack {
-            if (network.viewCount != local.viewCount) {
-                Timber.i("Huge huge huge! Views have increased on ${network.title}")
-            }
-            return if (network.lastViewedAt > local.lastViewedAt) {
-                Timber.i("Integrating network track: $network")
-                network.copy(cached = local.cached)
-            } else {
-                network.copy(
-                    cached = local.cached,
-                    lastViewedAt = local.lastViewedAt,
-                    progress = local.progress
-                )
-            }
+        fun merge(
+            network: MediaItemTrack,
+            local: MediaItemTrack,
+            forceUseNetwork: Boolean = false
+        ) = if (forceUseNetwork || network.lastViewedAt > local.lastViewedAt) {
+            Timber.i("Integrating network track: $network")
+            network.copy(cached = local.cached)
+        } else {
+            network.copy(
+                cached = local.cached,
+                lastViewedAt = local.lastViewedAt,
+                progress = local.progress
+            )
         }
 
         /** Create a [MediaItemTrack] from a Plex model and an index */
@@ -223,16 +223,22 @@ fun MediaItemTrack.toMediaMetadata(plexConfig: PlexConfig): MediaMetadataCompat 
 }
 
 fun List<MediaItemTrack>.asChapterList(): List<Chapter> {
-    return this.map { it.asChapter() }
+    val outList = mutableListOf<Chapter>()
+    var cumStartOffset = 0L
+    for (track in this) {
+        track.asChapter(cumStartOffset)
+        cumStartOffset += track.duration
+    }
+    return outList
 }
 
-fun MediaItemTrack.asChapter(): Chapter {
+fun MediaItemTrack.asChapter(startOffset: Long): Chapter {
     return Chapter(
         title = title,
         id = id.toLong(),
         index = index.toLong(),
         discNumber = discNumber,
-        startTimeOffset = 0L,
+        startTimeOffset = startOffset,
         endTimeOffset = duration,
         downloaded = cached,
         trackId = id.toLong()

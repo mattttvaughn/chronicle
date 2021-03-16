@@ -37,7 +37,7 @@ class PlexSyncScrobbleWorker(
     val plexMediaService = Injector.get().plexMediaService()
 
     private var workerJob = Job()
-    private val coroutineScope = CoroutineScope(workerJob + Dispatchers.IO)
+    private val workerScope = CoroutineScope(workerJob + Dispatchers.IO)
 
     override fun doWork(): Result {
         // Ensure user is logged in before trying to sync scrobble data
@@ -51,7 +51,7 @@ class PlexSyncScrobbleWorker(
         val playbackTimeStamp = inputData.requireLong(PLAYBACK_TIME_STAMP)
         val bookProgress = inputData.requireLong(BOOK_PROGRESS)
         try {
-            coroutineScope.launch(Injector.get().unhandledExceptionHandler()) {
+            workerScope.launch(Injector.get().unhandledExceptionHandler()) {
                 val track = trackRepository.getTrackAsync(trackId)
                 val bookId = track?.parentKey ?: NO_AUDIOBOOK_FOUND_ID
                 val book = bookRepository.getAudiobookAsync(bookId)
@@ -67,10 +67,10 @@ class PlexSyncScrobbleWorker(
                         playbackTime = playbackTimeStamp,
                         playQueueItemId = track.playQueueItemID,
                         key = "${MediaItemTrack.PARENT_KEY_PREFIX}$trackId",
-                        // IMPORTANT: Plex normally marks as watched at 90% progress, but it
+                        // IMPORTANT: Plex normally marks as finished at 90% progress, but it
                         // calculates progress with respect to duration provided if a duration is
                         // provided, so passing duration = actualDuration * 2 causes Plex to never
-                        // automatically mark as watched
+                        // automatically mark as finished
                         duration = track.duration * 2,
                         playState = playbackState,
                         hasMde = 1

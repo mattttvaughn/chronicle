@@ -21,9 +21,14 @@ import javax.inject.Singleton
 interface ITrackRepository {
     /**
      * Load all tracks from the network corresponding to the book with id == [bookId], add them to
-     * the local [TrackDatabase], and return them
+     * the local [TrackDatabase], and return the merged results.
+     *
+     * If [forceUseNetwork] is true, override local copy with the network copy where it makes sense
      */
-    suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>, Throwable>
+    suspend fun loadTracksForAudiobook(
+        bookId: Int,
+        forceUseNetwork: Boolean = false,
+    ): Result<List<MediaItemTrack>, Throwable>
 
     /**
      * Update the value of [MediaItemTrack.cached] to [isCached] for a [MediaItemTrack] with
@@ -33,7 +38,6 @@ interface ITrackRepository {
 
     /** Return all tracks in the [TrackDatabase]  */
     fun getAllTracks(): LiveData<List<MediaItemTrack>>
-
     suspend fun getAllTracksAsync(): List<MediaItemTrack>
 
     /**
@@ -41,8 +45,7 @@ interface ITrackRepository {
      * [MediaItemTrack.parentKey] == [bookId]
      */
     fun getTracksForAudiobook(bookId: Int): LiveData<List<MediaItemTrack>>
-
-    suspend fun getTracksForAudiobookAsync(id: Int): List<MediaItemTrack>
+    suspend fun getTracksForAudiobookAsync(bookId: Int): List<MediaItemTrack>
 
     /** Update the value of [MediaItemTrack.progress] == [trackProgress] and
      * [MediaItemTrack.lastViewedAt] == [lastViewedAt] for the track where
@@ -90,7 +93,26 @@ interface ITrackRepository {
     /** Fetches all [MediaType.TRACK]s from the server, updates the local db */
     suspend fun refreshData()
 
+    /** Retrieves a track from the local db with [title] as a substring of [MediaItemTrack.title] */
     suspend fun findTrackByTitle(title: String): MediaItemTrack?
+
+    /**
+     * Pulls all [MediaItemTrack] with [MediaItemTrack.album] == [bookId] from the network
+     *
+     * @return a [List<MediaItemTrack>] reflecting tracks returned by the server
+     */
+    suspend fun fetchNetworkTracksForBook(bookId: Int): List<MediaItemTrack>
+
+    /**
+     * Loads in new track data from the network, updates the DB and returns the new track data
+     */
+    suspend fun syncTracksInBook(
+        bookId: Int,
+        forceUseNetwork: Boolean = false
+    ): List<MediaItemTrack>
+
+    /** * Marks tracks in book as watched by setting the progress in all to 0 */
+    suspend fun markTracksInBookAsWatched(bookId: Int)
 
     companion object {
         /**
@@ -122,20 +144,64 @@ class TrackRepository @Inject constructor(
         }
     }
 
-    override suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>, Throwable> {
+    override suspend fun fetchNetworkTracksForBook(bookId: Int): List<MediaItemTrack> {
+        return withContext(Dispatchers.IO) {
+            return@withContext plexMediaService.retrieveTracksForAlbum(bookId)
+                .plexMediaContainer
+                .asTrackList()
+        }
+    }
+
+    override suspend fun syncTracksInBook(
+        bookId: Int,
+        forceUseNetwork: Boolean,
+    ): List<MediaItemTrack> =
+        withContext(Dispatchers.IO) {
+            val networkTracks = fetchNetworkTracksForBook(bookId)
+            val localTracks = getTracksForAudiobookAsync(bookId)
+            val mergedTracks = mergeNetworkTracks(
+                networkTracks = networkTracks,
+                localTracks = localTracks,
+                forcePreferNetwork = forceUseNetwork
+            )
+            trackDao.insertAll(mergedTracks)
+            mergedTracks
+        }
+
+    override suspend fun markTracksInBookAsWatched(bookId: Int) {
+        withContext(Dispatchers.IO) {
+            val tracks = getTracksForAudiobookAsync(bookId)
+            val updatedTracks = tracks.map {
+                it.copy(progress = 0L)
+            }
+            trackDao.insertAll(updatedTracks)
+        }
+    }
+
+    override suspend fun loadTracksForAudiobook(
+        bookId: Int,
+        forceUseNetwork: Boolean,
+    ): Result<List<MediaItemTrack>, Throwable> {
         return withContext(Dispatchers.IO) {
             val localTracks = trackDao.getAllTracksAsync()
             try {
-                val networkTracks =
-                    plexMediaService.retrieveTracksForAlbum(bookId).plexMediaContainer.asTrackList()
-                Ok(mergeNetworkTracks(networkTracks, localTracks))
+                val networkTracks = plexMediaService.retrieveTracksForAlbum(bookId)
+                    .plexMediaContainer
+                    .asTrackList()
+                val mergedTracks = mergeNetworkTracks(
+                    networkTracks = networkTracks,
+                    localTracks = localTracks,
+                    forcePreferNetwork = forceUseNetwork
+                )
+                trackDao.insertAll(mergedTracks)
+                Ok(mergedTracks)
             } catch (t: Throwable) {
                 Err(t)
             }
         }
     }
 
-    override suspend fun updateCachedStatus(trackId: Int, isCached: Boolean) : Int {
+    override suspend fun updateCachedStatus(trackId: Int, isCached: Boolean): Int {
         return withContext(Dispatchers.IO) {
             trackDao.updateCachedStatus(trackId, isCached)
         }
@@ -156,9 +222,9 @@ class TrackRepository @Inject constructor(
         return trackDao.getTracksForAudiobook(bookId, prefsRepo.offlineMode)
     }
 
-    override suspend fun getTracksForAudiobookAsync(id: Int): List<MediaItemTrack> {
+    override suspend fun getTracksForAudiobookAsync(bookId: Int): List<MediaItemTrack> {
         return withContext(Dispatchers.IO) {
-            trackDao.getTracksForAudiobookAsync(id, prefsRepo.offlineMode)
+            trackDao.getTracksForAudiobookAsync(bookId, prefsRepo.offlineMode)
         }
     }
 
@@ -219,18 +285,18 @@ class TrackRepository @Inject constructor(
         }
     }
 
-    override suspend fun loadAllTracksAsync(): List<MediaItemTrack> {
-        return withContext(Dispatchers.IO) {
-            val localTracks = trackDao.getAllTracksAsync()
-            try {
-                val networkTracks = plexMediaService.retrieveAllTracksInLibrary(
-                    Injector.get().plexPrefs().library!!.id
-                ).plexMediaContainer.asTrackList()
-                return@withContext mergeNetworkTracks(networkTracks, localTracks)
-            } catch (t: Throwable) {
-                Timber.e("Failed to load tracks: $t")
-                emptyList<MediaItemTrack>()
-            }
+    override suspend fun loadAllTracksAsync() = withContext(Dispatchers.IO) {
+        val localTracks = trackDao.getAllTracksAsync()
+        try {
+            val networkTracks = plexMediaService.retrieveAllTracksInLibrary(
+                Injector.get().plexPrefs().library!!.id
+            ).plexMediaContainer.asTrackList()
+            val mergedTracks = mergeNetworkTracks(networkTracks, localTracks)
+            trackDao.insertAll(mergedTracks)
+            return@withContext mergedTracks
+        } catch (t: Throwable) {
+            Timber.e("Failed to load tracks: $t")
+            emptyList()
         }
     }
 
@@ -238,22 +304,25 @@ class TrackRepository @Inject constructor(
      * Merges a list of tracks from the network into the DB by comparing to local tracks and using
      * using logic [MediaItemTrack.merge] to determine what data to keep from each
      */
-    private fun mergeNetworkTracks(
+    private suspend fun mergeNetworkTracks(
         networkTracks: List<MediaItemTrack>,
-        localTracks: List<MediaItemTrack>
+        localTracks: List<MediaItemTrack>,
+        forcePreferNetwork: Boolean = false
     ): List<MediaItemTrack> {
-        val mergedTracks = networkTracks.map { networkTrack ->
-            val localTrack = localTracks.find { it.id == networkTrack.id }
+        // TODO: O(n^2) is dangerous, could optimize pairing by grouping local + network into a
+        //       Map<BookId, List<Book>> by bookId
+        return networkTracks.map { networkTrack ->
+            val localTrack = localTracks.firstOrNull { it.id == networkTrack.id }
             if (localTrack != null) {
+                Timber.i("Local track merge: $localTrack")
                 return@map MediaItemTrack.merge(
                     network = networkTrack,
-                    local = localTrack
+                    local = localTrack,
+                    forceUseNetwork = forcePreferNetwork,
                 )
             } else {
                 return@map networkTrack
             }
         }
-        trackDao.insertAll(mergedTracks)
-        return mergedTracks
     }
 }

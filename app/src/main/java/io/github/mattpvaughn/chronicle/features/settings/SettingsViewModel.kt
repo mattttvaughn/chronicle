@@ -3,6 +3,10 @@ package io.github.mattpvaughn.chronicle.features.settings
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.text.format.Formatter
 import androidx.lifecycle.*
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.bumptech.glide.Glide
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.FEATURE_FLAG_IS_AUTO_ENABLED
@@ -10,10 +14,11 @@ import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
+import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.features.download.MoveSyncLocationWorker
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.settings.SettingsViewModel.NavigationDestination.*
 import io.github.mattpvaughn.chronicle.util.Event
@@ -26,12 +31,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
-import java.io.IOException
 import javax.inject.Inject
 
 /**
  * Represents the UI state of the settings screen. Responsible for loading and displaying
  * [PreferenceModel]s.
+ *
+ * Note: not using the built-in [PreferenceFragment] because making custom preferences is horrible
+ *       and custom views or pop-ups are fine. This could be improved, though, it's quite indented
+ *
+ * TODO: Quite a bit of repetition of information in [PreferenceModel], making typos more likely.
+ *       Might be worthwhile to look into alternatives used by other apps?
  */
 class SettingsViewModel(
     private val bookRepository: IBookRepository,
@@ -40,7 +50,9 @@ class SettingsViewModel(
     private val prefsRepo: PrefsRepo,
     private val plexLoginRepo: IPlexLoginRepo,
     private val cachedFileManager: ICachedFileManager,
-    private val plexConfig: PlexConfig
+    private val plexConfig: PlexConfig,
+    private val workManager: WorkManager,
+    private val plexPrefs: PlexPrefsRepo,
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -51,18 +63,22 @@ class SettingsViewModel(
         private val mediaServiceConnection: MediaServiceConnection,
         private val plexLoginRepo: IPlexLoginRepo,
         private val cachedFileManager: ICachedFileManager,
-        private val plexConfig: PlexConfig
+        private val plexConfig: PlexConfig,
+        private val workManager: WorkManager,
+        private val plexPrefs: PlexPrefsRepo,
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
                 return SettingsViewModel(
-                    bookRepository,
-                    trackRepository,
-                    mediaServiceConnection,
-                    prefsRepo,
-                    plexLoginRepo,
-                    cachedFileManager,
-                    plexConfig
+                    bookRepository = bookRepository,
+                    trackRepository = trackRepository,
+                    mediaServiceConnection = mediaServiceConnection,
+                    prefsRepo = prefsRepo,
+                    plexLoginRepo = plexLoginRepo,
+                    cachedFileManager = cachedFileManager,
+                    plexConfig = plexConfig,
+                    workManager = workManager,
+                    plexPrefs = plexPrefs
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from SettingsViewModel.Factory")
@@ -382,12 +398,23 @@ class SettingsViewModel(
                 defaultValue = prefsRepo.shakeToSnooze
             ),
             PreferenceModel(
+                type = PreferenceType.BOOLEAN,
+                title = FormattableString.from(R.string.settings_pause_on_focus_lost_title),
+                explanation = FormattableString.from(R.string.settings_pause_on_focus_lost_explanation),
+                key = PrefsRepo.KEY_PAUSE_ON_FOCUS_LOST,
+                defaultValue = prefsRepo.pauseOnFocusLost
+            ),
+            PreferenceModel(
                 PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_account)
             ),
             PreferenceModel(
                 PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_change_library),
+                explanation = FormattableString.ResourceString(
+                    R.string.settings_current_library,
+                    listOf(plexPrefs.library?.name ?: "")
+                ),
                 click = object : PreferenceClick {
                     override fun onClick() {
                         viewModelScope.launch {
@@ -424,6 +451,10 @@ class SettingsViewModel(
             PreferenceModel(
                 PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_change_server),
+                explanation = FormattableString.ResourceString(
+                    R.string.settings_current_server,
+                    listOf(plexPrefs.server?.name ?: "")
+                ),
                 click = object : PreferenceClick {
                     override fun onClick() {
                         viewModelScope.launch {
@@ -449,6 +480,10 @@ class SettingsViewModel(
             PreferenceModel(
                 PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_change_user),
+                explanation = FormattableString.ResourceString(
+                    R.string.settings_current_user,
+                    listOf(plexPrefs.user?.username ?: "")
+                ),
                 click = object : PreferenceClick {
                     override fun onClick() {
                         viewModelScope.launch {
@@ -522,8 +557,7 @@ class SettingsViewModel(
                 type = PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_licenses_title),
                 explanation = FormattableString.from(R.string.settings_licenses_explanation),
-                click =
-                object : PreferenceClick {
+                click = object : PreferenceClick {
                     override fun onClick() {
                         _showLicenseActivity.postValue(true)
                     }
@@ -551,6 +585,22 @@ class SettingsViewModel(
                         click = object : PreferenceClick {
                             override fun onClick() {
                                 clearConfig(clearDownloads = false)
+                            }
+                        }),
+                    PreferenceModel(
+                        PreferenceType.CLICKABLE,
+                        FormattableString.from(string = "Clear cached images"),
+                        click = object : PreferenceClick {
+                            override fun onClick() {
+                                viewModelScope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        Glide.get(Injector.get().applicationContext())
+                                            .clearDiskCache()
+                                    }
+                                    withContext(Dispatchers.Main) {
+                                        Glide.get(Injector.get().applicationContext()).clearMemory()
+                                    }
+                                }
                             }
                         }),
                     PreferenceModel(
@@ -592,38 +642,14 @@ class SettingsViewModel(
     private fun setSyncLocation(syncDir: File) {
         prefsRepo.cachedMediaDir = syncDir
 
-        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            val deviceDirs =
-                Injector.get().externalDeviceDirs()
-                    .filter { it.path != syncDir.path }
+        val worker = OneTimeWorkRequestBuilder<MoveSyncLocationWorker>().build()
 
-            viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-                deviceDirs.forEach { dir ->
-                    dir.listFiles { cachedFile ->
-                        MediaItemTrack.cachedFilePattern.matches(cachedFile.name)
-                    }?.forEach { cachedFile ->
-                        Timber.i(
-                            "Moving file ${cachedFile.absolutePath} to ${File(
-                                syncDir,
-                                cachedFile.name
-                            ).absolutePath}"
-                        )
-                        try {
-                            val copied = cachedFile.copyTo(
-                                File(syncDir, cachedFile.name),
-                                overwrite = true
-                            )
-                            if (copied.exists()) {
-                                cachedFile.delete()
-                            }
-                            Timber.i("Moved file ${cachedFile.name}? ${copied.exists()}")
-                        } catch (io: IOException) {
-                            Timber.i("IO exception occurred while changing sync location: $io")
-                        }
-                    }
-                }
-            }
-        }
+        workManager.beginUniqueWork(
+            MoveSyncLocationWorker.WORKER_ID,
+            ExistingWorkPolicy.REPLACE,
+            worker
+        ).enqueue()
+
     }
 
     private enum class NavigationDestination {

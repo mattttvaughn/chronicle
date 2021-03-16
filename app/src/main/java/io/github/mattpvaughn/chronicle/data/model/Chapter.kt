@@ -1,11 +1,15 @@
 package io.github.mattpvaughn.chronicle.data.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 
 
+@Entity
 data class Chapter constructor(
     val title: String = "",
+    @PrimaryKey
     val id: Long = 0L,
     val index: Long = 0L,
     val discNumber: Int = 1,
@@ -14,7 +18,8 @@ data class Chapter constructor(
     // The number of milliseconds between the start of the containing track and the end of the chapter
     val endTimeOffset: Long = 0L,
     val downloaded: Boolean = false,
-    val trackId : Long = TRACK_NOT_FOUND.toLong()
+    val trackId: Long = TRACK_NOT_FOUND.toLong(),
+    val bookId: Long = NO_AUDIOBOOK_FOUND_ID.toLong()
 ) : Comparable<Chapter> {
     /** A string representing the index but padded to [length] characters with zeroes */
     fun paddedIndex(length: Int): String {
@@ -56,7 +61,8 @@ class ChapterListConverter {
             val split = it.split("©")
             val discNumber = if (split.size >= 6) split[5].toInt() else 1
             val downloaded = if (split.size >= 7) split[6].toBoolean() else false
-            val parentId = if (split.size >= 8) split[7].toLong() else TRACK_NOT_FOUND.toLong()
+            val trackId = if (split.size >= 8) split[7].toLong() else TRACK_NOT_FOUND.toLong()
+            val bookId = if (split.size >= 9) split[8].toLong() else NO_AUDIOBOOK_FOUND_ID.toLong()
             Chapter(
                 title = split[0],
                 id = split[1].toLong(),
@@ -65,7 +71,8 @@ class ChapterListConverter {
                 endTimeOffset = split[4].toLong(),
                 discNumber = discNumber,
                 downloaded = downloaded,
-                trackId = parentId
+                trackId = trackId,
+                bookId = bookId
             )
         }
     }
@@ -73,7 +80,7 @@ class ChapterListConverter {
     // A little yikes but funny
     @TypeConverter
     fun toString(chapters: List<Chapter>): String {
-        return chapters.joinToString("®") { "${it.title}©${it.id}©${it.index}©${it.startTimeOffset}©${it.endTimeOffset}©${it.discNumber}©${it.downloaded}©${it.trackId}" }
+        return chapters.joinToString("®") { "${it.title}©${it.id}©${it.index}©${it.startTimeOffset}©${it.endTimeOffset}©${it.discNumber}©${it.downloaded}©${it.trackId}©${it.bookId}" }
     }
 }
 

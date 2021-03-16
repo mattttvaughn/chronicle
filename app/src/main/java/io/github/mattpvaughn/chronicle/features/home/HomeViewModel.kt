@@ -55,14 +55,9 @@ class HomeViewModel(
     val recentlyListened =
         DoubleLiveData(bookRepository.getRecentlyListened(), _offlineMode) { recents, offline ->
             return@DoubleLiveData if (offline == true) {
-                /**
-                 * We only want books which have actually been listened to and not finished.
-                 * lastViewedAt cannot be the default value. And we prefer not to show finished
-                 * books either, so [Audiobook.viewedLeafCount] ought to be greater than
-                 * [Audiobook.leafCount]
-                 */
                 recents?.filter { it.isCached }
             } else {
+                Timber.i("Recently listened: $recents")
                 recents
             } ?: emptyList()
         }
@@ -183,6 +178,8 @@ class HomeViewModel(
             val audiobooks = bookRepository.getAllBooksAsync()
             val tracks = trackRepository.getAllTracksAsync()
             audiobooks.forEach { book ->
+                // TODO: O(n^2) so could be bad for big libs, grouping by tracks first would be O(n)
+
                 // Not necessarily in the right order, but it doesn't matter for updateTrackData
                 val tracksInAudiobook = tracks.filter { it.parentKey == book.id }
                 bookRepository.updateTrackData(

@@ -3,20 +3,26 @@
 Message redditors:
   - on auto release
  
+Internal:
+ - Update billing version
+ - Remove hardcoding of `Dispatchers` and `GlobalScope`
+ - Refactor repositories to expose `StateFlow`s instead of `LiveData`?
+    - Need to learn good merging techniques/extensions first
+    - ViewModels too?
+ - Refactor some of the classes in `MediaPlayerService` to be more idiomatic
+ - Refactor Chapters to be managed in their own db
     
 ## Bug fixes:
 
 STOPSHIP:
+ - [ ] 
 
 Cannot reproduce:
- - [ ] issues caching track (or chapter) start/end times
- - [ ] book durations sometimes stuck at 00:00?
  - [ ] Possible memory leaks (reported on op 6t)
     - [ ] ViewBinding?
     - [ ] MediaServiceConnection?
  
 Need to test:
- - [ ] Downloading to SD card fails?
  - [ ] Playback issues on older devices (5.0 - possibly 9.0)
  - [ ] Filter/sort buttons broken for maybe API 26 and below
     - possibly fixed
@@ -38,35 +44,30 @@ Medium priority:
 
 Low priority
  - [ ] sleep timer "end of chapter" doesn't account for changes in playback speed
- - [ ] 
     
 ## High priority:
 
- - [ ] Android Auto (mostly done, but unable to release until support for demo libraries has been added)
+ - [ ] Android Auto (mostly done, but waiting until support for demo libraries has been added)
  - [ ] Casting
- - [ ] 
 
 ## Medium priority:
 
- - [ ] Manually set watched/unwatched
  - [ ] Add more narrator to audiobook page: narrator
- - [ ] Highlight current chapter in chapter lists
  - [/] Filter/Sort/`View type` UI for library
        - [/] Sort by all known fields (genre, release date, author, etc.)
              - [X] Sortable by basic fields
              - [ ] When sorting, change the grid/list item subtitle to reflect the sorted field
        - [ ] Filterable by all known Plex fields (genre, release date, author, etc.)
        - [ ] Folder view + author view + collections view
- - [ ] Played/unplayed indicators (?)
+ - [ ] Tablet/landscape support
+ - [ ] Next/previous chapter buttons in "currently playing" screen
+ - [ ] Show most recently listened book in bottom bar like Spotify does
+ - [ ] More metadata in chapter list (start/end times or duration or something)
+ - [ ] Favorites
  - [ ] Improve downloading experience
      - [ ] Show download status for tracks (progress, downloaded?)
      - [ ] Sync by disk option
      - [ ] "Download all" button?
- - [ ] Tablet/landscape support
- - [ ] Next/previous chapter buttons in "currently playing" screen
- - [ ] Show more recently listened book in bottom bar like Spotify does
- - [ ] More metadata in chapter list (start/end times or duration or something)
- - [ ] Favorites
 
 ## Low priority:
 
@@ -82,6 +83,15 @@ Low priority
 ## DONE:
 
 Release 0.50:
+
+March 15th:
+ - [ ] Highlight current chapter in chapter lists
+ - [ ] Fix issue of thumbnails from home tab not loading
+ - [ ] Manually set watched/unwatched
+ - [ ] Highlighting of current chapter
+ - [ ] Newly rewritten downloader
+     - [ ] Fix issues downloading books to SD card
+     - [ ] Allows failed downloads to be retried
 
 (September 10th):
  - [X] fix: scroll position no longer lost after returning from a book

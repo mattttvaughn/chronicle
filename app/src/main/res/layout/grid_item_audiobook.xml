@@ -73,6 +73,7 @@
                 srcRounded="@{audiobook.thumb}"
                 android:contentDescription="@{audiobook.title}"
                 android:layout_width="match_parent"
+                android:src="@drawable/book_cover_missing_placeholder"
                 android:layout_height="match_parent"
                 android:layout_gravity="bottom"
                 tools:src="@drawable/book_cover_missing_placeholder" />

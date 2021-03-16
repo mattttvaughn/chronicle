@@ -100,10 +100,10 @@ interface BookDao {
     @Query("SELECT * FROM Audiobook ORDER BY updatedAt DESC LIMIT 25")
     fun getOnDeck(): LiveData<List<Audiobook>>
 
-    @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND lastViewedAt != 0 AND progress != 0 AND progress != duration ORDER BY lastViewedAt DESC LIMIT :bookCount")
+    @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND lastViewedAt != 0 AND progress > 10000 AND progress < duration - 120000 ORDER BY lastViewedAt DESC LIMIT :bookCount")
     fun getRecentlyListened(bookCount: Int, offlineModeActive: Boolean): LiveData<List<Audiobook>>
 
-    @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND lastViewedAt != 0 AND progress != 0 AND progress != duration ORDER BY lastViewedAt DESC LIMIT :bookCount")
+    @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND lastViewedAt != 0 AND progress > 10000 AND progress < duration - 120000 ORDER BY lastViewedAt DESC LIMIT :bookCount")
     suspend fun getRecentlyListenedAsync(
         bookCount: Int,
         offlineModeActive: Boolean
@@ -112,8 +112,8 @@ interface BookDao {
     @Query("UPDATE Audiobook SET lastViewedAt = :currentTime, progress = :progress WHERE lastViewedAt < :currentTime AND id = :bookId")
     fun updateProgress(bookId: Int, currentTime: Long, progress: Long)
 
-    @Query("UPDATE Audiobook SET duration = :duration, leafCount = :trackCount, progress = :progress WHERE id = :id")
-    suspend fun updateTrackData(id: Int, progress: Long, duration: Long, trackCount: Int)
+    @Query("UPDATE Audiobook SET duration = :duration, leafCount = :trackCount, progress = :progress WHERE id = :bookId")
+    suspend fun updateTrackData(bookId: Int, progress: Long, duration: Long, trackCount: Int)
 
     @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND (title LIKE :query OR author LIKE :query)")
     fun search(query: String, offlineModeActive: Boolean): LiveData<List<Audiobook>>
@@ -150,6 +150,9 @@ interface BookDao {
 
     @Query("SELECT * FROM Audiobook ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomBookAsync(): Audiobook?
+
+    @Query("UPDATE Audiobook SET progress = 0 WHERE id = :bookId")
+    suspend fun updateWatched(bookId: Int)
 }
 
 

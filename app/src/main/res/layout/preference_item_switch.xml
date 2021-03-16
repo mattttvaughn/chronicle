@@ -14,6 +14,8 @@
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/preference_switch_content"
+        android:background="?android:attr/selectableItemBackground"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="@dimen/margin_small"
@@ -51,7 +53,7 @@
             app:layout_constraintVertical_chainStyle="packed"
             tools:text="Preference explanation" />
 
-        <Switch
+        <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/preference_switch"
             android:layout_width="wrap_content"
             android:layout_height="0dp"

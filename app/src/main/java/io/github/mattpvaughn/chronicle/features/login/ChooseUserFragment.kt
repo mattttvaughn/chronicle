@@ -52,6 +52,10 @@ class ChooseUserFragment : Fragment() {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             if (s != null && this@ChooseUserFragment::viewModel.isInitialized) {
                 viewModel.setPinData(s)
+                // Automatically submit on 4 digits entered
+                if (s.length >= 4) {
+                    viewModel.submitPin()
+                }
             }
         }
     }

@@ -99,12 +99,12 @@ class LibraryFragment : Fragment() {
 
             // Sometimes [books] will be the same as [adapter.currentList] so don't do any
             // submission/diffing if that's the case
-
+            //
             // Check if the new list differs from the current. We really should be using a normal
             // RecyclerView.Adapter and not a ListAdapter for this, as ListAdapter only provides
             // access to an immutable copy of a list, not the list itself.
             //
-            // This operation is worst case O(n), which is bad for users with big libraries
+            // This operation is worst case O(n), which is bad for users with huge libraries
             lifecycleScope.launch {
                 val isNewList = withContext(Dispatchers.IO) {
                     val currentList = adapter?.currentList ?: return@withContext true
@@ -112,8 +112,7 @@ class LibraryFragment : Fragment() {
                         Timber.i("Updating: different size!")
                         return@withContext true
                     }
-                    // check if lists are in the same order, faster than doing a full .equals()
-                    // comparison
+                    // compare lists by id, faster than doing a full .equals() comparison
                     for (index in books.indices) {
                         if (books[index].id != currentList[index].id) {
                             Timber.i("Updating: different ids!")

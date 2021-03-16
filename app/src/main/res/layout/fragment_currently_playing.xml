@@ -208,7 +208,7 @@
                         android:contentDescription="@string/sleep_timer"
                         android:onClick="@{() -> viewModel.showSleepTimerOptions() }"
                         android:src="@drawable/ic_sleep_timer"
-                        android:tint="@{viewModel.isSleepTimerActive() ? @color/iconActive : @color/icon}"
+                        app:tint="@{viewModel.isSleepTimerActive() ? @color/iconActive : @color/icon}"
                         app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
                         app:layout_constraintLeft_toRightOf="@id/skip_forward_button"
                         app:layout_constraintRight_toRightOf="@id/right_gutter"

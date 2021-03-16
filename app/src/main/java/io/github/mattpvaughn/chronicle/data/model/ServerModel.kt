@@ -13,11 +13,11 @@ data class ServerModel(
 
 fun PlexServer.asServer(): ServerModel {
     return ServerModel(
-        this.name,
-        this.connections,
-        this.clientIdentifier,
-        this.accessToken ?: "",
-        this.owned
+        name = this.name,
+        connections = this.connections,
+        serverId = this.clientIdentifier,
+        accessToken = this.accessToken ?: "",
+        owned = this.owned
     )
 }
 

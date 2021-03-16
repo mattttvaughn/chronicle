@@ -16,10 +16,9 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
+import io.github.mattpvaughn.chronicle.data.model.asServer
+import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.Connection
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
 import io.github.mattpvaughn.chronicle.injection.components.DaggerAppComponent
 import io.github.mattpvaughn.chronicle.injection.modules.AppModule
@@ -69,6 +68,9 @@ open class ChronicleApplication : Application() {
     @Inject
     lateinit var cachedFileManager: ICachedFileManager
 
+    @Inject
+    lateinit var plexLoginService: PlexLoginService
+
     override fun onCreate() {
         if (USE_STRICT_MODE && BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
@@ -98,11 +100,14 @@ open class ChronicleApplication : Application() {
         appComponent.inject(this)
         setupNetwork(plexPrefs)
         setupBilling()
-        fixDownloadState()
+        updateDownloadedFileState()
         super.onCreate()
     }
 
-    private fun fixDownloadState() {
+    /**
+     * Updates the book and track repositories to reflect the true state of downloaded files
+     */
+    private fun updateDownloadedFileState() {
         applicationScope.launch {
             withContext(Dispatchers.IO) {
                 cachedFileManager.refreshTrackDownloadedStatus()
@@ -173,17 +178,35 @@ open class ChronicleApplication : Application() {
             // network listener for sdk 24 and below
             registerReceiver(networkStateListener, IntentFilter().apply {
                 @Suppress("DEPRECATION")
-                this.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
+                addAction(ConnectivityManager.CONNECTIVITY_ACTION)
             })
         }
         val server = plexPrefs.server
         if (server != null) {
             plexConfig.setPotentialConnections(server.connections)
             applicationScope.launch(unhandledExceptionHandler) {
+                val retrievedConnections: List<Connection> = withTimeoutOrNull(4000L) {
+                    try {
+                        plexLoginService.resources()
+                            .filter { it.provides.contains("server") }
+                            .map { it.asServer() }
+                            .filter { it.serverId == server.serverId }
+                            .flatMap { it.connections }
+                    } catch (e: Exception) {
+                        Timber.e("Failed to retrieve new connections: $e")
+                        emptyList()
+                    }
+                } ?: emptyList()
+                Timber.i("Updated new connections: $retrievedConnections")
+                plexPrefs.server = server.copy(
+                    connections = server.connections + retrievedConnections
+                )
+                Timber.i("Retrieved new connections: $retrievedConnections")
                 try {
+                    Timber.i("Connection to server!")
                     plexConfig.connectToServer(plexMediaService)
                 } catch (t: Throwable) {
-                    Timber.i("Exception in chooseViableConnections in ChronicleApplication: $t")
+                    Timber.e("Exception in chooseViableConnections in ChronicleApplication: $t")
                 }
             }
         }

@@ -1,7 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "kotlin-android"
 apply plugin: "kotlin-kapt"
-apply plugin: "kotlin-android-extensions"
+apply plugin: "kotlin-parcelize"
 apply plugin: "com.google.android.gms.oss-licenses-plugin"
 
 android {
@@ -11,8 +11,8 @@ android {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 18
-        versionName "0.44"
+        versionCode 19
+        versionName "0.45"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
@@ -79,15 +79,17 @@ dependencies {
     // Material components
     implementation "com.google.android.material:material:$materialLibVersion"
     implementation "androidx.appcompat:appcompat:$supportlibVersion"
-    implementation "androidx.recyclerview:recyclerview:1.2.0-alpha05"
+    implementation "androidx.fragment:fragment-ktx:$appCompatFragmentVersion"
+    implementation "androidx.recyclerview:recyclerview:1.2.0-beta02"
     implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
 
     // AndroidX
     implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
-    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion"
-
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-service:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-process:$lifecycleVersion"
 
     // Google Play Billing
     implementation "com.android.billingclient:billing:$billingVersion"
@@ -111,7 +113,7 @@ dependencies {
     implementation "com.jakewharton.timber:timber:$timberVersion"
 
     // Fetch download manager
-    implementation "androidx.tonyodev.fetch2:xfetch2:3.1.5"
+    implementation "androidx.tonyodev.fetch2:xfetch2:3.1.6"
 
     // Room DB manager
     implementation "androidx.room:room-runtime:$roomVersion"
@@ -137,6 +139,10 @@ dependencies {
         exclude group: "com.squareup.okhttp:"
     }
     kapt "com.github.bumptech.glide:compiler:$glideVersion"
+    implementation ("com.github.bumptech.glide:okhttp3-integration:$glideVersion") {
+        // exclude okhttp import in favor of our own import
+        exclude group: "com.squareup.okhttp:"
+    }
 
     // LocalBroadcastManager
     implementation "androidx.localbroadcastmanager:localbroadcastmanager:$localBroadcastManagerVersion"

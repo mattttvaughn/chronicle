@@ -10,6 +10,7 @@ import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.application.ChronicleBillingManager
 import io.github.mattpvaughn.chronicle.data.local.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import io.github.mattpvaughn.chronicle.features.login.ChooseLibraryFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseServerFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseUserFragment
@@ -40,6 +41,7 @@ interface AppComponent {
     fun plexLoginService(): PlexLoginService
     fun plexMediaService(): PlexMediaService
     fun cachedFileManager(): ICachedFileManager
+    fun currentlyPlaying(): CurrentlyPlaying
     fun fetch(): Fetch
 
     //    fun plexMediaSource(): PlexMediaSource

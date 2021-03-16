@@ -16,8 +16,11 @@ import io.github.mattpvaughn.chronicle.application.ChronicleBillingManager
 import io.github.mattpvaughn.chronicle.application.LOG_NETWORK_REQUESTS
 import io.github.mattpvaughn.chronicle.data.local.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.*
+import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
+import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingSingleton
 import kotlinx.coroutines.CoroutineExceptionHandler
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -85,9 +88,17 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun fetchConfig(appContext: Context): FetchConfiguration =
+    fun fetchConfig(
+        appContext: Context,
+        @Named(OKHTTP_CLIENT_MEDIA) okHttpClient: OkHttpClient
+    ): FetchConfiguration =
         FetchConfiguration.Builder(appContext)
             .setDownloadConcurrentLimit(3)
+            .createDownloadFileOnEnqueue(false)
+            .enableAutoStart(false)
+            // TODO: this is broken, maybe use at some point
+//            .setHttpDownloader(OkHttpDownloader(okHttpClient))
+            .enableLogging(true)
             .build()
 
     @Provides
@@ -113,6 +124,7 @@ class AppModule(private val app: Application) {
         .connectTimeout(15, TimeUnit.SECONDS)
         .writeTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
+        .protocols(listOf(Protocol.HTTP_1_1, Protocol.QUIC))
         .addInterceptor(plexConfig.plexMediaInterceptor)
         .addInterceptor(loggingInterceptor)
         .build()
@@ -182,5 +194,9 @@ class AppModule(private val app: Application) {
     @Provides
     @Singleton
     fun provideCachedFileManager(cacheManager: CachedFileManager): ICachedFileManager = cacheManager
+
+    @Provides
+    @Singleton
+    fun provideCurrentlyPlaying(): CurrentlyPlaying = CurrentlyPlayingSingleton()
 
 }

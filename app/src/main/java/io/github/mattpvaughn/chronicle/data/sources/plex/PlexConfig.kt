@@ -2,7 +2,6 @@ package io.github.mattpvaughn.chronicle.data.sources.plex
 
 import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Build
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.bumptech.glide.Glide
@@ -10,7 +9,6 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.tonyodev.fetch2.Request
-import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionResult.Failure
@@ -130,25 +128,18 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
             .build()
     }
 
-    fun makeDownloadRequest(trackSource: String, uniqueBookId: Int, downloadLoc: String): Request {
+    fun makeDownloadRequest(
+        trackSource: String,
+        uniqueBookId: Int,
+        bookTitle: String,
+        downloadLoc: String
+    ): Request {
         Timber.i("Preparing download request for: ${Uri.parse(toServerString(trackSource))}")
-        val remoteUri = toServerString(trackSource)
+        val token = plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken
+        val remoteUri = "${toServerString(trackSource)}?download=1&X-Plex-Token=$token"
         return Request(remoteUri, downloadLoc).apply {
+            tag = bookTitle
             groupId = uniqueBookId
-            addHeader("X-Plex-Platform", "Android")
-            addHeader("X-Plex-Provides", "player,timeline")
-            addHeader("X-Plex-Client-Name", APP_NAME)
-            addHeader("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
-            addHeader("X-Plex-Version", BuildConfig.VERSION_NAME)
-            addHeader("X-Plex-Product", APP_NAME)
-            addHeader("X-Plex-Platform-Version", Build.VERSION.RELEASE)
-            addHeader("X-Plex-Device", Build.MODEL)
-            addHeader("X-Plex-Device-Name", Build.MODEL)
-            addHeader("X-Plex-Session-Identifier", sessionIdentifier)
-            addHeader(
-                "X-Plex-Token",
-                plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken
-            )
         }
     }
 
@@ -227,7 +218,7 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
 
     sealed class ConnectionResult {
         data class Success(val url: String) : ConnectionResult()
-        object Failure : ConnectionResult()
+        data class Failure(val reason: String) : ConnectionResult()
     }
 
     /**
@@ -243,17 +234,23 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
     @InternalCoroutinesApi
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun chooseViableConnections(plexMediaService: PlexMediaService): ConnectionResult {
+        val timeoutFailureReason = "Connection timed out"
         return withTimeoutOrNull(15000) {
+            val unknownFailureReason = "Failed for unknown reason"
             Timber.i("Choosing viable connection from: $connectionSet")
             val connections = connectionSet.sortedByDescending { it.local }
             val deferredConnections = connections.map { conn ->
                 async {
                     Timber.i("Testing connection: ${conn.uri}")
                     try {
-                        plexMediaService.checkServer(conn.uri)
-                        return@async Success(conn.uri)
+                        val result = plexMediaService.checkServer(conn.uri)
+                        if (result.isSuccessful) {
+                            return@async Success(conn.uri)
+                        } else {
+                            return@async Failure(result.message() ?: unknownFailureReason)
+                        }
                     } catch (e: Throwable) {
-                        return@async Failure
+                        return@async Failure(e.localizedMessage ?: unknownFailureReason)
                     }
                 }
             }
@@ -279,11 +276,15 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
                 if (deferred.isCompleted && deferred.getCompleted() is Success) {
                     Timber.i("Returning final completed connection ${deferred.getCompleted()}")
                     return@withTimeoutOrNull deferred.getCompleted()
+                } else {
+                    if (deferred.isCompleted) {
+                        Timber.i("Connection failed: ${(deferred.getCompleted() as Failure).reason}")
+                    }
                 }
             }
 
-            Timber.i("Returning connection $Failure")
-            Failure
-        } ?: Failure
+            Timber.i("Returning connection ${Failure(unknownFailureReason)}")
+            Failure(unknownFailureReason)
+        } ?: Failure(timeoutFailureReason)
     }
 }

@@ -71,7 +71,7 @@ class ChooseLibraryViewModel @Inject constructor(
     private val networkObserver = Observer<Boolean> { isConnected ->
         if (isConnected) {
             Timber.i("Connected to server at ${plexConfig.url}, fetching libraries with token ${plexPrefsRepo.server?.accessToken}")
-            getLibraries()
+            loadLibraries()
         }
     }
 
@@ -94,7 +94,7 @@ class ChooseLibraryViewModel @Inject constructor(
         super.onCleared()
     }
 
-    private fun getLibraries() {
+    private fun loadLibraries() {
         viewModelScope.launch {
             try {
                 _loadingStatus.value = LoadingStatus.LOADING

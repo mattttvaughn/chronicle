@@ -7,6 +7,7 @@ import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.asAudiobooks
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.toChapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -105,11 +106,16 @@ interface IBookRepository {
 
     /**
      * Loads m4b chapter data and any other audiobook details which are not loaded in by default
-     * from the network and saves it to the DB if there are chapters found.
+     * from the network and saves it to the DB if there are chapters found. Pass [forceNetwork]
+     * to determine if network data (progress, metadata) ought to be preferred
      *
      * @return true if chapter data was found and added to db, otherwise false
      */
-    suspend fun loadChapterData(audiobook: Audiobook, tracks: List<MediaItemTrack>): Boolean
+    suspend fun syncAudiobook(
+        audiobook: Audiobook,
+        tracks: List<MediaItemTrack>,
+        forceNetwork: Boolean = false
+    ): Boolean
 
     /** Updates the column uniquely identified by [Audiobook.id] to the new [Audiobook] */
     suspend fun update(audiobook: Audiobook)
@@ -119,6 +125,12 @@ interface IBookRepository {
      * by [Audiobook.id] == [bookId]
      */
     suspend fun updateCachedStatus(bookId: Int, isCached: Boolean)
+
+    /** Sets the book's [Audiobook.progress] to 0 in the DB and the server */
+    suspend fun setWatched(bookId: Int)
+
+    /** Loads an [Audiobook] in from the network */
+    suspend fun fetchBookAsync(bookId: Int): Audiobook?
 }
 
 @Singleton
@@ -233,9 +245,9 @@ class BookRepository @Inject constructor(
         }
     }
 
-    override suspend fun updateProgress(bookId: Int, currentTime: Long, progress: Long) {
+    override suspend fun updateProgress(bookId: Int, lastViewedAt: Long, progress: Long) {
         withContext(Dispatchers.IO) {
-            bookDao.updateProgress(bookId, currentTime, progress)
+            bookDao.updateProgress(bookId, lastViewedAt, progress)
         }
     }
 
@@ -262,7 +274,19 @@ class BookRepository @Inject constructor(
             bookDao.updateCachedStatus(bookId, isCached)
             val audiobook = bookDao.getAudiobookAsync(bookId)
             audiobook?.let { book ->
-                bookDao.update(book.copy(chapters = book.chapters.map { it.copy(downloaded = false) }))
+                bookDao.update(book.copy(chapters = book.chapters.map { it.copy(downloaded = isCached) }))
+            }
+        }
+    }
+
+    override suspend fun setWatched(bookId: Int) {
+        Timber.i("Updating")
+        withContext(Dispatchers.IO) {
+            try {
+                plexMediaService.watched(bookId.toString())
+                bookDao.updateWatched(bookId)
+            } catch (t: Throwable) {
+                Timber.e("Failed to update watched status: $t")
             }
         }
     }
@@ -305,13 +329,18 @@ class BookRepository @Inject constructor(
         }
     }
 
-    override suspend fun loadChapterData(
+    override suspend fun syncAudiobook(
         audiobook: Audiobook,
-        tracks: List<MediaItemTrack>
+        tracks: List<MediaItemTrack>,
+        forceNetwork: Boolean,
     ): Boolean {
-        Timber.i("Loading chapter data. Bookid is ${audiobook.id}, tracks are $tracks")
-        val chapters: List<Chapter> = withContext(Dispatchers.IO) {
-            try {
+        Timber.i(
+            "Loading chapter data. Book ID is ${audiobook.id}, it is ${
+                if (audiobook.isCached) "cached" else "uncached"
+            }, tracks are $tracks"
+        )
+        withContext(Dispatchers.IO) {
+            val chapters: List<Chapter> = try {
                 tracks.flatMap { track ->
                     val networkChapters = plexMediaService.retrieveChapterInfo(track.id)
                         .plexMediaContainer.metadata.firstOrNull()?.plexChapters
@@ -327,19 +356,42 @@ class BookRepository @Inject constructor(
                             track.discNumber,
                             audiobook.isCached
                         )
-                    }.takeIf { !it.isNullOrEmpty() } ?: listOf(track.asChapter())
+                    }.takeIf { !it.isNullOrEmpty() } ?: listOf(track.asChapter(0L))
                 }.sorted()
             } catch (t: Throwable) {
                 Timber.e("Failed to load chapters: $t")
-                emptyList()
+                return@withContext false
             }
-        }
-        Timber.i("Loaded chapters: ${chapters.map { "[${it.index}/${it.discNumber}]" }}")
-        // Update [Audiobook.chapters] in the local db
-        val replacementBook = audiobook.copy(chapters = chapters)
-        withContext(Dispatchers.IO) {
-            bookDao.update(replacementBook)
+
+            val networkBook = try {
+                val retrievedBook = fetchBookAsync(audiobook.id)
+                retrievedBook ?: return@withContext false
+            } catch (t: Throwable) {
+                Timber.e("Failed to load audiobook update")
+                return@withContext false
+            }
+
+            Timber.i("Loaded chapters: ${chapters.map { "[${it.index}/${it.discNumber}]" }}")
+
+            val merged = Audiobook.merge(
+                network = networkBook,
+                local = audiobook,
+                forceNetwork = forceNetwork,
+            ).copy(
+                progress = tracks.getProgress(),
+                duration = tracks.getDuration(),
+                chapters = chapters
+            )
+            bookDao.update(merged)
+
         }
         return true
+    }
+
+    override suspend fun fetchBookAsync(bookId: Int): Audiobook? = withContext(Dispatchers.IO) {
+        plexMediaService.retrieveAlbum(bookId)
+            .plexMediaContainer
+            .asAudiobooks()
+            .firstOrNull()
     }
 }
