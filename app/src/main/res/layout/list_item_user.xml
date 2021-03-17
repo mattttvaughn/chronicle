@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:fresco="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
     <data>
@@ -23,9 +24,10 @@
         android:orientation="vertical"
         tools:layout_width="100dp">
 
-        <ImageView
+        <com.facebook.drawee.view.SimpleDraweeView
             android:id="@+id/user_thumb"
             android:layout_width="match_parent"
+            fresco:placeholderImage="@drawable/ic_person_white"
             android:layout_height="0dp"
             android:contentDescription="@string/audio_server"
             app:layout_constraintDimensionRatio="1:1"

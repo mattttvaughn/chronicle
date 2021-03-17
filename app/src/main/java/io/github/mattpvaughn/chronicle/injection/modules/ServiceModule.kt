@@ -78,7 +78,12 @@ class ServiceModule(private val service: MediaPlayerService) {
     fun pendingIntent(): PendingIntent =
         service.packageManager.getLaunchIntentForPackage(service.packageName).let { sessionIntent ->
             sessionIntent?.putExtra(MainActivity.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, true)
-            PendingIntent.getActivity(service, 0, sessionIntent, 0)
+            PendingIntent.getActivity(
+                service,
+                MainActivity.REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING,
+                sessionIntent,
+                0
+            )
         }
 
     @Provides

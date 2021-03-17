@@ -22,6 +22,7 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
+import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
@@ -90,7 +91,12 @@ class NotificationBuilder @Inject constructor(
         intent.setPackage(context.packageName)
         intent.putExtra(FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, true)
         intent.component = ComponentName(context.packageName, activity?.name ?: "")
-        contentPendingIntent = PendingIntent.getActivity(context, -1, intent, 0)
+        contentPendingIntent = PendingIntent.getActivity(
+            context,
+            REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING,
+            intent,
+            0
+        )
     }
 
     var bookTitleBitmapPair: Pair<Int, Bitmap?>? = null
@@ -108,6 +114,8 @@ class NotificationBuilder @Inject constructor(
 
         val playbackState = controller.playbackState
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
+
+        Timber.i("Building notification!")
 
         // Only add actions depending on playback status
         builder.addAction(skipBackwardsAction)

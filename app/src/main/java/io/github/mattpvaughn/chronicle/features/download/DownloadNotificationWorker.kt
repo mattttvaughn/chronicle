@@ -4,8 +4,10 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -15,21 +17,20 @@ import androidx.work.NetworkType
 import com.tonyodev.fetch2.*
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID
+import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.REQUEST_CODE_PREFIX_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
-import io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager
 import kotlinx.coroutines.*
 import timber.log.Timber
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * A [Worker] responsible for keeping showing download notifications for all active
- * download groups, keeping them updated, and for closing itself once the downloads
- * have completed.
+ * A [Worker] responsible for displaying download notifications for all actively
+ * downloading books
  *
- * Ideally this worker ought to be started whenever [Fetch.enqueue] is called, but
- * probably more feasible for this project is just within [CachedFileManager]
+ * TODO: write extension functions to turn fetch calls into suspend functions
  */
 class DownloadNotificationWorker(
     context: Context,
@@ -67,6 +68,7 @@ class DownloadNotificationWorker(
 
         var hasActiveDownloads = false
         val startedTimeStamp = System.currentTimeMillis()
+        // Wait for at least [maxWaitToStartDurationMs] to ensure downloads have started
         while (hasActiveDownloads || System.currentTimeMillis() - startedTimeStamp < maxWaitToStartDurationMs) {
             fetch.getDownloads { allDownloads ->
                 val activeBooks = allDownloads.groupBy { it.group }
@@ -81,8 +83,10 @@ class DownloadNotificationWorker(
 
         notificationManager.cancelAll()
 
+        val workerContext = coroutineContext
+
         fetch.getDownloads { downloads ->
-            GlobalScope.launch {
+            CoroutineScope(workerContext).launch {
                 withContext(Dispatchers.IO) {
                     // Mark successful downloads as cached
                     val successfulGroupIds = downloads.groupBy { it.group }
@@ -154,11 +158,9 @@ class DownloadNotificationWorker(
             }
         }
 
-        // Remove successful downloads from download manager
-        for ((bookId, downloadsInBook) in bookDownloads) {
-            if (downloadsInBook.all { it.status == Status.COMPLETED }) {
-                fetch.removeGroup(bookId)
-            }
+        // Remove all downloads from download manager after completion
+        for ((bookId, _) in bookDownloads) {
+            fetch.removeGroup(bookId)
         }
     }
 
@@ -189,15 +191,21 @@ class DownloadNotificationWorker(
     private fun makeFinishedSummary(bookStatuses: List<DownloadResult>): Notification? {
         val failCount = bookStatuses.count { it.status == Status.FAILED }
         val successCount = bookStatuses.count { it.status == Status.COMPLETED }
+        if (failCount + successCount == 0) {
+            // Don't make a notification for zero book statuses
+            return null
+        }
 
         // For one download, show name + status
         val res = applicationContext.resources
-        val finishedTitle = when {
-            bookStatuses.any { it.status == Status.FAILED } -> res.getString(R.string.download_failed_notification_title)
-            else -> res.getString(R.string.download_successful_notification_title)
+        val downloadFailed = bookStatuses.any { it.status == Status.FAILED }
+        val finishedTitle = if (downloadFailed) {
+            res.getString(R.string.download_failed_notification_title)
+        } else {
+            res.getString(R.string.download_successful_notification_title)
         }
+
         val finishedContent = when {
-            failCount + successCount == 0 -> return null
             bookStatuses.all { it.status == Status.FAILED } -> res.getQuantityString(
                 R.plurals.downloads_failed_summary,
                 failCount
@@ -222,21 +230,28 @@ class DownloadNotificationWorker(
                     bookTitle.take(30)
                 )
                 Status.FAILED -> applicationContext.getString(
-                    R.string.download_successful_notification_content,
+                    R.string.download_failed_notification_content,
                     bookTitle.take(30)
                 )
                 else -> return null
             }
         }
+
         val finishedDownloadList = NotificationCompat.InboxStyle()
             .setBigContentTitle(finishedTitle)
         downloadSummaries.forEach { line -> finishedDownloadList.addLine(line) }
+
+        val resultIcon = if (downloadFailed) {
+            R.drawable.ic_cloud_download_failed
+        } else {
+            R.drawable.ic_cloud_done_white
+        }
 
         return NotificationCompat.Builder(applicationContext, DOWNLOAD_CHANNEL)
             .setContentTitle(finishedTitle)
             //set content text to support devices running API level < 24
             .setContentText(finishedContent)
-            .setSmallIcon(R.drawable.ic_cloud_done_white)
+            .setSmallIcon(resultIcon)
             .setStyle(finishedDownloadList)
             .setOnlyAlertOnce(true)
             .setGroup(DOWNLOADS_FINISHED_NOTIF_GROUP)
@@ -246,7 +261,7 @@ class DownloadNotificationWorker(
 
     /**
      * Makes a notification indicating that a book with [Audiobook] == [bookId] has finished
-     * downloading, providing a "retry" action if the [Status] is [Status.FAILED]
+     * downloading
      */
     private fun makeFinishedNotification(
         downloadResult: DownloadResult,
@@ -254,7 +269,7 @@ class DownloadNotificationWorker(
     ): Notification? {
         val status = downloadResult.status
         val bookName = downloadResult.bookName
-        val bookId = downloadResult.bookId
+
         val title = applicationContext.getString(
             when (status) {
                 Status.FAILED -> R.string.download_failed_notification_content
@@ -262,6 +277,7 @@ class DownloadNotificationWorker(
                 else -> return null
             }, bookName
         )
+
         val content = if (downloadResult.errors.isEmpty()) {
             null
         } else {
@@ -272,24 +288,14 @@ class DownloadNotificationWorker(
             Status.COMPLETED -> R.drawable.ic_cloud_done_white
             else -> return null
         }
+
+        val openBookPendingIntent = makeOpenBookPendingIntent(downloadResult.bookId)
         val builder = NotificationCompat.Builder(applicationContext, DOWNLOAD_CHANNEL)
             .setContentTitle(title)
+            .setContentIntent(openBookPendingIntent)
             .setContentText(content)
             .setSmallIcon(icon)
             .setGroup(if (showInGroup) DOWNLOADS_FINISHED_NOTIF_GROUP else null)
-
-        if (status == Status.FAILED) {
-            val retryBookDownloadIntent = Intent(ACTION_RETRY_BOOK_DOWNLOAD)
-            retryBookDownloadIntent.putExtra(KEY_BOOK_ID, bookId)
-            val retryPendingIntent = PendingIntent.getBroadcast(
-                applicationContext,
-                ACTION_RETRY_BOOK_DOWNLOAD_ID,
-                retryBookDownloadIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT
-            )
-            val retryString = applicationContext.getString(R.string.retry_download)
-            builder.addAction(R.drawable.ic_refresh_white, retryString, retryPendingIntent)
-        }
 
         return builder.build()
     }
@@ -402,23 +408,42 @@ class DownloadNotificationWorker(
 
         val cancelPendingIntent = PendingIntent.getBroadcast(
             applicationContext,
-            ACTION_CANCEL_BOOK_DOWNLOAD_ID,
+            ACTION_CANCEL_BOOK_DOWNLOAD_ID + bookId,
             Intent(ACTION_CANCEL_BOOK_DOWNLOAD).apply {
                 putExtra(KEY_BOOK_ID, bookId)
             },
             PendingIntent.FLAG_UPDATE_CURRENT
         )
-        Timber.i("Book id currently (before Cancelling): $bookId")
+
+        val openBookPendingIntent = makeOpenBookPendingIntent(bookId)
 
         val cancel = applicationContext.getString(R.string.download_notification_cancel)
         return NotificationCompat.Builder(applicationContext, DOWNLOAD_CHANNEL)
             .setContentTitle(notificationTitle)
+            .setContentIntent(openBookPendingIntent)
             .setProgress(100, avgCompletion, false)
             .setSmallIcon(R.drawable.ic_cloud_download_white)
             .setGroup(if (showInGroup) DOWNLOAD_NOTIF_GROUP else null)
             .setOngoing(true)
             .addAction(android.R.drawable.ic_delete, cancel, cancelPendingIntent)
             .build()
+    }
+
+    private fun makeOpenBookPendingIntent(bookId: Int): PendingIntent? {
+        val intent = Intent()
+        val activity = applicationContext.packageManager.getPackageInfo(
+            applicationContext.packageName,
+            PackageManager.GET_ACTIVITIES
+        ).activities.find { it.name.contains("MainActivity") }
+        intent.setPackage(applicationContext.packageName)
+        intent.putExtra(FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID, bookId)
+        intent.component = ComponentName(applicationContext.packageName, activity?.name ?: "")
+        return PendingIntent.getActivity(
+            applicationContext,
+            REQUEST_CODE_PREFIX_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID + bookId,
+            intent,
+            0
+        )
     }
 
     companion object {
@@ -439,10 +464,6 @@ class DownloadNotificationWorker(
         const val ACTION_CANCEL_BOOK_DOWNLOAD =
             "io.github.mattpvaughn.chronicle.features.download\$ACTION_CANCEL_BOOK_DOWNLOAD"
         const val ACTION_CANCEL_BOOK_DOWNLOAD_ID = 79211
-
-        const val ACTION_RETRY_BOOK_DOWNLOAD =
-            "io.github.mattpvaughn.chronicle.features.download\$ACTION_RETRY_BOOK_DOWNLOAD"
-        const val ACTION_RETRY_BOOK_DOWNLOAD_ID = 79212
 
         const val ACTION_CANCEL_ALL_DOWNLOADS =
             "io.github.mattpvaughn.chronicle.features.download\$ACTION_CANCEL_ALL"

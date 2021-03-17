@@ -1,6 +1,5 @@
 package io.github.mattpvaughn.chronicle.data.sources
 
-import com.bumptech.glide.load.model.LazyHeaders
 import com.tonyodev.fetch2.Request
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import okhttp3.ResponseBody
@@ -29,7 +28,7 @@ interface HttpMediaSource : MediaSource {
     fun makeDownloadRequest(trackUrl: String): Request
 
     /** Makes a [LazyHeaders] with the needed HTTP headers */
-    fun makeGlideHeaders(): LazyHeaders
+    fun makeGlideHeaders(): Object?
 
     /** Appends a relative path (i.e. [MediaItemTrack.media]) to the media source's base url */
     fun toServerString(relativePathForResource: String): String

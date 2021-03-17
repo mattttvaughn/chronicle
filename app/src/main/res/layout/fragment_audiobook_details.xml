@@ -60,7 +60,7 @@
                         android:orientation="vertical"
                         app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
 
-                    <ImageView
+                    <com.facebook.drawee.view.SimpleDraweeView
                         android:id="@+id/details_artwork"
                         serverConnected="@{plexConfig.isConnected()}"
                         srcRounded="@{viewModel.audiobook.thumb}"

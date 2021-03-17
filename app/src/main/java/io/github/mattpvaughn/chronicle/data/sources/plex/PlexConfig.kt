@@ -4,10 +4,8 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.model.LazyHeaders
-import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import com.facebook.drawee.backends.pipeline.Fresco
+import com.facebook.imagepipeline.request.ImageRequest
 import com.tonyodev.fetch2.Request
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
@@ -15,10 +13,10 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionRe
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionResult.Success
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig.ConnectionState.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.Connection
-import io.github.mattpvaughn.chronicle.views.GlideUrlRelativeCacheKey
+import io.github.mattpvaughn.chronicle.util.getImage
+import io.github.mattpvaughn.chronicle.util.toUri
 import kotlinx.coroutines.*
 import timber.log.Timber
-import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -89,43 +87,27 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
         // Retrieve cached album art from Glide if available
         val appContext = Injector.get().applicationContext()
         val imageSize = appContext.resources.getDimension(R.dimen.audiobook_image_width).toInt()
-        val url = URL(
+        val uri =
             if (thumb.startsWith("http")) {
-                thumb
+                thumb.toUri()
             } else {
                 Timber.i("Taking part uri")
-                toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$thumb")
+                toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$thumb").toUri()
             }
-        )
-        Timber.i("Notification thumb uri is: $url")
-        val glideUrl = GlideUrlRelativeCacheKey(url, makeGlideHeaders())
-        return try {
-            return withContext(Dispatchers.IO) {
-                val bm = Glide.with(appContext)
-                    .asBitmap()
-                    .load(glideUrl)
-                    .onlyRetrieveFromCache(requireCached)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .transform(CenterCrop())
-                    .submit()
-                    .get()
+
+        Timber.i("Notification thumb uri is: $uri")
+        val imagePipeline = Fresco.getImagePipeline()
+        return withContext(Dispatchers.IO) {
+            val request = ImageRequest.fromUri(uri)
+            try {
+                val bm = imagePipeline.fetchDecodedImage(request, null).getImage()
                 Timber.i("Successfully retrieved album art for $thumb")
                 bm
+            } catch (t: Throwable) {
+                Timber.e("Failed to retrieve album art for $thumb: $t")
+                null
             }
-        } catch (t: Throwable) {
-            // who cares?
-            Timber.e("Failed to retrieve album art for $thumb: $t")
-            null
         }
-    }
-
-    fun makeGlideHeaders(): LazyHeaders {
-        return LazyHeaders.Builder()
-            .addHeader(
-                "X-Plex-Token",
-                plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken
-            )
-            .build()
     }
 
     fun makeDownloadRequest(
@@ -136,10 +118,11 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
     ): Request {
         Timber.i("Preparing download request for: ${Uri.parse(toServerString(trackSource))}")
         val token = plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken
-        val remoteUri = "${toServerString(trackSource)}?download=1&X-Plex-Token=$token"
+        val remoteUri = "${toServerString(trackSource)}?download=1"
         return Request(remoteUri, downloadLoc).apply {
             tag = bookTitle
             groupId = uniqueBookId
+            addHeader("X-Plex-Token", token)
         }
     }
 

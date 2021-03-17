@@ -124,7 +124,6 @@
     <string name="download_failed_notification_title">Download failed</string>
     <string name="download_failed_notification_content">Download failed: %1$s</string>
     <string name="downloads_completed_summary_mixed">Downloads completed, %1$d succeeded, %2$d failed</string>
-    <string name="retry_download">Retry</string>
     <plurals name="downloads_failed_summary">
         <item quantity="one">Download failed</item>
         <item quantity="other">Downloads failed</item>

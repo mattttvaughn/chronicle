@@ -1,7 +1,6 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
 import android.content.Context
-import com.bumptech.glide.load.model.LazyHeaders
 import com.github.michaelbull.result.Result
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
@@ -64,7 +63,7 @@ class PlexMediaSource @Inject constructor(
         TODO("Not yet implemented")
     }
 
-    override fun makeGlideHeaders(): LazyHeaders {
+    override fun makeGlideHeaders(): Object? {
         TODO("Not yet implemented")
     }
 

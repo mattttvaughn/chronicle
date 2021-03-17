@@ -154,7 +154,7 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         get() {
             val syncLoc = sharedPreferences.getString(KEY_SYNC_DIR_PATH, "")
             return if (syncLoc.isNullOrEmpty()) {
-                /** Set default location to [AppComponent.externalDeviceDirs] */
+                /** Set default location to first location in [AppComponent.externalDeviceDirs] */
                 val deviceStorage = Injector.get().externalDeviceDirs().first()
                 sharedPreferences.edit()
                     .putString(KEY_SYNC_DIR_PATH, deviceStorage.absolutePath)

@@ -29,7 +29,7 @@
         android:paddingRight="@dimen/screen_horizontal_padding"
         android:paddingBottom="@dimen/margin_small">
 
-        <ImageView
+        <com.facebook.drawee.view.SimpleDraweeView
             android:id="@+id/book_cover_img"
             srcRounded="@{audiobook.thumb}"
             serverConnected="@{serverConnected}"

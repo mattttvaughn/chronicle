@@ -14,12 +14,15 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.COLLAPSED
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.EXPANDED
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.model.EMPTY_AUDIOBOOK
+import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo
 import io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.LOGGED_IN_FULLY
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
@@ -35,6 +38,9 @@ import io.github.mattpvaughn.chronicle.injection.modules.ActivityModule
 import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
 import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.observeEvent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -210,12 +216,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleNotificationIntent(intent: Intent?) {
-        val isIntentFromNotification = intent?.extras?.getBoolean(
+        val openCurrentlyPlaying = intent?.extras?.getBoolean(
             FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, false
         ) == true
-        Timber.i("Should the bottom sheet be maximized? $isIntentFromNotification")
-        if (isIntentFromNotification) {
+        if (openCurrentlyPlaying) {
             viewModel.maximizeCurrentlyPlaying()
+        }
+
+        val openAudiobookWithId = intent?.extras?.getInt(
+            FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID, NO_AUDIOBOOK_FOUND_ID
+        ) ?: NO_AUDIOBOOK_FOUND_ID
+        if (openAudiobookWithId != NO_AUDIOBOOK_FOUND_ID) {
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    val audiobook = bookRepository.getAudiobookAsync(openAudiobookWithId)
+                    if (audiobook != null && audiobook != EMPTY_AUDIOBOOK) {
+                        navigator.showDetails(audiobook.id, audiobook.title, audiobook.isCached)
+                    }
+                }
+            }
         }
     }
 
@@ -241,5 +260,10 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING = "OPEN_ACTIVITY_TO_AUDIOBOOK"
+        const val REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING = -12
+        const val FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID = "OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID"
+
+        // add audiobook id to this number to avoid repeats
+        const val REQUEST_CODE_PREFIX_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID = -1001110
     }
 }

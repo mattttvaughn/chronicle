@@ -6,7 +6,6 @@ import android.view.*
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.appcompat.widget.SearchView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
@@ -18,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
@@ -29,7 +30,6 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.databinding.FragmentLibraryBinding
 import io.github.mattpvaughn.chronicle.navigation.Navigator
-import io.github.mattpvaughn.chronicle.views.FlowableRadioGroup
 import io.github.mattpvaughn.chronicle.views.checkRadioButtonWithTag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -163,14 +163,14 @@ class LibraryFragment : Fragment() {
         }
 
         binding.sortByOptions.checkRadioButtonWithTag(prefsRepo.bookSortKey)
-        binding.sortByOptions.setOnCheckedChangeListener { group: FlowableRadioGroup, checkedId ->
-            val key = group.findViewById<AppCompatRadioButton>(checkedId).tag as String
+        binding.sortByOptions.setOnCheckedChangeListener { group: ChipGroup, checkedId ->
+            val key = group.findViewById<Chip>(checkedId).tag as String
             prefsRepo.bookSortKey = key
         }
 
         binding.viewStyles.checkRadioButtonWithTag(prefsRepo.libraryBookViewStyle)
-        binding.viewStyles.setOnCheckedChangeListener { group: FlowableRadioGroup, checkedId ->
-            val key = group.findViewById<AppCompatRadioButton>(checkedId).tag as String
+        binding.viewStyles.setOnCheckedChangeListener { group: ChipGroup, checkedId ->
+            val key = group.findViewById<Chip>(checkedId).tag as String
             prefsRepo.libraryBookViewStyle = key
         }
 

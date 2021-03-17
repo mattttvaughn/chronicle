@@ -6,7 +6,7 @@ import androidx.lifecycle.*
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.bumptech.glide.Glide
+import com.facebook.drawee.backends.pipeline.Fresco
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.FEATURE_FLAG_IS_AUTO_ENABLED
@@ -594,11 +594,7 @@ class SettingsViewModel(
                             override fun onClick() {
                                 viewModelScope.launch {
                                     withContext(Dispatchers.IO) {
-                                        Glide.get(Injector.get().applicationContext())
-                                            .clearDiskCache()
-                                    }
-                                    withContext(Dispatchers.Main) {
-                                        Glide.get(Injector.get().applicationContext()).clearMemory()
+                                        Fresco.getImagePipeline().clearCaches()
                                     }
                                 }
                             }

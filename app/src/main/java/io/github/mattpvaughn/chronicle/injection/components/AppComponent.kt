@@ -3,6 +3,7 @@ package io.github.mattpvaughn.chronicle.injection.components
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.work.WorkManager
+import com.facebook.imagepipeline.core.ImagePipelineConfig
 import com.squareup.moshi.Moshi
 import com.tonyodev.fetch2.Fetch
 import dagger.Component
@@ -43,6 +44,7 @@ interface AppComponent {
     fun cachedFileManager(): ICachedFileManager
     fun currentlyPlaying(): CurrentlyPlaying
     fun fetch(): Fetch
+    fun frescoConfig(): ImagePipelineConfig
 
     //    fun plexMediaSource(): PlexMediaSource
     fun billingManager(): ChronicleBillingManager

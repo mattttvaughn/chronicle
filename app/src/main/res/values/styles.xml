@@ -7,8 +7,8 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:fontFamily">@font/lato</item>
-        <item name="android:radioButtonStyle">@style/Option</item>
-        <item name="radioButtonStyle">@style/Option</item>
+        <item name="chipStyle">@style/FilterChip</item>
+        <item name="chipGroupStyle">@style/FilterChipGroup</item>
     </style>
 
     <style name="TextAppearance.Title" parent="TextAppearance.MaterialComponents.Body1">
@@ -31,16 +31,21 @@
         <item name="android:textColor">@color/textPrimary</item>
     </style>
 
-    <style name="Option" parent="TextAppearance.Body1">
-        <item name="android:button">@null</item>
-        <item name="android:paddingLeft">16dp</item>
-        <item name="android:paddingRight">16dp</item>
-        <item name="android:paddingTop">8dp</item>
-        <item name="android:paddingBottom">8dp</item>
-        <item name="background">@drawable/option_background</item>
-        <item name="android:background">@drawable/option_background</item>
-        <item name="android:focusable">true</item>
-        <item name="android:clickable">true</item>
+    <style name="FilterChipGroup" parent="Widget.MaterialComponents.ChipGroup">
+        <item name="chipGroupStyle">@style/FilterChip</item>
+        <item name="singleSelection">true</item>
+        <item name="chipSpacingHorizontal">@dimen/margin_small</item>
+        <item name="chipSpacingVertical">@dimen/margin_small</item>
+    </style>
+
+    <style name="FilterChip" parent="Widget.MaterialComponents.Chip.Choice">
+        <item name="chipStartPadding">@dimen/margin_small</item>
+        <item name="chipEndPadding">@dimen/margin_small</item>
+        <item name="chipBackgroundColor">@color/chip_background_color</item>
+        <item name="chipIconEnabled">false</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="chipMinHeight">36dp</item>
+        <item name="android:textSize">16sp</item>
     </style>
 
     <style name="TextAppearance.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">

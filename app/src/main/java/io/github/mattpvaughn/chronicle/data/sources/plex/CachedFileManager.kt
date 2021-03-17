@@ -75,16 +75,6 @@ class CachedFileManager @Inject constructor(
                         Injector.get().fetch().cancelGroup(bookId)
                     }
                 }
-                DownloadNotificationWorker.ACTION_RETRY_BOOK_DOWNLOAD -> {
-                    val bookId = intent.getIntExtra(DownloadNotificationWorker.KEY_BOOK_ID, -1)
-                    val fetch = Injector.get().fetch()
-                    if (bookId != -1) {
-                        fetch.getFetchGroup(bookId) { group ->
-                            fetch.retry(group.downloads.map { it.id })
-                            DownloadNotificationWorker.start()
-                        }
-                    }
-                }
             }
         }
     }
@@ -254,7 +244,6 @@ class CachedFileManager @Inject constructor(
         applicationContext.registerReceiver(downloadListener, IntentFilter().apply {
             addAction(DownloadNotificationWorker.ACTION_CANCEL_BOOK_DOWNLOAD)
             addAction(DownloadNotificationWorker.ACTION_CANCEL_ALL_DOWNLOADS)
-            addAction(DownloadNotificationWorker.ACTION_RETRY_BOOK_DOWNLOAD)
         })
 
         // singleton so we can observe downloads always

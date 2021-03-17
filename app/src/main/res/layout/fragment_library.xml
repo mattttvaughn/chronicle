@@ -211,59 +211,57 @@
 
                 </LinearLayout>
 
-                <io.github.mattpvaughn.chronicle.views.FlowableRadioGroup
+                <com.google.android.material.chip.ChipGroup
                     android:id="@+id/sort_by_options"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    app:itemSpacing="@dimen/margin_small"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/sort_by_container"
-                    app:lineSpacing="@dimen/margin_small">
+                    app:layout_constraintTop_toBottomOf="@id/sort_by_container">
 
-                    <com.google.android.material.radiobutton.MaterialRadioButton
+                    <com.google.android.material.chip.Chip
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:tag="@string/key_sort_by_title"
                         android:text="@string/sort_by_title" />
 
-                    <com.google.android.material.radiobutton.MaterialRadioButton
+                    <com.google.android.material.chip.Chip
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:tag="@string/key_sort_by_author"
                         android:text="@string/sort_by_author" />
 
-                    <com.google.android.material.radiobutton.MaterialRadioButton
+                    <com.google.android.material.chip.Chip
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:tag="@string/key_sort_by_duration"
                         android:text="@string/sort_by_duration" />
 
-                    <com.google.android.material.radiobutton.MaterialRadioButton
+                    <com.google.android.material.chip.Chip
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:tag="@string/key_sort_by_date_added"
                         android:text="@string/sort_by_date_added" />
 
-                    <com.google.android.material.radiobutton.MaterialRadioButton
+                    <com.google.android.material.chip.Chip
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:tag="@string/key_sort_by_date_played"
                         android:text="@string/sort_by_date_played" />
 
-                    <!--                    <com.google.android.material.radiobutton.MaterialRadioButton-->
+                    <!--                    <com.google.android.material.chip.Chip-->
                     <!--                        android:layout_width="wrap_content"-->
                     <!--                        android:layout_height="wrap_content"-->
                     <!--                        android:tag="@string/key_sort_by_rating"-->
                     <!--                        android:text="@string/sort_by_rating" />-->
 
-                    <!--                    <com.google.android.material.radiobutton.MaterialRadioButton-->
+                    <!--                    <com.google.android.material.chip.Chip -->
                     <!--                        android:layout_width="wrap_content"-->
                     <!--                        android:layout_height="wrap_content"-->
                     <!--                        android:tag="@string/key_sort_by_plays"-->
                     <!--                        android:text="@string/sort_by_plays" />-->
 
-                </io.github.mattpvaughn.chronicle.views.FlowableRadioGroup>
+                </com.google.android.material.chip.ChipGroup>
 
                 <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/view_style_title"
@@ -278,35 +276,33 @@
                     app:layout_constraintRight_toRightOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/sort_by_options" />
 
-                <io.github.mattpvaughn.chronicle.views.FlowableRadioGroup
+                <com.google.android.material.chip.ChipGroup
                     android:id="@+id/view_styles"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    app:itemSpacing="@dimen/margin_small"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/view_style_title"
-                    app:lineSpacing="@dimen/margin_small">
+                    app:layout_constraintTop_toBottomOf="@id/view_style_title">
 
-                    <com.google.android.material.radiobutton.MaterialRadioButton
+                    <com.google.android.material.chip.Chip
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:tag="@string/key_view_style_cover_grid"
                         android:text="@string/view_style_book_cover" />
 
-                    <com.google.android.material.radiobutton.MaterialRadioButton
+                    <com.google.android.material.chip.Chip
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:tag="@string/key_view_style_details"
                         android:text="@string/view_style_cover_and_text_list" />
 
-                    <com.google.android.material.radiobutton.MaterialRadioButton
+                    <com.google.android.material.chip.Chip
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:tag="@string/key_view_style_text_only"
                         android:text="@string/view_style_text_list" />
 
-                </io.github.mattpvaughn.chronicle.views.FlowableRadioGroup>
+                </com.google.android.material.chip.ChipGroup>
 
 
                 <!-- TODO: add view by folder, view by author, etc.-->
@@ -321,7 +317,7 @@
                 <!--                    app:layout_constraintLeft_toLeftOf="parent"-->
                 <!--                    app:layout_constraintTop_toBottomOf="@id/sort_by_options" />-->
 
-                <!--                <io.github.mattpvaughn.chronicle.views.FlowableRadioGroup-->
+                <!--                <com.google.android.material.chip.ChipGroup-->
                 <!--                    android:id="@+id/view_by_options"-->
                 <!--                    android:layout_width="0dp"-->
                 <!--                    android:layout_height="wrap_content"-->
@@ -331,31 +327,31 @@
                 <!--                    app:layout_constraintTop_toBottomOf="@id/view_by"-->
                 <!--                    app:lineSpacing="@dimen/margin_small">-->
 
-                <!--                    <com.google.android.material.radiobutton.MaterialRadioButton-->
+                <!--                    <com.google.android.material.chip.Chip -->
                 <!--                        android:layout_width="wrap_content"-->
                 <!--                        android:layout_height="wrap_content"-->
                 <!--                        android:tag="@string/key_view_by_book"-->
                 <!--                        android:text="@string/view_by_book" />-->
 
-                <!--                    <com.google.android.material.radiobutton.MaterialRadioButton-->
+                <!--                    <com.google.android.material.chip.Chip -->
                 <!--                        android:layout_width="wrap_content"-->
                 <!--                        android:layout_height="wrap_content"-->
                 <!--                        android:tag="@string/key_view_by_author"-->
                 <!--                        android:text="@string/view_by_author" />-->
 
-                <!--                    <com.google.android.material.radiobutton.MaterialRadioButton-->
+                <!--                    <com.google.android.material.chip.Chip -->
                 <!--                        android:layout_width="wrap_content"-->
                 <!--                        android:layout_height="wrap_content"-->
                 <!--                        android:tag="@string/key_view_by_folder"-->
                 <!--                        android:text="@string/view_by_folder" />-->
 
-                <!--                    <com.google.android.material.radiobutton.MaterialRadioButton-->
+                <!--                    <com.google.android.material.chip.Chip -->
                 <!--                        android:layout_width="wrap_content"-->
                 <!--                        android:layout_height="wrap_content"-->
                 <!--                        android:tag="@string/key_view_by_collection"-->
                 <!--                        android:text="@string/view_by_collection" />-->
 
-                <!--                </io.github.mattpvaughn.chronicle.views.FlowableRadioGroup>-->
+                <!--                </com.google.android.material.chip.ChipGroup-->
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>

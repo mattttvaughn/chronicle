@@ -14,6 +14,9 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.BillingResponseCode.OK
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
+import com.bumptech.glide.Glide
+import com.facebook.drawee.backends.pipeline.Fresco
+import com.facebook.imagepipeline.core.ImagePipelineConfig
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.asServer
@@ -71,6 +74,9 @@ open class ChronicleApplication : Application() {
     @Inject
     lateinit var plexLoginService: PlexLoginService
 
+    @Inject
+    lateinit var frescoConfig: ImagePipelineConfig
+
     override fun onCreate() {
         if (USE_STRICT_MODE && BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
@@ -102,6 +108,13 @@ open class ChronicleApplication : Application() {
         setupBilling()
         updateDownloadedFileState()
         super.onCreate()
+        Fresco.initialize(this, frescoConfig)
+        // TODO: remove in a future version
+        applicationScope.launch {
+            withContext(Dispatchers.IO) {
+                Glide.get(Injector.get().applicationContext()).clearDiskCache()
+            }
+        }
     }
 
     /**
