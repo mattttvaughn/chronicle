@@ -34,6 +34,7 @@
     <style name="FilterChipGroup" parent="Widget.MaterialComponents.ChipGroup">
         <item name="chipGroupStyle">@style/FilterChip</item>
         <item name="singleSelection">true</item>
+        <item name="selectionRequired">true</item>
         <item name="chipSpacingHorizontal">@dimen/margin_small</item>
         <item name="chipSpacingVertical">@dimen/margin_small</item>
     </style>
