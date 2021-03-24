@@ -171,8 +171,9 @@ class TrackRepository @Inject constructor(
     override suspend fun markTracksInBookAsWatched(bookId: Int) {
         withContext(Dispatchers.IO) {
             val tracks = getTracksForAudiobookAsync(bookId)
+            val currentTime = System.currentTimeMillis()
             val updatedTracks = tracks.map {
-                it.copy(progress = 0L)
+                it.copy(progress = 0L, lastViewedAt = currentTime)
             }
             trackDao.insertAll(updatedTracks)
         }
@@ -304,15 +305,14 @@ class TrackRepository @Inject constructor(
      * Merges a list of tracks from the network into the DB by comparing to local tracks and using
      * using logic [MediaItemTrack.merge] to determine what data to keep from each
      */
-    private suspend fun mergeNetworkTracks(
+    private fun mergeNetworkTracks(
         networkTracks: List<MediaItemTrack>,
         localTracks: List<MediaItemTrack>,
         forcePreferNetwork: Boolean = false
     ): List<MediaItemTrack> {
-        // TODO: O(n^2) is dangerous, could optimize pairing by grouping local + network into a
-        //       Map<BookId, List<Book>> by bookId
+        val localTracksMap = localTracks.associateBy { it.id }
         return networkTracks.map { networkTrack ->
-            val localTrack = localTracks.firstOrNull { it.id == networkTrack.id }
+            val localTrack = localTracksMap[networkTrack.id]
             if (localTrack != null) {
                 Timber.i("Local track merge: $localTrack")
                 return@map MediaItemTrack.merge(
@@ -321,6 +321,16 @@ class TrackRepository @Inject constructor(
                     forceUseNetwork = forcePreferNetwork,
                 )
             } else {
+                val matchingMedia = localTracks.firstOrNull {
+                    it.media == networkTrack.media
+                }
+                if (matchingMedia != null) {
+                    throw RuntimeException(
+                        "Lost track, but matching found!" +
+                                "(${matchingMedia.id}, ${matchingMedia.media})," +
+                                "(${networkTrack.id}, ${networkTrack.media}"
+                    )
+                }
                 return@map networkTrack
             }
         }
