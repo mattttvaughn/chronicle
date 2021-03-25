@@ -52,6 +52,10 @@
     <dimen name="details_play_button">64dp</dimen>
     <dimen name="chapter_indent">24dp</dimen>
 
+    <!--  Currently playing screen -->
+    <dimen name="currently_playing_artwork_max_size">302dp</dimen>
+    <dimen name="currently_playing_seekbar_margin_top">16dp</dimen>
+
     <!-- Device dependent -->
     <dimen name="screen_horizontal_padding">16dp</dimen>
     <dimen name="screen_vertical_padding">16dp</dimen>

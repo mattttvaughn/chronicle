@@ -2,4 +2,7 @@
 <resources>
     <integer name="short_animation_ms">400</integer>
     <integer name="long_animation_ms">700</integer>
+
+    <!-- Visible -->
+    <item name="currently_playing_artwork_visibility" type="integer">0</item>
 </resources>

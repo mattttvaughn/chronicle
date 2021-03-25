@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--  Currently playing screen -->
+    <dimen name="currently_playing_seekbar_margin_top">72dp</dimen>
+</resources>

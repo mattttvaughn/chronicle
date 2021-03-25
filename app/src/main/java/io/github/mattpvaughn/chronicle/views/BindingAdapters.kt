@@ -25,7 +25,8 @@ fun bindImageRounded(
         return
     }
 
-    val imageSize = draweeView.resources.getDimension(R.dimen.audiobook_image_width).toInt()
+    val imageSize =
+        draweeView.resources.getDimension(R.dimen.currently_playing_artwork_max_size).toInt()
     val config = Injector.get().plexConfig()
     val url = config.toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$src")
         .toUri()
