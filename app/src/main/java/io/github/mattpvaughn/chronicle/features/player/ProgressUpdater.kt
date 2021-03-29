@@ -9,10 +9,8 @@ import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
+import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
-import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
-import io.github.mattpvaughn.chronicle.data.model.getTrackStartTime
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexSyncScrobbleWorker
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
@@ -131,10 +129,15 @@ class SimpleProgressUpdater @Inject constructor(
             }
 
             val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
+            val book = bookRepository.getAudiobookAsync(bookId)
             val bookProgress = tracks.getTrackStartTime(track) + trackProgress
             val bookDuration = tracks.getDuration()
 
-            currentlyPlaying.updateProgress(bookProgress, trackProgress)
+            currentlyPlaying.update(
+                book = book ?: EMPTY_AUDIOBOOK,
+                track = tracks.getActiveTrack(),
+                tracks = tracks,
+            )
 
             // Update local DB
             if (!prefsRepo.debugOnlyDisableLocalProgressTracking) {

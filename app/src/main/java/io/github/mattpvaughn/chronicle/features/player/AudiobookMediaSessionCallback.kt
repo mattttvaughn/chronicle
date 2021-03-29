@@ -306,11 +306,10 @@ class AudiobookMediaSessionCallback @Inject constructor(
                 else -> throw NoWhenBranchMatchedException("Unknown media player")
             }
 
-            currentlyPlaying.updateBook(book, tracks)
-            currentlyPlaying.updateTrack(startingTrack)
-            currentlyPlaying.updateProgress(
-                trackListStateManager.currentBookPosition,
-                trackListStateManager.currentTrackProgress
+            currentlyPlaying.update(
+                book = book,
+                tracks = tracks,
+                track = startingTrack
             )
 
             player.seekTo(

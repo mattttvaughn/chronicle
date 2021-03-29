@@ -68,8 +68,11 @@ class OnMediaChangedCallback @Inject constructor(
                     val newTracks = trackRepo.getTracksForAudiobookAsync(newBookId)
                     val newTrack = trackRepo.getTrackAsync(trackId)
                     if (newBook != null && newTrack != null && newTracks.isNotEmpty()) {
-                        currentlyPlaying.updateBook(newBook, newTracks)
-                        currentlyPlaying.updateTrack(newTrack)
+                        currentlyPlaying.update(
+                            book = newBook,
+                            track = newTrack,
+                            tracks = newTracks,
+                        )
                         updateNotification(state.state)
                     }
                 }

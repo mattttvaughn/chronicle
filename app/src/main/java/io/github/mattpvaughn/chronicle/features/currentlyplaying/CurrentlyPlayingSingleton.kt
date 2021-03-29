@@ -1,7 +1,6 @@
 package io.github.mattpvaughn.chronicle.features.currentlyplaying
 
 import android.support.v4.media.session.PlaybackStateCompat
-import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.features.player.EMPTY_PLAYBACK_STATE
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,9 +21,7 @@ interface CurrentlyPlaying {
     val playbackState: PlaybackStateCompat
 
     fun setOnChapterChangeListener(listener: OnChapterChangeListener)
-    fun updateTrack(track: MediaItemTrack)
-    fun updateBook(book: Audiobook, tracks: List<MediaItemTrack>)
-    fun updateProgress(bookProgress: Long, trackProgress: Long)
+    fun update(track: MediaItemTrack, book: Audiobook, tracks: List<MediaItemTrack>)
 }
 
 interface OnChapterChangeListener {
@@ -44,12 +41,7 @@ class CurrentlyPlayingSingleton : CurrentlyPlaying {
     override var playbackState: PlaybackStateCompat = EMPTY_PLAYBACK_STATE
 
     private var tracks: MutableList<MediaItemTrack> = mutableListOf()
-    private var chapters: MutableList<Chapter> = mutableListOf()
-
-    override fun updateTrack(track: MediaItemTrack) {
-        this.track.value = track
-        tracks.replaceTrack(track)
-    }
+    private val chapters: MutableList<Chapter> = mutableListOf()
 
     private var listener: OnChapterChangeListener? = null
 
@@ -57,14 +49,13 @@ class CurrentlyPlayingSingleton : CurrentlyPlaying {
         this.listener = listener
     }
 
-    override fun updateBook(book: Audiobook, tracks: List<MediaItemTrack>) {
-        Timber.i("Updating book ${book.title.take(30)} in ${this.javaClass.simpleName}")
+    override fun update(track: MediaItemTrack, book: Audiobook, tracks: List<MediaItemTrack>) {
         this.book.value = book
+        this.track.value = track
 
         this.tracks.clear()
         this.tracks.addAll(tracks)
 
-        this.chapters.clear()
         this.chapters.addAll(
             if (book.chapters.isNotEmpty()) {
                 book.chapters
@@ -72,35 +63,19 @@ class CurrentlyPlayingSingleton : CurrentlyPlaying {
                 tracks.asChapterList()
             }
         )
-    }
-
-    override fun updateProgress(bookProgress: Long, trackProgress: Long) {
-        Timber.i("Updating progress in ${this.javaClass.simpleName}")
-        book.value = book.value.copy(progress = bookProgress)
-        track.value = track.value.copy(progress = trackProgress)
-        tracks.replaceTrack(track.value)
 
         if (tracks.isNotEmpty() && chapters.isNotEmpty()) {
-            val activeTrack = tracks.getActiveTrack()
-            val chapter = chapters.filter {
-                it.trackId.toInt() == activeTrack.id
-            }.getChapterAt(activeTrack.progress)
-            if (chapter != this.chapter.value) {
-                listener?.onChapterChange(chapter)
+            val chapter = chapters.getChapterAt(track.id.toLong(), track.progress)
+            if (this.chapter.value != chapter) {
                 this.chapter.value = chapter
+                listener?.onChapterChange(chapter)
             }
         }
+
+        printDebug()
     }
 
-    private fun MutableList<MediaItemTrack>.replaceTrack(track: MediaItemTrack) {
-        if (BuildConfig.DEBUG && isEmpty()) {
-            throw IllegalStateException("Cannot replace track for empty track list")
-        }
-        val trackIndex = this.indexOfFirst { it.id == track.id }
-        if (BuildConfig.DEBUG && trackIndex == -1) {
-            throw IllegalStateException("Cannot replace track which does not exist")
-        }
-        this.removeAt(trackIndex)
-        this.add(trackIndex, track)
+    private fun printDebug() {
+        Timber.i("Currently Playing: track=${track.value.title}, index=${track.value.index}/${tracks.size}")
     }
 }

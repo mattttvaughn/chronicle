@@ -109,7 +109,7 @@ class MainActivityViewModel(
         val currentTrackProgress: Long = activeTrack.progress
         return@DoubleLiveData _chapters.filter {
             it.trackId.toInt() == activeTrack.id
-        }.getChapterAt(currentTrackProgress).title
+        }.getChapterAt(_tracks.getActiveTrack().id.toLong(), currentTrackProgress).title
     }
 
     val isPlaying = Transformations.map(mediaServiceConnection.playbackState) {

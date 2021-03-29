@@ -41,9 +41,9 @@ val EMPTY_CHAPTER = Chapter("")
  * Returns the chapter which contains the [timeStamp] (the playback progress of the track containing
  * this chapter), or [EMPTY_TRACK] if there is no chapter
  */
-fun List<Chapter>.getChapterAt(timeStamp: Long): Chapter {
+fun List<Chapter>.getChapterAt(trackId: Long, timeStamp: Long): Chapter {
     for (chapter in this) {
-        if (timeStamp >= chapter.startTimeOffset && timeStamp <= chapter.endTimeOffset) {
+        if (chapter.trackId == trackId && timeStamp in chapter.startTimeOffset..chapter.endTimeOffset) {
             return chapter
         }
     }
