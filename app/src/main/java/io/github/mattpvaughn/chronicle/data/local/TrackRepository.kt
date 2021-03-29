@@ -14,6 +14,7 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.model.asTrackList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -111,7 +112,7 @@ interface ITrackRepository {
         forceUseNetwork: Boolean = false
     ): List<MediaItemTrack>
 
-    /** * Marks tracks in book as watched by setting the progress in all to 0 */
+    /** Marks tracks in book as watched by setting the progress in all to 0 */
     suspend fun markTracksInBookAsWatched(bookId: Int)
 
     companion object {
@@ -301,6 +302,20 @@ class TrackRepository @Inject constructor(
         }
     }
 
+    private data class TrackIdentifier(
+        val parentId: Int,
+        val title: String,
+        val duration: Long,
+    ) {
+        companion object {
+            fun from(mediaItemTrack: MediaItemTrack) = TrackIdentifier(
+                parentId = mediaItemTrack.parentKey,
+                title = mediaItemTrack.title,
+                duration = mediaItemTrack.duration,
+            )
+        }
+    }
+
     /**
      * Merges a list of tracks from the network into the DB by comparing to local tracks and using
      * using logic [MediaItemTrack.merge] to determine what data to keep from each
@@ -311,6 +326,8 @@ class TrackRepository @Inject constructor(
         forcePreferNetwork: Boolean = false
     ): List<MediaItemTrack> {
         val localTracksMap = localTracks.associateBy { it.id }
+        val localTrackIdentifiers = mutableSetOf<TrackIdentifier>()
+        localTracks.mapTo(localTrackIdentifiers) { TrackIdentifier.from(it) }
         return networkTracks.map { networkTrack ->
             val localTrack = localTracksMap[networkTrack.id]
             if (localTrack != null) {
@@ -320,19 +337,29 @@ class TrackRepository @Inject constructor(
                     local = localTrack,
                     forceUseNetwork = forcePreferNetwork,
                 )
-            } else {
-                val matchingMedia = localTracks.firstOrNull {
-                    it.media == networkTrack.media
-                }
-                if (matchingMedia != null) {
-                    throw RuntimeException(
-                        "Lost track, but matching found!" +
-                                "(${matchingMedia.id}, ${matchingMedia.media})," +
-                                "(${networkTrack.id}, ${networkTrack.media}"
-                    )
-                }
-                return@map networkTrack
             }
+            val networkTrackIdentifier = TrackIdentifier.from(networkTrack)
+            // Check to see if a track has changed ID. Move the local file to represent
+            // the new track's ID
+            if (networkTrackIdentifier in localTrackIdentifiers) {
+                Timber.e("Moving disappeared track: ${networkTrack.title}")
+                val cachedTrack = localTracks.firstOrNull {
+                    networkTrackIdentifier.duration == it.duration
+                            && networkTrackIdentifier.parentId == it.parentKey
+                            && networkTrackIdentifier.title == it.title
+                }
+                if (cachedTrack != null) {
+                    val cachedFile = File(prefsRepo.cachedMediaDir, cachedTrack.getCachedFileName())
+                    val newFileName =
+                        File(prefsRepo.cachedMediaDir, networkTrack.getCachedFileName())
+                    try {
+                        cachedFile.renameTo(newFileName)
+                    } catch (t: Throwable) {
+                        Timber.e("Failed to rename downloaded track: $t")
+                    }
+                }
+            }
+            return@map networkTrack
         }
     }
 }
