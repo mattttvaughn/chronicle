@@ -24,21 +24,18 @@ Cannot reproduce:
  
 Need to test:
  - [ ] Playback issues on older devices (5.0 - possibly 9.0)
- - [ ] Filter/sort buttons broken for maybe API 26 and below
-    - possibly fixed
 
 High priority:
  - [ ]
 
 Medium priority: 
- - [ ] OOM for big files (4gb+ m4b files reported)
-    - Need to dig deeper into either aac spec to learn about how it chunks (or how ExoPlayer
-      requests? or how the server chunks?)
-    - Solutions: largeHeap="true" in manifest?
  - [ ] Notification doesn't get "proc"ed on chapter change
+    - [ ] Temporary solution: only display track size
  - [/] issues loading huge libraries
        - [X] stopgap fix: timeout for media queries has been increased from 15s to 30s
-       - [ ] real fix: incremental library loading 
+       - [ ] real fix:
+            - [ ] incremental library loading
+            - [ ] optimize 
  - [ ] Playback progress in library view not updated in real-time, only on library refreshes
  - [ ] 
 

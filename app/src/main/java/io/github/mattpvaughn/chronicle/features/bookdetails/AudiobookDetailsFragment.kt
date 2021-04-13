@@ -156,13 +156,6 @@ class AudiobookDetailsFragment : Fragment() {
             )
         }
 
-        viewModel.isWatched.observe(viewLifecycleOwner) { isWatched ->
-            val watchedMenuItem = binding.detailsToolbar.menu.findItem(R.id.toggle_watched)
-            if (watchedMenuItem != null) {
-                watchedMenuItem.isVisible = !isWatched
-            }
-        }
-
         viewModel.forceSyncInProgress.observe(viewLifecycleOwner) { isSyncing ->
             val syncMenuItem = binding.detailsToolbar.menu.findItem(R.id.force_sync)
             val syncIcon = syncMenuItem.icon

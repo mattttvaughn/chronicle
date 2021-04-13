@@ -5,14 +5,14 @@ apply plugin: "kotlin-parcelize"
 apply plugin: "com.google.android.gms.oss-licenses-plugin"
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     buildToolsVersion "29.0.3"
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
-        targetSdkVersion 29
-        versionCode 20
-        versionName "0.45.0"
+        targetSdkVersion 30
+        versionCode 21
+        versionName "0.45.1"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
@@ -80,7 +80,7 @@ dependencies {
     implementation "com.google.android.material:material:$materialLibVersion"
     implementation "androidx.appcompat:appcompat:$supportlibVersion"
     implementation "androidx.fragment:fragment-ktx:$appCompatFragmentVersion"
-    implementation "androidx.recyclerview:recyclerview:1.2.0-beta02"
+    implementation "androidx.recyclerview:recyclerview:1.2.0"
     implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
 
     // AndroidX

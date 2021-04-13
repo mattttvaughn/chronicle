@@ -47,6 +47,8 @@ data class Audiobook constructor(
     val viewedLeafCount: Long = 0L,
     /** The number of tracks in the book */
     val leafCount: Long = 0L,
+    /** The number of times the book has been listened to */
+    val viewCount: Long = 0L,
     /** Chapter metadata corresponding to m4b chapter metadata in the m4b files */
     val chapters: List<Chapter> = emptyList(),
 ) {
@@ -66,7 +68,8 @@ data class Audiobook constructor(
             updatedAt = dir.updatedAt,
             lastViewedAt = dir.lastViewedAt,
             viewedLeafCount = dir.viewedLeafCount,
-            leafCount = dir.leafCount
+            leafCount = dir.leafCount,
+            viewCount = dir.viewCount,
         )
 
         /**

@@ -3,7 +3,6 @@ package io.github.mattpvaughn.chronicle.features.bookdetails
 import android.media.session.MediaController
 import android.media.session.PlaybackState.*
 import android.os.Bundle
-import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
 import androidx.lifecycle.*
@@ -144,34 +143,16 @@ class AudiobookDetailsViewModel(
         }
     }
 
-    /**
-     * The title of the book currently playing, as agreed upon by [MediaServiceConnection.nowPlaying]
-     * and [audiobook].
-     *
-     * If the titles do not match, or either is null, return [NO_AUDIOBOOK_FOUND_TITLE]
-     */
-    private val currentlyPlayingBookTitle =
-        DoubleLiveData<MediaMetadataCompat, Audiobook?, String>(
-            mediaServiceConnection.nowPlaying,
-            audiobook
-        ) { currentlyPlaying, currentBook ->
-            return@DoubleLiveData if (currentlyPlaying?.displayTitle != null && currentlyPlaying.displayTitle == currentBook?.title) {
-                currentlyPlaying.displayTitle ?: NO_AUDIOBOOK_FOUND_TITLE
-            } else {
-                NO_AUDIOBOOK_FOUND_TITLE
-            }
-        }
+    private val activeBook = currentlyPlaying.book.asLiveData(viewModelScope.coroutineContext)
 
     /** Whether the book in the current view is also the same on in the [MediaController] */
-    private val isBookInViewActive =
-        DoubleLiveData<String, PlaybackStateCompat, Boolean>(
-            currentlyPlayingBookTitle,
-            mediaServiceConnection.playbackState
-        ) { currTitle, currState ->
-            return@DoubleLiveData currTitle != NO_AUDIOBOOK_FOUND_TITLE
-                    && currState?.state != STATE_NONE
-                    && currState?.state != PlaybackStateCompat.STATE_ERROR
-        }
+    private val isBookInViewActive = DoubleLiveData<Audiobook, Audiobook?, Boolean>(
+        activeBook,
+        audiobook
+    ) { activeBook, currentBook ->
+        return@DoubleLiveData activeBook?.id == currentBook?.id
+                && activeBook?.id != null
+    }
 
     /** Whether the book in the current view is playing */
     val isBookInViewPlaying =
@@ -190,7 +171,6 @@ class AudiobookDetailsViewModel(
         val durationStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getDuration() / 1000L)
         return@map "$progressStr/$durationStr"
     }
-
 
     private var _isLoadingTracks = MutableLiveData(false)
     val isLoadingTracks: LiveData<Boolean>
@@ -222,10 +202,6 @@ class AudiobookDetailsViewModel(
 
     val isExpanded = Transformations.map(summaryLinesShown) { lines ->
         return@map lines == lineCountSummaryMaximized
-    }
-
-    val isWatched = Transformations.map(audiobook) { book ->
-        book?.isCompleted() ?: true
     }
 
     val serverConnection = Transformations.map(plexConfig.connectionState) { it }
@@ -528,12 +504,7 @@ class AudiobookDetailsViewModel(
     }
 
     fun toggleWatched() {
-        val currentWatched = isWatched.value ?: return
         val prompt = R.string.prompt_mark_as_watched
-        if (currentWatched) {
-            // We don't care if it is watched. Only leave option to mark as watched
-            return
-        }
         showOptionsMenu(
             title = FormattableString.from(prompt),
             options = listOf(FormattableString.yes, FormattableString.no),
@@ -549,7 +520,7 @@ class AudiobookDetailsViewModel(
     }
 
     private fun setAudiobookWatched() {
-        Timber.i("Setting audiobook watched to $isWatched")
+        Timber.i("Marking audiobook as watched")
         viewModelScope.launch {
             // Plex will set tracks as unwatched if their parent becomes unwatched, so no need
             // for [ITrackRepository.setWatched]

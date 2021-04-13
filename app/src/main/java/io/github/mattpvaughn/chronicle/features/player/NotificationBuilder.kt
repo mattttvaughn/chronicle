@@ -20,6 +20,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
+import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING
@@ -115,7 +116,11 @@ class NotificationBuilder @Inject constructor(
         val playbackState = controller.playbackState
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
 
-        Timber.i("Building notification!")
+        if (BuildConfig.DEBUG) {
+            Timber.i("Building notification! track=${currentlyPlaying.track.value.title}, index=${currentlyPlaying.track.value.index}")
+            Timber.i("Building notification! chapter=${currentlyPlaying.chapter.value.title}, index=${currentlyPlaying.chapter.value.index}")
+            Timber.i("Building notification! state=${playbackState.stateName}")
+        }
 
         // Only add actions depending on playback status
         builder.addAction(skipBackwardsAction)

@@ -280,11 +280,11 @@ class BookRepository @Inject constructor(
     }
 
     override suspend fun setWatched(bookId: Int) {
-        Timber.i("Updating")
         withContext(Dispatchers.IO) {
             try {
                 plexMediaService.watched(bookId.toString())
-                bookDao.updateWatched(bookId)
+                bookDao.setWatched(bookId)
+                bookDao.resetBookProgress(bookId)
             } catch (t: Throwable) {
                 Timber.e("Failed to update watched status: $t")
             }

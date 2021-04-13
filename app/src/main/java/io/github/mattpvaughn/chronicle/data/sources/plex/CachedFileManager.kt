@@ -128,7 +128,7 @@ class CachedFileManager @Inject constructor(
         Timber.i("Caching tracks to: ${cachedFilesDir.path}")
         Timber.i("Tracks to cache: $tracks")
 
-        return tracks.mapNotNull { track ->
+        val requests = tracks.mapNotNull { track ->
             // File exists but is not marked as cached in the database- more likely than not
             // this means that it has failed to fully download
             val destFile = File(cachedFilesDir, track.getCachedFileName())
@@ -158,6 +158,8 @@ class CachedFileManager @Inject constructor(
                 "file://${destFile.absolutePath}"
             )
         }
+        Timber.i("Made download requests: ${requests.map { it.file }}")
+        return requests
     }
 
     /** Create a [Request] for a track download with the proper metadata */
@@ -349,6 +351,14 @@ class CachedFileManager @Inject constructor(
                 ))
             }
         }
+    }
+
+    /**
+     * Migrates cached files from being named after the [MediaItemTrack.id] to being named after
+     * the persistent part in [MediaItemTrack.media]
+     */
+    private suspend fun migrateCachedFiles() {
+
     }
 
 }

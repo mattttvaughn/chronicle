@@ -23,7 +23,8 @@ fun getBookDatabase(context: Context): BookDatabase {
                 BOOK_MIGRATION_2_3,
                 BOOK_MIGRATION_3_4,
                 BOOK_MIGRATION_4_5,
-                BOOK_MIGRATION_5_6
+                BOOK_MIGRATION_5_6,
+                BOOK_MIGRATION_6_7
             ).build()
         }
     }
@@ -60,7 +61,13 @@ val BOOK_MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
-@Database(entities = [Audiobook::class], version = 6, exportSchema = false)
+val BOOK_MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE Audiobook ADD COLUMN viewCount INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+@Database(entities = [Audiobook::class], version = 7, exportSchema = false)
 abstract class BookDatabase : RoomDatabase() {
     abstract val bookDao: BookDao
 }
@@ -152,7 +159,10 @@ interface BookDao {
     suspend fun getRandomBookAsync(): Audiobook?
 
     @Query("UPDATE Audiobook SET progress = 0 WHERE id = :bookId")
-    suspend fun updateWatched(bookId: Int)
+    suspend fun resetBookProgress(bookId: Int)
+
+    @Query("UPDATE Audiobook SET viewCount = viewCount + 1 WHERE id = :bookId")
+    suspend fun setWatched(bookId: Int)
 }
 
 

@@ -123,7 +123,6 @@ inline val MediaMetadataCompat.downloadStatus
  * Custom property for storing whether a [MediaMetadataCompat] item represents an
  * item that is [MediaItem.FLAG_BROWSABLE] or [MediaItem.FLAG_PLAYABLE].
  */
-@MediaItem.Flags
 inline val MediaMetadataCompat.flag
     get() = this.getLong(METADATA_KEY_CHRONICLE_FLAGS).toInt()
 
@@ -250,7 +249,6 @@ inline var MediaMetadataCompat.Builder.downloadStatus: Long
  * Custom property for storing whether a [MediaMetadataCompat] item represents an
  * item that is [MediaItem.FLAG_BROWSABLE] or [MediaItem.FLAG_PLAYABLE].
  */
-@MediaItem.Flags
 inline var MediaMetadataCompat.Builder.flag: Int
     @Deprecated(NO_GET, level = DeprecationLevel.ERROR)
     get() = throw IllegalAccessException("Cannot get from MediaMetadataCompat.Builder")
