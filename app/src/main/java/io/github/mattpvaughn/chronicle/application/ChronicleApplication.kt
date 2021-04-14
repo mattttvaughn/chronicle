@@ -243,4 +243,14 @@ open class ChronicleApplication : Application() {
         plexConfig.connectToServer(plexMediaService)
     }
 
+    override fun onTrimMemory(level: Int) {
+        Fresco.getImagePipeline().clearMemoryCaches()
+        super.onTrimMemory(level)
+    }
+
+    override fun onLowMemory() {
+        Fresco.getImagePipeline().clearMemoryCaches()
+        super.onLowMemory()
+    }
+
 }

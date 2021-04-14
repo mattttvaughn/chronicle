@@ -396,7 +396,12 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
             }
         }
 
-        return super.onStartCommand(intent, flags, startId)
+        /**
+         * Return [START_NOT_STICKY] to instruct the system not to restart the
+         * service upon death by the OS. This will prevent an empty notification
+         * from appearing on service restart
+         */
+        return START_NOT_STICKY
     }
 
     override fun onLoadChildren(
