@@ -1,8 +1,6 @@
 package io.github.mattpvaughn.chronicle.features.currentlyplaying
 
-import android.support.v4.media.session.PlaybackStateCompat
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.features.player.EMPTY_PLAYBACK_STATE
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +16,6 @@ interface CurrentlyPlaying {
     val book: StateFlow<Audiobook>
     val track: StateFlow<MediaItemTrack>
     val chapter: StateFlow<Chapter>
-    val playbackState: PlaybackStateCompat
 
     fun setOnChapterChangeListener(listener: OnChapterChangeListener)
     fun update(track: MediaItemTrack, book: Audiobook, tracks: List<MediaItemTrack>)
@@ -38,7 +35,6 @@ class CurrentlyPlayingSingleton : CurrentlyPlaying {
     override var book = MutableStateFlow(EMPTY_AUDIOBOOK)
     override var track = MutableStateFlow(EMPTY_TRACK)
     override var chapter = MutableStateFlow(EMPTY_CHAPTER)
-    override var playbackState: PlaybackStateCompat = EMPTY_PLAYBACK_STATE
 
     private var tracks: MutableList<MediaItemTrack> = mutableListOf()
     private val chapters: MutableList<Chapter> = mutableListOf()

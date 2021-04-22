@@ -11,7 +11,6 @@ import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.model.Chapter
-import io.github.mattpvaughn.chronicle.data.model.EMPTY_CHAPTER
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.OnChapterChangeListener
@@ -40,19 +39,6 @@ class OnMediaChangedCallback @Inject constructor(
     }
 
     // Book ID, Track ID, Chapter ID
-    private var currentNotificationMetadata = NotificationData(
-        bookId = NO_AUDIOBOOK_FOUND_ID,
-        trackId = TRACK_NOT_FOUND,
-        chapterId = EMPTY_CHAPTER.id,
-        playbackState = STATE_NONE
-    )
-
-    private data class NotificationData(
-        private val bookId: Int,
-        private val trackId: Int,
-        private val chapterId: Long,
-        private val playbackState: Int
-    )
 
     override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
         Timber.i("METADATA CHANGE")
@@ -73,15 +59,15 @@ class OnMediaChangedCallback @Inject constructor(
                             track = newTrack,
                             tracks = newTracks,
                         )
-                        updateNotification(state.state)
                     }
+                    updateNotification(state.state)
                 }
             }
         }
     }
 
     override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-        Timber.i("Playback state changed ${System.currentTimeMillis()}")
+        Timber.i("Playback state changed to ${state?.stateName} ${System.currentTimeMillis()}")
         if (state == null) {
             return
         }
@@ -90,38 +76,28 @@ class OnMediaChangedCallback @Inject constructor(
         }
     }
 
+    /**
+     * TODO: eventually handle chapter changes
+     */
     override fun onChapterChange(chapter: Chapter) {
-        mediaController.playbackState?.let { state ->
-            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                updateNotification(state.state)
-            }
-        }
+//        mediaController.playbackState?.let { state ->
+//            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+//                updateNotification(state.state)
+//            }
+//        }
     }
 
     private suspend fun updateNotification(state: Int) {
-        val currentID = NotificationData(
-            bookId = currentlyPlaying.book.value.id,
-            trackId = currentlyPlaying.track.value.id,
-            chapterId = currentlyPlaying.chapter.value.id,
-            playbackState = state
-        )
-        if (currentID == currentNotificationMetadata) {
-            // Don't build a new notification if nothing has changed
-            Timber.i("Preventing duplicate notification!")
-            return
-        } else {
-            Timber.i("Making new notification!")
-            currentNotificationMetadata = currentID
-        }
-
         val notification = if (mediaController.sessionToken != null) {
             notificationBuilder.buildNotification(mediaSession.sessionToken)
         } else {
             null
         }
 
+        Timber.i("Created notif: $notification")
+
         when (state) {
-            STATE_PLAYING, STATE_BUFFERING, STATE_CONNECTING -> {
+            STATE_PLAYING, STATE_BUFFERING -> {
                 becomingNoisyReceiver.register()
                 if (notification != null) {
                     notificationManager.notify(NOW_PLAYING_NOTIFICATION, notification)

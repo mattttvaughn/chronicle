@@ -9,8 +9,9 @@ Internal:
  - Refactor repositories to expose `StateFlow`s instead of `LiveData`?
     - Need to learn good merging techniques/extensions first
     - ViewModels too?
- - Refactor some of the classes in `MediaPlayerService` to be more idiomatic
+ - Refactor callbacks in `MediaPlayerService` to be more idiomatic
  - Refactor Chapters to be managed in their own db
+ - Look into `ExoPlayer.experimentalSetOffloadSchedulingEnabled`
     
 ## Bug fixes:
 

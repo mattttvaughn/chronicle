@@ -12,6 +12,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE
 import android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY
 import android.view.KeyEvent
@@ -24,6 +25,9 @@ import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING
+import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.model.EMPTY_CHAPTER
+import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
@@ -40,9 +44,9 @@ const val NOW_PLAYING_NOTIFICATION: Int = 0xb32229
 @ServiceScope
 class NotificationBuilder @Inject constructor(
     private val context: Context,
-    private val controller: MediaControllerCompat,
     private val plexConfig: PlexConfig,
-    private val currentlyPlaying: CurrentlyPlaying
+    private val controller: MediaControllerCompat,
+    private val currentlyPlaying: CurrentlyPlaying,
 ) {
 
     private val platformNotificationManager: NotificationManager =
@@ -102,29 +106,49 @@ class NotificationBuilder @Inject constructor(
 
     var bookTitleBitmapPair: Pair<Int, Bitmap?>? = null
 
+    private var currentNotificationMetadata = NotificationData(
+        bookId = NO_AUDIOBOOK_FOUND_ID,
+        trackId = ITrackRepository.TRACK_NOT_FOUND,
+        chapterId = EMPTY_CHAPTER.id,
+        playbackState = PlaybackStateCompat.STATE_NONE
+    )
+
+    private data class NotificationData(
+        private val bookId: Int,
+        private val trackId: Int,
+        private val chapterId: Long,
+        private val playbackState: Int
+    )
+
+    private val currentID = NotificationData(
+        bookId = currentlyPlaying.book.value.id,
+        trackId = currentlyPlaying.track.value.id,
+        chapterId = currentlyPlaying.chapter.value.id,
+        playbackState = PlaybackStateCompat.STATE_NONE
+    )
+
     /**
      * Builds a notification representing the current playback state as representing by
      * [CurrentlyPlaying] and the current [MediaSessionCompat]
      *
      * @return a notification representing the current playback state or null if one already exists
      */
-    suspend fun buildNotification(sessionToken: MediaSessionCompat.Token): Notification {
+    suspend fun buildNotification(sessionToken: MediaSessionCompat.Token): Notification? {
         if (shouldCreateChannel()) {
             createNowPlayingChannel()
         }
 
-        val playbackState = controller.playbackState
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
+        val isPlaying = controller.playbackState.isPlaying
 
         if (BuildConfig.DEBUG) {
             Timber.i("Building notification! track=${currentlyPlaying.track.value.title}, index=${currentlyPlaying.track.value.index}")
             Timber.i("Building notification! chapter=${currentlyPlaying.chapter.value.title}, index=${currentlyPlaying.chapter.value.index}")
-            Timber.i("Building notification! state=${playbackState.stateName}")
+            Timber.i("Building notification! state=${controller.playbackState.stateName}, playing=$isPlaying")
         }
 
-        // Only add actions depending on playback status
         builder.addAction(skipBackwardsAction)
-        if (playbackState.isPlaying) {
+        if (isPlaying) {
             builder.addAction(pauseAction)
         } else {
             builder.addAction(playAction)
@@ -144,7 +168,7 @@ class NotificationBuilder @Inject constructor(
             .setShowActionsInCompactView(0, 1, 2)
             .setShowCancelButton(true)
 
-        val smallIcon = if (playbackState.isPlaying) {
+        val smallIcon = if (isPlaying) {
             R.drawable.ic_notification_icon_playing
         } else {
             R.drawable.ic_notification_icon_paused
