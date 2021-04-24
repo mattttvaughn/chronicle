@@ -1,5 +1,6 @@
 package io.github.mattpvaughn.chronicle.features.bookdetails
 
+import android.content.res.Resources.NotFoundException
 import android.graphics.PorterDuff
 import android.widget.ImageView
 import androidx.annotation.ColorRes
@@ -11,6 +12,7 @@ import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.data.model.Chapter
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableString.ResourceString
 import io.github.mattpvaughn.chronicle.views.getString
+import okhttp3.internal.toHexString
 import timber.log.Timber
 
 @BindingAdapter("playbackSpeed")
@@ -43,10 +45,16 @@ fun bindImageDrawableSource(imageView: ImageView, @DrawableRes drawableRes: Int)
     imageView.setImageResource(drawableRes)
 }
 
-@BindingAdapter("tintRes")
+@BindingAdapter("app:tint")
 fun bindTintResource(imageView: ImageView, @ColorRes colorRes: Int) {
-    imageView.setColorFilter(
-        ContextCompat.getColor(imageView.context, colorRes),
-        PorterDuff.Mode.SRC_IN
-    )
+    if (colorRes != 0) {
+        try {
+            imageView.setColorFilter(
+                ContextCompat.getColor(imageView.context, colorRes),
+                PorterDuff.Mode.SRC_IN
+            )
+        } catch (rnf: NotFoundException) {
+            Timber.e("Could not bind tint with res: 0x${colorRes.toHexString()}")
+        }
+    }
 }

@@ -5,6 +5,10 @@
     <data>
 
         <variable
+            name="isActive"
+            type="Boolean" />
+
+        <variable
             name="chapter"
             type="io.github.mattpvaughn.chronicle.data.model.Chapter" />
 
@@ -42,7 +46,7 @@
                 android:lines="1"
                 android:text="@{chapter.paddedIndex(2)}"
                 android:textAllCaps="true"
-                android:textColor="@{chapter.downloaded ? @color/textActiveSecondary : @color/textSecondary}"
+                android:textColor="@{isActive ? @color/textActiveSecondary : @color/textSecondary}"
                 tools:text="01" />
 
             <!--            <ImageView-->
@@ -65,7 +69,7 @@
             android:layout_marginBottom="@dimen/margin_normal"
             android:lines="1"
             android:text="@{chapter.title}"
-            android:textColor="@{chapter.downloaded ? @color/textActive : @color/textPrimary}"
+            android:textColor="@{isActive ? @color/textActive : @color/textPrimary}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"

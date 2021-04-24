@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="io.github.mattpvaughn.chronicle">
 
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -32,6 +33,7 @@
             </intent-filter>
         </activity>
 
+
         <service
             android:name="io.github.mattpvaughn.chronicle.features.player.MediaPlayerService"
             android:enabled="true"
@@ -44,6 +46,11 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </service>
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
         <receiver android:name="androidx.media.session.MediaButtonReceiver">
             <intent-filter>

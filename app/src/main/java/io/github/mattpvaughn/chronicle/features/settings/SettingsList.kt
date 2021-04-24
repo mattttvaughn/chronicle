@@ -102,6 +102,11 @@ class SettingsList : FrameLayout {
                 binding.preferenceSwitch.setOnCheckedChangeListener { _: CompoundButton, isChecked: Boolean ->
                     prefsRepo.setBoolean(preferenceModel.key, isChecked)
                 }
+                binding.preferenceSwitchContent.setOnClickListener {
+                    val newIsChecked = !binding.preferenceSwitch.isChecked
+                    prefsRepo.setBoolean(preferenceModel.key, newIsChecked)
+                    binding.preferenceSwitch.isChecked = newIsChecked
+                }
                 binding.executePendingBindings()
             }
 

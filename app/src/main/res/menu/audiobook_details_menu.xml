@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- TODO: bring back for casting -->
     <!--    <item-->
@@ -7,4 +8,17 @@
     <!--        app:actionProviderClass="androidx.mediarouter.app.MediaRouteActionProvider"-->
     <!--        app:showAsAction="always"-->
     <!--        android:title="@string/cast" />-->
+
+    <item
+        android:id="@+id/toggle_watched"
+        android:icon="@drawable/ic_visibility"
+        android:title="@string/toggle_watched"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/force_sync"
+        android:icon="@drawable/ic_sync_rotate"
+        android:title="@string/force_sync"
+        app:showAsAction="ifRoom" />
+
 </menu>

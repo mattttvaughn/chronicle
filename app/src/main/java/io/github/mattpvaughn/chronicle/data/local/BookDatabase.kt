@@ -23,7 +23,8 @@ fun getBookDatabase(context: Context): BookDatabase {
                 BOOK_MIGRATION_2_3,
                 BOOK_MIGRATION_3_4,
                 BOOK_MIGRATION_4_5,
-                BOOK_MIGRATION_5_6
+                BOOK_MIGRATION_5_6,
+                BOOK_MIGRATION_6_7
             ).build()
         }
     }
@@ -60,7 +61,13 @@ val BOOK_MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
-@Database(entities = [Audiobook::class], version = 6, exportSchema = false)
+val BOOK_MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE Audiobook ADD COLUMN viewCount INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+@Database(entities = [Audiobook::class], version = 7, exportSchema = false)
 abstract class BookDatabase : RoomDatabase() {
     abstract val bookDao: BookDao
 }
@@ -85,6 +92,9 @@ interface BookDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun update(audiobook: Audiobook)
 
+    @Query("UPDATE Audiobook SET isCached = :cached WHERE id = :bookId")
+    fun updateCachedStatus(bookId: Int, cached: Boolean)
+
     @Query("SELECT * FROM Audiobook WHERE source= :sourceId AND isCached >= :isOfflineModeActive LIMIT 1")
     fun getAudiobooksForSourceAsync(sourceId: Long, isOfflineModeActive: Boolean): List<Audiobook>
 
@@ -100,10 +110,10 @@ interface BookDao {
     @Query("SELECT * FROM Audiobook ORDER BY updatedAt DESC LIMIT 25")
     fun getOnDeck(): LiveData<List<Audiobook>>
 
-    @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND lastViewedAt != 0 AND progress != 0 AND progress != duration ORDER BY lastViewedAt DESC LIMIT :bookCount")
+    @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND lastViewedAt != 0 AND progress > 10000 AND progress < duration - 120000 ORDER BY lastViewedAt DESC LIMIT :bookCount")
     fun getRecentlyListened(bookCount: Int, offlineModeActive: Boolean): LiveData<List<Audiobook>>
 
-    @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND lastViewedAt != 0 AND progress != 0 AND progress != duration ORDER BY lastViewedAt DESC LIMIT :bookCount")
+    @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND lastViewedAt != 0 AND progress > 10000 AND progress < duration - 120000 ORDER BY lastViewedAt DESC LIMIT :bookCount")
     suspend fun getRecentlyListenedAsync(
         bookCount: Int,
         offlineModeActive: Boolean
@@ -112,8 +122,8 @@ interface BookDao {
     @Query("UPDATE Audiobook SET lastViewedAt = :currentTime, progress = :progress WHERE lastViewedAt < :currentTime AND id = :bookId")
     fun updateProgress(bookId: Int, currentTime: Long, progress: Long)
 
-    @Query("UPDATE Audiobook SET duration = :duration, leafCount = :trackCount, progress = :progress WHERE id = :id")
-    suspend fun updateTrackData(id: Int, progress: Long, duration: Long, trackCount: Int)
+    @Query("UPDATE Audiobook SET duration = :duration, leafCount = :trackCount, progress = :progress WHERE id = :bookId")
+    suspend fun updateTrackData(bookId: Int, progress: Long, duration: Long, trackCount: Int)
 
     @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive AND (title LIKE :query OR author LIKE :query)")
     fun search(query: String, offlineModeActive: Boolean): LiveData<List<Audiobook>>
@@ -153,6 +163,12 @@ interface BookDao {
 
     @Query("DELETE FROM Audiobook WHERE source = :sourceId")
     suspend fun removeWithSource(sourceId: Long)
+
+    @Query("UPDATE Audiobook SET progress = 0 WHERE id = :bookId")
+    suspend fun resetBookProgress(bookId: Int)
+
+    @Query("UPDATE Audiobook SET viewCount = viewCount + 1 WHERE id = :bookId")
+    suspend fun setWatched(bookId: Int)
 }
 
 

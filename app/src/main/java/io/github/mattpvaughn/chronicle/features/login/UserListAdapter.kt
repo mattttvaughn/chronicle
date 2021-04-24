@@ -5,8 +5,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexUser
 import io.github.mattpvaughn.chronicle.databinding.ListItemUserBinding
 
@@ -25,10 +23,7 @@ class UserListAdapter(val clickListener: UserClickListener) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(user: PlexUser, clickListener: UserClickListener) {
             binding.user = user
-            Glide.with(binding.userThumb)
-                .load(user.thumb)
-                .placeholder(R.drawable.ic_person_white)
-                .into(binding.userThumb)
+            binding.userThumb.setImageURI(user.thumb)
             binding.clickListener = clickListener
             binding.executePendingBindings()
         }

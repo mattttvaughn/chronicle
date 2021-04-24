@@ -18,7 +18,6 @@ import kotlinx.coroutines.CoroutineScope
 @ServiceScope
 @Component(dependencies = [AppComponent::class], modules = [ServiceModule::class])
 interface ServiceComponent {
-    fun cachedFileManager(): ICachedFileManager
     fun progressUpdater(): ProgressUpdater
     fun exoPlayer(): ExoPlayer
     fun mediaSession(): MediaSessionCompat

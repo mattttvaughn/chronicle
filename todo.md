@@ -40,36 +40,40 @@ Message redditors:
      - [ ] Offline caching
      - [ ] Test
  
+Internal:
+ - Update billing version
+ - Remove hardcoding of `Dispatchers` and `GlobalScope`
+ - Refactor repositories to expose `StateFlow`s instead of `LiveData`?
+    - Need to learn good merging techniques/extensions first
+    - ViewModels too?
+ - Refactor callbacks in `MediaPlayerService` to be more idiomatic
+ - Refactor Chapters to be managed in their own db
+ - Look into `ExoPlayer.experimentalSetOffloadSchedulingEnabled`
     
 ## Bug fixes:
 
 STOPSHIP:
+ - [ ] 
 
 Cannot reproduce:
- - [ ] issues caching track (or chapter) start/end times
- - [ ] book durations sometimes stuck at 00:00?
  - [ ] Possible memory leaks (reported on op 6t)
     - [ ] ViewBinding?
     - [ ] MediaServiceConnection?
  
 Need to test:
- - [ ] Downloading to SD card fails?
  - [ ] Playback issues on older devices (5.0 - possibly 9.0)
- - [ ] Filter/sort buttons broken for maybe API 26 and below
-    - possibly fixed
 
 High priority:
  - [ ]
 
 Medium priority: 
- - [ ] OOM for big files (4gb+ m4b files reported)
-    - Need to dig deeper into either aac spec to learn about how it chunks (or how ExoPlayer
-      requests? or how the server chunks?)
-    - Solutions: largeHeap="true" in manifest?
  - [ ] Notification doesn't get "proc"ed on chapter change
+    - [ ] Temporary solution: only display track size
  - [/] issues loading huge libraries
        - [X] stopgap fix: timeout for media queries has been increased from 15s to 30s
-       - [ ] real fix: incremental library loading 
+       - [ ] real fix:
+            - [ ] incremental library loading
+            - [ ] optimize 
  - [ ] Playback progress in library view not updated in real-time, only on library refreshes
  - [ ] 
 
@@ -80,31 +84,28 @@ Low priority
     
 ## High priority:
 
- - [ ] Android Auto (mostly done, but unable to release until support for demo libraries has been added)
+ - [ ] Android Auto (mostly done, but waiting until support for demo libraries has been added)
  - [ ] Casting
  - [ ] Multiple library sources
 
 ## Medium priority:
 
- - [ ] Manually set watched/unwatched
  - [ ] Add more narrator to audiobook page: narrator
- - [ ] Highlight current chapter in chapter lists
  - [/] Filter/Sort/`View type` UI for library
        - [/] Sort by all known fields (genre, release date, author, etc.)
              - [X] Sortable by basic fields
              - [ ] When sorting, change the grid/list item subtitle to reflect the sorted field
        - [ ] Filterable by all known Plex fields (genre, release date, author, etc.)
        - [ ] Folder view + author view + collections view
- - [ ] Played/unplayed indicators (?)
+ - [ ] Tablet/landscape support
+ - [ ] Next/previous chapter buttons in "currently playing" screen
+ - [ ] Show most recently listened book in bottom bar like Spotify does
+ - [ ] More metadata in chapter list (start/end times or duration or something)
+ - [ ] Favorites
  - [ ] Improve downloading experience
      - [ ] Show download status for tracks (progress, downloaded?)
      - [ ] Sync by disk option
      - [ ] "Download all" button?
- - [ ] Tablet/landscape support
- - [ ] Next/previous chapter buttons in "currently playing" screen
- - [ ] Show more recently listened book in bottom bar like Spotify does
- - [ ] More metadata in chapter list (start/end times or duration or something)
- - [ ] Favorites
 
 ## Low priority:
 
@@ -120,6 +121,15 @@ Low priority
 ## DONE:
 
 Release 0.50:
+
+March 15th:
+ - [ ] Highlight current chapter in chapter lists
+ - [ ] Fix issue of thumbnails from home tab not loading
+ - [ ] Manually set watched/unwatched
+ - [ ] Highlighting of current chapter
+ - [ ] Newly rewritten downloader
+     - [ ] Fix issues downloading books to SD card
+     - [ ] Allows failed downloads to be retried
 
 (September 10th):
  - [X] fix: scroll position no longer lost after returning from a book

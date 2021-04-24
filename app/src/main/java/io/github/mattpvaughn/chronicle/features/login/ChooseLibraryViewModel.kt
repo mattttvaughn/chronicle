@@ -58,7 +58,7 @@ class ChooseLibraryViewModel(
     private val networkObserver = Observer<ConnectionState> { connection ->
         if (connection == ConnectionState.CONNECTED) {
             Timber.i("Connected to server at ${source.url}")
-            getLibraries()
+            loadLibraries()
         }
     }
 
@@ -80,7 +80,7 @@ class ChooseLibraryViewModel(
         super.onCleared()
     }
 
-    private fun getLibraries() {
+    private fun loadLibraries() {
         viewModelScope.launch {
             try {
                 _loadingStatus.value = LoadingStatus.LOADING

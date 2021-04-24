@@ -4,7 +4,9 @@ import android.app.DownloadManager
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.work.WorkManager
+import com.facebook.imagepipeline.core.ImagePipelineConfig
 import com.squareup.moshi.Moshi
+import com.tonyodev.fetch2.Fetch
 import dagger.Component
 import io.github.mattpvaughn.chronicle.application.ChronicleApplication
 import io.github.mattpvaughn.chronicle.application.ChronicleBillingManager
@@ -39,6 +41,9 @@ interface AppComponent {
     fun mediaSourceFactory(): MediaSourceFactory
     fun sourceManager(): SourceManager
     fun billingManager(): ChronicleBillingManager
+    fun currentlyPlaying(): CurrentlyPlaying
+    fun fetch(): Fetch
+    fun frescoConfig(): ImagePipelineConfig
 
     @Named(USER_AGENT)
     fun userAgent(): String

@@ -28,7 +28,6 @@ class MainActivityViewModel(
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val mediaServiceConnection: MediaServiceConnection,
-    private val cachedFileManager: ICachedFileManager
 ) : ViewModel(), MainActivity.CurrentlyPlayingInterface {
 
     @Suppress("UNCHECKED_CAST")
@@ -37,7 +36,6 @@ class MainActivityViewModel(
         private val trackRepository: ITrackRepository,
         private val bookRepository: IBookRepository,
         private val mediaServiceConnection: MediaServiceConnection,
-        private val cachedFileManager: ICachedFileManager
     ) : ViewModelProvider.Factory {
 
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -46,8 +44,7 @@ class MainActivityViewModel(
                     sourceManager,
                     trackRepository,
                     bookRepository,
-                    mediaServiceConnection,
-                    cachedFileManager
+                    mediaServiceConnection
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from MainActivityViewModel.Factory")
@@ -110,7 +107,7 @@ class MainActivityViewModel(
         val currentTrackProgress: Long = activeTrack.progress
         return@DoubleLiveData _chapters.filter {
             it.trackId.toInt() == activeTrack.id
-        }.getChapterAt(currentTrackProgress).title
+        }.getChapterAt(_tracks.getActiveTrack().id.toLong(), currentTrackProgress).title
     }
 
     val isPlaying = Transformations.map(mediaServiceConnection.playbackState) {
@@ -142,9 +139,6 @@ class MainActivityViewModel(
     init {
         mediaServiceConnection.nowPlaying.observeForever(metadataObserver)
         mediaServiceConnection.playbackState.observeForever(playbackObserver)
-        viewModelScope.launch {
-            cachedFileManager.refreshTrackDownloadedStatus()
-        }
     }
 
     private suspend fun setAudiobook(trackId: Int) {
@@ -230,18 +224,6 @@ class MainActivityViewModel(
     fun onCurrentlyPlayingHandleDragged() {
         if (currentlyPlayingLayoutState.value == COLLAPSED) {
             _currentlyPlayingLayoutState.postValue(EXPANDED)
-        }
-    }
-
-    fun handleDownloadedTrack(id: Long) {
-        viewModelScope.launch {
-            val downloadResult = cachedFileManager.handleDownloadedTrack(id)
-            if (downloadResult.isFailure) {
-                val downloadFailureMessage = downloadResult.exceptionOrNull()?.message
-                if (downloadFailureMessage != null) {
-                    _errorMessage.postEvent(downloadFailureMessage)
-                }
-            }
         }
     }
 }

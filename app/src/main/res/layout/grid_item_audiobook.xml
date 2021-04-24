@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:fresco="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
     <data>
@@ -71,7 +72,7 @@
                 android:translationZ="2dp"
                 android:visibility="@{audiobook.progress > 0L ? View.VISIBLE : View.GONE}" />
 
-            <ImageView
+            <com.facebook.drawee.view.SimpleDraweeView
                 android:id="@+id/book_cover_img"
                 serverConnected="@{serverConnected}"
                 srcRounded="@{audiobook.thumb}"
@@ -79,7 +80,10 @@
                 android:contentDescription="@{audiobook.title}"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:contentDescription="@{audiobook.title}"
                 android:layout_gravity="bottom"
+                fresco:actualImageScaleType="centerCrop"
+                fresco:placeholderImage="@drawable/book_cover_missing_placeholder"
                 tools:src="@drawable/book_cover_missing_placeholder" />
 
         </androidx.cardview.widget.CardView>

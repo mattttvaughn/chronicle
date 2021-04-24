@@ -1,9 +1,7 @@
 package io.github.mattpvaughn.chronicle.injection.modules
 
-import android.app.DownloadManager
 import android.content.ComponentName
 import android.content.Context
-import android.content.Context.DOWNLOAD_SERVICE
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.support.v4.media.session.MediaControllerCompat
@@ -84,22 +82,11 @@ class UITestAppModule(private val context: Context) {
     fun provideMediaController(mediaServiceConnection: MediaServiceConnection): MediaControllerCompat? =
         mediaServiceConnection.mediaController
 
-    @Provides
-    @Singleton
-    fun plexConnectionChooser(
-        plexLibrarySource: PlexLibrarySource,
-        plexMediaService: PlexMediaService
-    ) =
-        spyk(PlexConnectionChooser(plexLibrarySource, plexMediaService))
 
     @Provides
     @Singleton
     fun workManager(): WorkManager = WorkManager.getInstance(context)
 
-    @Provides
-    @Singleton
-    fun downloadManager(): DownloadManager =
-        context.getSystemService(DOWNLOAD_SERVICE) as DownloadManager
 
     @Provides
     @Singleton

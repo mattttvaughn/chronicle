@@ -73,12 +73,10 @@ class TrackListStateManager {
             offset + (trackList[currentTrackIndex].duration - currentTrackProgress)
         for (index in currentTrackIndex downTo 0) {
             if (offsetRemaining < trackList[index].duration) {
-                println("return 1: offset = $offset, duration = ${trackList[index].duration}")
                 currentTrackProgress = max(0, trackList[index].duration - offsetRemaining)
                 currentTrackIndex = index
                 return
             } else {
-                println("Poggers")
                 offsetRemaining -= trackList[index].duration
             }
         }
@@ -90,7 +88,6 @@ class TrackListStateManager {
         check(offset >= 0) { "Attempted to seek by a negative number: $offset" }
         var offsetRemaining = offset + currentTrackProgress
         for (index in currentTrackIndex until trackList.size) {
-            println("Hello $index, remaining = $offsetRemaining")
             if (offsetRemaining < trackList[index].duration) {
                 currentTrackIndex = index
                 currentTrackProgress = offsetRemaining

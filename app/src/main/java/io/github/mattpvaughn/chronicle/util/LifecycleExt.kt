@@ -2,16 +2,13 @@ package io.github.mattpvaughn.chronicle.util
 
 import androidx.annotation.MainThread
 import androidx.lifecycle.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
 inline fun <T> LiveData<Event<T>>.observeEvent(
     owner: LifecycleOwner,
     crossinline onEventUnhandledContent: (T) -> Unit
 ) {
-    observe(owner, Observer { it?.getContentIfNotHandled()?.let(onEventUnhandledContent) })
+    observe(owner) { it.getContentIfNotHandled()?.let(onEventUnhandledContent) }
 }
 
 fun <T> MutableLiveData<Event<T>>.postEvent(value: T) {
@@ -26,12 +23,14 @@ fun <T> MutableLiveData<Event<T>>.postEvent(value: T) {
 fun <X, Y> mapAsync(
     source: LiveData<X>,
     scope: CoroutineScope,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO,
     mapFunction: suspend (X) -> Y
 ): LiveData<Y> {
     val result = MediatorLiveData<Y>()
     result.addSource(source) { x ->
         scope.launch {
-            result.value = withContext(Dispatchers.IO) { mapFunction(x) }
+            // TODO: why does compiler think this can be nullable?
+            result.value = withContext(dispatcher) { mapFunction(x) }!!
         }
     }
     return result

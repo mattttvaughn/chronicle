@@ -6,7 +6,6 @@ import android.view.*
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.appcompat.widget.SearchView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
@@ -18,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
@@ -29,7 +30,6 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.databinding.FragmentLibraryBinding
 import io.github.mattpvaughn.chronicle.navigation.Navigator
-import io.github.mattpvaughn.chronicle.views.FlowableRadioGroup
 import io.github.mattpvaughn.chronicle.views.checkRadioButtonWithTag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -99,12 +99,12 @@ class LibraryFragment : Fragment() {
 
             // Sometimes [books] will be the same as [adapter.currentList] so don't do any
             // submission/diffing if that's the case
-
+            //
             // Check if the new list differs from the current. We really should be using a normal
             // RecyclerView.Adapter and not a ListAdapter for this, as ListAdapter only provides
             // access to an immutable copy of a list, not the list itself.
             //
-            // This operation is worst case O(n), which is bad for users with big libraries
+            // This operation is worst case O(n), which is bad for users with huge libraries
             lifecycleScope.launch {
                 val isNewList = withContext(Dispatchers.IO) {
                     val currentList = adapter?.currentList ?: return@withContext true
@@ -112,8 +112,7 @@ class LibraryFragment : Fragment() {
                         Timber.i("Updating: different size!")
                         return@withContext true
                     }
-                    // check if lists are in the same order, faster than doing a full .equals()
-                    // comparison
+                    // compare lists by id, faster than doing a full .equals() comparison
                     for (index in books.indices) {
                         if (books[index].id != currentList[index].id) {
                             Timber.i("Updating: different ids!")
@@ -163,15 +162,15 @@ class LibraryFragment : Fragment() {
             binding.swipeToRefresh.isRefreshing = it
         }
 
-        binding.filterInclude.sortByOptions.checkRadioButtonWithTag(prefsRepo.bookSortKey)
-        binding.filterInclude.sortByOptions.setOnCheckedChangeListener { group: FlowableRadioGroup, checkedId ->
-            val key = group.findViewById<AppCompatRadioButton>(checkedId).tag as String
+        binding.sortByOptions.checkRadioButtonWithTag(prefsRepo.bookSortKey)
+        binding.sortByOptions.setOnCheckedChangeListener { group: ChipGroup, checkedId ->
+            val key = group.findViewById<Chip>(checkedId).tag as String
             prefsRepo.bookSortKey = key
         }
 
-        binding.filterInclude.viewStyles.checkRadioButtonWithTag(prefsRepo.libraryBookViewStyle)
-        binding.filterInclude.viewStyles.setOnCheckedChangeListener { group: FlowableRadioGroup, checkedId ->
-            val key = group.findViewById<AppCompatRadioButton>(checkedId).tag as String
+        binding.viewStyles.checkRadioButtonWithTag(prefsRepo.libraryBookViewStyle)
+        binding.viewStyles.setOnCheckedChangeListener { group: ChipGroup, checkedId ->
+            val key = group.findViewById<Chip>(checkedId).tag as String
             prefsRepo.libraryBookViewStyle = key
         }
 
@@ -181,9 +180,8 @@ class LibraryFragment : Fragment() {
             }
         }
 
-        val bottomSheetParams = binding.filterInclude.filterView.layoutParams as CoordinatorLayout.LayoutParams
-        val bottomSheetBehavior = bottomSheetParams.behavior as BottomSheetBehavior
-        bottomSheetBehavior.addBottomSheetCallback(object :
+        val behavior = (binding.filterView.layoutParams) as CoordinatorLayout.LayoutParams
+        (behavior.behavior as BottomSheetBehavior).addBottomSheetCallback(object :
             BottomSheetBehavior.BottomSheetCallback() {
             override fun onSlide(bottomSheet: View, slideOffset: Float) {}
             override fun onStateChanged(bottomSheet: View, newState: Int) {
@@ -202,6 +200,8 @@ class LibraryFragment : Fragment() {
                 STATE_HIDDEN
             }
 
+            val params = binding.filterView.layoutParams as CoordinatorLayout.LayoutParams
+            val bottomSheetBehavior = params.behavior as BottomSheetBehavior
             bottomSheetBehavior.state = filterBottomSheetState
         }
 
@@ -273,7 +273,7 @@ class LibraryFragment : Fragment() {
             R.id.menu_filter -> viewModel.setFilterMenuVisible(
                 viewModel.isFilterShown.value?.not() ?: false
             )
-//            R.id.download_all -> viewModel.promptDownloadAll()
+            R.id.download_all -> viewModel.promptDownloadAll()
             R.id.search -> {
             } // handled by listeners in onCreateView
             else -> throw NoWhenBranchMatchedException("Unknown menu item selected!")

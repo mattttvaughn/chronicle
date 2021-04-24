@@ -27,6 +27,7 @@ data class PlexDirectory(
     val viewedLeafCount: Long = 0,
     val leafCount: Long = 0,
     val lastViewedAt: Long = 0,
+    val viewCount: Long = 0,
     val plexGenres: List<PlexGenre> = emptyList(),
     @Json(name = "Chapter")
     val plexChapters: List<PlexChapter> = emptyList(),

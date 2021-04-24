@@ -78,6 +78,18 @@
     <string name="download">Download</string>
     <string name="downloading_book">Downloading book</string>
     <string name="failed_to_connect_to_server">Can\'t connect to server</string>
+    <string name="prompt_mark_as_watched">Mark as watched?</string>
+    <string name="toggle_watched">Toggle Watched</string>
+    <string name="cannot_play_media_no_server">Cannot play media- not connected to any server!</string>
+    <string name="prompt_mark_as_unwatched">Mark as unwatched?</string>
+    <string name="failed_to_sync_progress">Failed to sync progress</string>
+    <string name="premium_required_offline_playback">Premium is required for offline playback!</string>
+    <string name="unable_to_cache_audiobook">Unable to download audiobook- not connected to server</string>
+    <string name="force_sync">Force Sync</string>
+    <string name="prompt_force_sync">Force sync with network? Local progress will be lost</string>
+    <string name="progress_sync_successful">Sync successful!</string>
+    <string name="progress_sync_failed">Sync failed</string>
+    <string name="cannot_sync_no_server">Not connected to server</string>
 
     <!-- Home screen -->
     <string name="home">Home</string>
@@ -105,7 +117,35 @@
     <string name="delete_cache_files_prompt">Delete cached files?</string>
     <string name="download_failed">Download failed for %1$s %2$s</string>
     <string name="download_failed_reason_already_exists">because the download already exists</string>
-    <string name="download_failed_reason_error_code">Error code: %1%s</string>
+    <string name="download_failed_reason_error_code">Error code: %1$s</string>
+    <string name="download_notification_channel_id">Download</string>
+    <string name="download_notification_title">Downloading %1$s</string>
+    <string name="download_notification_cancel">Cancel</string>
+    <string name="download_notification_cancel_all">Cancel all</string>
+    <string name="download_starting">Downloading %1$s: (%2$s%%)</string>
+    <string name="download_successful_notification_content">Download complete: %1$s</string>
+    <string name="download_successful_notification_title">Download finished</string>
+    <string name="download_failed_notification_title">Download failed</string>
+    <string name="download_failed_notification_content">Download failed: %1$s</string>
+    <string name="downloads_completed_summary_mixed">Downloads completed, %1$d succeeded, %2$d failed</string>
+    <plurals name="downloads_failed_summary">
+        <item quantity="one">Download failed</item>
+        <item quantity="other">Downloads failed</item>
+    </plurals>
+    <plurals name="downloads_complete_summary">
+        <item quantity="one">Download complete</item>
+        <item quantity="other">Downloads complete</item>
+    </plurals>
+    <plurals name="download_books_summary">
+        <item quantity="one">Downloading %1$d book</item>
+        <item quantity="other">Downloading %1$d books</item>
+    </plurals>
+    <string name="download_channel_description">Shows current downloads</string>
+
+    <!-- Moving files between directories -->
+    <string name="moving_files_title">Moving files: (%1$d/%2$d)</string>
+    <string name="moving_files_channel_name">Moving files</string>
+    <string name="moving_files_failed_title">Failed to move</string>
 
     <!-- Speed chooser -->
     <string name="playback_speed_desc">Playback speed: %1$s times normal speed</string>
@@ -177,6 +217,9 @@
     <string name="settings_skip_silent_audio">Skip silent audio</string>
     <string name="settings_auto_rewind">Enable auto-rewind</string>
     <string name="settings_auto_rewind_explanation">When resuming playback, Chronicle will rewind between 0 and 20 seconds, depending on how long ago you last listened.</string>
+    <string name="settings_current_library">Current library: %s</string>
+    <string name="settings_current_server">Current server: %s</string>
+    <string name="settings_current_user">Current user: %s</string>
     <string name="settings_category_account">Accounts</string>
     <string name="settings_change_library">Change library</string>
     <string name="settings_change_server">Change server</string>
@@ -192,6 +235,8 @@
     <string name="settings_shake_to_snooze_explanation">Shaking device will snooze sleep timer by 5 minutes</string>
     <string name="settings_sources_title">Sources</string>
     <string name="settings_sources_explanation">Add additional accounts, directories, and libraries</string>
+    <string name="settings_pause_on_focus_lost_title">Pause during interruptions</string>
+    <string name="settings_pause_on_focus_lost_explanation">Pause playback during short audio interruptions by other apps. If disabled, continue playing but temporarily lower the volume (when possible).</string>
     <string name="prompt_clear_downloads_allow_retain">Would you like to keep your downloaded files?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>

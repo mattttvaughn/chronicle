@@ -1,7 +1,6 @@
 package io.github.mattpvaughn.chronicle.application
 
 import android.annotation.SuppressLint
-import android.app.DownloadManager
 import android.app.SearchManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -15,6 +14,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.COLLAPSED
@@ -33,12 +33,15 @@ import io.github.mattpvaughn.chronicle.injection.modules.ActivityModule
 import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
 import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.observeEvent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
 
 @ActivityScope
-open class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var localBroadcastManager: LocalBroadcastManager
@@ -184,18 +187,11 @@ open class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         Timber.i("MainActivity onStart()")
-        registerReceiver(
-            onDownloadComplete,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE).apply {
-                addAction(DownloadManager.ACTION_NOTIFICATION_CLICKED)
-            }
-        )
         localBroadcastManager.registerReceiver(onPlaybackError, IntentFilter(ACTION_PLAYBACK_ERROR))
     }
 
     override fun onStop() {
         Timber.i("MainActivity onStop()")
-        unregisterReceiver(onDownloadComplete)
         localBroadcastManager.unregisterReceiver(onPlaybackError)
         super.onStop()
     }
@@ -206,32 +202,31 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun handleNotificationIntent(intent: Intent?) {
-        val isIntentFromNotification = intent?.extras?.getBoolean(
+        val openCurrentlyPlaying = intent?.extras?.getBoolean(
             FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, false
         ) == true
-        Timber.i("Should the bottom sheet be maximized? $isIntentFromNotification")
-        if (isIntentFromNotification) {
+        if (openCurrentlyPlaying) {
             viewModel.maximizeCurrentlyPlaying()
         }
-    }
 
-    private val onDownloadComplete = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                DownloadManager.ACTION_DOWNLOAD_COMPLETE -> {
-                    val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                    viewModel.handleDownloadedTrack(id)
-                }
-                DownloadManager.ACTION_NOTIFICATION_CLICKED -> {
-                    Timber.i("Clicked notification!")
+        val openAudiobookWithId = intent?.extras?.getInt(
+            FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID, NO_AUDIOBOOK_FOUND_ID
+        ) ?: NO_AUDIOBOOK_FOUND_ID
+        if (openAudiobookWithId != NO_AUDIOBOOK_FOUND_ID) {
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    val audiobook = bookRepository.getAudiobookAsync(openAudiobookWithId)
+                    if (audiobook != null && audiobook != EMPTY_AUDIOBOOK) {
+                        navigator.showDetails(audiobook.id, audiobook.title, audiobook.isCached)
+                    }
                 }
             }
         }
     }
 
+
     private val onPlaybackError = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            //Fetching the download id received with the broadcast
             when (intent.action) {
                 ACTION_PLAYBACK_ERROR -> {
                     val errorMessage = intent.getStringExtra(PLAYBACK_ERROR_MESSAGE)
@@ -251,5 +246,10 @@ open class MainActivity : AppCompatActivity() {
 
     companion object {
         const val FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING = "OPEN_ACTIVITY_TO_AUDIOBOOK"
+        const val REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING = -12
+        const val FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID = "OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID"
+
+        // add audiobook id to this number to avoid repeats
+        const val REQUEST_CODE_PREFIX_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID = -1001110
     }
 }

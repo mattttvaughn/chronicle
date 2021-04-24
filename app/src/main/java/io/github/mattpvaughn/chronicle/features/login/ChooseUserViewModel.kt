@@ -150,7 +150,7 @@ class ChooseUserViewModel(
             _pinErrorMessage.postValue("")
         }
         try {
-            _pinData.postValue(s.toString())
+            _pinData.value = s.toString()
         } catch (t: NumberFormatException) {
             _pinErrorMessage.postValue("Pin must be 0000-9999")
             Timber.e("Failed to parse pin to int!")

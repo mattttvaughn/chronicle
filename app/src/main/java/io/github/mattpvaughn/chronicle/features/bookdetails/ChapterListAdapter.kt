@@ -12,6 +12,7 @@ import io.github.mattpvaughn.chronicle.databinding.ListItemDiscNumberSectionHead
 import io.github.mattpvaughn.chronicle.features.bookdetails.ChapterListAdapter.ChapterListModel.ChapterItemModel
 import io.github.mattpvaughn.chronicle.features.bookdetails.ChapterListAdapter.ChapterListModel.SectionHeaderWrapper
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser
+import timber.log.Timber
 
 class ChapterListAdapter(val clickListener: TrackClickListener) :
     ListAdapter<ChapterListAdapter.ChapterListModel, RecyclerView.ViewHolder>(
@@ -25,13 +26,21 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
             const val SECTION_HEADER_TYPE = 2
         }
 
-        internal class ChapterItemModel(val chapter: Chapter) : ChapterListModel()
-        internal class SectionHeaderWrapper(val section: SectionHeaderModel) : ChapterListModel()
+        internal data class ChapterItemModel(val chapter: Chapter, val isActive: Boolean) :
+            ChapterListModel()
+
+        internal data class SectionHeaderWrapper(val section: SectionHeaderModel) :
+            ChapterListModel()
     }
 
     class SectionHeaderModel(val text: BottomSheetChooser.FormattableString)
 
+    private var activeChapter = Triple(-1L, -1, -1L)
+    private var chapters = emptyList<Chapter>()
     fun submitChapters(chapters: List<Chapter>?) {
+        if (chapters != null) {
+            this.chapters = chapters
+        }
         // Add disc headers only if necessary. We use disc numbers if the final track is owned by
         // a disc other than 1 (discNumber defaults to 1)
         if (!chapters.isNullOrEmpty() && chapters.last().discNumber > 1) {
@@ -46,7 +55,7 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
                     )
                 )
             )
-            listWithSections.add(ChapterItemModel(chapters.first()))
+            listWithSections.add(ChapterItemModel(chapters.first(), isActive(chapters.first())))
             chapters.fold(chapters.first()) { prev, curr ->
                 // avoid edge cases at start/end, id is guaranteed to be different for unique
                 // chapters/tracks by Plex
@@ -65,7 +74,7 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
                         )
                     )
                 }
-                listWithSections.add(ChapterItemModel(curr))
+                listWithSections.add(ChapterItemModel(curr, isActive(curr)))
                 curr
             }
 
@@ -74,9 +83,19 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
             if (chapters.isNullOrEmpty()) {
                 super.submitList(mutableListOf<ChapterListModel>())
             } else {
-                super.submitList(chapters.map { ChapterItemModel(it) })
+                super.submitList(chapters.map { ChapterItemModel(it, isActive(it)) })
             }
         }
+    }
+
+    fun isActive(chapter: Chapter) = chapter.trackId == activeChapter.first
+            && chapter.discNumber == activeChapter.second
+            && chapter.index == activeChapter.third
+
+    fun updateCurrentChapter(trackId: Long, discNumber: Int, chapterIndex: Long) {
+        activeChapter = Triple(trackId, discNumber, chapterIndex)
+        Timber.i("Updating current chapter: ($trackId, $discNumber, $chapterIndex), $chapters")
+        submitChapters(chapters)
     }
 
     override fun submitList(list: MutableList<ChapterListModel>?) {
@@ -102,7 +121,10 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
     override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
         val item = getItem(position)
         when (viewHolder) {
-            is ChapterViewHolder -> viewHolder.bind((item as ChapterItemModel).chapter)
+            is ChapterViewHolder -> viewHolder.bind(
+                (item as ChapterItemModel).chapter,
+                item.isActive
+            )
             is SectionHeaderViewHolder -> viewHolder.bind((item as SectionHeaderWrapper).section)
             else -> throw NoWhenBranchMatchedException()
         }
@@ -112,8 +134,9 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
         private val binding: ListItemAudiobookTrackBinding,
         private val clickListener: TrackClickListener
     ) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(chapter: Chapter) {
+        fun bind(chapter: Chapter, isActive: Boolean) {
             binding.chapter = chapter
+            binding.isActive = isActive
             binding.clickListener = clickListener
             binding.executePendingBindings()
         }
@@ -174,7 +197,7 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
                 oldItem is ChapterItemModel && newItem is ChapterItemModel -> {
                     oldItem.chapter.index == newItem.chapter.index
                             && oldItem.chapter.title == newItem.chapter.title
-                            && oldItem.chapter.downloaded == newItem.chapter.downloaded
+                            && oldItem.isActive == newItem.isActive
                 }
                 oldItem is SectionHeaderWrapper && newItem is SectionHeaderWrapper -> {
                     oldItem.section.text == newItem.section.text

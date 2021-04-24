@@ -14,6 +14,9 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.BillingResponseCode.OK
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
+import com.bumptech.glide.Glide
+import com.facebook.drawee.backends.pipeline.Fresco
+import com.facebook.imagepipeline.core.ImagePipelineConfig
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
@@ -53,6 +56,12 @@ open class ChronicleApplication : Application() {
     @Inject
     lateinit var unhandledExceptionHandler: CoroutineExceptionHandler
 
+    @Inject
+    lateinit var cachedFileManager: ICachedFileManager
+
+    @Inject
+    lateinit var frescoConfig: ImagePipelineConfig
+
     override fun onCreate() {
         if (USE_STRICT_MODE && BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
@@ -82,7 +91,26 @@ open class ChronicleApplication : Application() {
         appComponent.inject(this)
         setupNetwork()
         setupBilling()
+        updateDownloadedFileState()
         super.onCreate()
+        Fresco.initialize(this, frescoConfig)
+        // TODO: remove in a future version
+        applicationScope.launch {
+            withContext(Dispatchers.IO) {
+                Glide.get(Injector.get().applicationContext()).clearDiskCache()
+            }
+        }
+    }
+
+    /**
+     * Updates the book and track repositories to reflect the true state of downloaded files
+     */
+    private fun updateDownloadedFileState() {
+        applicationScope.launch {
+            withContext(Dispatchers.IO) {
+                cachedFileManager.refreshTrackDownloadedStatus()
+            }
+        }
     }
 
     private var billingSetupAttempts = 0
@@ -148,7 +176,7 @@ open class ChronicleApplication : Application() {
             // network listener for sdk 24 and below
             registerReceiver(networkStateListener, IntentFilter().apply {
                 @Suppress("DEPRECATION")
-                this.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
+                addAction(ConnectivityManager.CONNECTIVITY_ACTION)
             })
         }
         applicationScope.launch(unhandledExceptionHandler) {
@@ -183,4 +211,15 @@ open class ChronicleApplication : Application() {
     private fun onConnectionLost() {
         sourceManager.connectionHasBeenLost()
     }
+
+    override fun onTrimMemory(level: Int) {
+        Fresco.getImagePipeline().clearMemoryCaches()
+        super.onTrimMemory(level)
+    }
+
+    override fun onLowMemory() {
+        Fresco.getImagePipeline().clearMemoryCaches()
+        super.onLowMemory()
+    }
+
 }

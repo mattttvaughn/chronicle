@@ -108,13 +108,14 @@ class Navigator @Inject constructor(
         fragmentManager.beginTransaction().replace(R.id.fragNavHost, settingsFragment).commit()
     }
 
-    fun showDetails(audiobookId: Int, isAudiobookCached: Boolean, sourceId: Long) {
+    fun showDetails(audiobookId: Int, audiobookTitle: String, isAudiobookCached: Boolean, sourceId: Long) {
         val detailsFrag = AudiobookDetailsFragment.newInstance().apply {
             if (arguments == null) {
                 arguments = Bundle()
             }
             requireArguments().putInt(ARG_AUDIOBOOK_ID, audiobookId)
             requireArguments().putLong(ARG_AUDIOBOOK_SOURCE_ID, sourceId)
+            requireArguments().putString(ARG_AUDIOBOOK_TITLE, audiobookTitle)
             requireArguments().putBoolean(ARG_IS_AUDIOBOOK_CACHED, isAudiobookCached)
         }
         fragmentManager.beginTransaction()

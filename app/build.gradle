@@ -1,18 +1,18 @@
 apply plugin: "com.android.application"
 apply plugin: "kotlin-android"
 apply plugin: "kotlin-kapt"
-apply plugin: "kotlin-android-extensions"
+apply plugin: "kotlin-parcelize"
 apply plugin: "com.google.android.gms.oss-licenses-plugin"
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     buildToolsVersion "29.0.3"
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
-        targetSdkVersion 29
-        versionCode 18
-        versionName "0.44"
+        targetSdkVersion 30
+        versionCode 21
+        versionName "0.45.1"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
@@ -79,15 +79,17 @@ dependencies {
     // Material components
     implementation "com.google.android.material:material:$materialLibVersion"
     implementation "androidx.appcompat:appcompat:$supportlibVersion"
-    implementation "androidx.recyclerview:recyclerview:1.2.0-alpha05"
+    implementation "androidx.fragment:fragment-ktx:$appCompatFragmentVersion"
+    implementation "androidx.recyclerview:recyclerview:1.2.0"
     implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
 
     // AndroidX
     implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
-    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion"
-
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-service:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-process:$lifecycleVersion"
 
     // Google Play Billing
     implementation "com.android.billingclient:billing:$billingVersion"
@@ -110,6 +112,9 @@ dependencies {
     // Timber Logging
     implementation "com.jakewharton.timber:timber:$timberVersion"
 
+    // Fetch download manager
+    implementation "androidx.tonyodev.fetch2:xfetch2:3.1.6"
+
     // Room DB manager
     implementation "androidx.room:room-runtime:$roomVersion"
     implementation "androidx.room:room-ktx:$roomVersion"
@@ -128,12 +133,16 @@ dependencies {
 //    compileOnly "com.squareup.inject:assisted-inject-annotations-dagger2:0.5.2"
 //    kapt "com.squareup.inject:assisted-inject-processor-dagger2:0.5.2"
 
-    // Glide - image loading
-    implementation ("com.github.bumptech.glide:glide:$glideVersion") {
+    // TODO: Remove glide, only included to delete the cache v0.45
+    implementation ("com.github.bumptech.glide:glide:4.11.0") {
         // exclude okhttp import in favor of our own import
         exclude group: "com.squareup.okhttp:"
     }
-    kapt "com.github.bumptech.glide:compiler:$glideVersion"
+
+
+        // Fresco - image loading
+    implementation 'com.facebook.fresco:fresco:2.4.0'
+    implementation "com.facebook.fresco:imagepipeline-okhttp3:2.4.0"
 
     // LocalBroadcastManager
     implementation "androidx.localbroadcastmanager:localbroadcastmanager:$localBroadcastManagerVersion"

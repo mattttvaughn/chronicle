@@ -10,6 +10,7 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,12 +18,15 @@ import javax.inject.Singleton
 interface ITrackRepository {
     /**
      * Load all tracks from the network corresponding to the book with id == [bookId], add them to
-     * the local [TrackDatabase], and return them
+     * the local [TrackDatabase], and return the merged results.
+     *
+     * If [forceUseNetwork] is true, override local copy with the network copy where it makes sense
      */
     suspend fun loadTracksForAudiobook(
+        bookId: Int,
         source: HttpMediaSource,
-        bookId: Int
-    ): Result<List<MediaItemTrack>>
+        forceUseNetwork: Boolean = false,
+    ): Result<List<MediaItemTrack>, Throwable>
 
     /**
      * Update the value of [MediaItemTrack.cached] to [isCached] for a [MediaItemTrack] with
@@ -32,7 +36,6 @@ interface ITrackRepository {
 
     /** Return all tracks in the [TrackDatabase]  */
     fun getAllTracks(): LiveData<List<MediaItemTrack>>
-
     suspend fun getAllTracksAsync(): List<MediaItemTrack>
 
     /**
@@ -40,8 +43,7 @@ interface ITrackRepository {
      * [MediaItemTrack.parentKey] == [bookId]
      */
     fun getTracksForAudiobook(bookId: Int): LiveData<List<MediaItemTrack>>
-
-    suspend fun getTracksForAudiobookAsync(id: Int): List<MediaItemTrack>
+    suspend fun getTracksForAudiobookAsync(bookId: Int): List<MediaItemTrack>
 
     /** Update the value of [MediaItemTrack.progress] == [trackProgress] and
      * [MediaItemTrack.lastViewedAt] == [lastViewedAt] for the track where
@@ -80,11 +82,38 @@ interface ITrackRepository {
     /** Sets [MediaItemTrack.cached] to false for all [MediaItemTrack] in [TrackDatabase] */
     suspend fun uncacheAll()
 
+    /**
+     * Loads all [MediaItemTrack]s available on the server into the load DB and returns a [List]
+     * of them
+     */
+    suspend fun loadAllTracksAsync(): List<MediaItemTrack>
+
     /** Fetches all [MediaType.TRACK]s from the server, updates the local db */
     suspend fun refreshData(): List<Result<Unit>>
 
     /** Removes all [MediaItemTrack] where [MediaItemTrack.source] == [id] */
     suspend fun removeWithSource(id: Long)
+
+    /** Retrieves a track from the local db with [title] as a substring of [MediaItemTrack.title] */
+    suspend fun findTrackByTitle(title: String): MediaItemTrack?
+
+    /**
+     * Pulls all [MediaItemTrack] with [MediaItemTrack.album] == [bookId] from the network
+     *
+     * @return a [List<MediaItemTrack>] reflecting tracks returned by the server
+     */
+    suspend fun fetchNetworkTracksForBook(bookId: Int): List<MediaItemTrack>
+
+    /**
+     * Loads in new track data from the network, updates the DB and returns the new track data
+     */
+    suspend fun syncTracksInBook(
+        bookId: Int,
+        forceUseNetwork: Boolean = false
+    ): List<MediaItemTrack>
+
+    /** Marks tracks in book as watched by setting the progress in all to 0 */
+    suspend fun markTracksInBookAsWatched(bookId: Int)
 
     companion object {
         /**
@@ -132,9 +161,38 @@ class TrackRepository @Inject constructor(
         }
     }
 
+    override suspend fun syncTracksInBook(
+        bookId: Int,
+        forceUseNetwork: Boolean,
+    ): List<MediaItemTrack> =
+        withContext(Dispatchers.IO) {
+            val networkTracks = fetchNetworkTracksForBook(bookId)
+            val localTracks = getTracksForAudiobookAsync(bookId)
+            val mergedTracks = mergeNetworkTracks(
+                networkTracks = networkTracks,
+                localTracks = localTracks,
+                forcePreferNetwork = forceUseNetwork
+            )
+            trackDao.insertAll(mergedTracks)
+            mergedTracks
+        }
+
+    override suspend fun markTracksInBookAsWatched(bookId: Int) {
+        withContext(Dispatchers.IO) {
+            val tracks = getTracksForAudiobookAsync(bookId)
+            val currentTime = System.currentTimeMillis()
+            val updatedTracks = tracks.map {
+                it.copy(progress = 0L, lastViewedAt = currentTime)
+            }
+            trackDao.insertAll(updatedTracks)
+        }
+    }
+
+
     override suspend fun loadTracksForAudiobook(
         source: HttpMediaSource,
-        bookId: Int
+        bookId: Int,
+        forceUseNetwork: Boolean = false,
     ): Result<List<MediaItemTrack>> {
         return withContext(Dispatchers.IO) {
             val localTracks = trackDao.getAllTracksAsync()
@@ -149,7 +207,7 @@ class TrackRepository @Inject constructor(
         }
     }
 
-    override suspend fun updateCachedStatus(trackId: Int, isCached: Boolean) : Int {
+    override suspend fun updateCachedStatus(trackId: Int, isCached: Boolean): Int {
         return withContext(Dispatchers.IO) {
             trackDao.updateCachedStatus(trackId, isCached)
         }
@@ -170,9 +228,9 @@ class TrackRepository @Inject constructor(
         return trackDao.getTracksForAudiobook(bookId, prefsRepo.offlineMode)
     }
 
-    override suspend fun getTracksForAudiobookAsync(id: Int): List<MediaItemTrack> {
+    override suspend fun getTracksForAudiobookAsync(bookId: Int): List<MediaItemTrack> {
         return withContext(Dispatchers.IO) {
-            trackDao.getTracksForAudiobookAsync(id, prefsRepo.offlineMode)
+            trackDao.getTracksForAudiobookAsync(bookId, prefsRepo.offlineMode)
         }
     }
 
@@ -233,6 +291,19 @@ class TrackRepository @Inject constructor(
         }
     }
 
+    private data class TrackIdentifier(
+        val parentId: Int,
+        val title: String,
+        val duration: Long,
+    ) {
+        companion object {
+            fun from(mediaItemTrack: MediaItemTrack) = TrackIdentifier(
+                parentId = mediaItemTrack.parentKey,
+                title = mediaItemTrack.title,
+                duration = mediaItemTrack.duration,
+            )
+        }
+    }
 
     /**
      * Merges a list of tracks from the network into the DB by comparing to local tracks and using
@@ -240,15 +311,44 @@ class TrackRepository @Inject constructor(
      */
     private fun mergeNetworkTracks(
         networkTracks: List<MediaItemTrack>,
-        localTracks: List<MediaItemTrack>
+        localTracks: List<MediaItemTrack>,
+        forcePreferNetwork: Boolean = false
     ): List<MediaItemTrack> {
+        val localTracksMap = localTracks.associateBy { it.id }
+        val localTrackIdentifiers = mutableSetOf<TrackIdentifier>()
+        localTracks.mapTo(localTrackIdentifiers) { TrackIdentifier.from(it) }
         return networkTracks.map { networkTrack ->
-            val localTrack = localTracks.find { it.id == networkTrack.id }
+            val localTrack = localTracksMap[networkTrack.id]
             if (localTrack != null) {
-                return@map MediaItemTrack.merge(network = networkTrack, local = localTrack)
-            } else {
-                return@map networkTrack
+                Timber.i("Local track merge: $localTrack")
+                return@map MediaItemTrack.merge(
+                    network = networkTrack,
+                    local = localTrack,
+                    forceUseNetwork = forcePreferNetwork,
+                )
             }
+            val networkTrackIdentifier = TrackIdentifier.from(networkTrack)
+            // Check to see if a track has changed ID. Move the local file to represent
+            // the new track's ID
+            if (networkTrackIdentifier in localTrackIdentifiers) {
+                Timber.e("Moving disappeared track: ${networkTrack.title}")
+                val cachedTrack = localTracks.firstOrNull {
+                    networkTrackIdentifier.duration == it.duration
+                            && networkTrackIdentifier.parentId == it.parentKey
+                            && networkTrackIdentifier.title == it.title
+                }
+                if (cachedTrack != null) {
+                    val cachedFile = File(prefsRepo.cachedMediaDir, cachedTrack.getCachedFileName())
+                    val newFileName =
+                        File(prefsRepo.cachedMediaDir, networkTrack.getCachedFileName())
+                    try {
+                        cachedFile.renameTo(newFileName)
+                    } catch (t: Throwable) {
+                        Timber.e("Failed to rename downloaded track: $t")
+                    }
+                }
+            }
+            return@map networkTrack
         }
     }
 }

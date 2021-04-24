@@ -3,6 +3,10 @@ package io.github.mattpvaughn.chronicle.features.settings
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.text.format.Formatter
 import androidx.lifecycle.*
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.facebook.drawee.backends.pipeline.Fresco
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.FEATURE_FLAG_IS_AUTO_ENABLED
@@ -13,6 +17,7 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.features.download.MoveSyncLocationWorker
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.Event
@@ -25,12 +30,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
-import java.io.IOException
 import javax.inject.Inject
 
 /**
  * Represents the UI state of the settings screen. Responsible for loading and displaying
  * [PreferenceModel]s.
+ *
+ * Note: not using the built-in [PreferenceFragment] because making custom preferences is horrible
+ *       and custom views or pop-ups are fine. This could be improved, though, it's quite indented
+ *
+ * TODO: Quite a bit of repetition of information in [PreferenceModel], making typos more likely.
+ *       Might be worthwhile to look into alternatives used by other apps?
  */
 class SettingsViewModel(
     private val bookRepository: IBookRepository,
@@ -40,6 +50,7 @@ class SettingsViewModel(
     private val cachedFileManager: ICachedFileManager,
     private val navigator: Navigator,
     private val sourceManager: SourceManager
+    private val workManager: WorkManager,
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -51,17 +62,20 @@ class SettingsViewModel(
         private val cachedFileManager: ICachedFileManager,
         private val navigator: Navigator,
         private val sourceManager: SourceManager
+        private val workManager: WorkManager,
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
                 return SettingsViewModel(
-                    bookRepository,
-                    trackRepository,
-                    mediaServiceConnection,
-                    prefsRepo,
-                    cachedFileManager,
-                    navigator,
-                    sourceManager
+                    bookRepository = bookRepository,
+                    trackRepository = trackRepository,
+                    mediaServiceConnection = mediaServiceConnection,
+                    prefsRepo = prefsRepo,
+                    plexLoginRepo = plexLoginRepo,
+                    cachedFileManager = cachedFileManager,
+                    navigator = navigator,
+                    workManager = workManager,
+                    sourceManager = sourceManager,
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from SettingsViewModel.Factory")
@@ -394,6 +408,13 @@ class SettingsViewModel(
                 defaultValue = prefsRepo.shakeToSnooze
             ),
             PreferenceModel(
+                type = PreferenceType.BOOLEAN,
+                title = FormattableString.from(R.string.settings_pause_on_focus_lost_title),
+                explanation = FormattableString.from(R.string.settings_pause_on_focus_lost_explanation),
+                key = PrefsRepo.KEY_PAUSE_ON_FOCUS_LOST,
+                defaultValue = prefsRepo.pauseOnFocusLost
+            ),
+            PreferenceModel(
                 PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_etc)
             ),
@@ -410,8 +431,7 @@ class SettingsViewModel(
                 type = PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_licenses_title),
                 explanation = FormattableString.from(R.string.settings_licenses_explanation),
-                click =
-                object : PreferenceClick {
+                click = object : PreferenceClick {
                     override fun onClick() {
                         _showLicenseActivity.postValue(true)
                     }
@@ -448,6 +468,18 @@ class SettingsViewModel(
                         click = object : PreferenceClick {
                             override fun onClick() {
                                 clearDB()
+                            }
+                        }),
+                    PreferenceModel(
+                        PreferenceType.CLICKABLE,
+                        FormattableString.from(string = "Clear cached images"),
+                        click = object : PreferenceClick {
+                            override fun onClick() {
+                                viewModelScope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        Fresco.getImagePipeline().clearCaches()
+                                    }
+                                }
                             }
                         }),
                     PreferenceModel(
@@ -489,42 +521,32 @@ class SettingsViewModel(
     private fun setSyncLocation(syncDir: File) {
         prefsRepo.cachedMediaDir = syncDir
 
-        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            val deviceDirs =
-                Injector.get().externalDeviceDirs()
-                    .filter { it.path != syncDir.path }
+        val worker = OneTimeWorkRequestBuilder<MoveSyncLocationWorker>().build()
 
-            viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-                deviceDirs.forEach { dir ->
-                    dir.listFiles { cachedFile ->
-                        MediaItemTrack.cachedFilePattern.matches(cachedFile.name)
-                    }?.forEach { cachedFile ->
-                        Timber.i(
-                            "Moving file ${cachedFile.absolutePath} to ${File(
-                                syncDir,
-                                cachedFile.name
-                            ).absolutePath}"
-                        )
-                        try {
-                            val copied = cachedFile.copyTo(
-                                File(syncDir, cachedFile.name),
-                                overwrite = true
-                            )
-                            if (copied.exists()) {
-                                cachedFile.delete()
-                            }
-                            Timber.i("Moved file ${cachedFile.name}? ${copied.exists()}")
-                        } catch (io: IOException) {
-                            Timber.i("IO exception occurred while changing sync location: $io")
-                        }
-                    }
-                }
-            }
-        }
+        workManager.beginUniqueWork(
+            MoveSyncLocationWorker.WORKER_ID,
+            ExistingWorkPolicy.REPLACE,
+            worker
+        ).enqueue()
+
     }
 
-    /** Clears the server cached data, and stops playback */
-    private fun clearDB() {
+    private enum class NavigationDestination {
+        RETURN_TO_LIBRARY_CHOOSER,
+        RETURN_TO_SERVER_CHOOSER,
+        RETURN_TO_LOGIN,
+        RETURN_TO_USER_CHOOSER,
+        DO_NOT_NAVIGATE
+    }
+
+    /**
+     * Clears the server cached data, and navigates to reset the data on a chooser depending on the
+     * [navigateTo] provided
+     */
+    private fun clearDB(
+        navigateTo: NavigationDestination = DO_NOT_NAVIGATE,
+        clearDownloads: Boolean = true
+    ) {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             withContext(Dispatchers.IO) {
                 bookRepository.clear()

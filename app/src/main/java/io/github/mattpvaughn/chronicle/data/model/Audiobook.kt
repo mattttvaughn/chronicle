@@ -14,6 +14,8 @@ import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOU
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
 import io.github.mattpvaughn.chronicle.features.player.*
+import kotlin.time.minutes
+import kotlin.time.seconds
 
 @TypeConverters(ChapterListConverter::class)
 @Entity
@@ -45,8 +47,10 @@ data class Audiobook constructor(
     val viewedLeafCount: Long = 0L,
     /** The number of tracks in the book */
     val leafCount: Long = 0L,
+    /** The number of times the book has been listened to */
+    val viewCount: Long = 0L,
     /** Chapter metadata corresponding to m4b chapter metadata in the m4b files */
-    val chapters: List<Chapter> = emptyList()
+    val chapters: List<Chapter> = emptyList(),
 ) {
 
     companion object {
@@ -73,35 +77,35 @@ data class Audiobook constructor(
          * Merges updated local fields with a network copy of the book. Respects network metadata
          * as the authoritative source of truth with the follow exceptions:
          *
-         * Retains the following local fields if the local copy is more up to date: [lastViewedAt].
+         * Retains the following local fields only if the local copy is more recent: [lastViewedAt].
          * This is because even if the network copy is more up to date, retaining the most recent
          * [lastViewedAt] from the local copy is preferred.
          *
          * Always retain fields from local copy: [duration], [isCached], [favorited], [chapters],
-         * [source]. We retain [chapters] and [duration] because they can be calculated only when
-         * all child [MediaItemTrack]'s of the Audiobook are loaded. We retain [duration], [source],
-         * and [isCached] because they are explicitly local values, they do not even exist on the
-         * server
-         *
-         * TODO: Alternate [merge]s depending on [MediaSource] may be necessary
+         * [source]. We retain [chapters], [duration], and [progress] because they can be calculated
+         * only when all child [MediaItemTrack]'s of the Audiobook are loaded. We retain [duration],
+         * [source], and [isCached] because they are explicitly local values, they do not even exist
+         * on the server.
          */
-        fun merge(network: Audiobook, local: Audiobook): Audiobook {
-            return if (network.lastViewedAt > local.lastViewedAt) {
+        fun merge(network: Audiobook, local: Audiobook, forceNetwork: Boolean = false): Audiobook {
+            return if (network.lastViewedAt > local.lastViewedAt || forceNetwork) {
                 network.copy(
                     duration = local.duration,
+                    progress = local.progress,
                     isCached = local.isCached,
                     favorited = local.favorited,
                     chapters = local.chapters,
-                    source = local.source
+                    source = local.source,
                 )
             } else {
                 network.copy(
                     duration = local.duration,
+                    progress = local.progress,
                     source = local.source,
                     isCached = local.isCached,
                     lastViewedAt = local.lastViewedAt,
                     favorited = local.favorited,
-                    chapters = local.chapters
+                    chapters = local.chapters,
                 )
             }
         }
@@ -171,6 +175,11 @@ fun Audiobook.toMediaItem(mediaSource: MediaSource?): MediaBrowserCompat.MediaIt
     return MediaBrowserCompat.MediaItem(mediaDescription.build(), FLAG_PLAYABLE)
 }
 
+fun Audiobook.isCompleted(): Boolean {
+    return progress < 10.seconds.inMilliseconds || progress > (duration - 2.minutes.inMilliseconds)
+}
+
 const val NO_AUDIOBOOK_FOUND_ID = -22321
 const val NO_AUDIOBOOK_FOUND_TITLE = "No audiobook found"
 val EMPTY_AUDIOBOOK = Audiobook(NO_AUDIOBOOK_FOUND_ID, NO_SOURCE_FOUND, NO_AUDIOBOOK_FOUND_TITLE)
+

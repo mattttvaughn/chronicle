@@ -1,19 +1,17 @@
 {
-  "version": 1,
+  "version": 2,
   "artifactType": {
     "type": "APK",
     "kind": "Directory"
   },
   "applicationId": "io.github.mattpvaughn.chronicle",
-  "variantName": "release",
+  "variantName": "processReleaseResources",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
-      "properties": [],
-      "versionCode": 18,
-      "versionName": "0.50.0",
-      "enabled": true,
+      "versionCode": 21,
+      "versionName": "0.45.1",
       "outputFile": "app-release.apk"
     }
   ]

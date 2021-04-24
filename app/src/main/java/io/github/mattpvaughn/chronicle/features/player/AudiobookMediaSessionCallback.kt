@@ -11,10 +11,12 @@ import android.view.KeyEvent.*
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
+import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
-import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
@@ -22,18 +24,17 @@ import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.demo.DemoMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
+import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_TRACK_OFFSET
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_SAVED_TRACK_PROGRESS
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import timber.log.Timber
 import javax.inject.Inject
 
+@ExperimentalCoroutinesApi
 @ServiceScope
 class AudiobookMediaSessionCallback @Inject constructor(
     private val prefsRepo: PrefsRepo,
@@ -48,6 +49,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val sourceManager: SourceManager,
     private val sourceController: SourceController,
     private val appContext: Context,
+    private val currentlyPlaying: CurrentlyPlaying,
     defaultPlayer: SimpleExoPlayer
 ) : MediaSessionCompat.Callback() {
 
@@ -170,7 +172,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
 
     override fun onSeekTo(pos: Long) {
         Timber.i("Seeking to: ${DateUtils.formatElapsedTime(pos)}")
-        currentPlayer.seekTo(trackListStateManager.currentTrackIndex, pos)
+        currentPlayer.seekTo(pos)
     }
 
     override fun onCustomAction(action: String?, extras: Bundle?) {
@@ -213,22 +215,26 @@ class AudiobookMediaSessionCallback @Inject constructor(
 
     private fun playBook(bookId: String, extras: Bundle, playWhenReady: Boolean) {
         // The [MediaItemTrack.id] of the track to be played, either a unique non-negative ID from
-        // the DB, or ACTIVE_TRACK, indicating to use the most recently listened track in [bookId],
-        // or TRACK_NOT_FOUND if no track has been provided
-        val startingTrackId = extras.getLong(KEY_SEEK_TO_TRACK_WITH_ID, TRACK_NOT_FOUND.toLong())
-        check(startingTrackId != TRACK_NOT_FOUND.toLong()) { "No track id provided!" }
+        // the DB, or default to ACTIVE_TRACK, the most recently listened track in [bookId]
+        val startingTrackId = extras.getLong(KEY_SEEK_TO_TRACK_WITH_ID, ACTIVE_TRACK)
 
-        // If non-negative, an offset in terms of milliseconds from start of [startingTrackId]
-        // If [USE_SAVED_TRACK_PROGRESS], the current progress of track with
-        // [MediaItemTrack.id] == startingTrackId in the local DB
+        // [startTimeOffsetMillis] is an offset in milliseconds from start of the track where
+        // [MediaItemTrack.id] == [startingTrackId] from the local repo
+        //
+        // Default to [USE_SAVED_TRACK_PROGRESS], which uses the current progress of track where
+        // [MediaItemTrack.id] == [startingTrackId] in the local repo
         val startTimeOffsetMillis =
             extras.getLong(KEY_START_TIME_TRACK_OFFSET, USE_SAVED_TRACK_PROGRESS)
 
         check(bookId != EMPTY_AUDIOBOOK.id.toString()) { "Attempted to play empty audiobook" }
 
-        val readableTrackId = if (startingTrackId == ACTIVE_TRACK) "ACTIVE_TRACK" else startingTrackId
-        val readableOffset = startTimeOffsetMillis.takeIf { it != USE_SAVED_TRACK_PROGRESS} ?: "USE_SAVED_TRACK_PROGRESS"
-        Timber.i("Starting playback for book=$bookId track=$readableTrackId at offset $readableOffset")
+        if (BuildConfig.DEBUG) {
+            val debugTrackIdString =
+                if (startingTrackId == ACTIVE_TRACK) "ACTIVE_TRACK" else startingTrackId
+            val readableOffset = startTimeOffsetMillis.takeIf { it != USE_SAVED_TRACK_PROGRESS }
+                ?: "USE_SAVED_TRACK_PROGRESS"
+            Timber.i("Starting playback for book=$bookId track=$debugTrackIdString at offset $readableOffset")
+        }
         serviceScope.launch {
             val tracks = withContext(Dispatchers.IO) {
                 trackRepository.getTracksForAudiobookAsync(bookId.toInt())
@@ -249,6 +255,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
             }
 
             if (tracks.isNullOrEmpty()) {
+                handlePlayBookWithNoTracks(bookId, tracks, extras)
                 if (source is HttpMediaSource) {
                     TODO("Tracks null or empty")
                     handlePlayBookWithNoTracks(source, bookId, tracks, extras)
@@ -258,8 +265,9 @@ class AudiobookMediaSessionCallback @Inject constructor(
                 return@launch
             }
 
-            trackListStateManager.trackList = tracks
             Timber.i("Tracks: $tracks")
+
+            trackListStateManager.trackList = tracks
             val metadataList = buildPlaylist(tracks, source)
 
             check(startingTrackId != ACTIVE_TRACK || startingTrackId.toInt() !in tracks.map { it.id }) { "Track not found! " }
@@ -279,6 +287,14 @@ class AudiobookMediaSessionCallback @Inject constructor(
             }
             Timber.i("Starting at index: $startingTrackIndex, offset by $trueStartTimeOffsetMillis")
             trackListStateManager.updatePosition(startingTrackIndex, trueStartTimeOffsetMillis)
+
+            val book = withContext(Dispatchers.IO) {
+                return@withContext bookRepository.getAudiobookAsync(bookId.toInt())
+            }
+            if (book == null || book.id == NO_AUDIOBOOK_FOUND_ID) {
+                // Return if no book found- no reason to setup playback if there's no book
+                return@launch
+            }
 
             // Auto-rewind depending on last listened time for the book. Don't rewind if we're
             // starting a new chapter/track of a book
@@ -302,6 +318,12 @@ class AudiobookMediaSessionCallback @Inject constructor(
                 is ExoPlayer -> player.prepare(exoMediaSource)
                 else -> throw NoWhenBranchMatchedException("Unknown media player")
             }
+
+            currentlyPlaying.update(
+                book = book,
+                tracks = tracks,
+                track = startingTrack
+            )
 
             player.seekTo(
                 trackListStateManager.currentTrackIndex,

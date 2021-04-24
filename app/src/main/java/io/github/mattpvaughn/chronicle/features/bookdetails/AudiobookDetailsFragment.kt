@@ -1,15 +1,15 @@
 package io.github.mattpvaughn.chronicle.features.bookdetails
 
 import android.content.Context
+import android.graphics.drawable.AnimatedVectorDrawable
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
@@ -21,10 +21,12 @@ import io.github.mattpvaughn.chronicle.databinding.FragmentAudiobookDetailsBindi
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.observeEvent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import timber.log.Timber
 import javax.inject.Inject
 
 
+@ExperimentalCoroutinesApi
 class AudiobookDetailsFragment : Fragment() {
 
     companion object {
@@ -32,6 +34,7 @@ class AudiobookDetailsFragment : Fragment() {
         const val TAG = "details tag"
         const val ARG_AUDIOBOOK_ID = "audiobook_id"
         const val ARG_AUDIOBOOK_SOURCE_ID = "audiobook_source_id"
+        const val ARG_AUDIOBOOK_TITLE = "ARG_AUDIOBOOK_TITLE"
         const val ARG_IS_AUDIOBOOK_CACHED = "is_audiobook_cached"
     }
 
@@ -56,6 +59,8 @@ class AudiobookDetailsFragment : Fragment() {
     @Inject
     lateinit var viewModelFactory: AudiobookDetailsViewModel.Factory
 
+    lateinit var viewModel: AudiobookDetailsViewModel
+
     override fun onAttach(context: Context) {
         (requireActivity() as MainActivity).activityComponent!!.inject(this)
         Timber.i("AudiobookDetailsFragment onAttach()")
@@ -72,6 +77,7 @@ class AudiobookDetailsFragment : Fragment() {
 
         val inputId = requireArguments().getInt(ARG_AUDIOBOOK_ID)
         val sourceId = requireArguments().getLong(ARG_AUDIOBOOK_SOURCE_ID)
+        val bookTitle = requireArguments().getString(ARG_AUDIOBOOK_TITLE) ?: ""
         val inputCached = requireArguments().getBoolean(ARG_IS_AUDIOBOOK_CACHED)
 
         val mediaSource = sourceManager.getSourceById(sourceId)
@@ -80,7 +86,8 @@ class AudiobookDetailsFragment : Fragment() {
 
         viewModelFactory.inputAudiobook = Audiobook(
             id = inputId,
-            source = sourceId,
+            title = bookTitle,
+            source = MediaSource.NO_SOURCE_FOUND,
             isCached = inputCached
         )
         val viewModel =
@@ -126,6 +133,14 @@ class AudiobookDetailsFragment : Fragment() {
 //                    viewModel.pausePlayButtonClicked()
 //                    true
 //                }
+                R.id.toggle_watched -> {
+                    viewModel.toggleWatched()
+                    true
+                }
+                R.id.force_sync -> {
+                    viewModel.forceSyncBook(hasUserConfirmation = false)
+                    true
+                }
                 else -> super.onOptionsItemSelected(it)
             }
         }
@@ -135,9 +150,25 @@ class AudiobookDetailsFragment : Fragment() {
         }
 
         viewModel.messageForUser.observeEvent(viewLifecycleOwner) { message ->
-            Toast.makeText(context, message, LENGTH_SHORT).show()
+            Toast.makeText(context, message.format(resources), LENGTH_SHORT).show()
         }
 
+        viewModel.activeChapter.observe(viewLifecycleOwner) { chapter ->
+            Timber.i("Updating current chapter: (${chapter.trackId}, ${chapter.discNumber}, ${chapter.index})")
+            adapter.updateCurrentChapter(
+                trackId = chapter.trackId,
+                discNumber = chapter.discNumber,
+                chapterIndex = chapter.index
+            )
+        }
+
+        viewModel.forceSyncInProgress.observe(viewLifecycleOwner) { isSyncing ->
+            val syncMenuItem = binding.detailsToolbar.menu.findItem(R.id.force_sync)
+            val syncIcon = syncMenuItem.icon
+            if (syncIcon is AnimatedVectorDrawable) {
+                if (isSyncing) syncIcon.start() else syncIcon.stop()
+            }
+        }
         return binding.root
     }
 
@@ -146,4 +177,7 @@ class AudiobookDetailsFragment : Fragment() {
         setHasOptionsMenu(true)
     }
 
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.audiobook_details_menu, menu)
+    }
 }

@@ -146,11 +146,217 @@
                 android:elevation="1dp"
                 tools:layout="@layout/view_bottom_sheet_chooser" />
 
-            <include
-                android:id="@+id/filter_include"
-                layout="@layout/view_filter"
-                bind:viewModel="@{viewModel}" />
+            <!-- TODO: figure out how to <include /> with databinding -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/filter_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                android:clickable="true"
+                android:padding="@dimen/screen_horizontal_padding"
+                app:behavior_fitToContents="true"
+                app:behavior_hideable="true"
+                app:behavior_skipCollapsed="true"
+                app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+                tools:ignore="KeyboardInaccessibleWidget">
 
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/filter_title"
+                    style="@style/TextAppearance.SectionHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/filter"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/done_filtering"
+                    style="@style/TextAppearance.Body2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:onClick="@{() -> viewModel.setFilterMenuVisible(false)}"
+                    android:text="@string/done_filtering"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <LinearLayout
+                    android:id="@+id/sort_by_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:contentDescription="@{viewModel.isSortDescending() ? @string/toggle_library_sort_ascending : @string/toggle_library_sort_descending}"
+                    android:focusable="true"
+                    android:onClick="@{() -> viewModel.toggleSortDirection()}"
+                    android:orientation="horizontal"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/filter_title">
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/sort_by"
+                        style="@style/TextAppearance.Body1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:paddingTop="@dimen/margin_normal"
+                        android:paddingBottom="@dimen/margin_normal"
+                        android:text="@string/sort_by" />
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_margin="@dimen/spacing_normal"
+                        android:rotationX="@{viewModel.isSortDescending() ? 0 : 180}"
+                        android:src="@drawable/ic_arrow_trending_down_white"
+                        android:tint="@color/icon" />
+
+                </LinearLayout>
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/sort_by_options"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/sort_by_container">
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/key_sort_by_title"
+                        android:text="@string/sort_by_title" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/key_sort_by_author"
+                        android:text="@string/sort_by_author" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/key_sort_by_duration"
+                        android:text="@string/sort_by_duration" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/key_sort_by_date_added"
+                        android:text="@string/sort_by_date_added" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/key_sort_by_date_played"
+                        android:text="@string/sort_by_date_played" />
+
+                    <!--                    <com.google.android.material.chip.Chip-->
+                    <!--                        android:layout_width="wrap_content"-->
+                    <!--                        android:layout_height="wrap_content"-->
+                    <!--                        android:tag="@string/key_sort_by_rating"-->
+                    <!--                        android:text="@string/sort_by_rating" />-->
+
+                    <!--                    <com.google.android.material.chip.Chip -->
+                    <!--                        android:layout_width="wrap_content"-->
+                    <!--                        android:layout_height="wrap_content"-->
+                    <!--                        android:tag="@string/key_sort_by_plays"-->
+                    <!--                        android:text="@string/sort_by_plays" />-->
+
+                </com.google.android.material.chip.ChipGroup>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/view_style_title"
+                    style="@style/TextAppearance.Body1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:paddingTop="@dimen/margin_normal"
+                    android:paddingBottom="@dimen/margin_normal"
+                    android:text="@string/view_style"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/sort_by_options" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/view_styles"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/view_style_title">
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/key_view_style_cover_grid"
+                        android:text="@string/view_style_book_cover" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/key_view_style_details"
+                        android:text="@string/view_style_cover_and_text_list" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/key_view_style_text_only"
+                        android:text="@string/view_style_text_list" />
+
+                </com.google.android.material.chip.ChipGroup>
+
+
+                <!-- TODO: add view by folder, view by author, etc.-->
+                <!--                <androidx.appcompat.widget.AppCompatTextView-->
+                <!--                    android:id="@+id/view_by"-->
+                <!--                    style="@style/TextAppearance.Body1"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:paddingTop="@dimen/margin_normal"-->
+                <!--                    android:paddingBottom="@dimen/margin_normal"-->
+                <!--                    android:text="@string/view_by"-->
+                <!--                    app:layout_constraintLeft_toLeftOf="parent"-->
+                <!--                    app:layout_constraintTop_toBottomOf="@id/sort_by_options" />-->
+
+                <!--                <com.google.android.material.chip.ChipGroup-->
+                <!--                    android:id="@+id/view_by_options"-->
+                <!--                    android:layout_width="0dp"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    app:itemSpacing="@dimen/margin_small"-->
+                <!--                    app:layout_constraintLeft_toLeftOf="parent"-->
+                <!--                    app:layout_constraintRight_toRightOf="parent"-->
+                <!--                    app:layout_constraintTop_toBottomOf="@id/view_by"-->
+                <!--                    app:lineSpacing="@dimen/margin_small">-->
+
+                <!--                    <com.google.android.material.chip.Chip -->
+                <!--                        android:layout_width="wrap_content"-->
+                <!--                        android:layout_height="wrap_content"-->
+                <!--                        android:tag="@string/key_view_by_book"-->
+                <!--                        android:text="@string/view_by_book" />-->
+
+                <!--                    <com.google.android.material.chip.Chip -->
+                <!--                        android:layout_width="wrap_content"-->
+                <!--                        android:layout_height="wrap_content"-->
+                <!--                        android:tag="@string/key_view_by_author"-->
+                <!--                        android:text="@string/view_by_author" />-->
+
+                <!--                    <com.google.android.material.chip.Chip -->
+                <!--                        android:layout_width="wrap_content"-->
+                <!--                        android:layout_height="wrap_content"-->
+                <!--                        android:tag="@string/key_view_by_folder"-->
+                <!--                        android:text="@string/view_by_folder" />-->
+
+                <!--                    <com.google.android.material.chip.Chip -->
+                <!--                        android:layout_width="wrap_content"-->
+                <!--                        android:layout_height="wrap_content"-->
+                <!--                        android:tag="@string/key_view_by_collection"-->
+                <!--                        android:text="@string/view_by_collection" />-->
+
+                <!--                </com.google.android.material.chip.ChipGroup-->
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </LinearLayout>
 </layout>

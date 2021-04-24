@@ -64,6 +64,7 @@ class HomeViewModel(
                  */
                 recents?.filter { it.isCached }
             } else {
+                Timber.i("Recently listened: $recents")
                 recents
             } ?: emptyList()
         }
@@ -128,10 +129,6 @@ class HomeViewModel(
         Timber.i("HomeViewModel init")
         sourceManager.connectedSourceIds.observeForever(serverConnectionObserver)
         prefsRepo.registerPrefsListener(offlineModeListener)
-
-        viewModelScope.launch {
-            cachedFileManager.refreshTrackDownloadedStatus()
-        }
     }
 
     override fun onCleared() {
