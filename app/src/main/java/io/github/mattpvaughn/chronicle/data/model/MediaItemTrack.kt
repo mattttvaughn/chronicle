@@ -2,7 +2,6 @@ package io.github.mattpvaughn.chronicle.data.model
 
 import android.support.v4.media.MediaMetadataCompat
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
@@ -32,7 +31,7 @@ data class MediaItemTrack(
     val duration: Long = 0L,
     /**
      * For network sources: Relative path to the media file, like "/library/parts/[id]/SOME_NUMBER/file.mp3"
-     * For local sources: Absolute path to the media file
+     * For local sources: Uri pointing to the media file
      */
     val media: String = "",
     val album: String = "",
@@ -247,12 +246,6 @@ fun MediaItemTrack.asChapter(startOffset: Long): Chapter {
         downloaded = cached,
         trackId = id.toLong()
     )
-}
-
-// Produces an ID unique to a track and source
-// TODO: after merging multiple sources branch: make this a hash of source and track id
-fun MediaItemTrack.uniqueId(): Int {
-    return id
 }
 
 val EMPTY_TRACK = MediaItemTrack(id = TRACK_NOT_FOUND)

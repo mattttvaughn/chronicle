@@ -21,6 +21,7 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRA
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
@@ -37,6 +38,7 @@ import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -86,13 +88,17 @@ class CurrentlyPlayingViewModel(
     val showUserMessage: LiveData<Event<String>>
         get() = _showUserMessage
 
-    private var audiobookId = MutableLiveData(EMPTY_AUDIOBOOK.id)
+    // Placeholder til we figure out AssistedInject
+    private val inputAudiobookId = EMPTY_AUDIOBOOK.id
+
+    private var audiobookId = MutableLiveData<Int>()
+    private var sourceId = MutableStateFlow(MediaSource.NO_SOURCE_FOUND)
 
     val audiobook: LiveData<Audiobook?> = Transformations.switchMap(audiobookId) { id ->
         if (id == EMPTY_AUDIOBOOK.id) {
             emptyAudiobook
         } else {
-            bookRepository.getAudiobook(id)
+            bookRepository.getAudiobook(id, sourceId.value)
         }
     }
 
@@ -104,7 +110,7 @@ class CurrentlyPlayingViewModel(
         if (id == EMPTY_AUDIOBOOK.id) {
             emptyTrackList
         } else {
-            trackRepository.getTracksForAudiobook(id)
+            trackRepository.getTracksForAudiobook(id, sourceId.value)
         }
     }
 
@@ -288,7 +294,7 @@ class CurrentlyPlayingViewModel(
                     _isLoadingTracks.value = true
                 }
                 val book = withContext(Dispatchers.IO) {
-                    bookRepository.getAudiobookAsync(bookId)
+                    bookRepository.getAudiobookAsync(bookId, sourceId.value)
                 } ?: return@launch
                 val source = sourceManager.getSourceById(book.source)
                 // No need to refresh track progress if source isn't remote

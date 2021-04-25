@@ -70,7 +70,7 @@ class FakeTrackRepository @Inject constructor() : ITrackRepository {
 
     override suspend fun uncacheAll() {}
 
-    override suspend fun refreshData(): List<Result<Unit>> {
+    override suspend fun upsert(): List<Result<Unit>> {
         TODO("Not yet implemented")
     }
 

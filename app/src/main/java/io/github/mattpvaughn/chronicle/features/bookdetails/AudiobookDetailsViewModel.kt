@@ -103,6 +103,7 @@ class AudiobookDetailsViewModel(
             if (_audiobook?.chapters?.isNotEmpty() == true) {
                 _audiobook.chapters
             } else {
+                Timber.i("Chapters: $_tracksAsChapters")
                 _tracksAsChapters ?: emptyList()
             }
         }
@@ -145,16 +146,34 @@ class AudiobookDetailsViewModel(
         }
     }
 
-    private val activeBook = currentlyPlaying.book.asLiveData(viewModelScope.coroutineContext)
+    /**
+     * The title of the book currently playing, as agreed upon by [MediaServiceConnection.nowPlaying]
+     * and [audiobook].
+     *
+     * If the titles do not match, or either is null, return [NO_AUDIOBOOK_FOUND_TITLE]
+     */
+    private val currentlyPlayingBookTitle =
+        DoubleLiveData<MediaMetadataCompat, Audiobook?, String>(
+            mediaServiceConnection.nowPlaying,
+            audiobook
+        ) { currentlyPlaying, currentBook ->
+            return@DoubleLiveData if (currentlyPlaying?.displayTitle != null && currentlyPlaying.displayTitle == currentBook?.title) {
+                currentlyPlaying.displayTitle ?: NO_AUDIOBOOK_FOUND_TITLE
+            } else {
+                NO_AUDIOBOOK_FOUND_TITLE
+            }
+        }
 
     /** Whether the book in the current view is also the same on in the [MediaController] */
-    private val isBookInViewActive = DoubleLiveData<Audiobook, Audiobook?, Boolean>(
-        activeBook,
-        audiobook
-    ) { activeBook, currentBook ->
-        return@DoubleLiveData activeBook?.id == currentBook?.id
-                && activeBook?.id != null
-    }
+    private val isBookInViewActive =
+        DoubleLiveData<String, PlaybackStateCompat, Boolean>(
+            currentlyPlayingBookTitle,
+            mediaServiceConnection.playbackState
+        ) { _, currState ->
+            return@DoubleLiveData currentlyPlayingBookTitle.value != NO_AUDIOBOOK_FOUND_TITLE
+                    && currState?.state != STATE_NONE
+                    && currState?.state != PlaybackStateCompat.STATE_ERROR
+        }
 
     /** Whether the book in the current view is playing */
     val isBookInViewPlaying =
@@ -229,7 +248,7 @@ class AudiobookDetailsViewModel(
     private val networkObserver = Observer<ConnectionState> { connection ->
         if (connection == ConnectionState.CONNECTED) {
             if (mediaSource is HttpMediaSource) {
-                loadBookDetails(bookId = inputAudiobook.id)
+                updateBookDetails(mediaSource, inputAudiobook.id)
             }
         }
     }

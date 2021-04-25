@@ -14,8 +14,6 @@ import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOU
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
 import io.github.mattpvaughn.chronicle.features.player.*
-import kotlin.time.minutes
-import kotlin.time.seconds
 
 @TypeConverters(ChapterListConverter::class)
 @Entity
@@ -178,15 +176,6 @@ fun Audiobook.toMediaItem(mediaSource: MediaSource?): MediaBrowserCompat.MediaIt
     return MediaBrowserCompat.MediaItem(mediaDescription.build(), FLAG_PLAYABLE)
 }
 
-fun Audiobook.isCompleted(): Boolean {
-    return progress < 10.seconds.inMilliseconds || progress > (duration - 2.minutes.inMilliseconds)
-}
-
 const val NO_AUDIOBOOK_FOUND_ID = -22321
 const val NO_AUDIOBOOK_FOUND_TITLE = "No audiobook found"
-val EMPTY_AUDIOBOOK = Audiobook(
-    source = NO_SOURCE_FOUND,
-    title = NO_AUDIOBOOK_FOUND_TITLE,
-    id = NO_AUDIOBOOK_FOUND_ID
-)
-
+val EMPTY_AUDIOBOOK = Audiobook(NO_AUDIOBOOK_FOUND_ID, NO_SOURCE_FOUND, NO_AUDIOBOOK_FOUND_TITLE)

@@ -20,6 +20,7 @@ import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.demo.DemoMediaSource
+import io.github.mattpvaughn.chronicle.data.sources.local.LocalMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
@@ -298,6 +299,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
             val exoMediaSource = when (source) {
                 is HttpMediaSource -> metadataList.toMediaSource(source.dataSourceFactory)
                 is DemoMediaSource -> metadataList.toMediaSource(source.dataSourceFactory)
+                is LocalMediaSource -> metadataList.toMediaSource(source.dataSourceFactory)
                 else -> throw NoWhenBranchMatchedException("Unknown media source type")
             }
             val player = currentPlayer

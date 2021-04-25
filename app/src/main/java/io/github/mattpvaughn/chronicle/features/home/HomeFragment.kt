@@ -70,7 +70,7 @@ class HomeFragment : Fragment() {
         })
 
         binding.swipeToRefresh.setOnRefreshListener {
-            viewModel.refreshData()
+            viewModel.refreshData(true)
         }
 
         viewModel.isRefreshing.observe(viewLifecycleOwner, Observer {

@@ -33,7 +33,7 @@ import javax.inject.Inject
 @ActivityScope
 class Navigator @Inject constructor(
     private val fragmentManager: FragmentManager,
-    activity: AppCompatActivity
+    private val activity: AppCompatActivity
 ) {
 
     fun showLogin() {

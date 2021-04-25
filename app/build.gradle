@@ -98,7 +98,7 @@ dependencies {
     // Retrofit
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.squareup.retrofit2:converter-moshi:$retrofitVersion"
-    implementation("com.squareup.moshi:moshi-kotlin:$moshiKotlinVersion")
+    implementation "com.squareup.moshi:moshi-kotlin:$moshiKotlinVersion"
     kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshiKotlinVersion"
 
     // Kotlin coroutines
@@ -138,7 +138,6 @@ dependencies {
         // exclude okhttp import in favor of our own import
         exclude group: "com.squareup.okhttp:"
     }
-
 
     // Coil - image loading
     implementation "io.coil-kt:coil:$coilVersion"

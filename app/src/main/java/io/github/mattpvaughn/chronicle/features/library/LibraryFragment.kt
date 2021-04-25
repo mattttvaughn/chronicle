@@ -155,7 +155,7 @@ class LibraryFragment : Fragment() {
         })
 
         binding.swipeToRefresh.setOnRefreshListener {
-            viewModel.refreshData()
+            viewModel.refreshData(forceSync = true)
         }
 
         viewModel.isRefreshing.observe(viewLifecycleOwner) {

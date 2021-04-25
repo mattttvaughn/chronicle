@@ -2,62 +2,49 @@ package io.github.mattpvaughn.chronicle.data.sources.local
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
-import android.net.Uri
-import androidx.core.net.toUri
 import java.util.*
-import javax.inject.Inject
 
 /** A interface for Plex exclusive preferences */
 interface LocalLibraryPrefs {
+    /** Root location of the library  */
+    var root: String
 
-    /** Name identifying the library */
+    /** Library name */
     var name: String
-
-    /** The root directory of the library */
-    var root: Uri?
 
     /** Clear all preferences which are handled by PrefsRepo */
     fun clear()
 }
 
 /** An implementation of [PlexPrefsRepo] wrapping [SharedPreferences]. */
-class SharedPreferencesLocalLibrary @Inject constructor(
-    private val prefs: SharedPreferences,
+class SharedPreferencesLocalLibrary(
+    localMediaSource: LocalMediaSource
 ) : LocalLibraryPrefs {
 
+    val prefs = localMediaSource.prefs()
+
     private companion object {
-        const val PREFS_NAME = "name"
-        const val PREFS_ROOT_DIRECTORY = "root_directory"
-        const val NO_TEMP_ID_FOUND = -1L
+        const val PREFS_ROOT_KEY = "root"
+        const val PREFS_NAME_KEY = "name"
     }
 
-    override fun clear() {
-        name = ""
-        root = null
-    }
+    override var root: String
+        get() = getString(PREFS_ROOT_KEY, "")
+        @SuppressLint("ApplySharedPref")
+        set(value) {
+            prefs.edit().putString(PREFS_ROOT_KEY, value).commit()
+        }
 
     override var name: String
+        get() = getString(PREFS_NAME_KEY, "")
         @SuppressLint("ApplySharedPref")
-        get() = getString(PREFS_NAME, "Local library")
         set(value) {
-            prefs.edit().putString(PREFS_NAME, value).commit()
+            prefs.edit().putString(PREFS_NAME_KEY, value).commit()
         }
 
-    override var root: Uri?
-        @SuppressLint("ApplySharedPref")
-        get() {
-            val rootPath = getString(PREFS_ROOT_DIRECTORY, "")
-            if (rootPath.isEmpty()) {
-                return null
-            }
-            return rootPath.toUri()
-        }
-        set(value) {
-            val path = value?.toString()
-            if (path != null) {
-                prefs.edit().putString(PREFS_ROOT_DIRECTORY, path).commit()
-            }
-        }
+    override fun clear() {
+        root = ""
+    }
 
     /**
      * Retrieve a string stored in shared preferences

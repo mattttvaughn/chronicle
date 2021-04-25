@@ -1,44 +1,33 @@
 package io.github.mattpvaughn.chronicle.data.local
 
-import io.github.mattpvaughn.chronicle.data.model.getProgress
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
+import androidx.work.BackoffPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
+import androidx.work.OneTimeWorkRequestBuilder
+import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.sources.SyncMediaWorker
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
 class DataManager {
 
     companion object {
-        suspend fun refreshData(
-            bookRepository: IBookRepository,
-            trackRepository: ITrackRepository
-        ): String? {
-            val result = try {
-                val bookResults = bookRepository.refreshData()
-                val trackResults = trackRepository.refreshData()
-                val allResults = bookResults.union(trackResults)
-                val failures =
-                    allResults.filter { it.isFailure }.map { it.exceptionOrNull()?.message ?: "" }
-                return if (failures.isNotEmpty()) {
-                    "Failed to load (${failures.size}/${allResults.size}): $failures"
-                } else {
-                    null
-                }
-            } catch (e: Throwable) {
-                e.message
-            }
-
-            val audiobooks = bookRepository.getAllBooksAsync()
-            val tracks = trackRepository.getAllTracksAsync()
-            audiobooks.forEach { book ->
-                val tracksInAudiobook = tracks.filter { it.parentServerId == book.id }
-                Timber.i("Book progress: ${tracksInAudiobook.getProgress()}")
-                bookRepository.updateTrackData(
-                    bookId = book.id,
-                    bookProgress = tracksInAudiobook.getProgress(),
-                    bookDuration = tracksInAudiobook.getDuration(),
-                    trackCount = tracksInAudiobook.size
+        fun refreshData(forceSync: Boolean = false) {
+            Timber.i("Refreshing data!")
+            val workManager = Injector.get().workManager()
+            val worker = OneTimeWorkRequestBuilder<SyncMediaWorker>()
+                .setInputData(SyncMediaWorker.makeData(forceSync))
+                .setBackoffCriteria(
+                    BackoffPolicy.LINEAR,
+                    OneTimeWorkRequest.DEFAULT_BACKOFF_DELAY_MILLIS,
+                    TimeUnit.MILLISECONDS
                 )
-            }
-            return result
+                .build()
+            workManager
+                .beginUniqueWork(SYNC_MEDIA_ID, ExistingWorkPolicy.KEEP, worker)
+                .enqueue()
         }
+
+        const val SYNC_MEDIA_ID = "DataManager.SYNC_MEDIA_ID"
     }
 }

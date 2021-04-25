@@ -9,7 +9,6 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType.Companion.ARTIST
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.asLibrary
 import io.github.mattpvaughn.chronicle.navigation.Navigator
-import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.InternalCoroutinesApi

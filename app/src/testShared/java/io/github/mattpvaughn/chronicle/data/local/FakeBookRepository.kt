@@ -39,7 +39,7 @@ class FakeBookRepository @Inject constructor() : IBookRepository {
         TODO("Not yet implemented")
     }
 
-    override fun getAudiobook(id: Int): LiveData<Audiobook?> {
+    override fun getAudiobook(bookId: Int): LiveData<Audiobook?> {
         TODO("Not yet implemented")
     }
 
@@ -98,7 +98,7 @@ class FakeBookRepository @Inject constructor() : IBookRepository {
         TODO("Not yet implemented")
     }
 
-    override suspend fun refreshData() {
+    override suspend fun upsert() {
         TODO("Not yet implemented")
     }
 

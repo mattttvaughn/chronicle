@@ -282,15 +282,8 @@ class LibraryViewModel(
      * TODO: maybe refresh data in the repository whenever a query is made? repeating code b/w
      *       here and [HomeViewModel]
      */
-    fun refreshData() {
-        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            _isRefreshing.postValue(true)
-            val failureMessage = DataManager.refreshData(bookRepository, trackRepository)
-            if (!failureMessage.isNullOrEmpty()) {
-                _messageForUser.postEvent(failureMessage)
-            }
-            _isRefreshing.postValue(false)
-        }
+    fun refreshData(forceSync: Boolean = false) {
+        DataManager.refreshData(forceSync)
     }
 
     /** Shows/hides the filter/sort/view menu to the user. Show if [isVisible] is true, hide otherwise */

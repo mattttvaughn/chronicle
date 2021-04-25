@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.FileDataSource
+import com.google.android.exoplayer2.util.Util
 import io.github.mattpvaughn.chronicle.CoroutineDispatchers
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.ChronicleApplication
@@ -36,6 +37,7 @@ class LocalMediaSource(
     override val icon: Int
         get() = R.drawable.ic_folder_white
 
+    private val playerInfo = Util.getUserAgent(application.applicationContext, "ExoPlayerInfo")
     override val dataSourceFactory: DefaultDataSourceFactory
         get() = DefaultDataSourceFactory(application.applicationContext) {
             FileDataSource()

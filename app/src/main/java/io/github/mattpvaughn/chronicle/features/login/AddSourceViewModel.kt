@@ -8,6 +8,7 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.sources.MediaSourceFactory
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.demo.DemoMediaSource
+import io.github.mattpvaughn.chronicle.data.sources.local.LocalMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.OAuthResponse
 import io.github.mattpvaughn.chronicle.navigation.Navigator
@@ -15,6 +16,7 @@ import io.github.mattpvaughn.chronicle.util.BooleanPreferenceLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 import kotlin.time.ExperimentalTime
 
@@ -92,6 +94,19 @@ class AddSourceViewModel(
         )
         sourceManager.addSource(demoMediaSource)
         demoMediaSource.setup(navigator)
+    }
+
+    fun addLocalLibrary(uri: Uri) {
+        // yee haw
+        Timber.i("Yee haw: $uri")
+        val library = LocalMediaSource(
+            id = sourceManager.generateUniqueId(),
+            application = Injector.get().application(),
+        )
+        library.setRoot(uri)
+        sourceManager.addSource(library)
+
+        navigator.showSourcesManager()
     }
 
     fun checkForAccess() {

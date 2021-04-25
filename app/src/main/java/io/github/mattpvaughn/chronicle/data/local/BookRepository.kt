@@ -4,8 +4,6 @@ import androidx.lifecycle.LiveData
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
-import io.github.mattpvaughn.chronicle.data.sources.SourceManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -22,7 +20,11 @@ interface IBookRepository {
     suspend fun getRandomBookAsync(): Audiobook
 
     /** Refreshes the data in the local database with elements from the network */
-    suspend fun refreshData(): List<Result<Unit>>
+    suspend fun upsert(
+        sourceId: Long,
+        updateBooks: List<Audiobook>,
+        isLocal: Boolean = false
+    )
 
     /** Returns the number of books in the repository */
     suspend fun getBookCount(): Int
@@ -40,10 +42,10 @@ interface IBookRepository {
 
     /**
      * Returns a [LiveData<Audiobook>] corresponding to an [Audiobook] with the [Audiobook.id]
-     * equal to [id]
+     * equal to [bookId]
      */
-    fun getAudiobook(id: Int): LiveData<Audiobook?>
-    suspend fun getAudiobookAsync(bookId: Int): Audiobook?
+    fun getAudiobook(bookId: Int, sourceId: Long): LiveData<Audiobook?>
+    suspend fun getAudiobookAsync(bookId: Int, sourceId: Long): Audiobook?
 
     /**
      * Returns the [getBookCount] most recently added books in the local database, ordered by most
@@ -132,13 +134,18 @@ interface IBookRepository {
 
     /** Removes all [Audiobook]s where [Audiobook.source] == [sourceId] */
     suspend fun removeWithSource(sourceId: Long)
+
+    /** Returns all audiobooks where [Audiobook.source] == [sourceId] */
+    suspend fun getAudiobooksForSourceAsync(
+        sourceId: Long,
+        isOfflineModeActive: Boolean
+    ): List<Audiobook>
 }
 
 @Singleton
 class BookRepository @Inject constructor(
     private val bookDao: BookDao,
-    private val prefsRepo: PrefsRepo,
-    private val sourceManager: SourceManager
+    private val prefsRepo: PrefsRepo
 ) : IBookRepository {
 
     /** TODO: observe prefsRepo.offlineMode? */
@@ -160,46 +167,45 @@ class BookRepository @Inject constructor(
     }
 
     @Throws(Throwable::class)
-    override suspend fun refreshData(): List<Result<Unit>> {
-        if (prefsRepo.offlineMode) {
-            return listOf(Result.success(Unit))
+    override suspend fun upsert(sourceId: Long, updateBooks: List<Audiobook>, isLocal: Boolean) {
+
+        val localBooks = withContext(Dispatchers.IO) {
+            bookDao.getAudiobooksForSourceAsync(sourceId, false)
+        }.associateBy { it.id }
+
+        val mergedBooks = updateBooks.map { book ->
+            val dbBook = if (isLocal) {
+                // Match book on filesystem to book in DB by title
+                localBooks.values.find { it.title == book.title }
+            } else {
+                localBooks[book.id]
+            }
+            val updateBook = if (isLocal && dbBook != null) {
+                book.copy(id = dbBook.id)
+            } else {
+                book
+            }
+            if (dbBook != null) {
+                // [Audiobook.merge] chooses fields depending on [Audiobook.lastViewedAt]
+                Audiobook.merge(network = updateBook, local = dbBook)
+            } else {
+                updateBook
+            }
         }
-        prefsRepo.lastRefreshTimeStamp = System.currentTimeMillis()
-        val queryResults: List<Pair<Long, Result<List<Audiobook>>>> = sourceManager.fetchBooks()
 
-        return queryResults.map { queryResult ->
-            val sourceId = queryResult.first
-            if (queryResult.second.isFailure) {
-                return@map Result.failure<Unit>(queryResult.second.exceptionOrNull() ?: Exception())
-            }
-            val localBooks = withContext(Dispatchers.IO) {
-                bookDao.getAudiobooksForSourceAsync(sourceId, false)
-            }
-            val networkBooks = queryResult.second.getOrNull() ?: emptyList()
+        Timber.i("Merged books: ${mergedBooks.map { it.title }}")
 
-            val mergedBooks = networkBooks.map { networkBook ->
-                val localBook = localBooks.find { it.id == networkBook.id }
-                if (localBook != null) {
-                    // [Audiobook.merge] chooses fields depending on [Audiobook.lastViewedAt]
-                    Audiobook.merge(network = networkBook, local = localBook)
-                } else {
-                    networkBook
-                }
-            }
+        // Remove books which have been deleted from the source
+        val networkIds = updateBooks.map { networkBook -> networkBook.id }.toSet()
+        val removedFromSource = localBooks.filterValues { localBook ->
+            localBook.id !in networkIds
+        }.values
 
-            // Remove books which have been deleted from the server
-            val networkIds = networkBooks.map { networkBook -> networkBook.id }
-            val removedFromNetwork = localBooks.filter { localBook ->
-                !networkIds.contains(localBook.id)
-            }
-
-            withContext(Dispatchers.IO) {
-                val removed = bookDao.removeAll(removedFromNetwork.map { it.id.toString() })
-                Timber.i("Removed $removed items from DB")
-                bookDao.insertAll(mergedBooks)
-                Timber.i("Loaded books: $mergedBooks")
-            }
-            return@map Result.success(Unit)
+        withContext(Dispatchers.IO) {
+            val removedCount = bookDao.removeAll(removedFromSource.map { it.id.toString() })
+            Timber.i("Removed $removedCount items from DB")
+            bookDao.insertAll(mergedBooks)
+            Timber.i("Loaded books: $mergedBooks")
         }
     }
 
@@ -220,8 +226,8 @@ class BookRepository @Inject constructor(
         }
     }
 
-    override fun getAudiobook(id: Int): LiveData<Audiobook?> {
-        return bookDao.getAudiobook(id, prefsRepo.offlineMode)
+    override fun getAudiobook(bookId: Int, sourceId: Long): LiveData<Audiobook?> {
+        return bookDao.getAudiobook(bookId, sourceId, prefsRepo.offlineMode)
     }
 
     override fun getRecentlyAdded(): LiveData<List<Audiobook>> {
@@ -299,13 +305,20 @@ class BookRepository @Inject constructor(
         }
     }
 
+    override suspend fun getAudiobooksForSourceAsync(
+        sourceId: Long,
+        isOfflineModeActive: Boolean
+    ): List<Audiobook> {
+        return bookDao.getAudiobooksForSourceAsync(sourceId, isOfflineModeActive)
+    }
+
     override suspend fun getMostRecentlyPlayed(): Audiobook {
         return bookDao.getMostRecent() ?: EMPTY_AUDIOBOOK
     }
 
-    override suspend fun getAudiobookAsync(bookId: Int): Audiobook? {
+    override suspend fun getAudiobookAsync(bookId: Int, sourceId: Long): Audiobook? {
         return withContext(Dispatchers.IO) {
-            bookDao.getAudiobookAsync(bookId)
+            bookDao.getAudiobookAsync(bookId, sourceId)
         }
     }
 

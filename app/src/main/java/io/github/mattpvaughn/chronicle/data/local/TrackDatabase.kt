@@ -18,13 +18,24 @@ fun getTrackDatabase(context: Context): TrackDatabase {
                 context.applicationContext,
                 TrackDatabase::class.java,
                 TRACK_DATABASE_NAME
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build()
+            ).addMigrations(
+                MIGRATION_1_2,
+                MIGRATION_2_3,
+                MIGRATION_3_4,
+                MIGRATION_4_5,
+                MIGRATION_5_6,
+            ).build()
         }
     }
     return INSTANCE
 }
 
-@Database(entities = [MediaItemTrack::class], version = 5, exportSchema = false)
+@Database(
+    entities = [MediaItemTrack::class],
+    version = 6,
+    autoMigrations = [],
+    exportSchema = true,
+)
 abstract class TrackDatabase : RoomDatabase() {
     abstract val trackDao: TrackDao
 }
@@ -53,6 +64,84 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            "CREATE TABLE `new_MediaItemTrack`" +
+                    "(`id` INTEGER NOT NULL," +
+                    "`parentKey` INTEGER NOT NULL," +
+                    "`title` TEXT NOT NULL," +
+                    "`playQueueItemID` INTEGER NOT NULL," +
+                    "`thumb` TEXT," +
+                    "`index` INTEGER NOT NULL," +
+                    "`discNumber` INTEGER NOT NULL," +
+                    "`duration` INTEGER NOT NULL," +
+                    "`media` TEXT NOT NULL," +
+                    "`album` TEXT NOT NULL," +
+                    "`artist` TEXT NOT NULL," +
+                    "`genre` TEXT NOT NULL," +
+                    "`cached` INTEGER NOT NULL," +
+                    "`artwork` TEXT," +
+                    "`viewCount` INTEGER NOT NULL," +
+                    "`progress` INTEGER NOT NULL," +
+                    "`lastViewedAt` INTEGER NOT NULL," +
+                    "`updatedAt` INTEGER NOT NULL," +
+                    "`size` INTEGER NOT NULL," +
+                    "`source` INTEGER NOT NULL," +
+                    "PRIMARY KEY(`id`,`source`) )"
+        )
+
+        database.execSQL(
+            "INSERT INTO new_MediaItemTrack" +
+                    "(`id`," +
+                    "`parentKey`," +
+                    "`title`," +
+                    "`playQueueItemID`," +
+                    "`thumb`," +
+                    "`index`," +
+                    "`discNumber`," +
+                    "`duration`," +
+                    "`media`," +
+                    "`album`," +
+                    "`artist`," +
+                    "`genre`," +
+                    "`cached`," +
+                    "`artwork`," +
+                    "`viewCount`," +
+                    "`progress`," +
+                    "`lastViewedAt`," +
+                    "`updatedAt`," +
+                    "`size`," +
+                    "`source`)" +
+                    " SELECT " +
+                    "`id`," +
+                    "`parentKey`," +
+                    "`title`," +
+                    "`playQueueItemID`," +
+                    "`thumb`," +
+                    "`index`," +
+                    "`discNumber`," +
+                    "`duration`," +
+                    "`media`," +
+                    "`album`," +
+                    "`artist`," +
+                    "`genre`," +
+                    "`cached`," +
+                    "`artwork`," +
+                    "`viewCount`," +
+                    "`progress`," +
+                    "`lastViewedAt`," +
+                    "`updatedAt`," +
+                    "`size`," +
+                    "`source`" +
+                    " FROM MediaItemTrack"
+        )
+
+        database.execSQL("DROP TABLE MediaItemTrack")
+        database.execSQL("ALTER TABLE new_MediaItemTrack RENAME TO MediaItemTrack")
+    }
+}
+
 @Dao
 interface TrackDao {
     @Query("SELECT * FROM MediaItemTrack")
@@ -62,7 +151,7 @@ interface TrackDao {
     suspend fun getAllTracksAsync(): List<MediaItemTrack>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(rows: List<MediaItemTrack>)
+    suspend fun insertAll(rows: List<MediaItemTrack>): List<Long>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun update(track: MediaItemTrack)
@@ -71,7 +160,7 @@ interface TrackDao {
     suspend fun getTrackAsync(id: Int): MediaItemTrack?
 
     @Query("SELECT * FROM MediaItemTrack WHERE source = :sourceId")
-    suspend fun getAllTracksInSource(sourceId: Long): List<MediaItemTrack>
+    suspend fun getAllTracksInSourceAsync(sourceId: Long): List<MediaItemTrack>
 
     @Query("SELECT * FROM MediaItemTrack WHERE parentServerId = :bookServerId AND cached >= :isOfflineMode ORDER BY `index` ASC")
     fun getTracksForAudiobook(

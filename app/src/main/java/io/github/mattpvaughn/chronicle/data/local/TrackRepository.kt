@@ -10,7 +10,6 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -83,7 +82,7 @@ interface ITrackRepository {
     suspend fun uncacheAll()
 
     /** Fetches all [MediaType.TRACK]s from the server, updates the local db */
-    suspend fun refreshData(): List<Result<Unit>>
+    suspend fun upsert(sourceId: Long, updateTracks: List<MediaItemTrack>)
 
     /** Removes all [MediaItemTrack] where [MediaItemTrack.source] == [sourceId] */
     suspend fun removeWithSource(sourceId: Long)
@@ -129,27 +128,13 @@ class TrackRepository @Inject constructor(
     private val sourceManager: SourceManager
 ) : ITrackRepository {
 
-    @Throws(Throwable::class)
-    override suspend fun refreshData(): List<Result<Unit>> {
-        if (prefsRepo.offlineMode) {
-            return listOf(Result.success(Unit))
-        }
-        return withContext(Dispatchers.IO) {
-            val queryResults = sourceManager.fetchTracks()
-
-            return@withContext queryResults.map { queryResult ->
-                if (queryResult.second.isFailure) {
-                    return@map Result.failure<Unit>(
-                        queryResult.second.exceptionOrNull() ?: Exception()
-                    )
-                }
-                val sourceId = queryResult.first
-                val localTracks = trackDao.getAllTracksInSource(sourceId)
-                val networkTracks = queryResult.second.getOrNull() ?: emptyList()
-                val merged = mergeNetworkTracks(networkTracks, localTracks)
-                trackDao.insertAll(merged)
-                return@map Result.success(Unit)
-            }
+    override suspend fun upsert(sourceId: Long, updateTracks: List<MediaItemTrack>) {
+        withContext(Dispatchers.IO) {
+            val localTracks = trackDao.getAllTracksInSourceAsync(sourceId)
+            val merged = mergeNetworkTracks(updateTracks, localTracks)
+            Timber.i("Merged: ${merged.map { it.title }}")
+            val changed = trackDao.insertAll(merged)
+            Timber.i("Changed: $changed")
         }
     }
 
@@ -324,45 +309,17 @@ class TrackRepository @Inject constructor(
      * using [MediaItemTrack.merge] to determine which version to keep
      */
     private fun mergeNetworkTracks(
-        networkTracks: List<MediaItemTrack>,
-        localTracks: List<MediaItemTrack>,
-        forcePreferNetwork: Boolean = false
+        sourceTracks: List<MediaItemTrack>,
+        localTracks: List<MediaItemTrack>
     ): List<MediaItemTrack> {
         val localTracksMap = localTracks.associateBy { it.id }
-        val localTrackIdentifiers = mutableSetOf<TrackIdentifier>()
-        localTracks.mapTo(localTrackIdentifiers) { TrackIdentifier.from(it) }
-        return networkTracks.map { networkTrack ->
-            val localTrack = localTracksMap[networkTrack.id]
+        return sourceTracks.map { sourceTrack ->
+            val localTrack = localTracksMap[sourceTrack.id]
             if (localTrack != null) {
-                Timber.i("Local track merge: $localTrack")
-                return@map MediaItemTrack.merge(
-                    network = networkTrack,
-                    local = localTrack,
-                    forceUseNetwork = forcePreferNetwork,
-                )
+                return@map MediaItemTrack.merge(network = sourceTrack, local = localTrack)
+            } else {
+                return@map sourceTrack
             }
-            val networkTrackIdentifier = TrackIdentifier.from(networkTrack)
-            // Check to see if a track has changed ID. Move the local file to represent
-            // the new track's ID
-            if (networkTrackIdentifier in localTrackIdentifiers) {
-                Timber.e("Moving disappeared track: ${networkTrack.title}")
-                val cachedTrack = localTracks.firstOrNull {
-                    networkTrackIdentifier.duration == it.duration
-                            && networkTrackIdentifier.parentId == it.parentServerId
-                            && networkTrackIdentifier.title == it.title
-                }
-                if (cachedTrack != null) {
-                    val cachedFile = File(prefsRepo.cachedMediaDir, cachedTrack.getCachedFileName())
-                    val newFileName =
-                        File(prefsRepo.cachedMediaDir, networkTrack.getCachedFileName())
-                    try {
-                        cachedFile.renameTo(newFileName)
-                    } catch (t: Throwable) {
-                        Timber.e("Failed to rename downloaded track: $t")
-                    }
-                }
-            }
-            return@map networkTrack
         }
     }
 }

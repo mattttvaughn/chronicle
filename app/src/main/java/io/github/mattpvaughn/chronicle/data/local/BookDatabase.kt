@@ -63,11 +63,90 @@ val BOOK_MIGRATION_5_6 = object : Migration(5, 6) {
 
 val BOOK_MIGRATION_6_7 = object : Migration(6, 7) {
     override fun migrate(database: SupportSQLiteDatabase) {
-        database.execSQL("ALTER TABLE Audiobook ADD COLUMN viewCount INTEGER NOT NULL DEFAULT 0")
+        database.execSQL(
+            "CREATE TABLE `new_Audiobook`" +
+                    "(`id` INTEGER NOT NULL," +
+                    "`source` INTEGER NOT NULL," +
+                    "`title` TEXT NOT NULL," +
+                    "`titleSort` TEXT NOT NULL," +
+                    "`author` TEXT NOT NULL," +
+                    "`thumb` TEXT NOT NULL," +
+                    "`parentId` INTEGER NOT NULL," +
+                    "`genre` TEXT NOT NULL," +
+                    "`summary` TEXT NOT NULL," +
+                    "`addedAt` INTEGER NOT NULL," +
+                    "`updatedAt` INTEGER NOT NULL," +
+                    "`lastViewedAt` INTEGER NOT NULL," +
+                    "`duration` INTEGER NOT NULL," +
+                    "`isCached` INTEGER NOT NULL," +
+                    "`progress` INTEGER NOT NULL," +
+                    "`favorited` INTEGER NOT NULL," +
+                    "`viewedLeafCount` INTEGER NOT NULL," +
+                    "`leafCount` INTEGER NOT NULL," +
+                    "`chapters` TEXT NOT NULL," +
+                    "PRIMARY KEY(`id`,`source`) )"
+        )
+
+        //insert data from old table into new table
+        database.execSQL(
+            "INSERT INTO new_Audiobook" +
+                    "(`id`," +
+                    "`source`," +
+                    "`title`," +
+                    "`titleSort`," +
+                    "`author`," +
+                    "`thumb`," +
+                    "`parentId`," +
+                    "`genre`," +
+                    "`summary`," +
+                    "`addedAt`," +
+                    "`updatedAt`," +
+                    "`lastViewedAt`," +
+                    "`duration`," +
+                    "`isCached`," +
+                    "`progress`," +
+                    "`favorited`," +
+                    "`viewedLeafCount`," +
+                    "`leafCount`," +
+                    "`chapters`)" +
+                    " SELECT " +
+                    "`id`," +
+                    "`source`," +
+                    "`title`," +
+                    "`titleSort`," +
+                    "`author`," +
+                    "`thumb`," +
+                    "`parentId`," +
+                    "`genre`," +
+                    "`summary`," +
+                    "`addedAt`," +
+                    "`updatedAt`," +
+                    "`lastViewedAt`," +
+                    "`duration`," +
+                    "`isCached`," +
+                    "`progress`," +
+                    "`favorited`," +
+                    "`viewedLeafCount`," +
+                    "`leafCount`," +
+                    "`chapters`" +
+                    " FROM Audiobook"
+        )
+
+        //drop old table
+        database.execSQL("DROP TABLE Audiobook")
+
+        //rename new table to the old table name
+        database.execSQL("ALTER TABLE new_Audiobook RENAME TO Audiobook")
     }
+
+    database.execSQL("ALTER TABLE Audiobook ADD COLUMN viewCount INTEGER NOT NULL DEFAULT 0")
 }
 
-@Database(entities = [Audiobook::class], version = 7, exportSchema = false)
+@Database(
+    entities = [Audiobook::class],
+    version = 7,
+    exportSchema = true,
+)
 abstract class BookDatabase : RoomDatabase() {
     abstract val bookDao: BookDao
 }
@@ -98,8 +177,11 @@ interface BookDao {
     @Query("SELECT * FROM Audiobook WHERE source= :sourceId AND isCached >= :isOfflineModeActive LIMIT 1")
     fun getAudiobooksForSourceAsync(sourceId: Long, isOfflineModeActive: Boolean): List<Audiobook>
 
-    @Query("SELECT * FROM Audiobook WHERE id = :id AND isCached >= :isOfflineModeActive LIMIT 1")
-    fun getAudiobook(id: Int, isOfflineModeActive: Boolean): LiveData<Audiobook?>
+    @Query("SELECT * FROM Audiobook WHERE id = :id AND source = :sourceId AND isCached >= :isOfflineModeActive LIMIT 1")
+    fun getAudiobook(
+        id: Int,
+        isOfflineModeActive: Boolean
+    ): LiveData<Audiobook?>
 
     @Query("SELECT * FROM Audiobook WHERE isCached >= :offlineModeActive ORDER BY addedAt DESC LIMIT :bookCount")
     fun getRecentlyAdded(bookCount: Int, offlineModeActive: Boolean): LiveData<List<Audiobook>>

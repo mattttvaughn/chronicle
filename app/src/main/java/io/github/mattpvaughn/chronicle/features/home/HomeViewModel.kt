@@ -13,7 +13,6 @@ import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.observeOnce
-import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -164,14 +163,7 @@ class HomeViewModel(
      * Update book info for fields where child tracks serve as source of truth, like how
      * [Audiobook.duration] serves as a delegate for [List<MediaItemTrack>.getDuration()]
      */
-    fun refreshData() {
-        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            _isRefreshing.postValue(true)
-            val failureMessage = DataManager.refreshData(bookRepository, trackRepository)
-            if (!failureMessage.isNullOrEmpty()) {
-                _messageForUser.postEvent(failureMessage)
-            }
-            _isRefreshing.postValue(false)
-        }
+    fun refreshData(forceSync: Boolean = false) {
+        DataManager.refreshData(forceSync)
     }
 }

@@ -9,6 +9,7 @@ import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomS
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.model.*
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.id
@@ -17,6 +18,7 @@ import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.mapAsync
 import io.github.mattpvaughn.chronicle.util.postEvent
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -64,9 +66,10 @@ class MainActivityViewModel(
     val currentlyPlayingLayoutState: LiveData<BottomSheetState>
         get() = _currentlyPlayingLayoutState
 
-    private var audiobookServerId = MutableLiveData(NO_AUDIOBOOK_FOUND_ID)
+    private var audiobookId = MutableLiveData(NO_AUDIOBOOK_FOUND_ID)
+    private var sourceId = MutableStateFlow(MediaSource.NO_SOURCE_FOUND)
 
-    val audiobook = mapAsync(audiobookServerId, viewModelScope) { id ->
+    val audiobook = mapAsync(audiobookId, viewModelScope) { id ->
         bookRepository.getAudiobookAsync(id) ?: EMPTY_AUDIOBOOK
     }
 
