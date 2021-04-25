@@ -14,6 +14,10 @@
             type="io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick" />
 
         <variable
+            name="source"
+            type="io.github.mattpvaughn.chronicle.data.sources.MediaSource" />
+
+        <variable
             name="serverConnected"
             type="Boolean" />
 
@@ -66,10 +70,11 @@
                 android:translationZ="2dp"
                 android:visibility="@{audiobook.progress > 0L ? View.VISIBLE : View.GONE}" />
 
-            <com.facebook.drawee.view.SimpleDraweeView
+            <ImageView
                 android:id="@+id/book_cover_img"
                 serverConnected="@{serverConnected}"
                 srcRounded="@{audiobook.thumb}"
+                mediaSource="@{source}"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="bottom"

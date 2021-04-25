@@ -9,8 +9,10 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRA
 @Entity
 data class Chapter constructor(
     val title: String = "",
-    @PrimaryKey
-    val id: Long = 0L,
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    /** ID as provided by the server */
+    val serverId: Long = 0L,
     val index: Long = 0L,
     val discNumber: Int = 1,
     // The number of milliseconds from the start of the containing track and the start of the chapter

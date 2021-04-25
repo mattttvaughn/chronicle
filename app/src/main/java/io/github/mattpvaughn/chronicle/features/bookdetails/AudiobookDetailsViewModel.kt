@@ -17,6 +17,7 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK
@@ -58,7 +59,7 @@ class AudiobookDetailsViewModel(
         private val progressUpdater: ProgressUpdater,
         private val prefsRepo: PrefsRepo,
         private val currentlyPlaying: CurrentlyPlaying
-        ) : ViewModelProvider.Factory {
+    ) : ViewModelProvider.Factory {
 
         lateinit var inputAudiobook: Audiobook
         lateinit var source: MediaSource
@@ -86,7 +87,7 @@ class AudiobookDetailsViewModel(
 
     val sourceId = inputAudiobook.source
     val audiobook: LiveData<Audiobook?> = bookRepository.getAudiobook(inputAudiobook.id)
-    val tracks = trackRepository.getTracksForAudiobook(inputAudiobook.id)
+    val tracks = trackRepository.getTracksForAudiobook(inputAudiobook.serverId)
 
     // Used to cache tracks.asChapterList when tracks changes
     private val tracksAsChaptersCache: LiveData<List<Chapter>> = mapAsync(tracks, viewModelScope) {
@@ -228,7 +229,7 @@ class AudiobookDetailsViewModel(
     private val networkObserver = Observer<ConnectionState> { connection ->
         if (connection == ConnectionState.CONNECTED) {
             if (mediaSource is HttpMediaSource) {
-                updateBookDetails(mediaSource, inputAudiobook.id)
+                loadBookDetails(bookId = inputAudiobook.id)
             }
         }
     }
@@ -286,14 +287,22 @@ class AudiobookDetailsViewModel(
                 //
                 // Delay for 50ms to ensure chapters have loaded from db
                 delay(50)
+                if (mediaSource !is HttpMediaSource) {
+                    return@launch
+                }
                 val noExistingChapters = chapters.value.isNullOrEmpty()
                 _isLoadingTracks.value = noExistingChapters
-                val trackRequest = trackRepository.loadTracksForAudiobook(bookId)
-                if (trackRequest is Ok) {
+                val trackRequest = trackRepository.loadTracksForAudiobook(bookId, mediaSource)
+                val requestData = trackRequest.getOrNull()
+                if (requestData != null) {
                     val audiobook = bookRepository.getAudiobookAsync(bookId)
                     audiobook?.let {
-                        trackRepository.syncTracksInBook(audiobook.id)
-                        bookRepository.syncAudiobook(audiobook, trackRequest.value)
+                        trackRepository.syncTracksInBook(audiobook.id, mediaSource)
+                        bookRepository.syncAudiobook(
+                            source = mediaSource,
+                            audiobook = audiobook,
+                            tracks = requestData,
+                        )
                     }
                 }
                 _isLoadingTracks.value = false
@@ -312,7 +321,7 @@ class AudiobookDetailsViewModel(
         when (cacheStatus.value) {
             NOT_CACHED -> {
                 Timber.i("Caching tracks for \"${audiobook.value?.title}\"")
-                if (plexConfig.isConnected.value != true) {
+                if (mediaSource is HttpMediaSource && mediaSource.connectionState.value != ConnectionState.CONNECTED) {
                     showUserMessage(FormattableString.from(R.string.unable_to_cache_audiobook))
                 } else {
                     cachedFileManager.downloadTracks(inputAudiobook.id, inputAudiobook.title)
@@ -354,7 +363,7 @@ class AudiobookDetailsViewModel(
 
     private fun uncacheFiles() {
         viewModelScope.launch {
-            cachedFileManager.deleteCachedBook(inputAudiobook.id)
+            cachedFileManager.deleteCachedBook(inputAudiobook.id, sourceId)
         }
     }
 
@@ -540,7 +549,7 @@ class AudiobookDetailsViewModel(
             // Plex will set tracks as unwatched if their parent becomes unwatched, so no need
             // for [ITrackRepository.setWatched]
             trackRepository.markTracksInBookAsWatched(inputAudiobook.id)
-            bookRepository.setWatched(inputAudiobook.id)
+            bookRepository.setWatched(inputAudiobook.id, mediaSource)
         }
     }
 
@@ -566,7 +575,10 @@ class AudiobookDetailsViewModel(
                 return@launch
             } else {
                 Timber.i("Refreshing track data!!!")
-                if (plexConfig.isConnected.value != true) {
+                if (mediaSource !is HttpMediaSource) {
+                    return@launch
+                }
+                if (mediaSource.connectionState.value != ConnectionState.CONNECTED) {
                     showUserMessage(FormattableString.from(R.string.cannot_sync_no_server))
                     return@launch
                 }
@@ -576,9 +588,17 @@ class AudiobookDetailsViewModel(
                     return@launch
                 }
                 _forceSyncInProgress.value = true
-                val updatedTracks =
-                    trackRepository.syncTracksInBook(audiobook.id, forceUseNetwork = true)
-                val loadSucceeded = bookRepository.syncAudiobook(audiobook, updatedTracks, true)
+                val updatedTracks = trackRepository.syncTracksInBook(
+                    bookId = audiobook.id,
+                    source = mediaSource,
+                    forceUseNetwork = true
+                )
+                val loadSucceeded = bookRepository.syncAudiobook(
+                    source = mediaSource,
+                    audiobook = audiobook,
+                    tracks = updatedTracks,
+                    forceNetwork = true
+                )
                 if (loadSucceeded) {
                     showUserMessage(FormattableString.from(R.string.progress_sync_successful))
                 } else {

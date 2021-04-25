@@ -6,7 +6,6 @@ import androidx.lifecycle.*
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.facebook.drawee.backends.pipeline.Fresco
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.FEATURE_FLAG_IS_AUTO_ENABLED
@@ -15,7 +14,6 @@ import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.features.download.MoveSyncLocationWorker
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
@@ -28,7 +26,6 @@ import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserSta
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
@@ -49,7 +46,7 @@ class SettingsViewModel(
     private val prefsRepo: PrefsRepo,
     private val cachedFileManager: ICachedFileManager,
     private val navigator: Navigator,
-    private val sourceManager: SourceManager
+    private val sourceManager: SourceManager,
     private val workManager: WorkManager,
 ) : ViewModel() {
 
@@ -61,7 +58,7 @@ class SettingsViewModel(
         private val mediaServiceConnection: MediaServiceConnection,
         private val cachedFileManager: ICachedFileManager,
         private val navigator: Navigator,
-        private val sourceManager: SourceManager
+        private val sourceManager: SourceManager,
         private val workManager: WorkManager,
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -71,7 +68,6 @@ class SettingsViewModel(
                     trackRepository = trackRepository,
                     mediaServiceConnection = mediaServiceConnection,
                     prefsRepo = prefsRepo,
-                    plexLoginRepo = plexLoginRepo,
                     cachedFileManager = cachedFileManager,
                     navigator = navigator,
                     workManager = workManager,
@@ -471,18 +467,6 @@ class SettingsViewModel(
                             }
                         }),
                     PreferenceModel(
-                        PreferenceType.CLICKABLE,
-                        FormattableString.from(string = "Clear cached images"),
-                        click = object : PreferenceClick {
-                            override fun onClick() {
-                                viewModelScope.launch {
-                                    withContext(Dispatchers.IO) {
-                                        Fresco.getImagePipeline().clearCaches()
-                                    }
-                                }
-                            }
-                        }),
-                    PreferenceModel(
                         PreferenceType.BOOLEAN,
                         FormattableString.from(string = "Disable local progress tracking"),
                         PrefsRepo.KEY_DEBUG_DISABLE_PROGRESS,
@@ -544,7 +528,7 @@ class SettingsViewModel(
      * [navigateTo] provided
      */
     private fun clearDB(
-        navigateTo: NavigationDestination = DO_NOT_NAVIGATE,
+        navigateTo: NavigationDestination = NavigationDestination.DO_NOT_NAVIGATE,
         clearDownloads: Boolean = true
     ) {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {

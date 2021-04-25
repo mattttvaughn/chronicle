@@ -47,7 +47,7 @@ class RemoteSyncScrobbleWorker(
         try {
             workerScope.launch(Injector.get().unhandledExceptionHandler()) {
                 val track = trackRepository.getTrackAsync(trackId)
-                val bookId = track?.parentKey ?: NO_AUDIOBOOK_FOUND_ID
+                val bookId = track?.parentServerId ?: NO_AUDIOBOOK_FOUND_ID
                 val book = bookRepository.getAudiobookAsync(bookId)
                 val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
 

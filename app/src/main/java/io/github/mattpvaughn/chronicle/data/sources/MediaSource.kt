@@ -5,6 +5,7 @@ import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.net.Uri
+import coil.request.ImageRequest
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
@@ -61,7 +62,10 @@ abstract class MediaSource constructor(private val applicationContext: Context) 
     abstract fun getBitmapForThumb(uri: Uri): Bitmap?
 
     /** Returns the source of a track given whether the track is cached */
-    abstract fun getTrackSource(track: MediaItemTrack) : Uri?
+    abstract fun getTrackSource(track: MediaItemTrack): Uri?
+
+    /** Returns an [ImageRequest] for an image at [url] */
+    abstract fun getThumbBuilder(): ImageRequest.Builder
 
     /**
      * Whether books provided by the source can be downloaded. For example, we could consider

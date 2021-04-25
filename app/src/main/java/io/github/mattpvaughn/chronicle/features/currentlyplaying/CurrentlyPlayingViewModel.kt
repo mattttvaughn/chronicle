@@ -20,7 +20,6 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
@@ -36,9 +35,9 @@ import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerActi
 import io.github.mattpvaughn.chronicle.util.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -51,8 +50,8 @@ class CurrentlyPlayingViewModel(
     private val localBroadcastManager: LocalBroadcastManager,
     private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
-    private val sourceManager: SourceManager
-    private val currentlyPlaying: CurrentlyPlaying
+    private val sourceManager: SourceManager,
+    private val currentlyPlaying: CurrentlyPlaying,
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -62,8 +61,8 @@ class CurrentlyPlayingViewModel(
         private val localBroadcastManager: LocalBroadcastManager,
         private val mediaServiceConnection: MediaServiceConnection,
         private val prefsRepo: PrefsRepo,
-        private val sourceManager: SourceManager
-        private val currentlyPlaying: CurrentlyPlaying
+        private val sourceManager: SourceManager,
+        private val currentlyPlaying: CurrentlyPlaying,
     ) : ViewModelProvider.Factory {
 
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -294,7 +293,7 @@ class CurrentlyPlayingViewModel(
                 val source = sourceManager.getSourceById(book.source)
                 // No need to refresh track progress if source isn't remote
                 if (source !is HttpMediaSource) return@launch
-                val result = trackRepository.loadTracksForAudiobook(source, bookId)
+                val result = trackRepository.loadTracksForAudiobook(bookId, source)
                 val tracks = result.getOrNull()
                 if (tracks != null) {
                     bookRepository.updateTrackData(
@@ -304,7 +303,11 @@ class CurrentlyPlayingViewModel(
                         tracks.size
                     )
                     audiobook.value?.let {
-                        bookRepository.syncAudiobook(it, tracks.value)
+                        bookRepository.syncAudiobook(
+                            audiobook = it,
+                            tracks = tracks,
+                            source = source
+                        )
                     }
                 }
                 _isLoadingTracks.value = false

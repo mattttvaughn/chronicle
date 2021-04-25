@@ -140,9 +140,8 @@ dependencies {
     }
 
 
-        // Fresco - image loading
-    implementation 'com.facebook.fresco:fresco:2.4.0'
-    implementation "com.facebook.fresco:imagepipeline-okhttp3:2.4.0"
+    // Coil - image loading
+    implementation "io.coil-kt:coil:$coilVersion"
 
     // LocalBroadcastManager
     implementation "androidx.localbroadcastmanager:localbroadcastmanager:$localBroadcastManagerVersion"
@@ -172,9 +171,6 @@ dependencies {
 
     // Seismic- for shake detection
     implementation "com.squareup:seismic:$seismicVersion"
-
-    // Kotlin-result: TODO remove because Result is now accessible in our current build
-    implementation "com.michael-bull.kotlin-result:kotlin-result:$kotlinResultVersion"
 
     // Test for memory leaks
     debugImplementation "com.squareup.leakcanary:leakcanary-android:2.4"

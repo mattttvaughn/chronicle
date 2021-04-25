@@ -19,14 +19,19 @@ import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_MEDIA_STOP
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING
+import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.model.EMPTY_CHAPTER
+import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import timber.log.Timber
@@ -42,9 +47,8 @@ const val NOW_PLAYING_NOTIFICATION: Int = 0xb32229
 class NotificationBuilder @Inject constructor(
     private val context: Context,
     private val controller: MediaControllerCompat,
-    private val session: MediaSessionCompat,
     private val trackRepo: ITrackRepository,
-    private val bookRepo: IBookRepository
+    private val bookRepo: IBookRepository,
     private val currentlyPlaying: CurrentlyPlaying,
 ) {
 
@@ -132,7 +136,10 @@ class NotificationBuilder @Inject constructor(
      *
      * @return a notification representing the current playback state or null if one already exists
      */
-    suspend fun buildNotification(sessionToken: MediaSessionCompat.Token): Notification? {
+    fun buildNotification(
+        sessionToken: MediaSessionCompat.Token,
+        mediaSource: MediaSource?,
+    ): Notification? {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -188,9 +195,9 @@ class NotificationBuilder @Inject constructor(
         if (bookTitleBitmapPair?.first != currentBook.id) {
             val artUri = currentBook.thumb
             Timber.i("Loading art uri: $artUri")
-            val largeIcon = mediaSource.getBitmapForThumb(artUri)
+            val largeIcon = mediaSource?.getBitmapForThumb(artUri.toUri())
             if (largeIcon != null) {
-                bookTitleBitmapPair = Pair(description?.title?.toString() ?: "", largeIcon)
+                bookTitleBitmapPair = Pair(currentBook.id, largeIcon)
             }
         }
 

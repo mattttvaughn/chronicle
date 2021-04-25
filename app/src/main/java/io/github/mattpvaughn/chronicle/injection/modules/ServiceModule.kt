@@ -6,7 +6,6 @@ import android.content.Context
 import android.hardware.SensorManager
 import android.media.AudioManager
 import android.media.ToneGenerator
-import android.os.Build
 import android.support.v4.media.RatingCompat.RATING_NONE
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -17,18 +16,11 @@ import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
-import com.google.android.exoplayer2.util.Util
 import dagger.Module
 import dagger.Provides
-import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.APP_NAME
-import io.github.mattpvaughn.chronicle.data.CachedFileManager
-import io.github.mattpvaughn.chronicle.data.ICachedFileManager
-import io.github.mattpvaughn.chronicle.data.sources.plex.APP_NAME
-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.features.player.*
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.EXOPLAYER_BACK_BUFFER_DURATION_MILLIS
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.EXOPLAYER_MAX_BUFFER_DURATION_MILLIS

@@ -211,7 +211,7 @@ class LibraryFragment : Fragment() {
     }
 
     private fun openAudiobookDetails(audiobook: Audiobook) {
-        navigator.showDetails(audiobook.id, audiobook.isCached, audiobook.source)
+        navigator.showDetails(audiobook.id, audiobook.title, audiobook.isCached, audiobook.source)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -273,7 +273,7 @@ class LibraryFragment : Fragment() {
             R.id.menu_filter -> viewModel.setFilterMenuVisible(
                 viewModel.isFilterShown.value?.not() ?: false
             )
-            R.id.download_all -> viewModel.promptDownloadAll()
+//            R.id.download_all -> viewModel.promptDownloadAll()
             R.id.search -> {
             } // handled by listeners in onCreateView
             else -> throw NoWhenBranchMatchedException("Unknown menu item selected!")

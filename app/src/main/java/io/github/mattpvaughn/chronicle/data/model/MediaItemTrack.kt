@@ -17,9 +17,12 @@ import java.io.File
  */
 @Entity
 data class MediaItemTrack(
-    @PrimaryKey
-    val id: Int = TRACK_NOT_FOUND,
-    val parentKey: Int = -1,
+    /** Unique ID */
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    /** ID as set by the server */
+    val serverId: Int = 0,
+    val parentServerId: Int = -1,
     val title: String = "",
     val playQueueItemID: Long = -1,
     val thumb: String? = null,
@@ -47,7 +50,7 @@ data class MediaItemTrack(
     companion object {
         fun from(metadata: MediaMetadataCompat): MediaItemTrack {
             return MediaItemTrack(
-                id = metadata.id?.toInt() ?: -1,
+                serverId = metadata.id?.toInt() ?: -1,
                 title = metadata.title ?: "",
                 playQueueItemID = metadata.trackNumber,
                 thumb = metadata.artUri.toString(),
@@ -99,7 +102,7 @@ data class MediaItemTrack(
         ): MediaItemTrack {
             return MediaItemTrack(
                 id = networkTrack.ratingKey.toInt(),
-                parentKey = networkTrack.parentRatingKey,
+                parentServerId = networkTrack.parentRatingKey,
                 title = networkTrack.title,
                 artist = networkTrack.grandparentTitle,
                 thumb = networkTrack.thumb,
@@ -236,7 +239,7 @@ fun List<MediaItemTrack>.asChapterList(): List<Chapter> {
 fun MediaItemTrack.asChapter(startOffset: Long): Chapter {
     return Chapter(
         title = title,
-        id = id.toLong(),
+        serverId = id.toLong(),
         index = index.toLong(),
         discNumber = discNumber,
         startTimeOffset = startOffset,

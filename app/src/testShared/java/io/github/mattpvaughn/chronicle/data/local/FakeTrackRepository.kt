@@ -18,7 +18,7 @@ class FakeTrackRepository @Inject constructor() : ITrackRepository {
     }
 
     private fun makeTrack(bookId: Int, trackId: Int): MediaItemTrack {
-        return MediaItemTrack(id = trackId, parentKey = bookId)
+        return MediaItemTrack(id = trackId, parentServerId = bookId)
     }
 
     override suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>> {

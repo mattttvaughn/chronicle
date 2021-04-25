@@ -1,13 +1,11 @@
 package io.github.mattpvaughn.chronicle.data.local
 
 import androidx.lifecycle.LiveData
-import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.data.model.Chapter
-import io.github.mattpvaughn.chronicle.data.model.EMPTY_AUDIOBOOK
-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
+import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -111,7 +109,7 @@ interface IBookRepository {
      *
      * @return true if chapter data was found and added to db, otherwise false
      */
-    suspend fun loadChapterData(
+    suspend fun syncAudiobook(
         source: HttpMediaSource,
         audiobook: Audiobook,
         tracks: List<MediaItemTrack>,
@@ -127,10 +125,10 @@ interface IBookRepository {
     suspend fun updateCachedStatus(bookId: Int, isCached: Boolean)
 
     /** Sets the book's [Audiobook.progress] to 0 in the DB and the server */
-    suspend fun setWatched(bookId: Int)
+    suspend fun setWatched(bookId: Int, source: MediaSource?)
 
     /** Loads an [Audiobook] in from the network */
-    suspend fun fetchBookAsync(bookId: Int): Audiobook?
+    suspend fun fetchBookAsync(bookId: Int, source: HttpMediaSource): Audiobook?
 
     /** Removes all [Audiobook]s where [Audiobook.source] == [sourceId] */
     suspend fun removeWithSource(sourceId: Long)
@@ -287,12 +285,14 @@ class BookRepository @Inject constructor(
         }
     }
 
-    override suspend fun setWatched(bookId: Int) {
+    override suspend fun setWatched(bookId: Int, source: MediaSource?) {
         withContext(Dispatchers.IO) {
             try {
-                plexMediaService.watched(bookId.toString())
                 bookDao.setWatched(bookId)
                 bookDao.resetBookProgress(bookId)
+                if (source is HttpMediaSource) {
+                    source.watched(bookId)
+                }
             } catch (t: Throwable) {
                 Timber.e("Failed to update watched status: $t")
             }
@@ -344,8 +344,8 @@ class BookRepository @Inject constructor(
         forceNetwork: Boolean,
     ): Boolean {
         Timber.i("Loading chapter data. Bookid is ${audiobook.id}, tracks are $tracks")
-        val chapters: List<Chapter> = withContext(Dispatchers.IO) {
-            try {
+        return withContext(Dispatchers.IO) {
+            val chapters = try {
                 source.fetchChapterInfo(audiobook.isCached, tracks)
             } catch (t: Throwable) {
                 Timber.e("Failed to load chapters: $t")
@@ -353,7 +353,7 @@ class BookRepository @Inject constructor(
             }
 
             val networkBook = try {
-                val retrievedBook = fetchBookAsync(audiobook.id)
+                val retrievedBook = fetchBookAsync(audiobook.id, source)
                 retrievedBook ?: return@withContext false
             } catch (t: Throwable) {
                 Timber.e("Failed to load audiobook update")
@@ -372,15 +372,13 @@ class BookRepository @Inject constructor(
                 chapters = chapters
             )
             bookDao.update(merged)
-
+            return@withContext true
         }
-        return true
     }
 
-    override suspend fun fetchBookAsync(bookId: Int): Audiobook? = withContext(Dispatchers.IO) {
-        plexMediaService.retrieveAlbum(bookId)
-            .plexMediaContainer
-            .asAudiobooks()
-            .firstOrNull()
-    }
+
+    override suspend fun fetchBookAsync(bookId: Int, source: HttpMediaSource): Audiobook? =
+        withContext(Dispatchers.IO) {
+            return@withContext source.fetchBook(bookId)
+        }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import coil.request.ImageRequest
 import com.google.android.exoplayer2.upstream.AssetDataSource
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DataSpec
@@ -62,7 +63,7 @@ class DemoMediaSource(
         // sole track for demo book 1
         MediaItemTrack(
             id = 2,
-            parentKey = 1,
+            parentServerId = 1,
             title = "Intro",
             playQueueItemID = 1,
             index = 1,
@@ -112,6 +113,8 @@ class DemoMediaSource(
     override fun getTrackSource(track: MediaItemTrack): Uri? {
         return Uri.parse(draculaAudioAssetPath)
     }
+
+    override fun getThumbBuilder() = ImageRequest.Builder(applicationContext)
 
     // false as it's already on device
     override val isDownloadable: Boolean

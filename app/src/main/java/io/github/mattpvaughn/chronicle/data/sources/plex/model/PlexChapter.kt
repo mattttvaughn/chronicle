@@ -17,7 +17,7 @@ data class PlexChapter(
 fun PlexChapter.toChapter(trackId: Long, trackDiscNumber: Int, downloaded: Boolean): Chapter {
     return Chapter(
         title = tag.takeIf { it.isNotEmpty() } ?: "Chapter $index",
-        id = id,
+        serverId = id,
         index = index,
         discNumber = discNumber.takeIf { it != 0 } ?: trackDiscNumber,
         startTimeOffset = startTimeOffset,

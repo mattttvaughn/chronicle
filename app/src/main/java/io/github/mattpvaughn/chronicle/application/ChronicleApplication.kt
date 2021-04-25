@@ -15,9 +15,8 @@ import com.android.billingclient.api.BillingClient.BillingResponseCode.OK
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.bumptech.glide.Glide
-import com.facebook.drawee.backends.pipeline.Fresco
-import com.facebook.imagepipeline.core.ImagePipelineConfig
 import io.github.mattpvaughn.chronicle.BuildConfig
+import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
 import io.github.mattpvaughn.chronicle.injection.components.DaggerAppComponent
@@ -59,9 +58,6 @@ open class ChronicleApplication : Application() {
     @Inject
     lateinit var cachedFileManager: ICachedFileManager
 
-    @Inject
-    lateinit var frescoConfig: ImagePipelineConfig
-
     override fun onCreate() {
         if (USE_STRICT_MODE && BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
@@ -93,7 +89,6 @@ open class ChronicleApplication : Application() {
         setupBilling()
         updateDownloadedFileState()
         super.onCreate()
-        Fresco.initialize(this, frescoConfig)
         // TODO: remove in a future version
         applicationScope.launch {
             withContext(Dispatchers.IO) {
@@ -210,16 +205,6 @@ open class ChronicleApplication : Application() {
 
     private fun onConnectionLost() {
         sourceManager.connectionHasBeenLost()
-    }
-
-    override fun onTrimMemory(level: Int) {
-        Fresco.getImagePipeline().clearMemoryCaches()
-        super.onTrimMemory(level)
-    }
-
-    override fun onLowMemory() {
-        Fresco.getImagePipeline().clearMemoryCaches()
-        super.onLowMemory()
     }
 
 }

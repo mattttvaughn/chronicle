@@ -13,7 +13,7 @@ buildscript {
         okhttpVersion = '4.9.1'
         dataBindingCompilerVersion = gradleVersion // Always need to be the same.
         roomVersion = "2.2.6"
-        frescoVersion = "2.4.0"
+        coilVersion = "1.2.0"
         exoplayerVersion = "2.11.4"
         workVersion = '2.5.0'
         junitVersion = '4.13.2'

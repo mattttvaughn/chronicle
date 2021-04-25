@@ -29,7 +29,7 @@ class DataManager {
             val audiobooks = bookRepository.getAllBooksAsync()
             val tracks = trackRepository.getAllTracksAsync()
             audiobooks.forEach { book ->
-                val tracksInAudiobook = tracks.filter { it.parentKey == book.id }
+                val tracksInAudiobook = tracks.filter { it.parentServerId == book.id }
                 Timber.i("Book progress: ${tracksInAudiobook.getProgress()}")
                 bookRepository.updateTrackData(
                     bookId = book.id,

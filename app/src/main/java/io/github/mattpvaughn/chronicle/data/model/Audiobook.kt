@@ -20,8 +20,11 @@ import kotlin.time.seconds
 @TypeConverters(ChapterListConverter::class)
 @Entity
 data class Audiobook constructor(
-    @PrimaryKey
-    val id: Int,
+    /** Unique ID */
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    /** ID as provided by the server */
+    val serverId: Int = 0,
     /** Long representing a unique [MediaSource] in [SourceManager] */
     val source: Long,
     val title: String = "",
@@ -54,10 +57,10 @@ data class Audiobook constructor(
 ) {
 
     companion object {
-        fun from(dir: PlexDirectory, id: Long): Audiobook {
+        fun from(dir: PlexDirectory, sourceId: Long): Audiobook {
             return Audiobook(
-                id = dir.ratingKey.toInt(),
-                source = id,
+                serverId = dir.ratingKey.toInt(),
+                source = sourceId,
                 title = dir.title,
                 titleSort = dir.titleSort.takeIf { it.isNotEmpty() } ?: dir.title,
                 author = dir.parentTitle,
@@ -181,5 +184,9 @@ fun Audiobook.isCompleted(): Boolean {
 
 const val NO_AUDIOBOOK_FOUND_ID = -22321
 const val NO_AUDIOBOOK_FOUND_TITLE = "No audiobook found"
-val EMPTY_AUDIOBOOK = Audiobook(NO_AUDIOBOOK_FOUND_ID, NO_SOURCE_FOUND, NO_AUDIOBOOK_FOUND_TITLE)
+val EMPTY_AUDIOBOOK = Audiobook(
+    source = NO_SOURCE_FOUND,
+    title = NO_AUDIOBOOK_FOUND_TITLE,
+    id = NO_AUDIOBOOK_FOUND_ID
+)
 

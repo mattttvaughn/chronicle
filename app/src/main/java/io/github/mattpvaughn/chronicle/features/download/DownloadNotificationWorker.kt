@@ -17,7 +17,7 @@ import androidx.work.NetworkType
 import com.tonyodev.fetch2.*
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
-import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID
+import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_BOOK_ID
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.REQUEST_CODE_PREFIX_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
@@ -436,7 +436,7 @@ class DownloadNotificationWorker(
             PackageManager.GET_ACTIVITIES
         ).activities.find { it.name.contains("MainActivity") }
         intent.setPackage(applicationContext.packageName)
-        intent.putExtra(FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID, bookId)
+        intent.putExtra(FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_BOOK_ID, bookId)
         intent.component = ComponentName(applicationContext.packageName, activity?.name ?: "")
         return PendingIntent.getActivity(
             applicationContext,

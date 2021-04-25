@@ -8,19 +8,14 @@ import android.support.v4.media.session.PlaybackStateCompat.*
 import androidx.core.app.NotificationManagerCompat
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
-import io.github.mattpvaughn.chronicle.data.sources.SourceManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
-import io.github.mattpvaughn.chronicle.data.model.Chapter
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
+import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
-import io.github.mattpvaughn.chronicle.features.currentlyplaying.OnChapterChangeListener
 import kotlinx.coroutines.*
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -41,9 +36,9 @@ class OnMediaChangedCallback @Inject constructor(
     private val sourceManager: SourceManager
 ) : MediaControllerCompat.Callback() {
 
-    init {
-        currentlyPlaying.setOnChapterChangeListener(this)
-    }
+//    init {
+//        currentlyPlaying.setOnChapterChangeListener(this)
+//    }
 
     var sourceId: Long? = null
 
@@ -56,7 +51,8 @@ class OnMediaChangedCallback @Inject constructor(
                     if (trackId == TRACK_NOT_FOUND) {
                         return@withContext
                     }
-                    val newBook = bookRepo.getAudiobookAsync(trackRepo.getBookIdForTrack(trackId))
+                    val newBook =
+                        bookRepository.getAudiobookAsync(trackRepo.getBookIdForTrack(trackId))
                     val newBookId = newBook?.id ?: NO_AUDIOBOOK_FOUND_ID
                     val newTracks = trackRepo.getTracksForAudiobookAsync(newBookId)
                     val newTrack = trackRepo.getTrackAsync(trackId)
@@ -67,7 +63,7 @@ class OnMediaChangedCallback @Inject constructor(
                             tracks = newTracks,
                         )
                     }
-                    sourceId = newBook.source
+                    sourceId = newBook?.source ?: NO_SOURCE_FOUND
                     updateNotification(state.state)
                 }
             }
@@ -87,13 +83,13 @@ class OnMediaChangedCallback @Inject constructor(
     /**
      * TODO: eventually handle chapter changes
      */
-    override fun onChapterChange(chapter: Chapter) {
+//    override fun onChapterChange(chapter: Chapter) {
 //        mediaController.playbackState?.let { state ->
 //            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
 //                updateNotification(state.state)
 //            }
 //        }
-    }
+//    }
 
     private suspend fun updateNotification(state: Int) {
         val source = sourceId?.let { sourceManager.getSourceById(it) }

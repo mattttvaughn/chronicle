@@ -68,7 +68,7 @@
                         android:orientation="vertical"
                         app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
 
-                    <com.facebook.drawee.view.SimpleDraweeView
+                    <ImageView
                         android:id="@+id/details_artwork"
                         serverConnected="@{sourceManager.isSourceConnected(mediaSource.id)}"
                         srcRounded="@{viewModel.audiobook.thumb}"
@@ -244,9 +244,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:indeterminate="true"
-                            android:visibility="@{viewModel.serverConnection == ConnectionState.CONNECTING ? View.VISIBLE: View.GONE}"
-                            app:indicatorColor="@color/colorAccent"
-                            app:indicatorType="linear" />
+                            android:visibility="@{viewModel.connectionState == ConnectionState.CONNECTING ? View.VISIBLE: View.GONE}"
+                            app:indicatorColor="@color/colorAccent" />
 
                         <androidx.appcompat.widget.AppCompatTextView
                             style="@style/TextAppearance.Body1"

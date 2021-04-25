@@ -3,6 +3,7 @@ package io.github.mattpvaughn.chronicle.data.sources
 import android.content.Context
 import com.squareup.moshi.Moshi
 import io.github.mattpvaughn.chronicle.data.sources.demo.DemoMediaSource
+import io.github.mattpvaughn.chronicle.data.sources.local.LocalMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent.Companion.USER_AGENT
 import okhttp3.logging.HttpLoggingInterceptor
@@ -27,6 +28,7 @@ class MediaSourceFactory @Inject constructor(
             PlexLibrarySource.TAG -> {
                 PlexLibrarySource(id, applicationContext, loggingInterceptor, moshi)
             }
+            LocalMediaSource.TAG
             else -> TODO("Type not yet supported")
         }
     }

@@ -1,20 +1,20 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
-import android.app.DownloadManager
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
+import coil.Coil
+import coil.request.ImageRequest
 import com.bumptech.glide.load.model.LazyHeaders
-import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.squareup.moshi.Moshi
+import com.tonyodev.fetch2.Request
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
@@ -30,7 +30,6 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource.Conne
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLibrarySource.ConnectionResult.Success
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.*
 import io.github.mattpvaughn.chronicle.navigation.Navigator
-import io.github.mattpvaughn.chronicle.views.GlideUrlRelativeCacheKey
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
 import okhttp3.internal.userAgent
@@ -39,14 +38,13 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import timber.log.Timber
 import java.io.File
-import java.net.URL
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 /** A [MediaSource] responsible for interacting with a remote Plex library */
 class PlexLibrarySource constructor(
     override val id: Long,
-    applicationContext: Context,
+    private val applicationContext: Context,
     loggingInterceptor: HttpLoggingInterceptor,
     moshi: Moshi
 ) : HttpMediaSource(applicationContext) {
@@ -90,7 +88,6 @@ class PlexLibrarySource constructor(
     // Handles http and local files
     override val dataSourceFactory: DefaultDataSourceFactory =
         DefaultDataSourceFactory(Injector.get().applicationContext(), httpFactory)
-
 
     private val plexMediaInterceptor = PlexInterceptor(plexPrefsRepo, this, isLoginService = false)
     private val plexLoginInterceptor = PlexInterceptor(plexPrefsRepo, this, isLoginService = true)
@@ -138,6 +135,13 @@ class PlexLibrarySource constructor(
         }
     }
 
+    override suspend fun fetchBook(bookId: Int): Audiobook? {
+        return withContext(Dispatchers.IO) {
+            mediaService.retrieveAlbum(bookId).plexMediaContainer.asAudiobooks(id)
+                .firstOrNull()
+        }
+    }
+
     override suspend fun fetchTracks(): Result<List<MediaItemTrack>> {
         return try {
             val response = mediaService.retrieveAllTracksInLibrary(plexPrefsRepo.library?.id!!)
@@ -173,44 +177,31 @@ class PlexLibrarySource constructor(
         )
     }
 
+    override fun getThumbBuilder() = ImageRequest.Builder(applicationContext)
+        .addHeader("X-Plex-Token", plexPrefsRepo.accountAuthToken)
+
     override val isDownloadable: Boolean = true
 
     /** Attempt to load in a cached bitmap for the given thumbnail */
-    suspend fun getBitmapFromServer(thumb: String?, requireCached: Boolean = false): Bitmap? {
-        if (thumb.isNullOrEmpty()) {
-            return null
-        }
-
+    suspend fun getBitmapFromServer(uri: Uri): Bitmap? {
         // Retrieve cached album art from Glide if available
-        val appContext = Injector.get().applicationContext()
-        val imageSize = appContext.resources.getDimension(R.dimen.audiobook_image_width).toInt()
-        val url = URL(
-            if (thumb.startsWith("http")) {
-                thumb
-            } else {
-                Timber.i("Taking part uri")
-                toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$thumb")
-            }
-        )
         Timber.i("Notification thumb uri is: $url")
-        val glideUrl = GlideUrlRelativeCacheKey(url, makeGlideHeaders())
-        return try {
-            return withContext(Dispatchers.IO) {
-                val bm = Glide.with(appContext)
-                    .asBitmap()
-                    .load(glideUrl)
-                    .onlyRetrieveFromCache(requireCached)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .transform(CenterCrop())
-                    .submit()
-                    .get()
-                Timber.i("Successfully retrieved album art for $thumb")
+        val imageLoader = Coil.imageLoader(applicationContext)
+        return withContext(Dispatchers.IO) {
+            val request = ImageRequest.Builder(applicationContext)
+                .data(url)
+                .memoryCacheKey(makeCacheKeyFromPlexUri(uri))
+                .addHeader("X-Plex-Token", plexPrefsRepo.accountAuthToken)
+                .build()
+            try {
+                val drawable = imageLoader.execute(request).drawable
+                val bm = (drawable as BitmapDrawable).bitmap
+                Timber.i("Successfully retrieved album art for $uri")
                 bm
+            } catch (t: Throwable) {
+                Timber.e("Failed to retrieve album art for $uri: $t")
+                null
             }
-        } catch (t: Throwable) {
-            // who cares?
-            Timber.e("Failed to retrieve album art for $thumb: $t")
-            null
         }
     }
 
@@ -240,7 +231,7 @@ class PlexLibrarySource constructor(
                 plexChapter.toChapter(track.id.toLong(), track.discNumber, track.cached)
             }.takeIf {
                 !it.isNullOrEmpty()
-            } ?: listOf(track.asChapter())
+            } ?: listOf(track.asChapter(0L))
         }.sorted()
     }
 
@@ -295,29 +286,25 @@ class PlexLibrarySource constructor(
 //        TODO("Not yet implemented")
 //    }
 
-    override fun makeDownloadRequest(trackUrl: String): DownloadManager.Request {
+    override fun makeDownloadRequest(trackUrl: String, dest: Uri, bookTitle: String): Request {
         Timber.i("Preparing download request for: ${Uri.parse(toServerString(trackUrl))}")
-        return DownloadManager.Request(Uri.parse(toServerString(trackUrl)))
-            .addRequestHeader("X-Plex-Platform", "Android")
-            .addRequestHeader("X-Plex-Provides", "player,timeline")
-            .addRequestHeader(
-                "X-Plex-Client-Name",
-                APP_NAME
-            )
-            .addRequestHeader("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
-            .addRequestHeader("X-Plex-Version", BuildConfig.VERSION_NAME)
-            .addRequestHeader(
-                "X-Plex-Product",
-                APP_NAME
-            )
-            .addRequestHeader("X-Plex-Platform-Version", Build.VERSION.RELEASE)
-            .addRequestHeader("X-Plex-Device", Build.MODEL)
-            .addRequestHeader("X-Plex-Device-Name", Build.MODEL)
-            .addRequestHeader("X-Plex-Session-Identifier", sessionIdentifier)
-            .addRequestHeader(
+        return Request(toServerString(trackUrl), dest).also {
+            it.addHeader("X-Plex-Platform", "Android")
+            it.addHeader("X-Plex-Provides", "player,timeline")
+            it.addHeader("X-Plex-Client-Name", APP_NAME)
+            it.addHeader("X-Plex-Client-Identifier", plexPrefsRepo.uuid)
+            it.addHeader("X-Plex-Version", BuildConfig.VERSION_NAME)
+            it.addHeader("X-Plex-Product", APP_NAME)
+            it.addHeader("X-Plex-Platform-Version", Build.VERSION.RELEASE)
+            it.addHeader("X-Plex-Device", Build.MODEL)
+            it.addHeader("X-Plex-Device-Name", Build.MODEL)
+            it.addHeader("X-Plex-Session-Identifier", sessionIdentifier)
+            it.addHeader(
                 "X-Plex-Token",
                 plexPrefsRepo.server?.accessToken ?: plexPrefsRepo.accountAuthToken
             )
+            it.tag = bookTitle
+        }
     }
 
     override fun makeThumbUri(thumb: String): Uri {
@@ -542,5 +529,15 @@ class PlexLibrarySource constructor(
         }
 
     }
+
+    /**
+     * A [CacheKey] which uses the query (everything after ?) in the URL as the key,
+     * as opposed to the entire URL, so that caching will work regardless of the route
+     * connecting the user to the server
+     */
+    private fun makeCacheKeyFromPlexUri(url: Uri?): String {
+        return url?.query ?: ""
+    }
+
 
 }

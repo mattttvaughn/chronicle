@@ -135,7 +135,7 @@ class HomeFragment : Fragment() {
     }
 
     fun openAudiobookDetails(audiobook: Audiobook) {
-        navigator.showDetails(audiobook.id, audiobook.isCached, audiobook.source)
+        navigator.showDetails(audiobook.id, audiobook.title, audiobook.isCached, audiobook.source)
     }
 
     companion object {

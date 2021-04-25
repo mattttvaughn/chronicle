@@ -6,7 +6,6 @@ import android.support.v4.media.session.PlaybackStateCompat.STATE_NONE
 import android.support.v4.media.session.PlaybackStateCompat.STATE_STOPPED
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.*
-import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.model.*
@@ -65,13 +64,13 @@ class MainActivityViewModel(
     val currentlyPlayingLayoutState: LiveData<BottomSheetState>
         get() = _currentlyPlayingLayoutState
 
-    private var audiobookId = MutableLiveData(NO_AUDIOBOOK_FOUND_ID)
+    private var audiobookServerId = MutableLiveData(NO_AUDIOBOOK_FOUND_ID)
 
-    val audiobook = mapAsync(audiobookId, viewModelScope) { id ->
+    val audiobook = mapAsync(audiobookServerId, viewModelScope) { id ->
         bookRepository.getAudiobookAsync(id) ?: EMPTY_AUDIOBOOK
     }
 
-    private var tracks = Transformations.switchMap(audiobookId) { id ->
+    private var tracks = Transformations.switchMap(audiobookServerId) { id ->
         if (id != NO_AUDIOBOOK_FOUND_ID) {
             trackRepository.getTracksForAudiobook(id)
         } else {
@@ -147,7 +146,7 @@ class MainActivityViewModel(
             val bookId = trackRepository.getBookIdForTrack(trackId)
             // Only change the active audiobook if it differs from the one currently in metadata
             if (previousAudiobookId != bookId && bookId != NO_AUDIOBOOK_FOUND_ID) {
-                audiobookId.postValue(bookId)
+                audiobookServerId.postValue(bookId)
                 if (_currentlyPlayingLayoutState.value == HIDDEN) {
                     _currentlyPlayingLayoutState.postValue(COLLAPSED)
                 }

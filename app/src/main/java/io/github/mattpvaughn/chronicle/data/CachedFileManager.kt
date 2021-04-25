@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.lifecycle.LiveData
@@ -31,6 +32,7 @@ import timber.log.Timber
 import java.io.File
 import java.io.FileFilter
 import javax.inject.Inject
+import javax.inject.Singleton
 
 interface ICachedFileManager {
     enum class CacheStatus { CACHED, CACHING, NOT_CACHED }
@@ -41,10 +43,9 @@ interface ICachedFileManager {
     fun cancelGroup(id: Int)
     fun downloadTracks(bookId: Int, bookTitle: String)
     suspend fun uncacheAllInLibrary(): Int
-    suspend fun deleteCachedBook(bookId: Int)
+    suspend fun deleteCachedBook(bookId: Int, sourceId: Long)
     suspend fun hasUserCachedTracks(): Boolean
     suspend fun refreshTrackDownloadedStatus()
-
 }
 
 interface SimpleSet<T> {
@@ -54,13 +55,14 @@ interface SimpleSet<T> {
     val size: Int
 }
 
+@Singleton
 class CachedFileManager @Inject constructor(
+    private val applicationContext: Context,
     private val fetch: Fetch,
     private val prefsRepo: PrefsRepo,
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val sourceManager: SourceManager,
-    private val applicationContext: Context
 ) : ICachedFileManager {
 
     private val externalFileDirs = Injector.get().externalDeviceDirs()
@@ -142,6 +144,13 @@ class CachedFileManager @Inject constructor(
                 return@mapNotNull null
             }
 
+            val dest = Uri.parse("file://${destFile.absolutePath}")
+            val source = sourceManager.getSourceById(track.source)
+
+            if (source !is HttpMediaSource) {
+                return@mapNotNull null
+            }
+
             // File exists but is not marked as cached in the database- probably means a download
             // has failed. Delete it and try again
             if (!trackCached && destFileExists) {
@@ -151,37 +160,17 @@ class CachedFileManager @Inject constructor(
                 } else {
                     Timber.e("Succeeding in deleting cached file")
                 }
-                val dest = Uri.parse("file://${destFile.absolutePath}")
-                val source = sourceManager.getSourceById(track.source)
-                if (source is HttpMediaSource) {
-                    val request = source.makeDownloadRequest(track.media)
-                        .setTitle("#${track.index} ${track.album}")
-                        .setDescription("Downloading")
-                        .setDestinationUri(dest)
-                    val downId = downloadManager.enqueue(request)
-                    cacheQueue.add(downId)
-                }
             }
 
-            return@mapNotNull makeTrackDownloadRequest(
-                track,
-                bookId,
-                bookTitle,
-                "file://${destFile.absolutePath}"
+            return@mapNotNull source.makeDownloadRequest(
+                trackUrl = track.media,
+                dest = dest,
+                bookTitle = "#${track.index} ${track.album}",
             )
+
         }
-        Timber.i("Made download requests: ${requests.map { it.file }}")
         return requests
     }
-
-    /** Create a [Request] for a track download with the proper metadata */
-    private fun makeTrackDownloadRequest(
-        track: MediaItemTrack,
-        bookId: Int,
-        bookTitle: String,
-        dest: String,
-        source: MediaSource,
-    ) = source.makeDownloadRequest(track.media, bookId, bookTitle, dest)
 
 
     override suspend fun uncacheAllInLibrary(): Int {
@@ -209,12 +198,12 @@ class CachedFileManager @Inject constructor(
 
     /**
      * Deletes cached tracks from the filesystem corresponding to [tracks]. Assume all tracks have
-     * the correct [MediaItemTrack.parentKey] set
+     * the correct [MediaItemTrack.parentServerId] set
      *
      * Return [Result.success] on successful deletion of all files or [Result.failure] if the
      * deletion of any files fail
      */
-    override suspend fun deleteCachedBook(bookId: Int) {
+    override suspend fun deleteCachedBook(bookId: Int, sourceId: Long) {
         Timber.i("Deleting downloaded book: $bookId")
         fetch.deleteGroup(bookId)
         GlobalScope.launch {
@@ -364,14 +353,6 @@ class CachedFileManager @Inject constructor(
                 ))
             }
         }
-    }
-
-    /**
-     * Migrates cached files from being named after the [MediaItemTrack.id] to being named after
-     * the persistent part in [MediaItemTrack.media]
-     */
-    private suspend fun migrateCachedFiles() {
-
     }
 
 }

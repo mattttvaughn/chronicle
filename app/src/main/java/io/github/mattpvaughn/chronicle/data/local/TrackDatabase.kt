@@ -73,17 +73,23 @@ interface TrackDao {
     @Query("SELECT * FROM MediaItemTrack WHERE source = :sourceId")
     suspend fun getAllTracksInSource(sourceId: Long): List<MediaItemTrack>
 
-    @Query("SELECT * FROM MediaItemTrack WHERE parentKey = :bookId AND cached >= :isOfflineMode ORDER BY `index` ASC")
-    fun getTracksForAudiobook(bookId: Int, isOfflineMode: Boolean): LiveData<List<MediaItemTrack>>
+    @Query("SELECT * FROM MediaItemTrack WHERE parentServerId = :bookServerId AND cached >= :isOfflineMode ORDER BY `index` ASC")
+    fun getTracksForAudiobook(
+        bookServerId: Int,
+        isOfflineMode: Boolean
+    ): LiveData<List<MediaItemTrack>>
 
-    @Query("SELECT * FROM MediaItemTrack WHERE parentKey = :id AND cached >= :offlineModeActive ORDER BY `index` ASC")
+    @Query("SELECT * FROM MediaItemTrack WHERE parentServerId = :bookServerId AND cached >= :offlineModeActive ORDER BY `index` ASC")
     suspend fun getTracksForAudiobookAsync(
-        id: Int,
+        bookServerId: Int,
         offlineModeActive: Boolean
     ): List<MediaItemTrack>
 
-    @Query("SELECT COUNT(*) FROM MediaItemTrack WHERE parentKey = :bookId")
-    suspend fun getTrackCountForAudiobookAsync(bookId: Int): Int
+    @Query("SELECT COUNT(*) FROM MediaItemTrack WHERE parentServerId = :bookServerId")
+    suspend fun getTrackCountForAudiobookAsync(bookServerId: Int): Int
+
+    @Query("SELECT COUNT(*) FROM MediaItemTrack WHERE cached = :isCached AND parentServerId = :bookServerId")
+    suspend fun getCachedTrackCountForBookAsync(bookServerId: Int, isCached: Boolean = true): Int
 
     @Query("UPDATE MediaItemTrack SET progress = :trackProgress, lastViewedAt = :lastViewedAt WHERE id = :trackId")
     fun updateProgress(trackProgress: Long, trackId: Int, lastViewedAt: Long)
@@ -92,13 +98,10 @@ interface TrackDao {
     fun clear()
 
     @Query("UPDATE MediaItemTrack SET cached = :isCached WHERE id = :trackId")
-    fun updateCachedStatus(trackId: Int, isCached: Boolean) : Int
+    fun updateCachedStatus(trackId: Int, isCached: Boolean): Int
 
     @Query("SELECT * FROM MediaItemTrack WHERE cached = :isCached")
     fun getCachedTracksAsync(isCached: Boolean = true): List<MediaItemTrack>
-
-    @Query("SELECT COUNT(*) FROM MediaItemTrack WHERE cached = :isCached AND parentKey = :bookId")
-    suspend fun getCachedTrackCountForBookAsync(bookId: Int, isCached: Boolean = true): Int
 
     @Query("UPDATE MediaItemTrack SET cached = :isCached")
     suspend fun uncacheAll(isCached: Boolean = false)

@@ -64,7 +64,7 @@
                 android:background="@color/colorPrimaryDark"
                 android:elevation="1dp">
 
-                <com.facebook.drawee.view.SimpleDraweeView
+                <ImageView
                     android:id="@+id/currently_playing_thumb"
                     serverConnected="@{sourceManager.isSourceConnected(viewModel.audiobook.source)}"
                     srcRounded="@{viewModel.audiobook.thumb}"

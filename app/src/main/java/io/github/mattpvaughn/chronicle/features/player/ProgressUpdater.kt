@@ -11,8 +11,6 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRA
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
-import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
-import io.github.mattpvaughn.chronicle.data.model.getTrackStartTime
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
 import io.github.mattpvaughn.chronicle.data.sources.RemoteSyncScrobbleWorker
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
@@ -225,7 +223,7 @@ class SimpleProgressUpdater @Inject constructor(
         )
         if (bookDuration - bookProgress <= BOOK_FINISHED_END_OFFSET_MILLIS) {
             Timber.i("Marking $bookId as finished")
-            bookRepository.setWatched(bookId)
+            bookRepository.setWatched(bookId, null)
         }
     }
 

@@ -26,7 +26,7 @@ interface ITrackRepository {
         bookId: Int,
         source: HttpMediaSource,
         forceUseNetwork: Boolean = false,
-    ): Result<List<MediaItemTrack>, Throwable>
+    ): Result<List<MediaItemTrack>>
 
     /**
      * Update the value of [MediaItemTrack.cached] to [isCached] for a [MediaItemTrack] with
@@ -40,7 +40,7 @@ interface ITrackRepository {
 
     /**
      * Return a [LiveData<List<MediaItemTrack>>] containing all [MediaItemTrack]s where
-     * [MediaItemTrack.parentKey] == [bookId]
+     * [MediaItemTrack.parentServerId] == [bookId]
      */
     fun getTracksForAudiobook(bookId: Int): LiveData<List<MediaItemTrack>>
     suspend fun getTracksForAudiobookAsync(bookId: Int): List<MediaItemTrack>
@@ -58,7 +58,7 @@ interface ITrackRepository {
     suspend fun getTrackAsync(id: Int): MediaItemTrack?
 
     /**
-     * Return the [MediaItemTrack.parentKey] for a [MediaItemTrack] where [MediaItemTrack.id] == [trackId]
+     * Return the [MediaItemTrack.parentServerId] for a [MediaItemTrack] where [MediaItemTrack.id] == [trackId]
      */
     suspend fun getBookIdForTrack(trackId: Int): Int
 
@@ -70,11 +70,11 @@ interface ITrackRepository {
      */
     suspend fun getCachedTracks(): List<MediaItemTrack>
 
-    /** Returns the number of [MediaItemTrack] where [MediaItemTrack.parentKey] == [bookId] */
+    /** Returns the number of [MediaItemTrack] where [MediaItemTrack.parentServerId] == [bookId] */
     suspend fun getTrackCountForBookAsync(bookId: Int): Int
 
     /**
-     * Returns the number of [MediaItemTrack] where [MediaItemTrack.parentKey] == [bookId] and
+     * Returns the number of [MediaItemTrack] where [MediaItemTrack.parentServerId] == [bookId] and
      * [MediaItemTrack.cached] == true
      */
     suspend fun getCachedTrackCountForBookAsync(bookId: Int): Int
@@ -82,17 +82,11 @@ interface ITrackRepository {
     /** Sets [MediaItemTrack.cached] to false for all [MediaItemTrack] in [TrackDatabase] */
     suspend fun uncacheAll()
 
-    /**
-     * Loads all [MediaItemTrack]s available on the server into the load DB and returns a [List]
-     * of them
-     */
-    suspend fun loadAllTracksAsync(): List<MediaItemTrack>
-
     /** Fetches all [MediaType.TRACK]s from the server, updates the local db */
     suspend fun refreshData(): List<Result<Unit>>
 
-    /** Removes all [MediaItemTrack] where [MediaItemTrack.source] == [id] */
-    suspend fun removeWithSource(id: Long)
+    /** Removes all [MediaItemTrack] where [MediaItemTrack.source] == [sourceId] */
+    suspend fun removeWithSource(sourceId: Long)
 
     /** Retrieves a track from the local db with [title] as a substring of [MediaItemTrack.title] */
     suspend fun findTrackByTitle(title: String): MediaItemTrack?
@@ -102,13 +96,17 @@ interface ITrackRepository {
      *
      * @return a [List<MediaItemTrack>] reflecting tracks returned by the server
      */
-    suspend fun fetchNetworkTracksForBook(bookId: Int): List<MediaItemTrack>
+    suspend fun fetchNetworkTracksForBook(
+        bookId: Int,
+        source: HttpMediaSource,
+    ): List<MediaItemTrack>
 
     /**
      * Loads in new track data from the network, updates the DB and returns the new track data
      */
     suspend fun syncTracksInBook(
         bookId: Int,
+        source: HttpMediaSource,
         forceUseNetwork: Boolean = false
     ): List<MediaItemTrack>
 
@@ -161,12 +159,28 @@ class TrackRepository @Inject constructor(
         }
     }
 
+    override suspend fun findTrackByTitle(title: String): MediaItemTrack? {
+        return withContext(Dispatchers.IO) {
+            trackDao.findTrackByTitle(title)
+        }
+    }
+
+    override suspend fun fetchNetworkTracksForBook(
+        bookId: Int,
+        source: HttpMediaSource
+    ): List<MediaItemTrack> {
+        return withContext(Dispatchers.IO) {
+            source.fetchTracksForBook(bookId)
+        }
+    }
+
     override suspend fun syncTracksInBook(
         bookId: Int,
+        source: HttpMediaSource,
         forceUseNetwork: Boolean,
     ): List<MediaItemTrack> =
         withContext(Dispatchers.IO) {
-            val networkTracks = fetchNetworkTracksForBook(bookId)
+            val networkTracks = fetchNetworkTracksForBook(bookId, source)
             val localTracks = getTracksForAudiobookAsync(bookId)
             val mergedTracks = mergeNetworkTracks(
                 networkTracks = networkTracks,
@@ -190,9 +204,9 @@ class TrackRepository @Inject constructor(
 
 
     override suspend fun loadTracksForAudiobook(
-        source: HttpMediaSource,
         bookId: Int,
-        forceUseNetwork: Boolean = false,
+        source: HttpMediaSource,
+        forceUseNetwork: Boolean,
     ): Result<List<MediaItemTrack>> {
         return withContext(Dispatchers.IO) {
             val localTracks = trackDao.getAllTracksAsync()
@@ -224,8 +238,8 @@ class TrackRepository @Inject constructor(
     }
 
 
-    override fun getTracksForAudiobook(bookId: Int): LiveData<List<MediaItemTrack>> {
-        return trackDao.getTracksForAudiobook(bookId, prefsRepo.offlineMode)
+    override fun getTracksForAudiobook(bookServerId: Int): LiveData<List<MediaItemTrack>> {
+        return trackDao.getTracksForAudiobook(bookServerId, prefsRepo.offlineMode)
     }
 
     override suspend fun getTracksForAudiobookAsync(bookId: Int): List<MediaItemTrack> {
@@ -256,7 +270,7 @@ class TrackRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             val track = trackDao.getTrackAsync(trackId)
             Timber.i("Track is $track")
-            val parentKey = track?.parentKey
+            val parentKey = track?.parentServerId
             parentKey ?: NO_AUDIOBOOK_FOUND_ID
         }
     }
@@ -298,7 +312,7 @@ class TrackRepository @Inject constructor(
     ) {
         companion object {
             fun from(mediaItemTrack: MediaItemTrack) = TrackIdentifier(
-                parentId = mediaItemTrack.parentKey,
+                parentId = mediaItemTrack.parentServerId,
                 title = mediaItemTrack.title,
                 duration = mediaItemTrack.duration,
             )
@@ -334,7 +348,7 @@ class TrackRepository @Inject constructor(
                 Timber.e("Moving disappeared track: ${networkTrack.title}")
                 val cachedTrack = localTracks.firstOrNull {
                     networkTrackIdentifier.duration == it.duration
-                            && networkTrackIdentifier.parentId == it.parentKey
+                            && networkTrackIdentifier.parentId == it.parentServerId
                             && networkTrackIdentifier.title == it.title
                 }
                 if (cachedTrack != null) {

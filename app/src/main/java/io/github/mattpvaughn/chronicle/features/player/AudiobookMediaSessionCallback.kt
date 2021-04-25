@@ -11,8 +11,6 @@ import android.view.KeyEvent.*
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
@@ -255,9 +253,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
             }
 
             if (tracks.isNullOrEmpty()) {
-                handlePlayBookWithNoTracks(bookId, tracks, extras)
                 if (source is HttpMediaSource) {
-                    TODO("Tracks null or empty")
                     handlePlayBookWithNoTracks(source, bookId, tracks, extras)
                 } else {
                     Timber.i("Unable to fetch tracks for source, not an HttpMediaSource")
@@ -287,14 +283,6 @@ class AudiobookMediaSessionCallback @Inject constructor(
             }
             Timber.i("Starting at index: $startingTrackIndex, offset by $trueStartTimeOffsetMillis")
             trackListStateManager.updatePosition(startingTrackIndex, trueStartTimeOffsetMillis)
-
-            val book = withContext(Dispatchers.IO) {
-                return@withContext bookRepository.getAudiobookAsync(bookId.toInt())
-            }
-            if (book == null || book.id == NO_AUDIOBOOK_FOUND_ID) {
-                // Return if no book found- no reason to setup playback if there's no book
-                return@launch
-            }
 
             // Auto-rewind depending on last listened time for the book. Don't rewind if we're
             // starting a new chapter/track of a book
@@ -350,7 +338,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
         Timber.i("No known tracks for book: $bookId, attempting to fetch them")
         // Tracks haven't been loaded by UI for this track, so load it here
         val networkResult = withContext(Dispatchers.IO) {
-            trackRepository.loadTracksForAudiobook(source, bookId.toInt())
+            trackRepository.loadTracksForAudiobook(bookId.toInt(), source)
         }
         val networkTracks = networkResult.getOrNull()
 
@@ -363,7 +351,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
             )
             val audiobook = bookRepository.getAudiobookAsync(bookId.toInt())
             if (audiobook != null) {
-                bookRepository.loadChapterData(source, audiobook, tracks)
+                bookRepository.syncAudiobook(source, audiobook, tracks)
             }
             playBook(bookId, extras, true)
         }

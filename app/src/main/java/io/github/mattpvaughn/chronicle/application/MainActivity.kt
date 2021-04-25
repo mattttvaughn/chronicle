@@ -21,6 +21,9 @@ import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomS
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.EXPANDED
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.model.EMPTY_AUDIOBOOK
+import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
+import io.github.mattpvaughn.chronicle.data.sources.MediaSource.Companion.NO_SOURCE_FOUND
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.databinding.ActivityMainBinding
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingFragment
@@ -210,14 +213,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         val openAudiobookWithId = intent?.extras?.getInt(
-            FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID, NO_AUDIOBOOK_FOUND_ID
+            FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_BOOK_ID, NO_AUDIOBOOK_FOUND_ID
         ) ?: NO_AUDIOBOOK_FOUND_ID
+
+        val sourceId = intent?.extras?.getLong(
+            FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_SOURCE_ID, NO_SOURCE_FOUND
+        ) ?: NO_SOURCE_FOUND
         if (openAudiobookWithId != NO_AUDIOBOOK_FOUND_ID) {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     val audiobook = bookRepository.getAudiobookAsync(openAudiobookWithId)
                     if (audiobook != null && audiobook != EMPTY_AUDIOBOOK) {
-                        navigator.showDetails(audiobook.id, audiobook.title, audiobook.isCached)
+                        navigator.showDetails(
+                            audiobook.id,
+                            audiobook.title,
+                            audiobook.isCached,
+                            sourceId
+                        )
                     }
                 }
             }
@@ -247,7 +259,10 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING = "OPEN_ACTIVITY_TO_AUDIOBOOK"
         const val REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING = -12
-        const val FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID = "OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID"
+        const val FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_BOOK_ID =
+            "OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_BOOK_ID"
+        const val FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_SOURCE_ID =
+            "OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_SOURCE_ID"
 
         // add audiobook id to this number to avoid repeats
         const val REQUEST_CODE_PREFIX_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID = -1001110

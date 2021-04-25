@@ -1,10 +1,10 @@
 package io.github.mattpvaughn.chronicle.data.sources
 
-import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.LiveData
 import com.bumptech.glide.load.model.LazyHeaders
+import com.tonyodev.fetch2.Request
 import io.github.mattpvaughn.chronicle.data.ConnectionState
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.Chapter
@@ -12,7 +12,8 @@ import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import retrofit2.http.Path
 
 /** A [MediaSource] whose authoritative source of truth in accessed via HTTP requests */
-abstract class HttpMediaSource(applicationContext: Context) : MediaSource(applicationContext) {
+abstract class HttpMediaSource(private val applicationContext: Context) :
+    MediaSource(applicationContext) {
     /**
      * Fetches information no provided by [fetchTracks] which must be fetched one track at a time,
      * like chapter information
@@ -46,8 +47,8 @@ abstract class HttpMediaSource(applicationContext: Context) : MediaSource(applic
     /** The state of the connection to the server. Represented by a [ConnectionState] */
     abstract val connectionState: LiveData<ConnectionState>
 
-    /** Makes a [DownloadManager.Request] with the needed HTTP headers */
-    abstract fun makeDownloadRequest(trackUrl: String): DownloadManager.Request
+    /** Makes a [Request] with the needed HTTP headers */
+    abstract fun makeDownloadRequest(trackUrl: String, dest: Uri, bookTitle: String): Request
 
     /** Makes a [LazyHeaders] with the needed HTTP headers for auth */
     abstract fun makeGlideHeaders(): LazyHeaders
@@ -80,5 +81,7 @@ abstract class HttpMediaSource(applicationContext: Context) : MediaSource(applic
      */
     abstract fun refreshAuth()
 
+    /** Fetches a single book from the source */
+    abstract suspend fun fetchBook(bookId: Int): Audiobook?
 
 }

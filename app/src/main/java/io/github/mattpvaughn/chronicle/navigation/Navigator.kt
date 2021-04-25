@@ -8,6 +8,7 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.PlexLoginRepo.Companion
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_ID
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_SOURCE_ID
+import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_TITLE
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_IS_AUDIOBOOK_CACHED
 import io.github.mattpvaughn.chronicle.features.home.HomeFragment
 import io.github.mattpvaughn.chronicle.features.library.LibraryFragment

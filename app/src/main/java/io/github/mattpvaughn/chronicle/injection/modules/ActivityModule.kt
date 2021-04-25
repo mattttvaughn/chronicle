@@ -7,8 +7,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.Module
 import dagger.Provides
-import io.github.mattpvaughn.chronicle.data.CachedFileManager
-import io.github.mattpvaughn.chronicle.data.ICachedFileManager
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.ProgressUpdater
@@ -41,10 +39,6 @@ class ActivityModule(private val activity: AppCompatActivity) {
     @ActivityScope
     fun provideBroadcastManager(): LocalBroadcastManager =
         LocalBroadcastManager.getInstance(activity)
-
-    @Provides
-    @ActivityScope
-    fun provideCachedFileManager(cacheManager: CachedFileManager): ICachedFileManager = cacheManager
 
     @Provides
     @ActivityScope
