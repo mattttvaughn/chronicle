@@ -70,6 +70,14 @@ class AppModule(private val app: ChronicleApplication) {
 
     @Provides
     @Singleton
+    fun provideChapterDao(): ChapterDao = getChapterDatabase(app.applicationContext).chapterDao
+
+    @Provides
+    @Singleton
+    fun provideChapterRepo(chapterRepo: ChapterRepository): IChapterRepository = chapterRepo
+
+    @Provides
+    @Singleton
     fun provideInternalDeviceDirs(): File = app.applicationContext.filesDir
 
     @Provides

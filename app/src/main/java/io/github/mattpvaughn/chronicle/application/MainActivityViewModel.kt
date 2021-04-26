@@ -7,9 +7,9 @@ import android.support.v4.media.session.PlaybackStateCompat.STATE_STOPPED
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.*
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
+import io.github.mattpvaughn.chronicle.data.local.IChapterRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.model.*
-import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.features.player.id
@@ -18,7 +18,6 @@ import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.mapAsync
 import io.github.mattpvaughn.chronicle.util.postEvent
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -28,6 +27,7 @@ class MainActivityViewModel(
     sourceManager: SourceManager,
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
+    private val chapterRepository: IChapterRepository,
     private val mediaServiceConnection: MediaServiceConnection,
 ) : ViewModel(), MainActivity.CurrentlyPlayingInterface {
 
@@ -35,6 +35,7 @@ class MainActivityViewModel(
     class Factory @Inject constructor(
         private val sourceManager: SourceManager,
         private val trackRepository: ITrackRepository,
+        private val chapterRepository: IChapterRepository,
         private val bookRepository: IBookRepository,
         private val mediaServiceConnection: MediaServiceConnection,
     ) : ViewModelProvider.Factory {
@@ -45,6 +46,7 @@ class MainActivityViewModel(
                     sourceManager,
                     trackRepository,
                     bookRepository,
+                    chapterRepository,
                     mediaServiceConnection
                 ) as T
             } else {
@@ -67,15 +69,14 @@ class MainActivityViewModel(
         get() = _currentlyPlayingLayoutState
 
     private var audiobookId = MutableLiveData(NO_AUDIOBOOK_FOUND_ID)
-    private var sourceId = MutableStateFlow(MediaSource.NO_SOURCE_FOUND)
 
     val audiobook = mapAsync(audiobookId, viewModelScope) { id ->
         bookRepository.getAudiobookAsync(id) ?: EMPTY_AUDIOBOOK
     }
 
-    private var tracks = Transformations.switchMap(audiobookServerId) { id ->
-        if (id != NO_AUDIOBOOK_FOUND_ID) {
-            trackRepository.getTracksForAudiobook(id)
+    private var tracks = Transformations.switchMap(audiobook) { book ->
+        if (book != EMPTY_AUDIOBOOK) {
+            trackRepository.getTracksForAudiobook(book.source, book.serverId)
         } else {
             MutableLiveData(emptyList())
         }
@@ -90,18 +91,9 @@ class MainActivityViewModel(
         it.asChapterList()
     }
 
-    val chapters: DoubleLiveData<Audiobook, List<Chapter>, List<Chapter>> = DoubleLiveData(
-        audiobook, tracksAsChaptersCache
-    ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
-        if (_audiobook?.chapters?.isNotEmpty() == true) {
-            // We would really prefer this because it doesn't have to be computed
-            _audiobook.chapters
-        } else {
-            _tracksAsChapters ?: emptyList()
-        }
-    }
+    val chapters = chapterRepository.getChaptersForBook(audiobookId.value ?: NO_AUDIOBOOK_FOUND_ID)
 
-    val currentChapterTitle= DoubleLiveData(tracks, chapters) { _tracks, _chapters ->
+    val currentChapterTitle = DoubleLiveData(tracks, chapters) { _tracks, _chapters ->
         if (_chapters.isNullOrEmpty() || _tracks.isNullOrEmpty()) {
             return@DoubleLiveData "No track playing"
         }
@@ -149,7 +141,7 @@ class MainActivityViewModel(
             val bookId = trackRepository.getBookIdForTrack(trackId)
             // Only change the active audiobook if it differs from the one currently in metadata
             if (previousAudiobookId != bookId && bookId != NO_AUDIOBOOK_FOUND_ID) {
-                audiobookServerId.postValue(bookId)
+                audiobookId.postValue(bookId)
                 if (_currentlyPlayingLayoutState.value == HIDDEN) {
                     _currentlyPlayingLayoutState.postValue(COLLAPSED)
                 }

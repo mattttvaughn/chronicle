@@ -38,7 +38,7 @@ class MediaServiceConnection @Inject constructor(
             // If the service already exists, bind the state right now
             if (mediaController?.playbackState?.state ?: STATE_NONE != STATE_NONE) {
                 playbackState.postValue(mediaController?.playbackState ?: EMPTY_PLAYBACK_STATE)
-                nowPlaying.postValue(mediaController?.metadata ?: NOTHING_PLAYING)
+                nowPlaying.value = mediaController?.metadata ?: NOTHING_PLAYING
             }
         }
 
@@ -88,9 +88,9 @@ class MediaServiceConnection @Inject constructor(
             onConnected = {}
             Timber.i("MediaController metadata: ${metadata?.describe()}")
             if (metadata?.id == null || metadata.title == null) {
-                nowPlaying.postValue(NOTHING_PLAYING)
+                nowPlaying.value = NOTHING_PLAYING
             } else {
-                nowPlaying.postValue(metadata)
+                nowPlaying.value = metadata
             }
         }
 

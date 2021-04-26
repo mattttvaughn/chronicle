@@ -36,6 +36,7 @@ interface AppComponent {
     fun prefsRepo(): PrefsRepo
     fun trackRepo(): ITrackRepository
     fun bookRepo(): IBookRepository
+    fun chapterRepo(): IChapterRepository
     fun workManager(): WorkManager
     fun unhandledExceptionHandler(): CoroutineExceptionHandler
     fun mediaSourceFactory(): MediaSourceFactory

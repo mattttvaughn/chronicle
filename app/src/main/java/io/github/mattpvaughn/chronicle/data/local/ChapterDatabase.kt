@@ -37,8 +37,8 @@ interface ChapterDao {
     @Query("SELECT * FROM Chapter ORDER BY discNumber, `index`")
     fun getAllRows(): LiveData<List<Chapter>>
 
-    @Query("SELECT * FROM Chapter")
-    fun getChapters(): List<Chapter>
+    @Query("SELECT * FROM Chapter WHERE bookId == :bookId ORDER BY discNumber, `index`")
+    fun getChaptersInBook(bookId: Int): LiveData<List<Chapter>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(rows: List<Chapter>)

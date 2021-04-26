@@ -3,6 +3,7 @@ package io.github.mattpvaughn.chronicle.features.bookdetails
 import android.media.session.MediaController
 import android.media.session.PlaybackState.*
 import android.os.Bundle
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
 import androidx.lifecycle.*
@@ -87,7 +88,7 @@ class AudiobookDetailsViewModel(
 
     val sourceId = inputAudiobook.source
     val audiobook: LiveData<Audiobook?> = bookRepository.getAudiobook(inputAudiobook.id)
-    val tracks = trackRepository.getTracksForAudiobook(inputAudiobook.serverId)
+    val tracks = trackRepository.getTracksForAudiobook(sourceId, inputAudiobook.serverId)
 
     // Used to cache tracks.asChapterList when tracks changes
     private val tracksAsChaptersCache: LiveData<List<Chapter>> = mapAsync(tracks, viewModelScope) {
@@ -100,7 +101,7 @@ class AudiobookDetailsViewModel(
             tracksAsChaptersCache
         ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
             Timber.i("Chapter data updated! ")
-            if (_audiobook?.chapters?.isNotEmpty() == true) {
+            if (_audiobook?.chapters.isNotEmpty() == true) {
                 _audiobook.chapters
             } else {
                 Timber.i("Chapters: $_tracksAsChapters")
@@ -248,7 +249,7 @@ class AudiobookDetailsViewModel(
     private val networkObserver = Observer<ConnectionState> { connection ->
         if (connection == ConnectionState.CONNECTED) {
             if (mediaSource is HttpMediaSource) {
-                updateBookDetails(mediaSource, inputAudiobook.id)
+                loadBookDetails(mediaSource, inputAudiobook.id)
             }
         }
     }
@@ -297,7 +298,7 @@ class AudiobookDetailsViewModel(
      * Refresh details for the current audiobook. Mostly important because we want to refresh the
      * progress in the audiobook is there has been new playback
      */
-    private fun loadBookDetails(bookId: Int) {
+    private fun loadBookDetails(mediaSource: MediaSource, bookId: Int) {
         Timber.i("Refreshing tracks!")
         viewModelScope.launch {
             try {
@@ -335,6 +336,9 @@ class AudiobookDetailsViewModel(
     fun onCacheButtonClick() {
         if (!prefsRepo.isPremium) {
             showUserMessage(FormattableString.from(R.string.premium_required_offline_playback))
+            return
+        }
+        if (!mediaSource.isDownloadable) {
             return
         }
         when (cacheStatus.value) {

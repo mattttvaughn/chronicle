@@ -5,7 +5,6 @@ import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
-import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,7 +40,7 @@ interface ITrackRepository {
      * Return a [LiveData<List<MediaItemTrack>>] containing all [MediaItemTrack]s where
      * [MediaItemTrack.parentServerId] == [bookId]
      */
-    fun getTracksForAudiobook(bookId: Int): LiveData<List<MediaItemTrack>>
+    fun getTracksForAudiobook(sourceId: Long, bookServerId: Int): LiveData<List<MediaItemTrack>>
     suspend fun getTracksForAudiobookAsync(bookId: Int): List<MediaItemTrack>
 
     /** Update the value of [MediaItemTrack.progress] == [trackProgress] and
@@ -124,8 +123,7 @@ interface ITrackRepository {
 @Singleton
 class TrackRepository @Inject constructor(
     private val trackDao: TrackDao,
-    private val prefsRepo: PrefsRepo,
-    private val sourceManager: SourceManager
+    private val prefsRepo: PrefsRepo
 ) : ITrackRepository {
 
     override suspend fun upsert(sourceId: Long, updateTracks: List<MediaItemTrack>) {
@@ -168,9 +166,8 @@ class TrackRepository @Inject constructor(
             val networkTracks = fetchNetworkTracksForBook(bookId, source)
             val localTracks = getTracksForAudiobookAsync(bookId)
             val mergedTracks = mergeNetworkTracks(
-                networkTracks = networkTracks,
+                sourceTracks = networkTracks,
                 localTracks = localTracks,
-                forcePreferNetwork = forceUseNetwork
             )
             trackDao.insertAll(mergedTracks)
             mergedTracks
@@ -201,7 +198,7 @@ class TrackRepository @Inject constructor(
                 trackDao.insertAll(mergedTracks)
                 Result.success(mergedTracks)
             } catch (t: Throwable) {
-                Result.failure<List<MediaItemTrack>>(t)
+                Result.failure(t)
             }
         }
     }
@@ -223,8 +220,11 @@ class TrackRepository @Inject constructor(
     }
 
 
-    override fun getTracksForAudiobook(bookServerId: Int): LiveData<List<MediaItemTrack>> {
-        return trackDao.getTracksForAudiobook(bookServerId, prefsRepo.offlineMode)
+    override fun getTracksForAudiobook(
+        sourceId: Long,
+        bookServerId: Int
+    ): LiveData<List<MediaItemTrack>> {
+        return trackDao.getTracksForAudiobook(sourceId, bookServerId, prefsRepo.offlineMode)
     }
 
     override suspend fun getTracksForAudiobookAsync(bookId: Int): List<MediaItemTrack> {

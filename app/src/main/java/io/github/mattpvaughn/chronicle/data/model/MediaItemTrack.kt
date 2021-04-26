@@ -2,6 +2,7 @@ package io.github.mattpvaughn.chronicle.data.model
 
 import android.support.v4.media.MediaMetadataCompat
 import androidx.room.Entity
+import androidx.room.PrimaryKey
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
@@ -21,7 +22,7 @@ data class MediaItemTrack(
     val id: Int = 0,
     /** ID as set by the server */
     val serverId: Int = 0,
-    val parentServerId: Int = -1,
+    val parentServerId: Int = 0,
     val title: String = "",
     val playQueueItemID: Long = -1,
     val thumb: String? = null,
@@ -100,7 +101,7 @@ data class MediaItemTrack(
             sourceId: Long
         ): MediaItemTrack {
             return MediaItemTrack(
-                id = networkTrack.ratingKey.toInt(),
+                serverId = networkTrack.ratingKey.toInt(),
                 parentServerId = networkTrack.parentRatingKey,
                 title = networkTrack.title,
                 artist = networkTrack.grandparentTitle,

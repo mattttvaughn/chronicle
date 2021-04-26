@@ -13,6 +13,8 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.navigation.Navigator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.IOException
 import kotlin.time.ExperimentalTime
@@ -98,15 +100,18 @@ class DemoMediaSource(
         return Uri.parse(draculaArtAssetPath)
     }
 
-    override fun getBitmapForThumb(uri: Uri): Bitmap? {
+    override suspend fun getBitmapForThumb(uri: Uri): Bitmap? {
         Timber.i("Getting demo bitmap")
-        return try {
-            val stream = applicationContext.assets.open(draculaArtAssetPath)
-            BitmapFactory.decodeStream(stream)
-        } catch (e: IOException) {
-            // handle exception
-            Timber.i("Failed to get demo bitmap")
-            null
+        return withContext(Dispatchers.IO) {
+            try {
+                @Suppress("BlockingMethodInNonBlockingContext")
+                val stream = applicationContext.assets.open(draculaArtAssetPath)
+                BitmapFactory.decodeStream(stream)
+            } catch (e: IOException) {
+                // handle exception
+                Timber.i("Failed to get demo bitmap")
+                null
+            }
         }
     }
 

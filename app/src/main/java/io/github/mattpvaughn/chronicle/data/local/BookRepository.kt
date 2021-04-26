@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -44,8 +45,8 @@ interface IBookRepository {
      * Returns a [LiveData<Audiobook>] corresponding to an [Audiobook] with the [Audiobook.id]
      * equal to [bookId]
      */
-    fun getAudiobook(bookId: Int, sourceId: Long): LiveData<Audiobook?>
-    suspend fun getAudiobookAsync(bookId: Int, sourceId: Long): Audiobook?
+    fun getAudiobook(bookId: Int): LiveData<Audiobook?>
+    suspend fun getAudiobookAsync(bookId: Int): Audiobook?
 
     /**
      * Returns the [getBookCount] most recently added books in the local database, ordered by most
@@ -171,14 +172,14 @@ class BookRepository @Inject constructor(
 
         val localBooks = withContext(Dispatchers.IO) {
             bookDao.getAudiobooksForSourceAsync(sourceId, false)
-        }.associateBy { it.id }
+        }.associateBy { it.serverId }
 
         val mergedBooks = updateBooks.map { book ->
             val dbBook = if (isLocal) {
                 // Match book on filesystem to book in DB by title
                 localBooks.values.find { it.title == book.title }
             } else {
-                localBooks[book.id]
+                localBooks[book.serverId]
             }
             val updateBook = if (isLocal && dbBook != null) {
                 book.copy(id = dbBook.id)
@@ -226,8 +227,8 @@ class BookRepository @Inject constructor(
         }
     }
 
-    override fun getAudiobook(bookId: Int, sourceId: Long): LiveData<Audiobook?> {
-        return bookDao.getAudiobook(bookId, sourceId, prefsRepo.offlineMode)
+    override fun getAudiobook(bookId: Int): LiveData<Audiobook?> {
+        return bookDao.getAudiobook(bookId, prefsRepo.offlineMode)
     }
 
     override fun getRecentlyAdded(): LiveData<List<Audiobook>> {
@@ -316,9 +317,9 @@ class BookRepository @Inject constructor(
         return bookDao.getMostRecent() ?: EMPTY_AUDIOBOOK
     }
 
-    override suspend fun getAudiobookAsync(bookId: Int, sourceId: Long): Audiobook? {
+    override suspend fun getAudiobookAsync(bookId: Int): Audiobook? {
         return withContext(Dispatchers.IO) {
-            bookDao.getAudiobookAsync(bookId, sourceId)
+            bookDao.getAudiobookAsync(bookId)
         }
     }
 
@@ -382,7 +383,6 @@ class BookRepository @Inject constructor(
             ).copy(
                 progress = tracks.getProgress(),
                 duration = tracks.getDuration(),
-                chapters = chapters
             )
             bookDao.update(merged)
             return@withContext true

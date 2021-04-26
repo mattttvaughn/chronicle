@@ -50,8 +50,6 @@ data class Audiobook constructor(
     val leafCount: Long = 0L,
     /** The number of times the book has been listened to */
     val viewCount: Long = 0L,
-    /** Chapter metadata corresponding to m4b chapter metadata in the m4b files */
-    val chapters: List<Chapter> = emptyList(),
 ) {
 
     companion object {
@@ -82,11 +80,11 @@ data class Audiobook constructor(
          * This is because even if the network copy is more up to date, retaining the most recent
          * [lastViewedAt] from the local copy is preferred.
          *
-         * Always retain fields from local copy: [duration], [isCached], [favorited], [chapters],
-         * [source]. We retain [chapters], [duration], and [progress] because they can be calculated
-         * only when all child [MediaItemTrack]'s of the Audiobook are loaded. We retain [duration],
-         * [source], and [isCached] because they are explicitly local values, they do not even exist
-         * on the server.
+         * Always retain fields from local copy: [duration], [isCached], [favorited], [source]. We
+         * retain [duration], and [progress] because they can be calculated only when all child
+         * [MediaItemTrack]'s of the Audiobook are loaded. We retain [duration], [source], and
+         * [isCached] because they are explicitly local values, they do not even exist on the
+         * server.
          */
         fun merge(network: Audiobook, local: Audiobook, forceNetwork: Boolean = false): Audiobook {
             return if (network.lastViewedAt > local.lastViewedAt || forceNetwork) {
@@ -95,7 +93,6 @@ data class Audiobook constructor(
                     progress = local.progress,
                     isCached = local.isCached,
                     favorited = local.favorited,
-                    chapters = local.chapters,
                     source = local.source,
                 )
             } else {
@@ -106,7 +103,6 @@ data class Audiobook constructor(
                     isCached = local.isCached,
                     lastViewedAt = local.lastViewedAt,
                     favorited = local.favorited,
-                    chapters = local.chapters,
                 )
             }
         }
@@ -178,4 +174,9 @@ fun Audiobook.toMediaItem(mediaSource: MediaSource?): MediaBrowserCompat.MediaIt
 
 const val NO_AUDIOBOOK_FOUND_ID = -22321
 const val NO_AUDIOBOOK_FOUND_TITLE = "No audiobook found"
-val EMPTY_AUDIOBOOK = Audiobook(NO_AUDIOBOOK_FOUND_ID, NO_SOURCE_FOUND, NO_AUDIOBOOK_FOUND_TITLE)
+val EMPTY_AUDIOBOOK = Audiobook(
+    id = NO_AUDIOBOOK_FOUND_ID,
+    serverId = NO_AUDIOBOOK_FOUND_ID,
+    source = NO_SOURCE_FOUND,
+    title = NO_AUDIOBOOK_FOUND_TITLE
+)

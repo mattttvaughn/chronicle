@@ -10,6 +10,7 @@ import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFrag
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_SOURCE_ID
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_TITLE
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_IS_AUDIOBOOK_CACHED
+import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_SERVER_ID
 import io.github.mattpvaughn.chronicle.features.home.HomeFragment
 import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
 import io.github.mattpvaughn.chronicle.features.login.AddSourceFragment
@@ -109,12 +110,19 @@ class Navigator @Inject constructor(
         fragmentManager.beginTransaction().replace(R.id.fragNavHost, settingsFragment).commit()
     }
 
-    fun showDetails(audiobookId: Int, audiobookTitle: String, isAudiobookCached: Boolean, sourceId: Long) {
+    fun showDetails(
+        audiobookId: Int,
+        audiobookTitle: String,
+        isAudiobookCached: Boolean,
+        sourceId: Long,
+        serverId: Int,
+    ) {
         val detailsFrag = AudiobookDetailsFragment.newInstance().apply {
             if (arguments == null) {
                 arguments = Bundle()
             }
             requireArguments().putInt(ARG_AUDIOBOOK_ID, audiobookId)
+            requireArguments().putInt(ARG_SERVER_ID, serverId)
             requireArguments().putLong(ARG_AUDIOBOOK_SOURCE_ID, sourceId)
             requireArguments().putString(ARG_AUDIOBOOK_TITLE, audiobookTitle)
             requireArguments().putBoolean(ARG_IS_AUDIOBOOK_CACHED, isAudiobookCached)

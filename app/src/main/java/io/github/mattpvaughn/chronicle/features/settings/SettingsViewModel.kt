@@ -528,7 +528,6 @@ class SettingsViewModel(
      * [navigateTo] provided
      */
     private fun clearDB(
-        navigateTo: NavigationDestination = NavigationDestination.DO_NOT_NAVIGATE,
         clearDownloads: Boolean = true
     ) {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {

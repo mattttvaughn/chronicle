@@ -393,8 +393,9 @@ class MediaPlayerService :
         // itself being removed (KEYCODE_MEDIA_STOP)
         if (ke?.keyCode != KEYCODE_MEDIA_STOP) {
             serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                val notification =
+                val notification = withContext(Dispatchers.IO) {
                     notificationBuilder.buildNotification(mediaSession.sessionToken, currentSource)
+                }
                 startForeground(NOW_PLAYING_NOTIFICATION, notification)
             }
         }

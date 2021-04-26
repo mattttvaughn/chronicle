@@ -151,6 +151,32 @@ class PlexLibrarySource constructor(
         }
     }
 
+    override suspend fun fetchChapters(
+        isBookCached: Boolean,
+        tracks: List<MediaItemTrack>
+    ): Result<List<Chapter>> {
+        return try {
+            val chapters = tracks.flatMap { track ->
+                val networkChapters = mediaService.retrieveChapterInfo(track.id)
+                    .plexMediaContainer.metadata.firstOrNull()?.plexChapters
+                // If no chapters for this track, make a chapter from the current track
+                networkChapters?.map { plexChapter ->
+                    plexChapter.toChapter(
+                        track.id.toLong(),
+                        track.discNumber,
+                        isBookCached
+                    )
+                }.takeIf {
+                    !it.isNullOrEmpty()
+                } ?: listOf(track.asChapter(0L))
+            }.sorted()
+            Result.success(chapters)
+        } catch (t: Throwable) {
+            Timber.e("Failed to load chapters: $t")
+            Result.failure(t)
+        }
+    }
+
     /** Launches Plex OAuth login process up to choosing library */
     override fun setup(navigator: Navigator) {
         TODO("Not yet implemented")
@@ -160,7 +186,7 @@ class PlexLibrarySource constructor(
         return TAG
     }
 
-    override fun getBitmapForThumb(uri: Uri): Bitmap? {
+    override suspend fun getBitmapForThumb(uri: Uri): Bitmap? {
         TODO("Not yet implemented")
     }
 

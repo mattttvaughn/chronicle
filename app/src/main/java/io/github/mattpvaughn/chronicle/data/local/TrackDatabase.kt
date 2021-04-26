@@ -33,7 +33,6 @@ fun getTrackDatabase(context: Context): TrackDatabase {
 @Database(
     entities = [MediaItemTrack::class],
     version = 6,
-    autoMigrations = [],
     exportSchema = true,
 )
 abstract class TrackDatabase : RoomDatabase() {
@@ -162,8 +161,9 @@ interface TrackDao {
     @Query("SELECT * FROM MediaItemTrack WHERE source = :sourceId")
     suspend fun getAllTracksInSourceAsync(sourceId: Long): List<MediaItemTrack>
 
-    @Query("SELECT * FROM MediaItemTrack WHERE parentServerId = :bookServerId AND cached >= :isOfflineMode ORDER BY `index` ASC")
+    @Query("SELECT * FROM MediaItemTrack WHERE parentServerId = :bookServerId AND source = :sourceId AND cached >= :isOfflineMode ORDER BY `index` ASC")
     fun getTracksForAudiobook(
+        sourceId: Long,
         bookServerId: Int,
         isOfflineMode: Boolean
     ): LiveData<List<MediaItemTrack>>

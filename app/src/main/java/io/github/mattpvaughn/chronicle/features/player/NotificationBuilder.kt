@@ -136,7 +136,7 @@ class NotificationBuilder @Inject constructor(
      *
      * @return a notification representing the current playback state or null if one already exists
      */
-    fun buildNotification(
+    suspend fun buildNotification(
         sessionToken: MediaSessionCompat.Token,
         mediaSource: MediaSource?,
     ): Notification? {

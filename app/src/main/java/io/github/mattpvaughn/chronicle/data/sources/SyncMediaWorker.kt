@@ -48,13 +48,15 @@ class SyncMediaWorker(
                 return@forEach
             }
 
-            val tracks = fetchedTracks.getOrNull() ?: return@forEach
+            // Fetch a non-empty list of books and tracks
+            val tracks = fetchedTracks.getOrNull()?.takeIf { it.isNotEmpty() } ?: return@forEach
             val books = fetchedBooks.getOrNull()?.takeIf { it.isNotEmpty() }
-                ?: makeBooksFromTracks(source.id, tracks)
+                ?: makeBooksFromTracks(source.id, tracks).takeIf { it.isNotEmpty() }
+                ?: return@forEach
 
             val booksWithTrackInfo = books.map { book ->
                 // [it.parentKey] to [book.id] constraint ensured by fetchBooks
-                val tracksInAudiobook = tracks.filter { it.parentKey == book.id }
+                val tracksInAudiobook = tracks.filter { it.parentServerId == book.serverId }
                 book.copy(
                     progress = tracksInAudiobook.getProgress(),
                     duration = tracksInAudiobook.getDuration(),
@@ -62,42 +64,25 @@ class SyncMediaWorker(
                 )
             }
 
-            Timber.i("All generated books: ${booksWithTrackInfo.map { it.title }}")
-
             // merge book values into repos
             val isLocal = source is LocalMediaSource
             withContext(Dispatchers.IO) {
-                bookRepository.upsert(source.id, booksWithTrackInfo, isLocal)
-            }
-
-            // Update all tracks here with IDs from the books
-            withContext(Dispatchers.IO) {
-                val updatedBooksMap = bookRepository
-                    .getAudiobooksForSourceAsync(source.id, false)
-                    .associateBy { it.title }
+                val booksMap = booksWithTrackInfo.associateBy { it.serverId }
 
                 val updatedIdTracks = tracks.map { track ->
-                    val bookForTrack = updatedBooksMap[track.album]
+                    val bookForTrack = booksMap[track.parentServerId]
                     if (bookForTrack != null) {
-                        Timber.i("Got book for track! ${track.title}, ${track.media}")
-                        track.copy(parentKey = bookForTrack.id)
+                        Timber.i("Got book for track! ${track.title}, ${track.media}, ${track.parentServerId}")
+                        track.copy(parentServerId = bookForTrack.serverId)
                     } else {
-                        Timber.i("No book for track! ${track.title}, ${track.album}")
+                        Timber.i("No book for track! ${track.title}, ${track.album}, ${track.parentServerId}")
                         track
                     }
                 }
 
                 trackRepository.upsert(source.id, updatedIdTracks)
-
-                Timber.i("${bookRepository.getAllBooksAsync().map { "${it.title}, ${it.id}" }}")
-                Timber.i(
-                    "${
-                        trackRepository.getAllTracksAsync().map { "${it.title}, ${it.parentKey}" }
-                    }"
-                )
+                bookRepository.upsert(source.id, booksWithTrackInfo, isLocal)
             }
-
-
         }
         return Result.success()
     }
@@ -106,7 +91,7 @@ class SyncMediaWorker(
         sourceId: Long,
         tracks: List<MediaItemTrack>
     ): List<Audiobook> {
-        return tracks.groupBy { it.parentKey }
+        return tracks.groupBy { it.parentServerId }
             .mapNotNull { (bookId, tracks) -> makeAudiobook(tracks, sourceId, bookId) }
     }
 
@@ -133,7 +118,7 @@ class SyncMediaWorker(
             .maxByOrNull { it.value }?.key ?: ""
         val duration = tracksInAudiobook.getDuration()
         return Audiobook(
-            id = bookId,
+            serverId = bookId,
             parentId = LocalMediaParser.ID_NOT_YET_SET,
             source = sourceId,
             title = mostCommonBookName,
@@ -153,6 +138,5 @@ class SyncMediaWorker(
         fun makeData(forceSync: Boolean = false) = Data.Builder()
             .putBoolean(FORCE_SYNC, forceSync)
             .build()
-
     }
 }

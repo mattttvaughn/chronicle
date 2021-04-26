@@ -21,7 +21,6 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRA
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.*
 import io.github.mattpvaughn.chronicle.data.sources.HttpMediaSource
-import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
@@ -38,7 +37,6 @@ import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -92,13 +90,12 @@ class CurrentlyPlayingViewModel(
     private val inputAudiobookId = EMPTY_AUDIOBOOK.id
 
     private var audiobookId = MutableLiveData<Int>()
-    private var sourceId = MutableStateFlow(MediaSource.NO_SOURCE_FOUND)
 
     val audiobook: LiveData<Audiobook?> = Transformations.switchMap(audiobookId) { id ->
         if (id == EMPTY_AUDIOBOOK.id) {
             emptyAudiobook
         } else {
-            bookRepository.getAudiobook(id, sourceId.value)
+            bookRepository.getAudiobook(id)
         }
     }
 
@@ -106,11 +103,11 @@ class CurrentlyPlayingViewModel(
     private val emptyTrackList = MutableLiveData<List<MediaItemTrack>>(emptyList())
 
     // TODO: expose combined track/chapter bits in ViewModel as "windowSomething" instead of in xml
-    val tracks: LiveData<List<MediaItemTrack>> = Transformations.switchMap(audiobookId) { id ->
-        if (id == EMPTY_AUDIOBOOK.id) {
+    val tracks: LiveData<List<MediaItemTrack>> = Transformations.switchMap(audiobook) { book ->
+        if (book == EMPTY_AUDIOBOOK || book == null) {
             emptyTrackList
         } else {
-            trackRepository.getTracksForAudiobook(id, sourceId.value)
+            trackRepository.getTracksForAudiobook(book.source, book.serverId)
         }
     }
 
@@ -123,7 +120,7 @@ class CurrentlyPlayingViewModel(
         DoubleLiveData(
             audiobook, tracksAsChaptersCache
         ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
-            if (_audiobook?.chapters?.isNotEmpty() == true) {
+            if (_audiobook?.chapters.isNotEmpty() == true) {
                 // We would really prefer this because it doesn't have to be computed
                 _audiobook.chapters
             } else {
@@ -269,7 +266,7 @@ class CurrentlyPlayingViewModel(
             // only update [audiobookId] when we see a new audiobook
             val potentiallyNewAudiobookId = trackRepository.getBookIdForTrack(trackId)
             if (potentiallyNewAudiobookId != previousAudiobookId) {
-                audiobookId.postValue(potentiallyNewAudiobookId)
+                audiobookId.value = potentiallyNewAudiobookId
             }
         }
     }
@@ -294,7 +291,7 @@ class CurrentlyPlayingViewModel(
                     _isLoadingTracks.value = true
                 }
                 val book = withContext(Dispatchers.IO) {
-                    bookRepository.getAudiobookAsync(bookId, sourceId.value)
+                    bookRepository.getAudiobookAsync(bookId)
                 } ?: return@launch
                 val source = sourceManager.getSourceById(book.source)
                 // No need to refresh track progress if source isn't remote

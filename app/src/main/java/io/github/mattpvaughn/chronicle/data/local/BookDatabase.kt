@@ -63,6 +63,7 @@ val BOOK_MIGRATION_5_6 = object : Migration(5, 6) {
 
 val BOOK_MIGRATION_6_7 = object : Migration(6, 7) {
     override fun migrate(database: SupportSQLiteDatabase) {
+        // STOPSHIP: this has to be reworked!
         database.execSQL(
             "CREATE TABLE `new_Audiobook`" +
                     "(`id` INTEGER NOT NULL," +
@@ -84,7 +85,7 @@ val BOOK_MIGRATION_6_7 = object : Migration(6, 7) {
                     "`viewedLeafCount` INTEGER NOT NULL," +
                     "`leafCount` INTEGER NOT NULL," +
                     "`chapters` TEXT NOT NULL," +
-                    "PRIMARY KEY(`id`,`source`) )"
+                    "PRIMARY KEY(`id`) )"
         )
 
         //insert data from old table into new table
@@ -137,9 +138,10 @@ val BOOK_MIGRATION_6_7 = object : Migration(6, 7) {
 
         //rename new table to the old table name
         database.execSQL("ALTER TABLE new_Audiobook RENAME TO Audiobook")
+
+        database.execSQL("ALTER TABLE Audiobook ADD COLUMN viewCount INTEGER NOT NULL DEFAULT 0")
     }
 
-    database.execSQL("ALTER TABLE Audiobook ADD COLUMN viewCount INTEGER NOT NULL DEFAULT 0")
 }
 
 @Database(
@@ -174,10 +176,7 @@ interface BookDao {
     @Query("UPDATE Audiobook SET isCached = :cached WHERE id = :bookId")
     fun updateCachedStatus(bookId: Int, cached: Boolean)
 
-    @Query("SELECT * FROM Audiobook WHERE source= :sourceId AND isCached >= :isOfflineModeActive LIMIT 1")
-    fun getAudiobooksForSourceAsync(sourceId: Long, isOfflineModeActive: Boolean): List<Audiobook>
-
-    @Query("SELECT * FROM Audiobook WHERE id = :id AND source = :sourceId AND isCached >= :isOfflineModeActive LIMIT 1")
+    @Query("SELECT * FROM Audiobook WHERE id = :id AND isCached >= :isOfflineModeActive LIMIT 1")
     fun getAudiobook(
         id: Int,
         isOfflineModeActive: Boolean
@@ -242,6 +241,9 @@ interface BookDao {
 
     @Query("SELECT * FROM Audiobook ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomBookAsync(): Audiobook?
+
+    @Query("SELECT * FROM Audiobook WHERE source= :sourceId AND isCached >= :isOfflineModeActive LIMIT 1")
+    fun getAudiobooksForSourceAsync(sourceId: Long, isOfflineModeActive: Boolean): List<Audiobook>
 
     @Query("DELETE FROM Audiobook WHERE source = :sourceId")
     suspend fun removeWithSource(sourceId: Long)

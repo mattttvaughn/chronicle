@@ -1,8 +1,11 @@
 package io.github.mattpvaughn.chronicle.data.sources.local
 
 import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import coil.Coil
+import coil.request.ImageRequest
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.FileDataSource
 import com.google.android.exoplayer2.util.Util
@@ -16,8 +19,8 @@ import io.github.mattpvaughn.chronicle.navigation.Navigator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withContext
 import okio.IOException
-import java.io.File
 
 /** A [MediaSource] wrapping files on the local filesystem */
 class LocalMediaSource(
@@ -43,7 +46,7 @@ class LocalMediaSource(
             FileDataSource()
         }
 
-    private val localPrefs: LocalLibraryPrefs = SharedPreferencesLocalLibrary(prefs())
+    private val localPrefs: LocalLibraryPrefs = SharedPreferencesLocalLibrary(this)
 
     /**
      * Fetches books from the directory selected by user, and ensures the app has permissions to
@@ -76,19 +79,22 @@ class LocalMediaSource(
 
     override fun type() = TAG
 
-    override fun makeThumbUri(src: String): Uri? {
-        val extension = File(src).extension
-        val uri = Uri.parse(src)
-        return if (extension in LocalMediaParser.IMAGE_MIME_TYPES) {
-            uri
-        } else {
-            // TODO: thumbs embedded in media file
-            null
+    override fun getThumbBuilder() = ImageRequest.Builder(application.applicationContext)
+
+    override suspend fun getBitmapForThumb(uri: Uri): Bitmap? {
+        val req = ImageRequest.Builder(application.applicationContext)
+            .data(uri)
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            val res = Coil.imageLoader(application.applicationContext)
+                .execute(req)
+            (res.drawable as BitmapDrawable).bitmap
         }
     }
 
-    override fun getBitmapForThumb(uri: Uri): Bitmap? {
-        TODO("Not yet implemented")
+    override fun makeThumbUri(src: String): Uri? {
+        return Uri.parse(src)
     }
 
     override fun getTrackSource(track: MediaItemTrack): Uri? {

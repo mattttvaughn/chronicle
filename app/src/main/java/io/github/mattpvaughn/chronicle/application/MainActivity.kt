@@ -225,10 +225,11 @@ class MainActivity : AppCompatActivity() {
                     val audiobook = bookRepository.getAudiobookAsync(openAudiobookWithId)
                     if (audiobook != null && audiobook != EMPTY_AUDIOBOOK) {
                         navigator.showDetails(
-                            audiobook.id,
-                            audiobook.title,
-                            audiobook.isCached,
-                            sourceId
+                            audiobookId = audiobook.id,
+                            audiobookTitle = audiobook.title,
+                            isAudiobookCached = audiobook.isCached,
+                            sourceId = sourceId,
+                            serverId = audiobook.serverId
                         )
                     }
                 }

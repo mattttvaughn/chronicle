@@ -59,7 +59,7 @@ abstract class MediaSource constructor(private val applicationContext: Context) 
     abstract fun makeThumbUri(src: String): Uri?
 
     /** Fetches a bitmap corresponding to a Uri (with permissions approved and auth included) */
-    abstract fun getBitmapForThumb(uri: Uri): Bitmap?
+    abstract suspend fun getBitmapForThumb(uri: Uri): Bitmap?
 
     /** Returns the source of a track given whether the track is cached */
     abstract fun getTrackSource(track: MediaItemTrack): Uri?

@@ -76,7 +76,9 @@ class OnMediaChangedCallback @Inject constructor(
             return
         }
         serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-            updateNotification(state.state)
+            withContext(Dispatchers.IO) {
+                updateNotification(state.state)
+            }
         }
     }
 
