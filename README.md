@@ -12,16 +12,9 @@
  
 ### Screenshots
 
-![Home](images/home.png)
+<img src="images/home.png" alt="Home screen" height="200">
+<img src="images/library.png" alt="Home screen" height="200">
+<img src="images/playback.png" alt="Home screen" height="200">
 
-![Library](images/library.png)
-
-![Playback](images/playback.png)
- 
-### Upcoming features (in no particular order)
-
- - Sync progress to plex
- - m4b chapter support
- - 
 
 
