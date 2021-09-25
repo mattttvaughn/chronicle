@@ -12,9 +12,9 @@
  
 ### Screenshots
 
-<img src="images/home.png" alt="Home screen" height="200">
-<img src="images/library.png" alt="Home screen" height="200">
-<img src="images/playback.png" alt="Home screen" height="200">
+<img src="https://raw.githubusercontent.com/mattttvaughn/chronicle/develop/images/home.png" alt="Home screen" height="200">
+<img src="https://raw.githubusercontent.com/mattttvaughn/chronicle/develop/images/library.png" alt="Library screen" height="200">
+<img src="https://raw.githubusercontent.com/mattttvaughn/chronicle/develop/images/playblack.png" alt="Player" height="200">
 
 
 
