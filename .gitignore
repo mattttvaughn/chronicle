@@ -1,13 +1,29 @@
-*.iml
-.gradle
-/local.properties
-/.idea
-.DS_Store
+# build artifacts
+*.apk
+*.dex
+*.class
+
+# generated files
 /build
 /captures
+/bin
+/gen
+/target
+
+# android studio files
+/.idea
+*.iml
+
+# local config files
+.gradle
+/local.properties
+build.xml
+
+# etc
+.DS_Store
 .externalNativeBuild
 .cxx
 *.swp
 *.un~
 .*.un~
-
+*.keystore
