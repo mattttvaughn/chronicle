@@ -1,17 +1,15 @@
 # TODO Chronicle
 
-Message redditors:
-  - on auto release
- 
-Internal:
- - Update billing version
- - Remove hardcoding of `Dispatchers` and `GlobalScope`
- - Refactor repositories to expose `StateFlow`s instead of `LiveData`?
-    - Need to learn good merging techniques/extensions first
-    - ViewModels too?
- - Refactor callbacks in `MediaPlayerService` to be more idiomatic
- - Refactor Chapters to be managed in their own db
- - Look into `ExoPlayer.experimentalSetOffloadSchedulingEnabled`
+## Internal
+
+ - [ ] Update billing version by November
+ - [ ] Constructor inject `Dispatchers`, remove `GlobalScope` usages (okay in Singletons?)
+ - [ ] Refactor repositories to expose `StateFlow`s instead of `LiveData`?
+    - [ ] Need to learn good merging techniques/extensions first
+    - [ ] ViewModels too?
+ - [ ] Rename callbacks in `MediaPlayerService` to be more idiomatic
+ - [ ] Refactor Chapters to be managed in their own db
+ - [ ] Look into `ExoPlayer.experimentalSetOffloadSchedulingEnabled`
     
 ## Bug fixes:
 
@@ -20,11 +18,9 @@ STOPSHIP:
 
 Cannot reproduce:
  - [ ] Possible memory leaks (reported on op 6t)
-    - [ ] ViewBinding?
-    - [ ] MediaServiceConnection?
- 
-Need to test:
- - [ ] Playback issues on older devices (5.0 - possibly 9.0)
+
+Need to confirm:
+ - [ ]
 
 High priority:
  - [ ]
@@ -36,32 +32,34 @@ Medium priority:
        - [X] stopgap fix: timeout for media queries has been increased from 15s to 30s
        - [ ] real fix:
             - [ ] incremental library loading
-            - [ ] optimize 
+            - [ ] optimize repository `get`s to scale better (sub n^2)
  - [ ] Playback progress in library view not updated in real-time, only on library refreshes
- - [ ] 
 
 Low priority
- - [ ] sleep timer "end of chapter" doesn't account for changes in playback speed
+ - [ ] Sleep timer "end of chapter" doesn't account for changes in playback speed
     
 ## High priority:
 
- - [ ] Android Auto (mostly done, but waiting until support for demo libraries has been added)
+ - [X] Android Auto (feature flagged, but should be functional)
  - [ ] Casting
 
 ## Medium priority:
 
- - [ ] Add more narrator to audiobook page: narrator
  - [/] Filter/Sort/`View type` UI for library
        - [/] Sort by all known fields (genre, release date, author, etc.)
              - [X] Sortable by basic fields
              - [ ] When sorting, change the grid/list item subtitle to reflect the sorted field
        - [ ] Filterable by all known Plex fields (genre, release date, author, etc.)
+            - [ ] UI for this will be tricky...
        - [ ] Folder view + author view + collections view
- - [ ] Tablet/landscape support
- - [ ] Next/previous chapter buttons in "currently playing" screen
- - [ ] Show most recently listened book in bottom bar like Spotify does
+ - [ ] Add more narrator to audiobook page: narrator
+ - [ ] Better tablet/landscape support
+ - [ ] Next/previous chapter buttons in "currently playing" screen?
+    - [ ] At least look into improving UI for this
+ - [ ] Show most recently listened book on login in bottom bar like Spotify does
  - [ ] More metadata in chapter list (start/end times or duration or something)
  - [ ] Favorites
+ - [ ] Add a "last synced" at XXX warning, coupled loading data
  - [ ] Improve downloading experience
      - [ ] Show download status for tracks (progress, downloaded?)
      - [ ] Sync by disk option
@@ -70,6 +68,7 @@ Low priority
 ## Low priority:
 
  - [ ] Support for manual server connection (no account login)
+ - [ ] Handle 403s with token refresh or logout (tokens only revokable manually it seems, so not a big deal)
  - [ ] Show warning to users if they have "store track progress" disabled for library
  - [ ] Translations
  - [ ] Bookmarks + notes
@@ -77,19 +76,18 @@ Low priority
  - [ ] Quick scroll bar
  - [ ] Widget?
 
-
 ## DONE:
 
 Release 0.50:
 
 March 15th:
- - [ ] Highlight current chapter in chapter lists
- - [ ] Fix issue of thumbnails from home tab not loading
- - [ ] Manually set watched/unwatched
- - [ ] Highlighting of current chapter
- - [ ] Newly rewritten downloader
-     - [ ] Fix issues downloading books to SD card
-     - [ ] Allows failed downloads to be retried
+ - [X] Highlight current chapter in chapter lists
+ - [X] Fix issue of thumbnails from home tab not loading
+ - [X] Manually set watched/unwatched
+ - [X] Highlighting of current chapter
+ - [X] Newly rewritten downloader
+     - [X] Fix issues downloading books to SD card
+     - [X] Significantly better download UX
 
 (September 10th):
  - [X] fix: scroll position no longer lost after returning from a book
