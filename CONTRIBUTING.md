@@ -16,7 +16,7 @@
  - Provide the following information:
     - Detailed steps explaining how to reproduce the bug (if possible)
     - Android version and device name/variant
-    - Any information about your self that you think might be relevant
+    - Any information about your server that you think might be relevant
 
 ## Building the app
 
