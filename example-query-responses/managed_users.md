@@ -4,7 +4,7 @@
 
 ### Example query:
     
-`https://plex.tv/api/v2/home/users?X-Plex-Product=Plex%20Web&X-Plex-Version=4.22.2&X-Plex-Client-Identifier=0quy6cfpwxwkl9wemdv394t7&X-Plex-Platform=Firefox&X-Plex-Platform-Version=77.0&X-Plex-Sync-Version=2&X-Plex-Features=external-media%2Cindirect-media&X-Plex-Model=bundled&X-Plex-Device=Linux&X-Plex-Device-Name=Firefox&X-Plex-Device-Screen-Resolution=1600x459%2C1600x900&X-Plex-Token=A4qo2oEM5ikby1sLpkDC&X-Plex-Language=en`
+.tv/api/v2/home/users?X-Plex-Product=Plex%20Web&X-Plex-Version=4.22.2&X-Plex-Client-Identifier=REDACTED&X-Plex-Platform=Firefox&X-Plex-Platform-Version=77.0&X-Plex-Sync-Version=2&X-Plex-Features=external-media%2Cindirect-media&X-Plex-Model=bundled&X-Plex-Device=Linux&X-Plex-Device-Name=Firefox&X-Plex-Device-Screen-Resolution=1600x459%2C1600x900&X-Plex-Token=REDACTED&X-Plex-Language=en`
 
 ### Headers:z
     
@@ -84,7 +84,7 @@ Content-Encoding: gzip
 https://plex.tv/api/v2/home/users/USER_UUID/switch?&includeProviders=0&includeSettings=0&includeSharedSettings=0&pin=8989&X-Plex-Product=Plex%20Web&X-Plex-Version=4.22.2&X-Plex-Client-Identifier=REDACTED&X-Plex-Platform=Firefox&X-Plex-Platform-Version=77.0&X-Plex-Sync-Version=2&X-Plex-Features=external-media%2Cindirect-media&X-Plex-Model=bundled&X-Plex-Device=Linux&X-Plex-Device-Name=Firefox&X-Plex-Device-Screen-Resolution=1600x459%2C1600x900&X-Plex-Token=REDACTED&X-Plex-Language=en
 ```
 
-^^^ Note `pin=8989`, this is the pin entered by the user
+**Note `pin=8989`, this is the pin entered by the user**
 
 ### Query headers
 
