@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Chronicle_Audiobook_Player.iml" filepath="$PROJECT_DIR$/.idea/modules/Chronicle_Audiobook_Player.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/Chronicle_Audiobook_Player.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/Chronicle_Audiobook_Player.app.iml" />
+    </modules>
+  </component>
+</project>

@@ -1,0 +1,970 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AnalysisUIOptions">
+    <option name="SCOPE_TYPE" value="4" />
+    <option name="CUSTOM_SCOPE_NAME" value="Module 'app'" />
+  </component>
+  <component name="AndroidConfiguredLogFilters">
+    <filters>
+      <filter>
+        <option name="logLevel" value="verbose" />
+        <option name="logMessagePattern" value="" />
+        <option name="logTagPattern" value="Chronicle" />
+        <option name="name" value="Chronicle Logs Only" />
+        <option name="packageNamePattern" value="" />
+        <option name="pid" value="" />
+      </filter>
+      <filter>
+        <option name="logLevel" value="verbose" />
+        <option name="logMessagePattern" value="" />
+        <option name="logTagIsRegex" value="false" />
+        <option name="logTagPattern" value="StrictMode" />
+        <option name="name" value="Strict Mode" />
+        <option name="packageNamePattern" value="" />
+        <option name="pid" value="" />
+      </filter>
+    </filters>
+  </component>
+  <component name="AndroidLayouts">
+    <shared>
+      <config>
+        <device id="pixel" />
+        <device id="Nexus 10" />
+        <device id="Nexus 7" />
+        <device id="pixel_4_xl" />
+        <device id="Nexus 5X" />
+        <device id="pixel_3a" />
+        <device id="pixel_2_xl" />
+        <device id="Nexus 9" />
+        <device id="Nexus 7 2013" />
+      </config>
+    </shared>
+  </component>
+  <component name="AndroidLogFilters">
+    <option name="TOOL_WINDOW_CUSTOM_FILTER" value="building" />
+    <option name="TOOL_WINDOW_LOG_LEVEL" value="verbose" />
+    <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
+    <option name="TOOL_WINDOW_REGEXP_FILTER" value="false" />
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:feature" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="BRANCH:develop" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </select>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="2d6c4a36-88dd-4e91-8f47-d74305d13fab" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/release/app-release.apk" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/release/output-metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/release/output.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/example-query-responses/managed_users.md" beforeDir="false" afterPath="$PROJECT_DIR$/example-query-responses/managed_users.md" afterDir="false" />
+    </list>
+    <list id="3913cc5c-4653-4c41-9585-efdd36dc1b6d" name="Uncommitted changes before Merge at 4/24/21 6:55 AM [Default Changelist]" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CodeInsightWorkspaceSettings">
+    <option name="optimizeImportsOnTheFly" value="true" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[/home/matt/.android/avd/Pixel_5_API_30.avd]" />
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
+        <task path="$PROJECT_DIR$/app">
+          <activation />
+        </task>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="Chronicle Audiobook Player" type="f1a62948:ProjectNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="Chronicle Audiobook Player" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="Chronicle Audiobook Player" type="f1a62948:ProjectNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+                <item name="other" type="c8890929:TasksNode$1" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="layoutResourceFile_vertical" />
+        <option value="navigationResourceFile" />
+        <option value="Class" />
+        <option value="JUnit4 Test Class" />
+        <option value="Kotlin Interface" />
+        <option value="layoutResourceFile" />
+        <option value="resourceFile" />
+        <option value="valueResourceFile" />
+        <option value="Kotlin File" />
+        <option value="Kotlin Class" />
+      </list>
+    </option>
+  </component>
+  <component name="GenerateSignedApkSettings">
+    <option name="EXPORT_PRIVATE_KEY" value="false" />
+    <option name="KEY_STORE_PATH" value="$PROJECT_DIR$/../uppack.keystore" />
+    <option name="KEY_ALIAS" value="mykey" />
+    <option name="REMEMBER_PASSWORDS" value="true" />
+    <option name="BUILD_TARGET_KEY" value="apk" />
+  </component>
+  <component name="Git.Settings">
+    <option name="PREVIOUS_COMMIT_AUTHORS">
+      <list>
+        <option value="Matt Vaughn &lt;mattttvaughn@gmail.com&gt;" />
+        <option value="matt" />
+        <option value="Matt" />
+      </list>
+    </option>
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="feature/multiple-sources" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="KotlinCodeInsightWorkspaceSettings">
+    <option name="optimizeImportsOnTheFly" value="true" />
+  </component>
+  <component name="ProjectId" id="1YM2eLc9U3qtdI5ARlQGs1os8wl" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="ApkExportedModule" value="Chronicle_Audiobook_Player.app" />
+    <property name="DEBUGGABLE_DEVICE" value="lge-lm_g710-LMG710TM9c4c03f2" />
+    <property name="DEBUGGABLE_PROCESS" value="io.github.mattpvaughn.chronicle.debug" />
+    <property name="DEBUGGER_ID" value="Auto" />
+    <property name="DeviceAndSnapshotComboBoxAction.selectedDevice" value="LMG710TM9c4c03f2" />
+    <property name="DeviceAndSnapshotComboBoxAction.selectionTime" value="2021-04-22T17:16:27.747Z" />
+    <property name="ExportApk.ApkPath" value="$PROJECT_DIR$/app" />
+    <property name="ExportApk.BuildVariants" value="release" />
+    <property name="ExportApk.SignV1" value="true" />
+    <property name="ExportApk.SignV2" value="true" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="SHOW_ALL_PROCESSES" value="false" />
+    <property name="ScreenshotViewer.SavePath" value="$PROJECT_DIR$/images" />
+    <property name="TERMINAL_CUSTOM_COMMANDS_GOT_IT" value="true" />
+    <property name="android-custom-view/home/matt/.gradle/caches/modules-2/files-2.1/androidx.coordinatorlayout/coordinatorlayout/1.1.0/a15529ac349d76a872ae5ef42b84c320c456cd7f/coordinatorlayout-1.1.0-sources.jar!/androidx/coordinatorlayout/widget/CoordinatorLayout.java_SELECTED" value="CoordinatorLayout" />
+    <property name="android-custom-view/home/matt/.gradle/caches/modules-2/files-2.1/androidx.recyclerview/recyclerview/1.2.0-alpha05/647ceeba50ca25e4600ed9146611c67ffd97937b/recyclerview-1.2.0-alpha05-sources.jar!/androidx/recyclerview/widget/RecyclerView.java_SELECTED" value="RecyclerView" />
+    <property name="android-custom-view/home/matt/.gradle/caches/modules-2/files-2.1/com.facebook.fresco/drawee/2.4.0/12f072be962553bc3d021ea8e2c0747b5105f88c/drawee-2.4.0-sources.jar!/com/facebook/drawee/view/DraweeView.java_SELECTED" value="DraweeView" />
+    <property name="android-custom-view/home/matt/.gradle/caches/modules-2/files-2.1/com.facebook.fresco/drawee/2.4.0/12f072be962553bc3d021ea8e2c0747b5105f88c/drawee-2.4.0-sources.jar!/com/facebook/drawee/view/SimpleDraweeView.java_SELECTED" value="SimpleDraweeView" />
+    <property name="android-custom-view/home/matt/.gradle/caches/modules-2/files-2.1/com.google.android.material/material/1.3.0/b42a5159ef2c670d26ce08246ec5aaf8f92e5a42/material-1.3.0-sources.jar!/com/google/android/material/card/MaterialCardView.java_SELECTED" value="MaterialCardView" />
+    <property name="android-custom-view/home/matt/.gradle/caches/modules-2/files-2.1/com.google.android.material/material/1.3.0/b42a5159ef2c670d26ce08246ec5aaf8f92e5a42/material-1.3.0-sources.jar!/com/google/android/material/chip/Chip.java_SELECTED" value="Chip" />
+    <property name="android-custom-view/home/matt/.gradle/caches/modules-2/files-2.1/com.google.android.material/material/1.3.0/b42a5159ef2c670d26ce08246ec5aaf8f92e5a42/material-1.3.0-sources.jar!/com/google/android/material/chip/ChipGroup.java_SELECTED" value="ChipGroup" />
+    <property name="android-custom-view/home/matt/Android/Sdk/sources/android-29/android/view/View.java_SELECTED" value="View" />
+    <property name="android-custom-view/home/matt/Android/Sdk/sources/android-29/android/widget/ImageView.java_SELECTED" value="ImageView" />
+    <property name="android-custom-view/home/matt/Android/Sdk/sources/android-29/android/widget/ViewSwitcher.java_SELECTED" value="ViewSwitcher" />
+    <property name="android-custom-view/home/matt/Development/Chronicle/app/src/main/java/io/github/mattpvaughn/chronicle/features/settings/SettingsList.kt_SELECTED" value="SettingsList" />
+    <property name="android-custom-view/home/matt/Development/Chronicle/app/src/main/java/io/github/mattpvaughn/chronicle/views/BottomSheetChooser.kt_SELECTED" value="BottomSheetChooser" />
+    <property name="android-custom-view/home/matt/Development/Chronicle/app/src/main/java/io/github/mattpvaughn/chronicle/views/FlowableRadioGroup.java_SELECTED" value="FlowableRadioGroup" />
+    <property name="android.sdk.path" value="$USER_HOME$/Android/Sdk" />
+    <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="kotlin&#10;JSON&#10;JAVA&#10;Markdown" />
+    <property name="com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary" value="JUnit4" />
+    <property name="com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit4" value="" />
+    <property name="last_directory_selection" value="$PROJECT_DIR$/app/src/test/java/io/github/mattpvaughn/chronicle/features/bookdetails" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="memory.settings.postsync.last.time.stamp" value="1632573026149" />
+    <property name="multi-representation-preview/home/matt/.gradle/caches/modules-2/files-2.1/androidx.coordinatorlayout/coordinatorlayout/1.1.0/a15529ac349d76a872ae5ef42b84c320c456cd7f/coordinatorlayout-1.1.0-sources.jar!/androidx/coordinatorlayout/widget/CoordinatorLayout.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/.gradle/caches/modules-2/files-2.1/androidx.recyclerview/recyclerview/1.2.0-alpha05/647ceeba50ca25e4600ed9146611c67ffd97937b/recyclerview-1.2.0-alpha05-sources.jar!/androidx/recyclerview/widget/RecyclerView.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/.gradle/caches/modules-2/files-2.1/com.facebook.fresco/drawee/2.4.0/12f072be962553bc3d021ea8e2c0747b5105f88c/drawee-2.4.0-sources.jar!/com/facebook/drawee/view/DraweeView.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/.gradle/caches/modules-2/files-2.1/com.facebook.fresco/drawee/2.4.0/12f072be962553bc3d021ea8e2c0747b5105f88c/drawee-2.4.0-sources.jar!/com/facebook/drawee/view/SimpleDraweeView.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/.gradle/caches/modules-2/files-2.1/com.google.android.material/material/1.3.0/b42a5159ef2c670d26ce08246ec5aaf8f92e5a42/material-1.3.0-sources.jar!/com/google/android/material/card/MaterialCardView.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/.gradle/caches/modules-2/files-2.1/com.google.android.material/material/1.3.0/b42a5159ef2c670d26ce08246ec5aaf8f92e5a42/material-1.3.0-sources.jar!/com/google/android/material/chip/Chip.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/.gradle/caches/modules-2/files-2.1/com.google.android.material/material/1.3.0/b42a5159ef2c670d26ce08246ec5aaf8f92e5a42/material-1.3.0-sources.jar!/com/google/android/material/chip/ChipGroup.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/Android/Sdk/sources/android-29/android/view/View.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/Android/Sdk/sources/android-29/android/widget/ImageView.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/Android/Sdk/sources/android-29/android/widget/ViewSwitcher.java_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/Development/Chronicle/app/src/main/java/io/github/mattpvaughn/chronicle/features/settings/SettingsList.kt_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/Development/Chronicle/app/src/main/java/io/github/mattpvaughn/chronicle/views/BottomSheetChooser.kt_selected" value="Custom views" />
+    <property name="multi-representation-preview/home/matt/Development/Chronicle/app/src/main/java/io/github/mattpvaughn/chronicle/views/FlowableRadioGroup.java_selected" value="" />
+    <property name="not.eligible.for.single.variant.sync" value="true" />
+    <property name="project.structure.last.edited" value="SDK Location" />
+    <property name="project.structure.proportion" value="0.17" />
+    <property name="project.structure.side.proportion" value="0.2" />
+    <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
+    <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
+    <property name="show.migrate.to.gradle.popup" value="false" />
+  </component>
+  <component name="PsdUISettings">
+    <option name="MODULE_TAB" value="Signing Configs" />
+    <option name="LAST_EDITED_SIGNING_CONFIG" value="debug" />
+    <option name="LAST_EDITED_BUILD_TYPE" value="release" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveKotlinTopLevelDeclarationsDialog.RECENTS_KEY">
+      <recent name="io.github.mattpvaughn.chronicle.data.sources" />
+      <recent name="io.github.mattpvaughn.chronicle.data.model" />
+      <recent name="io.github.mattpvaughn.chronicle.features.player" />
+      <recent name="io.github.mattpvaughn.chronicle.features.login" />
+      <recent name="io.github.mattpvaughn.chronicle.data.local" />
+    </key>
+    <key name="CreateKotlinClassDialog.RecentsKey">
+      <recent name="io.github.mattpvaughn.chronicle.data.plex.model" />
+      <recent name="io.github.mattpvaughn.chronicle.player" />
+    </key>
+    <key name="CreateTestDialog.RecentsKey">
+      <recent name="io.github.mattpvaughn.chronicle.features.bookdetails" />
+      <recent name="io.github.mattpvaughn.chronicle.features.player" />
+      <recent name="io.github.mattpvaughn.chronicle.data.plex" />
+      <recent name="io.github.mattpvaughn.chronicle.data.local" />
+      <recent name="io.github.mattpvaughn.chronicle.application" />
+    </key>
+    <key name="android.template.packageName">
+      <recent name="io.github.mattpvaughn.chronicle.chooseserver" />
+      <recent name="io.github.mattpvaughn.chronicle" />
+    </key>
+    <key name="CopyKotlinDeclarationDialog.RECENTS_KEY">
+      <recent name="io.github.mattpvaughn.chronicle.features.download" />
+      <recent name="io.github.mattpvaughn.chronicle.data.sources.plex" />
+      <recent name="io.github.mattpvaughn.chronicle.features.login" />
+      <recent name="io.github.mattpvaughn.chronicle.data.sources.local" />
+      <recent name="io.github.mattpvaughn.chronicle.injection.scopes" />
+    </key>
+    <key name="KotlinExtractInterfaceDialog.RECENT_KEYS">
+      <recent name="io.github.mattpvaughn.chronicle.data.plex" />
+      <recent name="io.github.mattpvaughn.chronicle.injection.modules" />
+      <recent name="io.github.mattpvaughn.chronicle.features.player" />
+      <recent name="io.github.mattpvaughn.chronicle.data.local" />
+    </key>
+    <key name="CreateTestDialog.Recents.Supers">
+      <recent name="" />
+    </key>
+    <key name="android.template.436507771">
+      <recent name="io.github.mattpvaughn.chronicle.features.settings" />
+    </key>
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="io.github.mattpvaughn.chronicle.features" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/src/main/java/io/github/mattpvaughn/chronicle/data/sources/local" />
+      <recent name="$PROJECT_DIR$/app/src/main/res/values-land" />
+      <recent name="$PROJECT_DIR$/app/src/main/res/layout-landscape" />
+      <recent name="$PROJECT_DIR$/app/src/main/res/layout" />
+      <recent name="$PROJECT_DIR$/app/src/main/java/io/github/mattpvaughn/chronicle/features/localfilesetup" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/src/main/res/layout-land" />
+      <recent name="$PROJECT_DIR$/app/src/main/res/color" />
+      <recent name="$PROJECT_DIR$/app/src/main/java/io/github/mattpvaughn/chronicle/data" />
+      <recent name="$PROJECT_DIR$/app/src/main/java/io/github/mattpvaughn/chronicle/data/sources" />
+      <recent name="$PROJECT_DIR$/app/src/main/java/io/github/mattpvaughn/chronicle/features/login" />
+    </key>
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="io.github.mattpvaughn.chronicle.views" />
+    </key>
+    <key name="android.template.parentActivityClass">
+      <recent name="" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Android App.app">
+    <configuration default="true" type="AndroidJUnit" factoryName="Android JUnit">
+      <option name="TEST_OBJECT" value="class" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AudiobookDetailsViewModelTest" type="AndroidJUnit" factoryName="Android JUnit" temporary="true" nameIsGenerated="true">
+      <module name="Chronicle_Audiobook_Player.app" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="io.github.mattpvaughn.chronicle.features.bookdetails.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails" />
+      <option name="MAIN_CLASS_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsViewModelTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AudiobookDetailsViewModelTest.test jumpToChapter (1)" type="AndroidJUnit" factoryName="Android JUnit" temporary="true" nameIsGenerated="true">
+      <module name="Chronicle_Audiobook_Player.app" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="io.github.mattpvaughn.chronicle.features.bookdetails.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails" />
+      <option name="MAIN_CLASS_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsViewModelTest" />
+      <option name="METHOD_NAME" value="test jumpToChapter() prevents changing without user confirmation" />
+      <option name="TEST_OBJECT" value="method" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AudiobookDetailsViewModelTest.test jumpToChapter" type="AndroidJUnit" factoryName="Android JUnit" temporary="true" nameIsGenerated="true">
+      <module name="Chronicle_Audiobook_Player.app" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="io.github.mattpvaughn.chronicle.features.bookdetails.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails" />
+      <option name="MAIN_CLASS_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsViewModelTest" />
+      <option name="METHOD_NAME" value="test jumpToChapter() requests playback for correct track" />
+      <option name="TEST_OBJECT" value="method" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AudiobookDetailsViewModelTest.testJumpToTrack_transportControlsCalled" type="AndroidJUnit" factoryName="Android JUnit" temporary="true" nameIsGenerated="true">
+      <module name="Chronicle_Audiobook_Player.app" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="io.github.mattpvaughn.chronicle.features.bookdetails.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails" />
+      <option name="MAIN_CLASS_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsViewModelTest" />
+      <option name="METHOD_NAME" value="testJumpToTrack_transportControlsCalled" />
+      <option name="TEST_OBJECT" value="method" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AudiobookDetailsViewModelTest.testPlay_transportControlsCalled" type="AndroidJUnit" factoryName="Android JUnit" temporary="true" nameIsGenerated="true">
+      <module name="Chronicle_Audiobook_Player.app" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="io.github.mattpvaughn.chronicle.features.bookdetails.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails" />
+      <option name="MAIN_CLASS_NAME" value="io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsViewModelTest" />
+      <option name="METHOD_NAME" value="testPlay_transportControlsCalled" />
+      <option name="TEST_OBJECT" value="method" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Local Tests" type="AndroidJUnit" factoryName="Android JUnit">
+      <module name="Chronicle_Audiobook_Player.app" />
+      <option name="MAIN_CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="TEST_OBJECT" value="directory" />
+      <option name="PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <dir value="$PROJECT_DIR$/app/src/test/java/io/github/mattpvaughn/chronicle" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="app" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
+      <module name="Chronicle_Audiobook_Player.app" />
+      <option name="DEPLOY" value="true" />
+      <option name="DEPLOY_APK_FROM_BUNDLE" value="false" />
+      <option name="DEPLOY_AS_INSTANT" value="false" />
+      <option name="ARTIFACT_NAME" value="" />
+      <option name="PM_INSTALL_OPTIONS" value="" />
+      <option name="ALL_USERS" value="false" />
+      <option name="ALWAYS_INSTALL_WITH_PM" value="false" />
+      <option name="DYNAMIC_FEATURES_DISABLED_LIST" value="" />
+      <option name="ACTIVITY_EXTRA_FLAGS" value="" />
+      <option name="MODE" value="default_activity" />
+      <option name="CLEAR_LOGCAT" value="false" />
+      <option name="SHOW_LOGCAT_AUTOMATICALLY" value="false" />
+      <option name="SKIP_NOOP_APK_INSTALLATIONS" value="false" />
+      <option name="FORCE_STOP_RUNNING_APP" value="true" />
+      <option name="TARGET_SELECTION_MODE" value="DEVICE_AND_SNAPSHOT_COMBO_BOX" />
+      <option name="SELECTED_CLOUD_MATRIX_CONFIGURATION_ID" value="-1" />
+      <option name="SELECTED_CLOUD_MATRIX_PROJECT_ID" value="" />
+      <option name="DEBUGGER_TYPE" value="Auto" />
+      <Auto>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Auto>
+      <Hybrid>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Hybrid>
+      <Java />
+      <Native>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Native>
+      <Profilers>
+        <option name="ADVANCED_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_CONFIGURATION_NAME" value="Sample Java Methods" />
+        <option name="STARTUP_NATIVE_MEMORY_PROFILING_ENABLED" value="false" />
+        <option name="NATIVE_MEMORY_SAMPLE_RATE_BYTES" value="2048" />
+      </Profilers>
+      <option name="DEEP_LINK" value="" />
+      <option name="ACTIVITY_CLASS" value="" />
+      <option name="SEARCH_ACTIVITY_IN_GLOBAL_SCOPE" value="false" />
+      <option name="SKIP_ACTIVITY_VALIDATION" value="false" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Instrumented Tests" type="AndroidTestRunConfigurationType" factoryName="Android Instrumented Tests">
+      <module name="Chronicle_Audiobook_Player.app" />
+      <option name="TESTING_TYPE" value="0" />
+      <option name="METHOD_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="INSTRUMENTATION_RUNNER_CLASS" value="" />
+      <option name="EXTRA_OPTIONS" value="" />
+      <option name="INCLUDE_GRADLE_EXTRA_OPTIONS" value="true" />
+      <option name="CLEAR_LOGCAT" value="false" />
+      <option name="SHOW_LOGCAT_AUTOMATICALLY" value="false" />
+      <option name="SKIP_NOOP_APK_INSTALLATIONS" value="true" />
+      <option name="FORCE_STOP_RUNNING_APP" value="true" />
+      <option name="TARGET_SELECTION_MODE" value="DEVICE_AND_SNAPSHOT_COMBO_BOX" />
+      <option name="SELECTED_CLOUD_MATRIX_CONFIGURATION_ID" value="-1" />
+      <option name="SELECTED_CLOUD_MATRIX_PROJECT_ID" value="" />
+      <option name="DEBUGGER_TYPE" value="Auto" />
+      <Auto>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Auto>
+      <Hybrid>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Hybrid>
+      <Java />
+      <Native>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Native>
+      <Profilers>
+        <option name="ADVANCED_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_CONFIGURATION_NAME" value="Sample Java Methods" />
+        <option name="STARTUP_NATIVE_MEMORY_PROFILING_ENABLED" value="false" />
+        <option name="NATIVE_MEMORY_SAMPLE_RATE_BYTES" value="2048" />
+      </Profilers>
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Android App.app" />
+      <item itemvalue="Android Instrumented Tests.Instrumented Tests" />
+    </list>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="project-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="2d6c4a36-88dd-4e91-8f47-d74305d13fab" name="Default Changelist" comment="" />
+      <changelist id="3913cc5c-4653-4c41-9585-efdd36dc1b6d" name="Uncommitted changes before Merge at 4/24/21 6:55 AM [Default Changelist]" comment="" />
+      <created>1576534854558</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1576534854558</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Bug fixes for 0.42.3. Downloads persist across library changes, better support for multi-track playback, and minor bugfixes">
+      <created>1596134244000</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1596134244001</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Remove casting code from develop branch">
+      <created>1596134372776</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1596134372776</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Increased audio buffer in both directions">
+      <created>1596472469712</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1596472469712</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Updated documentation">
+      <created>1596472561672</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1596472561672</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Bugfix: Remote progress called more consistently">
+      <created>1596472627958</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1596472627958</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Returns failure messages for finished downloads in CachedFileManager">
+      <created>1596472934395</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1596472934395</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Bugfix: seeking/skipping/jumping inaccuracy resolved for multi-track books">
+      <created>1596473136192</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1596473136192</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Added toggle to settings for shake to snooze">
+      <created>1596475160330</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1596475160330</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Bugfix: config change no longer overrides navigation state. navigation state now posts as an event">
+      <created>1596511344645</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1596511344645</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Collapse empty string tag">
+      <created>1596511462131</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1596511462131</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Beta 0.42.2 release candidate">
+      <created>1596511610350</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1596511610350</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Ensuring offline playback works without connection to server">
+      <created>1596554100472</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1596554100473</updated>
+    </task>
+    <task id="LOCAL-00025" summary="Refactoring to use multiple sources">
+      <created>1597074012292</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1597074012293</updated>
+    </task>
+    <task id="LOCAL-00026" summary="Added shrinkResources to build.gradle">
+      <created>1597074205061</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1597074205061</updated>
+    </task>
+    <task id="LOCAL-00027" summary="Handle wired headphones pause/play">
+      <created>1597076560859</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1597076560859</updated>
+    </task>
+    <task id="LOCAL-00028" summary="Remove empty file">
+      <created>1597076600732</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1597076600732</updated>
+    </task>
+    <task id="LOCAL-00029" summary="Possible fix to 90% issue">
+      <created>1597077215536</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1597077215536</updated>
+    </task>
+    <task id="LOCAL-00030" summary="Increase book title maxLines to 2 lines">
+      <created>1597077409243</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1597077409243</updated>
+    </task>
+    <task id="LOCAL-00031" summary="Added alternative view styles for library screenma">
+      <created>1597163598305</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1597163598305</updated>
+    </task>
+    <task id="LOCAL-00032" summary="Prevent changes to books db from causing library screen to scroll to top">
+      <created>1597164083416</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1597164083416</updated>
+    </task>
+    <task id="LOCAL-00033" summary="Prevent network changes from force-starting playback">
+      <created>1597171277703</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1597171277703</updated>
+    </task>
+    <task id="LOCAL-00034" summary="Fix uncloseable, empty notifications after playback has finished">
+      <created>1597171360815</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1597171360816</updated>
+    </task>
+    <task id="LOCAL-00035" summary="August 11th update">
+      <created>1597171399913</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1597171399913</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Refactoring to SourceManager.kt pt 3. Basic playback with Plex working, demo in broken state">
+      <created>1597674252164</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1597674252164</updated>
+    </task>
+    <task id="LOCAL-00037" summary="Refactoring to use ExoPlayer's built-in download manager. Downlaods work but cannot play them back">
+      <created>1597872516218</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1597872516218</updated>
+    </task>
+    <task id="LOCAL-00038" summary="Beta release 0.44">
+      <created>1600196292281</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1600196292281</updated>
+    </task>
+    <task id="LOCAL-00039" summary="Basic working version of DownloadManager removal. Missing: handling of edge cases like download errors (not currently communicated to user)">
+      <created>1601391782617</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1601391782617</updated>
+    </task>
+    <task id="LOCAL-00040" summary="Update TODO for version 0.50">
+      <created>1601392851918</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1601392851918</updated>
+    </task>
+    <task id="LOCAL-00041" summary="Updated code style">
+      <created>1601392961737</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1601392961737</updated>
+    </task>
+    <task id="LOCAL-00042" summary="v0.45: Downloader updates + some extra junk">
+      <created>1615920236804</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1615920236804</updated>
+    </task>
+    <task id="LOCAL-00043" summary="Add animated vector for force-sync">
+      <created>1615920900553</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1615920900553</updated>
+    </task>
+    <task id="LOCAL-00044" summary="Beta update 0.45.0">
+      <created>1616007973935</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1616007973935</updated>
+    </task>
+    <task id="LOCAL-00045" summary="Rename FlowableRadioGroupExt.kt to ChipGroupExt.kt">
+      <created>1616008086283</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1616008086283</updated>
+    </task>
+    <task id="LOCAL-00046" summary="Fixed crash on reselection of view/sort item">
+      <created>1616459866664</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1616459866664</updated>
+    </task>
+    <task id="LOCAL-00047" summary="Fix completed books not appearing as completed">
+      <created>1616602468032</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1616602468032</updated>
+    </task>
+    <task id="LOCAL-00048" summary="Expanded size of currently playing album art. Disappeared it in landscape mode to make controls more obvious">
+      <created>1616694628996</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1616694628997</updated>
+    </task>
+    <task id="LOCAL-00049" summary="Prevent tracks from decoupling from their downloaded tracks on ID change">
+      <created>1617040163712</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1617040163712</updated>
+    </task>
+    <task id="LOCAL-00050" summary="Update current chapter/track metadata on track change, improve CurrentlyPlayingSingleton.kt interface">
+      <created>1617040385318</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1617040385318</updated>
+    </task>
+    <task id="LOCAL-00051" summary="Fixed media disappearing, made 'mark as watched' available even if media is not started">
+      <created>1618342011610</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1618342011611</updated>
+    </task>
+    <task id="LOCAL-00052" summary="Prevent service from being restarted when system kills at low memory">
+      <created>1618427101814</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1618427101814</updated>
+    </task>
+    <task id="LOCAL-00053" summary="Notification controls track playback state properly">
+      <created>1619108040936</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1619108040937</updated>
+    </task>
+    <task id="LOCAL-00054" summary="WIP">
+      <created>1619390208482</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1619390208483</updated>
+    </task>
+    <task id="LOCAL-00055" summary="WIP: merge in stash">
+      <created>1619391094235</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1619391094235</updated>
+    </task>
+    <task id="LOCAL-00056" summary="Migrating audiobooks to use server IDs. WIP not functional">
+      <created>1619465351542</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1619465351543</updated>
+    </task>
+    <task id="LOCAL-00057" summary="Fix service fails to restart after process death">
+      <created>1627144819907</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1627144819908</updated>
+    </task>
+    <task id="LOCAL-00058" summary="Updates for open source release&#10;&#10;Add README, LICENSE GPLv3, and instructions for contributing in CONTRIBUTING.md&#10;&#10;Update .gitignore to ignore all files in .idea">
+      <created>1632573820870</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1632573820870</updated>
+    </task>
+    <task id="LOCAL-00059" summary="Clean up todo.md&#10;&#10;Long-term planning to offload this to GitHub issues. With maybe a far more zoomed out &quot;roadmap&quot; somewhere">
+      <created>1632583326181</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1632583326191</updated>
+    </task>
+    <task id="LOCAL-00060" summary="Update .gitignore + gradle plugin">
+      <created>1632583371557</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1632583371558</updated>
+    </task>
+    <task id="LOCAL-00061" summary="Fix images in README.md">
+      <created>1632583942897</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1632583942897</updated>
+    </task>
+    <option name="localTasksCounter" value="62" />
+    <servers />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName="*.md" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="develop" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
+    <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
+    <option name="CHECK_NEW_TODO" value="false" />
+    <ignored-roots>
+      <path value="$PROJECT_DIR$/tachiyomi" />
+    </ignored-roots>
+    <MESSAGE value="Beta release 0.44" />
+    <MESSAGE value="Basic working version of DownloadManager removal. Missing: handling of edge cases like download errors (not currently communicated to user)" />
+    <MESSAGE value="Update TODO for version 0.50" />
+    <MESSAGE value="Updated code style" />
+    <MESSAGE value="v0.45: Downloader updates + some extra junk" />
+    <MESSAGE value="Add animated vector for force-sync" />
+    <MESSAGE value="Beta update 0.45.0" />
+    <MESSAGE value="Rename FlowableRadioGroupExt.kt to ChipGroupExt.kt" />
+    <MESSAGE value="Fixed crash on reselection of view/sort item" />
+    <MESSAGE value="Fix completed books not appearing as completed" />
+    <MESSAGE value="Expanded size of currently playing album art. Disappeared it in landscape mode to make controls more obvious" />
+    <MESSAGE value="Prevent tracks from decoupling from their downloaded tracks on ID change" />
+    <MESSAGE value="Update current chapter/track metadata on track change, improve CurrentlyPlayingSingleton.kt interface" />
+    <MESSAGE value="Fixed media disappearing, made 'mark as watched' available even if media is not started" />
+    <MESSAGE value="Prevent service from being restarted when system kills at low memory" />
+    <MESSAGE value="Notification controls track playback state properly" />
+    <MESSAGE value="WIP" />
+    <MESSAGE value="WIP: merge in stash" />
+    <MESSAGE value="WIP not functional" />
+    <MESSAGE value="Migrating audiobooks to use server IDs. WIP not functional" />
+    <MESSAGE value="Fix service fails to restart after process death" />
+    <MESSAGE value="Updates for open source release&#10;&#10;Add README, LICENSE GPLv3, and instructions for contributing in CONTRIBUTING.md&#10;&#10;Update .gitignore to ignore all files in .idea" />
+    <MESSAGE value="Clean up todo.md&#10;&#10;Long-term planning to offload this to GitHub issues. With maybe a far more zoomed out &quot;roadmap&quot; somewhere" />
+    <MESSAGE value="Update .gitignore + gradle plugin" />
+    <MESSAGE value="Fix images in README.md" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix images in README.md" />
+    <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
+    <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
+    <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
+  </component>
+  <component name="com.madrapps.dagger">
+    <option name="shouldCalculateAfterEveryBuild" value="true" />
+  </component>
+</project>

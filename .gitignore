@@ -11,7 +11,8 @@
 /target
 
 # android studio files
-/.idea
+/.idea/libraries
+/.idea/modules
 *.iml
 
 # local config files

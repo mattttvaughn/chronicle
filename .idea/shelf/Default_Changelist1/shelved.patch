@@ -1,0 +1,822 @@
+Index: .idea/runConfigurations.xml
+===================================================================
+diff --git a/.idea/runConfigurations.xml b/.idea/runConfigurations.xml
+deleted file mode 100644
+--- a/.idea/runConfigurations.xml	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ /dev/null	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
+@@ -1,12 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="RunConfigurationProducerService">
+-    <option name="ignoredProducers">
+-      <set>
+-        <option value="org.jetbrains.plugins.gradle.execution.test.runner.AllInPackageGradleConfigurationProducer" />
+-        <option value="org.jetbrains.plugins.gradle.execution.test.runner.TestClassGradleConfigurationProducer" />
+-        <option value="org.jetbrains.plugins.gradle.execution.test.runner.TestMethodGradleConfigurationProducer" />
+-      </set>
+-    </option>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: app/src/testShared/java/io/github/mattpvaughn/chronicle/data/local/FakeTrackRepository.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.data.local\n\nimport androidx.lifecycle.LiveData\nimport androidx.lifecycle.MutableLiveData\nimport com.github.michaelbull.result.Ok\nimport com.github.michaelbull.result.Result\nimport io.github.mattpvaughn.chronicle.data.model.MediaItemTrack\nimport javax.inject.Inject\n\nclass FakeTrackRepository @Inject constructor() : ITrackRepository {\n\n    val tracks = makeTracks()\n\n    private fun makeTracks(): List<MediaItemTrack> {\n        return FakeBookRepository.books.flatMap{ makeTracksForBook(it.id)  }\n    }\n\n    private fun makeTracksForBook(bookId: Int): List<MediaItemTrack> {\n        return (0..5).map { makeTrack(bookId, it) }\n    }\n\n    private fun makeTrack(bookId: Int, trackId: Int): MediaItemTrack {\n        return MediaItemTrack(id = trackId, parentKey = bookId)\n    }\n\n    override suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>, Throwable> {\n        return Ok(tracks)\n    }\n\n    override suspend fun updateCachedStatus(trackId: Int, isCached: Boolean) {}\n\n    override fun getAllTracks(): LiveData<List<MediaItemTrack>> {\n        return MutableLiveData(tracks)\n    }\n\n    override suspend fun getAllTracksAsync(): List<MediaItemTrack> {\n        return tracks\n    }\n\n    override fun getTracksForAudiobook(bookId: Int): LiveData<List<MediaItemTrack>> {\n        return MutableLiveData<List<MediaItemTrack>>(tracks)\n    }\n\n    override suspend fun getTracksForAudiobookAsync(id: Int): List<MediaItemTrack> {\n        return tracks\n    }\n\n    override suspend fun updateTrackProgress(trackProgress: Long, trackId: Int, lastViewedAt: Long) {}\n\n    override suspend fun getTrackAsync(id: Int): MediaItemTrack? {\n        require(tracks.isNotEmpty())\n        return tracks[0]\n    }\n\n    override suspend fun getBookIdForTrack(trackId: Int): Int {\n        return 0\n    }\n\n    override suspend fun clear() {}\n\n    override suspend fun getCachedTracks(): List<MediaItemTrack> {\n        return tracks\n    }\n\n    override suspend fun getTrackCountForBookAsync(bookId: Int): Int {\n        return 0\n    }\n\n    override suspend fun getCachedTrackCountForBookAsync(bookId: Int): Int {\n        return 0\n    }\n\n    override suspend fun uncacheAll() {}\n\n    override suspend fun loadAllTracksAsync(): List<MediaItemTrack> {\n        return tracks\n    }\n\n    override suspend fun refreshData() {}\n    override suspend fun findTrackByTitle(title: String): MediaItemTrack? {\n        TODO(\"Not yet implemented\")\n    }\n\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/testShared/java/io/github/mattpvaughn/chronicle/data/local/FakeTrackRepository.kt b/app/src/testShared/java/io/github/mattpvaughn/chronicle/data/local/FakeTrackRepository.kt
+--- a/app/src/testShared/java/io/github/mattpvaughn/chronicle/data/local/FakeTrackRepository.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/testShared/java/io/github/mattpvaughn/chronicle/data/local/FakeTrackRepository.kt	(date 1601391975405)
+@@ -2,8 +2,6 @@
+ 
+ import androidx.lifecycle.LiveData
+ import androidx.lifecycle.MutableLiveData
+-import com.github.michaelbull.result.Ok
+-import com.github.michaelbull.result.Result
+ import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
+ import javax.inject.Inject
+ 
+@@ -23,8 +21,8 @@
+         return MediaItemTrack(id = trackId, parentKey = bookId)
+     }
+ 
+-    override suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>, Throwable> {
+-        return Ok(tracks)
++    override suspend fun loadTracksForAudiobook(bookId: Int): Result<List<MediaItemTrack>> {
++        return Result.success(tracks)
+     }
+ 
+     override suspend fun updateCachedStatus(trackId: Int, isCached: Boolean) {}
+@@ -72,11 +70,10 @@
+ 
+     override suspend fun uncacheAll() {}
+ 
+-    override suspend fun loadAllTracksAsync(): List<MediaItemTrack> {
+-        return tracks
++    override suspend fun refreshData(): List<Result<Unit>> {
++        TODO("Not yet implemented")
+     }
+ 
+-    override suspend fun refreshData() {}
+     override suspend fun findTrackByTitle(title: String): MediaItemTrack? {
+         TODO("Not yet implemented")
+     }
+Index: README.md
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># Chronicle Audiobook Player\n\n### Features\n\n - Sync audiobook progress on device\n - Support for file formats: mp3, m4a, m4b\n - Adjustable playback speed\n - Sleep timer\n - Skip silent audio\n - Offline support\n - Basic Android Auto support (playback works but no voice support)\n \n### Screenshots\n\n![Home](images/home.png)\n\n![Library](images/library.png)\n\n![Playback](images/playback.png)\n \n### Upcoming features (in no particular order)\n\n - Sync progress to plex\n - m4b chapter support\n - \n\n\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/README.md b/README.md
+--- a/README.md	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/README.md	(date 1632573390390)
+@@ -12,16 +12,9 @@
+  
+ ### Screenshots
+ 
+-![Home](images/home.png)
+-
+-![Library](images/library.png)
++<img src="images/home.png" alt="Home screen" height="200">
++<img src="images/library.png" alt="Home screen" height="200">
++<img src="images/playback.png" alt="Home screen" height="200">
+ 
+-![Playback](images/playback.png)
+- 
+-### Upcoming features (in no particular order)
+-
+- - Sync progress to plex
+- - m4b chapter support
+- - 
+ 
+ 
+Index: gradle/wrapper/gradle-wrapper.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>#Fri Jan 22 08:44:49 PST 2021\ndistributionBase=GRADLE_USER_HOME\ndistributionPath=wrapper/dists\nzipStoreBase=GRADLE_USER_HOME\nzipStorePath=wrapper/dists\ndistributionUrl=https\\://services.gradle.org/distributions/gradle-6.5-all.zip\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/gradle/wrapper/gradle-wrapper.properties b/gradle/wrapper/gradle-wrapper.properties
+--- a/gradle/wrapper/gradle-wrapper.properties	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/gradle/wrapper/gradle-wrapper.properties	(date 1626565296560)
+@@ -3,4 +3,4 @@
+ distributionPath=wrapper/dists
+ zipStoreBase=GRADLE_USER_HOME
+ zipStorePath=wrapper/dists
+-distributionUrl=https\://services.gradle.org/distributions/gradle-6.5-all.zip
++distributionUrl=https\://services.gradle.org/distributions/gradle-6.7.1-all.zip
+Index: build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// Top-level build file where you can add configuration options common to all sub-projects/modules.\n\nbuildscript {\n    ext {\n        kotlinVersion = '1.4.32'\n        coroutinesVersion = \"1.3.8\"\n        archLifecycleVersion = \"1.1.1\"\n        gradleVersion = '4.1.3'\n        supportlibVersion = '1.2.0'\n        materialLibVersion = '1.3.0'\n        retrofitVersion = \"2.9.0\"\n        moshiKotlinVersion = '1.11.0'\n        okhttpVersion = '4.9.1'\n        dataBindingCompilerVersion = gradleVersion // Always need to be the same.\n        roomVersion = \"2.2.6\"\n        frescoVersion = \"2.4.0\"\n        exoplayerVersion = \"2.11.4\"\n        workVersion = '2.5.0'\n        junitVersion = '4.13.2'\n        androidxTestRunnerVersion = '1.3.0'\n        espressoVersion = '3.3.0'\n        androidxAnnotationVersion = \"1.2.0\"\n        lifecycleVersion = \"2.3.1\"\n        ossLicenseActivityVersion = \"17.0.0\"\n        androidXTestExtKotlinRunnerVersion = '1.1.2'\n        androidXTestCoreVersion = '1.3.0'\n        robolectricVersion = '4.4'\n        archTestingVersion = \"2.1.0\"\n        hamcrestVersion = \"1.3\"\n        mockKVersion = \"1.10.0\"\n        daggerVersion = '2.33'\n        localBroadcastManagerVersion = \"1.0.0\"\n        androidXCustomTabsVersion = \"1.3.0\"\n        swipeRefreshLayoutVersion = \"1.1.0\"\n        billingVersion = '3.0.0'\n        constraintLayoutVersion = '2.0.4'\n        kotlinResultVersion = '1.1.11'\n        timberVersion = \"4.7.1\"\n        seismicVersion = \"1.0.2\"\n        appCompatFragmentVersion = \"1.3.2\"\n    }\n    repositories {\n        google()\n        jcenter()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:$gradleVersion\"\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion\"\n        classpath \"com.google.android.gms:oss-licenses-plugin:0.10.2\"\n\n        // NOTE: Do not place your application dependencies here; they belong\n        // in the individual module build.gradle files\n    }\n}\n\nallprojects {\n    repositories {\n        google()\n        jcenter()\n        maven { url \"https://jitpack.io\" }\n    }\n}\n\ntask clean(type: Delete) {\n    delete rootProject.buildDir\n}\n\n// Allow experimental kotlin features, like coroutines\ntasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {\n    kotlinOptions.freeCompilerArgs += [\"-Xuse-experimental=io.ktor.locations.KtorExperimentalLocationsAPI\"]\n    kotlinOptions.freeCompilerArgs += [\"-Xallow-result-return-type\"]\n    kotlinOptions.freeCompilerArgs += [\"-Xopt-in=kotlin.RequiresOptIn\"]\n    kotlinOptions.freeCompilerArgs += [\"-Xopt-in=kotlin.time.ExperimentalTime\"]\n    kotlinOptions.freeCompilerArgs += [\"-Xopt-in=kotlinx.coroutines.InternalCoroutinesApi\"]\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build.gradle b/build.gradle
+--- a/build.gradle	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/build.gradle	(date 1626565296742)
+@@ -5,7 +5,7 @@
+         kotlinVersion = '1.4.32'
+         coroutinesVersion = "1.3.8"
+         archLifecycleVersion = "1.1.1"
+-        gradleVersion = '4.1.3'
++        gradleVersion = '4.2.2'
+         supportlibVersion = '1.2.0'
+         materialLibVersion = '1.3.0'
+         retrofitVersion = "2.9.0"
+Index: app/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>apply plugin: \"com.android.application\"\napply plugin: \"kotlin-android\"\napply plugin: \"kotlin-kapt\"\napply plugin: \"kotlin-parcelize\"\napply plugin: \"com.google.android.gms.oss-licenses-plugin\"\n\nandroid {\n    compileSdkVersion 30\n    buildToolsVersion \"29.0.3\"\n    defaultConfig {\n        applicationId \"io.github.mattpvaughn.chronicle\"\n        minSdkVersion 21\n        targetSdkVersion 30\n        versionCode 21\n        versionName \"0.45.1\"\n        testInstrumentationRunner \"io.github.mattpvaughn.chronicle.application.ChronicleTestRunner\"\n    }\n    buildTypes {\n        release {\n            minifyEnabled true\n            shrinkResources true\n            proguardFiles getDefaultProguardFile(\"proguard-android-optimize.txt\"), \"proguard-rules.pro\"\n        }\n        debug {\n            // Note: toggle this away to test IAP\n            applicationIdSuffix \".debug\"\n            debuggable true\n        }\n    }\n    buildFeatures {\n        dataBinding = true\n    }\n    configurations {\n        all {\n            exclude module: \"xpp3\"\n        }\n    }\n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_1_8\n        targetCompatibility JavaVersion.VERSION_1_8\n    }\n    kotlinOptions {\n        jvmTarget = JavaVersion.VERSION_1_8.toString()\n    }\n    // Shared code b/w test and androidTest: mocks \"n\" stuff\n    sourceSets {\n        final String SHARED_TEST_DIR = \"src/testShared/java\"\n        test {\n            java.srcDirs += SHARED_TEST_DIR\n        }\n        androidTest {\n            java.srcDirs += SHARED_TEST_DIR\n        }\n    }\n    kapt {\n        arguments {\n            arg(\"room.schemaLocation\", \"$projectDir/schemas\".toString())\n            arg(\"room.incremental\", \"true\")\n            arg(\"room.expandProjection\", \"true\")\n        }\n    }\n    lintOptions {\n        abortOnError false\n    }\n    kotlinOptions {\n        freeCompilerArgs = [\"-Xallow-result-return-type\"]\n        freeCompilerArgs += [\"-Xopt-in=kotlin.RequiresOptIn\"]\n        freeCompilerArgs += [\"-Xopt-in=kotlin.time.ExperimentalTime\"]\n        freeCompilerArgs += [\"-Xopt-in=kotlinx.coroutines.InternalCoroutinesApi\"]\n    }\n}\n\ndependencies {\n    implementation fileTree(include: [\"*.jar\"], dir: \"libs\")\n\n    // Kotlin\n    implementation \"org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion\"\n\n    // Material components\n    implementation \"com.google.android.material:material:$materialLibVersion\"\n    implementation \"androidx.appcompat:appcompat:$supportlibVersion\"\n    implementation \"androidx.fragment:fragment-ktx:$appCompatFragmentVersion\"\n    implementation \"androidx.recyclerview:recyclerview:1.2.0\"\n    implementation \"androidx.constraintlayout:constraintlayout:$constraintLayoutVersion\"\n\n    // AndroidX\n    implementation \"androidx.annotation:annotation:$androidxAnnotationVersion\"\n    implementation \"androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion\"\n    implementation \"androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion\"\n    implementation \"androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion\"\n    implementation \"androidx.lifecycle:lifecycle-service:$lifecycleVersion\"\n    implementation \"androidx.lifecycle:lifecycle-process:$lifecycleVersion\"\n\n    // Google Play Billing\n    implementation \"com.android.billingclient:billing:$billingVersion\"\n    implementation \"com.android.billingclient:billing-ktx:$billingVersion\"\n\n    // Retrofit\n    implementation \"com.squareup.retrofit2:retrofit:$retrofitVersion\"\n    implementation \"com.squareup.retrofit2:converter-moshi:$retrofitVersion\"\n    implementation(\"com.squareup.moshi:moshi-kotlin:$moshiKotlinVersion\")\n    kapt \"com.squareup.moshi:moshi-kotlin-codegen:$moshiKotlinVersion\"\n\n    // Kotlin coroutines\n    implementation \"org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion\"\n    implementation \"org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion\"\n\n    // OkHttp\n    implementation \"com.squareup.okhttp3:okhttp:$okhttpVersion\"\n    implementation \"com.squareup.okhttp3:logging-interceptor:$okhttpVersion\"\n\n    // Timber Logging\n    implementation \"com.jakewharton.timber:timber:$timberVersion\"\n\n    // Fetch download manager\n    implementation \"androidx.tonyodev.fetch2:xfetch2:3.1.6\"\n\n    // Room DB manager\n    implementation \"androidx.room:room-runtime:$roomVersion\"\n    implementation \"androidx.room:room-ktx:$roomVersion\"\n    kapt \"androidx.room:room-compiler:$roomVersion\"\n\n    // Dagger dependency injection\n    implementation \"com.google.dagger:dagger:$daggerVersion\"\n    kapt \"com.google.dagger:dagger-compiler:$daggerVersion\"\n\n    // For Plex OAuth implementation\n    implementation \"androidx.browser:browser:$androidXCustomTabsVersion\"\n\n    // AssistedInject to provide runtime args to Dagger injected objects\n    // TODO- need further research into how this works so we can add AssistInject without adding\n    //       a lot more boilerplate\n//    compileOnly \"com.squareup.inject:assisted-inject-annotations-dagger2:0.5.2\"\n//    kapt \"com.squareup.inject:assisted-inject-processor-dagger2:0.5.2\"\n\n    // TODO: Remove glide, only included to delete the cache v0.45\n    implementation (\"com.github.bumptech.glide:glide:4.11.0\") {\n        // exclude okhttp import in favor of our own import\n        exclude group: \"com.squareup.okhttp:\"\n    }\n\n\n        // Fresco - image loading\n    implementation 'com.facebook.fresco:fresco:2.4.0'\n    implementation \"com.facebook.fresco:imagepipeline-okhttp3:2.4.0\"\n\n    // LocalBroadcastManager\n    implementation \"androidx.localbroadcastmanager:localbroadcastmanager:$localBroadcastManagerVersion\"\n\n    // Exoplayer\n    implementation \"com.google.android.exoplayer:exoplayer-core:$exoplayerVersion\"\n    implementation \"com.google.android.exoplayer:exoplayer-ui:$exoplayerVersion\"\n    implementation \"com.google.android.exoplayer:extension-mediasession:$exoplayerVersion\"\n\n    // ExoPlayer extensions for FLAC and OPUS file types\n    implementation(\"com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-opus:$exoplayerVersion\") {\n        transitive = false\n    }\n    implementation(\"com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-flac:$exoplayerVersion\"){\n        transitive = false\n    }\n\n    // WorkManager helps coordinate background syncing of local data w.r.t. network conditions\n    implementation \"androidx.work:work-runtime-ktx:$workVersion\"\n\n    // Android team\"s license displaying library- creates an activity showing all dependencies\n    // by pulling from maven\n    implementation \"com.google.android.gms:play-services-oss-licenses:$ossLicenseActivityVersion\"\n\n    // Swipe-to-refresh\n    implementation \"androidx.swiperefreshlayout:swiperefreshlayout:$swipeRefreshLayoutVersion\"\n\n    // Seismic- for shake detection\n    implementation \"com.squareup:seismic:$seismicVersion\"\n\n    // Kotlin-result: TODO remove because Result is now accessible in our current build\n    implementation \"com.michael-bull.kotlin-result:kotlin-result:$kotlinResultVersion\"\n\n    // Test for memory leaks\n    debugImplementation \"com.squareup.leakcanary:leakcanary-android:2.4\"\n\n\n    /* ~~~~~~~~~~~~ Local Tests ~~~~~~~~~~ */\n    testImplementation \"junit:junit:$junitVersion\"\n    testImplementation \"androidx.test.ext:junit-ktx:$androidXTestExtKotlinRunnerVersion\"\n    testImplementation \"androidx.test:core-ktx:$androidXTestCoreVersion\"\n    testImplementation \"org.robolectric:robolectric:$robolectricVersion\"\n    testImplementation \"androidx.room:room-testing:$roomVersion\"\n    testImplementation \"androidx.arch.core:core-testing:$archTestingVersion\"\n    testImplementation \"org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion\"\n    testImplementation \"org.hamcrest:hamcrest-all:$hamcrestVersion\"\n    testImplementation(\"io.mockk:mockk:$mockKVersion\") {\n        exclude group: \"org.jetbrains.kotlin\", module: \"kotlin-reflect\"\n    }\n\n    /* ~~~~~~~~~~~~ Instrumented tests ~~~~~~~~~~ */\n    androidTestImplementation \"junit:junit:$junitVersion\"\n    androidTestImplementation \"androidx.test:runner:$androidxTestRunnerVersion\"\n    androidTestImplementation \"androidx.test:rules:$androidxTestRunnerVersion\"\n    androidTestImplementation \"org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion\"\n    androidTestImplementation \"androidx.test.ext:junit:$androidXTestExtKotlinRunnerVersion\"\n    androidTestImplementation \"androidx.test.ext:junit-ktx:$androidXTestExtKotlinRunnerVersion\"\n    androidTestImplementation \"androidx.test.espresso:espresso-core:$espressoVersion\"\n    androidTestImplementation \"androidx.test.espresso:espresso-contrib:$espressoVersion\"\n    androidTestImplementation(\"io.mockk:mockk:$mockKVersion\") {\n        exclude group: \"org.jetbrains.kotlin\", module: \"kotlin-reflect\"\n    }\n\n    androidTestImplementation \"com.google.dagger:dagger:$daggerVersion\"\n    kaptAndroidTest \"com.google.dagger:dagger-compiler:$daggerVersion\"\n\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle b/app/build.gradle
+--- a/app/build.gradle	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/build.gradle	(date 1620152046918)
+@@ -35,6 +35,9 @@
+             exclude module: "xpp3"
+         }
+     }
++    testOptions {
++        unitTests.returnDefaultValues = true
++    }
+     compileOptions {
+         sourceCompatibility JavaVersion.VERSION_1_8
+         targetCompatibility JavaVersion.VERSION_1_8
+Index: app/src/main/java/io/github/mattpvaughn/chronicle/features/player/OnMediaChangedCallback.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.features.player\n\nimport android.support.v4.media.MediaMetadataCompat\nimport android.support.v4.media.session.MediaControllerCompat\nimport android.support.v4.media.session.MediaSessionCompat\nimport android.support.v4.media.session.PlaybackStateCompat\nimport android.support.v4.media.session.PlaybackStateCompat.*\nimport androidx.core.app.NotificationManagerCompat\nimport io.github.mattpvaughn.chronicle.application.Injector\nimport io.github.mattpvaughn.chronicle.data.local.IBookRepository\nimport io.github.mattpvaughn.chronicle.data.local.ITrackRepository\nimport io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND\nimport io.github.mattpvaughn.chronicle.data.model.Chapter\nimport io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID\nimport io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying\nimport io.github.mattpvaughn.chronicle.features.currentlyplaying.OnChapterChangeListener\nimport kotlinx.coroutines.*\nimport timber.log.Timber\nimport javax.inject.Inject\n\n/** Responsible for observing changes in media metadata */\n@ExperimentalCoroutinesApi\nclass OnMediaChangedCallback @Inject constructor(\n    private val mediaController: MediaControllerCompat,\n    private val serviceScope: CoroutineScope,\n    private val notificationBuilder: NotificationBuilder,\n    private val mediaSession: MediaSessionCompat,\n    private val becomingNoisyReceiver: BecomingNoisyReceiver,\n    private val notificationManager: NotificationManagerCompat,\n    private val foregroundServiceController: ForegroundServiceController,\n    private val serviceController: ServiceController,\n    private val currentlyPlaying: CurrentlyPlaying,\n    private val trackRepo: ITrackRepository,\n    private val bookRepo: IBookRepository\n) : MediaControllerCompat.Callback(), OnChapterChangeListener {\n\n    init {\n        currentlyPlaying.setOnChapterChangeListener(this)\n    }\n\n    // Book ID, Track ID, Chapter ID\n\n    override fun onMetadataChanged(metadata: MediaMetadataCompat?) {\n        Timber.i(\"METADATA CHANGE\")\n        mediaController.playbackState?.let { state ->\n            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {\n                withContext(Dispatchers.IO) {\n                    val trackId = metadata?.id?.toInt() ?: TRACK_NOT_FOUND\n                    if (trackId == TRACK_NOT_FOUND) {\n                        return@withContext\n                    }\n                    val newBook = bookRepo.getAudiobookAsync(trackRepo.getBookIdForTrack(trackId))\n                    val newBookId = newBook?.id ?: NO_AUDIOBOOK_FOUND_ID\n                    val newTracks = trackRepo.getTracksForAudiobookAsync(newBookId)\n                    val newTrack = trackRepo.getTrackAsync(trackId)\n                    if (newBook != null && newTrack != null && newTracks.isNotEmpty()) {\n                        currentlyPlaying.update(\n                            book = newBook,\n                            track = newTrack,\n                            tracks = newTracks,\n                        )\n                    }\n                    updateNotification(state.state)\n                }\n            }\n        }\n    }\n\n    override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {\n        Timber.i(\"Playback state changed to ${state?.stateName} ${System.currentTimeMillis()}\")\n        if (state == null) {\n            return\n        }\n        serviceScope.launch(Injector.get().unhandledExceptionHandler()) {\n            updateNotification(state.state)\n        }\n    }\n\n    /**\n     * TODO: eventually handle chapter changes\n     */\n    override fun onChapterChange(chapter: Chapter) {\n//        mediaController.playbackState?.let { state ->\n//            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {\n//                updateNotification(state.state)\n//            }\n//        }\n    }\n\n    private suspend fun updateNotification(state: Int) {\n        val notification = if (mediaController.sessionToken != null) {\n            notificationBuilder.buildNotification(mediaSession.sessionToken)\n        } else {\n            null\n        }\n\n        Timber.i(\"Created notif: $notification\")\n\n        when (state) {\n            STATE_PLAYING, STATE_BUFFERING -> {\n                becomingNoisyReceiver.register()\n                if (notification != null) {\n                    notificationManager.notify(NOW_PLAYING_NOTIFICATION, notification)\n                    foregroundServiceController.startForeground(\n                        NOW_PLAYING_NOTIFICATION,\n                        notification\n                    )\n                }\n            }\n            STATE_PAUSED -> {\n                becomingNoisyReceiver.unregister()\n                if (notification != null) {\n                    notificationManager.notify(NOW_PLAYING_NOTIFICATION, notification)\n                }\n                // Enables dismiss-on-swipe when paused- swiping triggers the delete\n                // intent on the notification to be called, which kills the service\n                foregroundServiceController.stopForeground(false)\n            }\n            STATE_STOPPED -> {\n                // If playback has ended, fully stop the service.\n                Timber.i(\"Playback has finished, stopping service!\")\n                notificationManager.cancel(NOW_PLAYING_NOTIFICATION)\n                foregroundServiceController.stopForeground(true)\n                serviceController.stopService()\n            }\n            else -> {\n                // When not actively playing media, notification becomes cancellable on swipe and\n                // we stop listening for audio interruptions\n                becomingNoisyReceiver.unregister()\n                foregroundServiceController.stopForeground(true)\n            }\n        }\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/OnMediaChangedCallback.kt b/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/OnMediaChangedCallback.kt
+--- a/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/OnMediaChangedCallback.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/OnMediaChangedCallback.kt	(date 1627149526912)
+@@ -89,6 +89,7 @@
+ 
+     private suspend fun updateNotification(state: Int) {
+         val notification = if (mediaController.sessionToken != null) {
++            Timber.i("Building notification: reason=${this::class.simpleName}")
+             notificationBuilder.buildNotification(mediaSession.sessionToken)
+         } else {
+             null
+Index: .idea/compiler.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"CompilerConfiguration\">\n    <bytecodeTargetLevel target=\"1.8\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/compiler.xml b/.idea/compiler.xml
+--- a/.idea/compiler.xml	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/.idea/compiler.xml	(date 1626565269112)
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="CompilerConfiguration">
+-    <bytecodeTargetLevel target="1.8" />
++    <bytecodeTargetLevel target="11" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: app/src/main/java/io/github/mattpvaughn/chronicle/features/player/MediaPlayerService.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.features.player\n\nimport android.app.Notification\nimport android.app.PendingIntent\nimport android.content.*\nimport android.os.Bundle\nimport android.support.v4.media.MediaBrowserCompat\nimport android.support.v4.media.session.MediaControllerCompat\nimport android.support.v4.media.session.MediaSessionCompat\nimport android.support.v4.media.session.PlaybackStateCompat\nimport android.view.KeyEvent\nimport android.view.KeyEvent.*\nimport androidx.lifecycle.Observer\nimport androidx.localbroadcastmanager.content.LocalBroadcastManager\nimport androidx.media.MediaBrowserServiceCompat\nimport com.google.android.exoplayer2.*\nimport com.google.android.exoplayer2.C.*\nimport com.google.android.exoplayer2.audio.AudioAttributes\nimport com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector\nimport io.github.mattpvaughn.chronicle.BuildConfig\nimport io.github.mattpvaughn.chronicle.R\nimport io.github.mattpvaughn.chronicle.application.ChronicleApplication\nimport io.github.mattpvaughn.chronicle.application.Injector\nimport io.github.mattpvaughn.chronicle.data.local.IBookRepository\nimport io.github.mattpvaughn.chronicle.data.local.ITrackRepository\nimport io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo\nimport io.github.mattpvaughn.chronicle.data.model.MediaItemTrack\nimport io.github.mattpvaughn.chronicle.data.model.getActiveTrack\nimport io.github.mattpvaughn.chronicle.data.model.getProgress\nimport io.github.mattpvaughn.chronicle.data.model.toMediaItem\nimport io.github.mattpvaughn.chronicle.data.sources.plex.*\nimport io.github.mattpvaughn.chronicle.data.sources.plex.IPlexLoginRepo.LoginState.*\nimport io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration\nimport io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying\nimport io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_ACTION\nimport io.github.mattpvaughn.chronicle.features.player.SleepTimer.Companion.ARG_SLEEP_TIMER_DURATION_MILLIS\nimport io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerAction\nimport io.github.mattpvaughn.chronicle.injection.components.DaggerServiceComponent\nimport io.github.mattpvaughn.chronicle.injection.modules.ServiceModule\nimport io.github.mattpvaughn.chronicle.util.PackageValidator\nimport kotlinx.coroutines.*\nimport timber.log.Timber\nimport javax.inject.Inject\nimport kotlin.time.ExperimentalTime\nimport kotlin.time.seconds\n\n/** The service responsible for media playback, notification */\n@ExperimentalCoroutinesApi\n@OptIn(ExperimentalTime::class)\nclass MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceController,\n    ServiceController,\n    SleepTimer.SleepTimerBroadcaster {\n\n    val serviceJob: CompletableJob = SupervisorJob()\n    val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)\n\n    @Inject\n    lateinit var onMediaChangedCallback: OnMediaChangedCallback\n\n    @Inject\n    lateinit var packageValidator: PackageValidator\n\n    @Inject\n    lateinit var notificationBuilder: NotificationBuilder\n\n    @Inject\n    lateinit var plexConfig: PlexConfig\n\n    @Inject\n    lateinit var becomingNoisyReceiver: BecomingNoisyReceiver\n\n    @Inject\n    lateinit var mediaSession: MediaSessionCompat\n\n    @Inject\n    lateinit var mediaController: MediaControllerCompat\n\n    @Inject\n    lateinit var mediaSessionConnector: MediaSessionConnector\n\n    @Inject\n    lateinit var queueNavigator: QueueNavigator\n\n    @Inject\n    lateinit var exoPlayer: SimpleExoPlayer\n\n    @Inject\n    lateinit var currentlyPlaying: CurrentlyPlaying\n\n    @Inject\n    lateinit var bookRepository: IBookRepository\n\n    @Inject\n    lateinit var trackRepository: ITrackRepository\n\n    @Inject\n    lateinit var trackListManager: TrackListStateManager\n\n    @Inject\n    lateinit var mediaSessionCallback: AudiobookMediaSessionCallback\n\n    @Inject\n    lateinit var playbackPreparer: AudiobookPlaybackPreparer\n\n    @Inject\n    lateinit var prefsRepo: PrefsRepo\n\n    @Inject\n    lateinit var plexPrefs: PlexPrefsRepo\n\n    @Inject\n    lateinit var plexLoginRepo: IPlexLoginRepo\n\n    companion object {\n        /** Strings used by plex to indicate playback state */\n        const val PLEX_STATE_PLAYING = \"playing\"\n        const val PLEX_STATE_STOPPED = \"stopped\"\n        const val PLEX_STATE_PAUSED = \"paused\"\n\n        /** Strings used to indicate playback errors */\n        const val ACTION_PLAYBACK_ERROR = \"playback error action intent\"\n        const val PLAYBACK_ERROR_MESSAGE = \"playback error message\"\n\n        /**\n         * Key indicating playback start time offset relative to the start of the track being\n         * played (only use for, m4b chapters, as mp3 durations are generally too imprecise)\n         */\n        const val KEY_START_TIME_TRACK_OFFSET = \"track index bundle 2939829 tubers\"\n\n        // Key indicating the ID of the track to begin playback at\n        const val KEY_SEEK_TO_TRACK_WITH_ID = \"MediaPlayerService.key_seek_to_track_with_id\"\n\n        // Value indicating to begin playback at the most recently listened position\n        const val ACTIVE_TRACK = Long.MIN_VALUE + 22233L\n        const val USE_SAVED_TRACK_PROGRESS = Long.MIN_VALUE + 22250L\n\n        private const val CHRONICLE_MEDIA_ROOT_ID = \"chronicle_media_root_id\"\n        private const val CHRONICLE_MEDIA_EMPTY_ROOT = \"empty root\"\n        private const val CHRONICLE_MEDIA_SEARCH_SUPPORTED = \"android.media.browse.SEARCH_SUPPORTED\"\n\n        /**\n         * Exoplayer back-buffer (millis to keep of playback prior to current location)\n         *\n         * @see DefaultLoadControl.Builder.setBufferDurationsMs\n         */\n        val EXOPLAYER_BACK_BUFFER_DURATION_MILLIS: Int = 120.seconds.toLongMilliseconds().toInt()\n\n        /**\n         * Exoplayer min-buffer (the minimum millis of buffer which exo will attempt to keep in\n         * memory)\n         *\n         * @see DefaultLoadControl.Builder.setBufferDurationsMs\n         */\n        val EXOPLAYER_MIN_BUFFER_DURATION_MILLIS: Int = 10.seconds.toLongMilliseconds().toInt()\n\n        /**\n         * Exoplayer max-buffer (the maximum duration of buffer which Exoplayer will store in memory)\n         *\n         * @see DefaultLoadControl.Builder.setBufferDurationsMs\n         */\n        val EXOPLAYER_MAX_BUFFER_DURATION_MILLIS: Int = 360.seconds.toLongMilliseconds().toInt()\n    }\n\n    @Inject\n    lateinit var sleepTimer: SleepTimer\n\n    @Inject\n    lateinit var progressUpdater: ProgressUpdater\n\n    @Inject\n    lateinit var mediaSource: PlexMediaRepository\n\n    @Inject\n    lateinit var localBroadcastManager: LocalBroadcastManager\n\n    var currentPlayer: Player? = null\n\n    @OptIn(InternalCoroutinesApi::class)\n    override fun onCreate() {\n        super.onCreate()\n\n        DaggerServiceComponent.builder()\n            .appComponent((application as ChronicleApplication).appComponent)\n            .serviceModule(ServiceModule(this))\n            .build()\n            .inject(this)\n\n        Timber.i(\"Service created! $this\")\n\n\n        updateAudioAttrs(simpleExoPlayer = exoPlayer)\n\n        prefsRepo.registerPrefsListener(prefsListener)\n\n        serviceScope.launch(Injector.get().unhandledExceptionHandler()) { mediaSource.load() }\n\n        mediaSession.setPlaybackState(EMPTY_PLAYBACK_STATE)\n        mediaSession.setCallback(mediaSessionCallback)\n\n        switchToPlayer(exoPlayer)\n        exoPlayer.addListener(playerEventListener)\n\n        mediaSessionConnector.setCustomActionProviders(*makeCustomActionProviders(trackListManager))\n        mediaSessionConnector.setQueueNavigator(queueNavigator)\n        mediaSessionConnector.setPlaybackPreparer(playbackPreparer)\n        mediaSessionConnector.setMediaButtonEventHandler { _, _, mediaButtonEvent ->\n            mediaSessionCallback.onMediaButtonEvent(mediaButtonEvent)\n        }\n\n        mediaController.registerCallback(onMediaChangedCallback)\n\n        // startForeground has to be called within 5 seconds of starting the service or the app\n        // will ANR (on Android 9.0 and above, maybe earlier). Even if we don't have\n        // full metadata here, should launch a notification with whatever it is we have...\n        serviceScope.launch(Injector.get().unhandledExceptionHandler()) {\n            val notification = withContext(Dispatchers.IO) {\n                notificationBuilder.buildNotification(mediaSession.sessionToken)\n            }\n            startForeground(NOW_PLAYING_NOTIFICATION, notification)\n        }\n\n        localBroadcastManager.registerReceiver(\n            sleepTimerBroadcastReceiver,\n            IntentFilter(SleepTimer.ACTION_SLEEP_TIMER_CHANGE)\n        )\n\n        invalidatePlaybackParams()\n        (progressUpdater as SimpleProgressUpdater).mediaSessionConnector = mediaSessionConnector\n        progressUpdater.startRegularProgressUpdates()\n\n        plexConfig.connectionState.observeForever(serverChangedListener)\n    }\n\n    override fun broadcastUpdate(sleepTimerAction: SleepTimerAction, durationMillis: Long) {\n        val broadcastIntent = Intent(SleepTimer.ACTION_SLEEP_TIMER_CHANGE).apply {\n            putExtra(ARG_SLEEP_TIMER_ACTION, sleepTimerAction)\n            putExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, durationMillis)\n        }\n        localBroadcastManager.sendBroadcast(broadcastIntent)\n    }\n\n    private val sleepTimerBroadcastReceiver = object : BroadcastReceiver() {\n        override fun onReceive(context: Context?, intent: Intent?) {\n            if (intent != null) {\n                val durationMillis = intent.getLongExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, 0L)\n                val action = intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION) as SleepTimerAction\n                sleepTimer.handleAction(action, durationMillis)\n            }\n        }\n    }\n\n\n    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->\n        when (key) {\n            PrefsRepo.KEY_SKIP_SILENCE, PrefsRepo.KEY_PLAYBACK_SPEED -> {\n                invalidatePlaybackParams()\n            }\n            PrefsRepo.KEY_PAUSE_ON_FOCUS_LOST -> {\n                updateAudioAttrs(exoPlayer)\n            }\n        }\n    }\n\n    private fun updateAudioAttrs(simpleExoPlayer: SimpleExoPlayer) {\n        simpleExoPlayer.setAudioAttributes(\n            AudioAttributes.Builder()\n                .setContentType(if (prefsRepo.pauseOnFocusLost) CONTENT_TYPE_SPEECH else CONTENT_TYPE_MUSIC)\n                .setUsage(USAGE_MEDIA)\n                .build(),\n            true\n        )\n    }\n\n    private val serverChangedListener = Observer<PlexConfig.ConnectionState> {\n        if (mediaController.playbackState.isPrepared) {\n            // Only can change server when playback is prepared because otherwise we would be\n            // attempting to load data on a null/empty tracklist\n            onChangeConnection()\n        }\n    }\n\n    /**\n     * Change the tracks in the player to refer to the new server url. Because [PlexConfig] is a\n     * Singleton we don't need to keep track of state here\n     */\n    private fun onChangeConnection() {\n        when (mediaController.playbackState.state) {\n            PlaybackStateCompat.STATE_PLAYING -> {\n                mediaSessionCallback.onPlayFromMediaId(\n                    trackListManager.trackList.map { it.id }.firstOrNull { true }.toString(),\n                    Bundle().apply {\n                        putLong(KEY_SEEK_TO_TRACK_WITH_ID, ACTIVE_TRACK)\n                        putLong(KEY_START_TIME_TRACK_OFFSET, USE_SAVED_TRACK_PROGRESS)\n                    }\n                )\n            }\n            PlaybackStateCompat.STATE_PAUSED, PlaybackStateCompat.STATE_BUFFERING -> {\n                mediaSessionCallback.onPrepareFromMediaId(\n                    trackListManager.trackList.map { it.id }.firstOrNull { true }.toString(),\n                    Bundle().apply {\n                        putLong(KEY_SEEK_TO_TRACK_WITH_ID, ACTIVE_TRACK)\n                        putLong(KEY_START_TIME_TRACK_OFFSET, USE_SAVED_TRACK_PROGRESS)\n                    }\n                )\n            }\n            else -> {\n            } // if there isn't playback, there's nothing to change\n        }\n    }\n\n    private fun invalidatePlaybackParams() {\n        Timber.i(\"Playback params: speed = ${prefsRepo.playbackSpeed}, skip silence = ${prefsRepo.skipSilence}\")\n        currentPlayer?.setPlaybackParameters(\n            PlaybackParameters(prefsRepo.playbackSpeed, 1.0f, prefsRepo.skipSilence)\n        )\n    }\n\n    override fun onTaskRemoved(rootIntent: Intent?) {\n        super.onTaskRemoved(rootIntent)\n\n        // Ensures that players will not block being removed as a foreground service\n        exoPlayer.stop(true)\n    }\n\n    override fun onDestroy() {\n        Timber.i(\"Service destroyed\")\n        // Send one last update to local/remote servers that playback has stopped\n        val trackId = mediaController.metadata.id\n        if (trackId != null && trackId.toInt() != TRACK_NOT_FOUND) {\n            progressUpdater.updateProgress(\n                trackId.toInt(),\n                PLEX_STATE_STOPPED,\n                currentPlayer!!.currentPosition,\n                true\n            )\n        }\n        progressUpdater.cancel()\n        serviceJob.cancel()\n\n        plexConfig.connectionState.removeObserver(serverChangedListener)\n\n        prefsRepo.unregisterPrefsListener(prefsListener)\n        localBroadcastManager.unregisterReceiver(sleepTimerBroadcastReceiver)\n        sleepTimer.cancel()\n        mediaSession.run {\n            isActive = false\n            release()\n            val intent = Intent(Intent.ACTION_MEDIA_BUTTON)\n            intent.setPackage(packageName)\n            intent.component = ComponentName(\n                packageName,\n                MediaPlayerService::class.qualifiedName\n                    ?: \"io.github.mattpvaughn.chronicle.features.player.MediaPlayerService\"\n\n            )\n            intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(ACTION_DOWN, 312202))\n            // Allow the system to restart app past death on media button click. See onStartCommand\n            setMediaButtonReceiver(\n                PendingIntent.getService(\n                    this@MediaPlayerService,\n                    KEYCODE_MEDIA_PLAY,\n                    intent,\n                    0\n                )\n            )\n        }\n        mediaSession.setCallback(null)\n        mediaController.unregisterCallback(onMediaChangedCallback)\n        becomingNoisyReceiver.unregister()\n        serviceJob.cancel()\n\n        super.onDestroy()\n    }\n\n    /** Handle hardware commands from notifications and custom actions from UI as intents */\n    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {\n        // No need to parse actions if none were provided\n        Timber.i(\"Start command!\")\n\n        // Handle intents sent from notification clicks as media button events\n        val ke: KeyEvent? = intent?.getParcelableExtra(Intent.EXTRA_KEY_EVENT)\n        Timber.i(\"Key event: $ke\")\n        if (ke != null) {\n            mediaSessionCallback.onMediaButtonEvent(intent)\n        }\n\n        // startForeground has to be called within 5 seconds of starting the service or the app\n        // will ANR (on Android 9.0+). Even if we don't have full metadata here for unknown reasons,\n        // we should launch with whatever it is we have, assuming the event isn't the notification\n        // itself being removed (KEYCODE_MEDIA_STOP)\n        if (ke?.keyCode != KEYCODE_MEDIA_STOP) {\n            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {\n                val notification = notificationBuilder.buildNotification(mediaSession.sessionToken)\n                startForeground(NOW_PLAYING_NOTIFICATION, notification)\n            }\n        }\n\n        /**\n         * Return [START_NOT_STICKY] to instruct the system not to restart the\n         * service upon death by the OS. This will prevent an empty notification\n         * from appearing on service restart\n         */\n        return START_NOT_STICKY\n    }\n\n    override fun onLoadChildren(\n        parentId: String,\n        result: Result<MutableList<MediaBrowserCompat.MediaItem>>\n    ) {\n        if (parentId == CHRONICLE_MEDIA_EMPTY_ROOT || !prefsRepo.allowAuto) {\n            result.sendResult(mutableListOf())\n            return\n        }\n\n        result.detach()\n        serviceScope.launch(Injector.get().unhandledExceptionHandler()) {\n            withContext(Dispatchers.IO) {\n                when (parentId) {\n                    CHRONICLE_MEDIA_ROOT_ID -> {\n                        result.sendResult(\n                            (listOf(\n                                makeBrowsable(\n                                    getString(R.string.auto_category_recently_listened),\n                                    R.drawable.ic_recent\n                                )\n                            )\n                                    + listOf(\n                                makeBrowsable(\n                                    getString(R.string.auto_category_offline),\n                                    R.drawable.ic_cloud_download_white\n                                )\n                            )\n                                    + listOf(\n                                makeBrowsable(\n                                    getString(R.string.auto_category_recently_added),\n                                    R.drawable.ic_add\n                                )\n                            )\n                                    + listOf(\n                                makeBrowsable(\n                                    getString(R.string.auto_category_library),\n                                    R.drawable.nav_library\n                                )\n                            )\n                                    ).toMutableList()\n                        )\n                    }\n                    getString(R.string.auto_category_recently_listened) -> {\n                        val recentlyListened = bookRepository.getRecentlyListenedAsync()\n                        result.sendResult(recentlyListened.map { it.toMediaItem(plexConfig) }\n                            .toMutableList())\n                    }\n                    getString(R.string.auto_category_recently_added) -> {\n                        val recentlyAdded = bookRepository.getRecentlyAddedAsync()\n                        result.sendResult(recentlyAdded.map { it.toMediaItem(plexConfig) }\n                            .toMutableList())\n                    }\n                    getString(R.string.auto_category_library) -> {\n                        val books = bookRepository.getAllBooksAsync()\n                        result.sendResult(books.map { it.toMediaItem(plexConfig) }\n                            .toMutableList())\n                    }\n                    getString(R.string.auto_category_offline) -> {\n                        val offline = bookRepository.getCachedAudiobooksAsync()\n                        result.sendResult(offline.map { it.toMediaItem(plexConfig) }\n                            .toMutableList())\n                    }\n                }\n            }\n        }\n    }\n\n    override fun onSearch(\n        query: String,\n        extras: Bundle?,\n        result: Result<MutableList<MediaBrowserCompat.MediaItem>>\n    ) {\n        Timber.i(\"Searching! Query = $query\")\n        serviceScope.launch(Injector.get().unhandledExceptionHandler()) {\n            val books = bookRepository.searchAsync(query)\n            result.sendResult(books.map { it.toMediaItem(plexConfig) }.toMutableList())\n        }\n        result.detach()\n    }\n\n    override fun onGetRoot(\n        clientPackageName: String,\n        clientUid: Int,\n        rootHints: Bundle?\n    ): BrowserRoot? {\n        Timber.i(\"Getting root!\")\n\n        val isClientLegal =\n            packageValidator.isKnownCaller(clientPackageName, clientUid) || BuildConfig.DEBUG\n\n        val extras = Bundle().apply {\n            putBoolean(\n                CHRONICLE_MEDIA_SEARCH_SUPPORTED,\n                isClientLegal && prefsRepo.allowAuto && plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_FULLY\n            )\n            putBoolean(CONTENT_STYLE_SUPPORTED, true)\n            putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE)\n            putInt(CONTENT_STYLE_BROWSABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE)\n        }\n\n        return when {\n            !prefsRepo.allowAuto -> {\n                mediaSessionConnector.setCustomErrorMessage(\n                    getString(R.string.auto_access_error_auto_is_disabled)\n                )\n                BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)\n            }\n            !isClientLegal -> {\n                mediaSessionConnector.setCustomErrorMessage(\n                    getString(R.string.auto_access_error_invalid_client)\n                )\n                BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)\n            }\n            plexLoginRepo.loginEvent.value?.peekContent() == NOT_LOGGED_IN -> {\n                mediaSessionConnector.setCustomErrorMessage(\n                    getString(R.string.auto_access_error_not_logged_in)\n                )\n                BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)\n            }\n            plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_USER_CHOSEN -> {\n                mediaSessionConnector.setCustomErrorMessage(\n                    getString(R.string.auto_access_error_no_user_chosen)\n                )\n                BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)\n            }\n            plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_SERVER_CHOSEN -> {\n                mediaSessionConnector.setCustomErrorMessage(\n                    getString(R.string.auto_access_error_no_server_chosen)\n                )\n                BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)\n            }\n            plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_LIBRARY_CHOSEN -> {\n                mediaSessionConnector.setCustomErrorMessage(\n                    getString(R.string.auto_access_error_no_library_chosen)\n                )\n                BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)\n            }\n            else -> {\n                BrowserRoot(CHRONICLE_MEDIA_ROOT_ID, extras)\n            }\n        }\n    }\n\n    private val playerEventListener = object : Player.EventListener {\n\n        override fun onPlayerError(error: ExoPlaybackException) {\n            Timber.e(\"Exoplayer playback error: $error\")\n            val errorIntent = Intent(ACTION_PLAYBACK_ERROR)\n            errorIntent.putExtra(PLAYBACK_ERROR_MESSAGE, error.message)\n            localBroadcastManager.sendBroadcast(errorIntent)\n            super.onPlayerError(error)\n        }\n\n        override fun onPositionDiscontinuity(reason: Int) {\n            super.onPositionDiscontinuity(reason)\n            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {\n                if (reason == Player.DISCONTINUITY_REASON_PERIOD_TRANSITION) {\n                    Timber.i(\"Playing next track\")\n                    // Update track progress\n                    val trackId = mediaController.metadata.id\n                    if (trackId != null && trackId != TRACK_NOT_FOUND.toString()) {\n                        val plexState = PLEX_STATE_PLAYING\n                        withContext(Dispatchers.IO) {\n                            val bookId = trackRepository.getBookIdForTrack(trackId.toInt())\n                            val track = trackRepository.getTrackAsync(trackId.toInt())\n                            val tracks = trackRepository.getTracksForAudiobookAsync(bookId)\n\n                            if (tracks.getDuration() == tracks.getProgress()) {\n                                mediaController.transportControls.stop()\n                            }\n                            progressUpdater.updateProgress(\n                                trackId.toInt(),\n                                plexState,\n                                track?.duration ?: 0L,\n                                true\n                            )\n                        }\n                    }\n                }\n            }\n        }\n\n        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {\n            super.onPlayerStateChanged(playWhenReady, playbackState)\n            if (playbackState != PlaybackStateCompat.STATE_ERROR) {\n                // clear errors if playback is proceeding correctly\n                mediaSessionConnector.setCustomErrorMessage(null)\n            }\n            if (playbackState != Player.STATE_ENDED) {\n                return\n            }\n            Timber.i(\"Player STATE ENDED\")\n            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {\n                withContext(Dispatchers.IO) {\n                    // get track through tracklistmanager b/c metadata will be empty\n                    val activeTrack = trackListManager.trackList.getActiveTrack()\n                    if (activeTrack.id != MediaItemTrack.EMPTY_TRACK.id) {\n                        progressUpdater.updateProgress(\n                            activeTrack.id,\n                            PLEX_STATE_STOPPED,\n                            activeTrack.duration,\n                            true\n                        )\n                    }\n                }\n            }\n        }\n    }\n\n    private fun switchToPlayer(player: Player) {\n        if (player == currentPlayer) {\n            Timber.i(\"NOT SWITCHING PLAYER\")\n            return\n        }\n        Timber.i(\"SWITCHING PLAYER to $player\")\n\n        val prevPlayer: Player? = currentPlayer\n\n        // If playback ended, reset player before we copy its state\n        if (prevPlayer?.playbackState == Player.STATE_ENDED) {\n            prevPlayer.stop(true)\n        }\n\n        mediaSessionConnector.setPlayer(player)\n        mediaSessionCallback.currentPlayer = player\n\n        prevPlayer?.let {\n            player.seekTo(it.currentWindowIndex, it.currentPosition)\n            player.playWhenReady = it.playWhenReady\n        }\n\n        currentPlayer = player\n\n        // reset old player's state\n        if (prevPlayer?.playbackState != Player.STATE_ENDED) {\n            prevPlayer?.stop(true)\n        }\n\n        invalidatePlaybackParams()\n    }\n\n    override fun stopService() {\n        stopForeground(true)\n        stopSelf()\n    }\n}\n\ninterface ServiceController {\n    fun stopService()\n}\n\ninterface ForegroundServiceController {\n    fun startForeground(nowPlayingNotification: Int, notification: Notification)\n    fun stopForeground(removeNotification: Boolean)\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/MediaPlayerService.kt b/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/MediaPlayerService.kt
+--- a/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/MediaPlayerService.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/MediaPlayerService.kt	(date 1627149526906)
+@@ -186,8 +186,15 @@
+             .build()
+             .inject(this)
+ 
+-        Timber.i("Service created! $this")
++        Timber.i("Service created!")
+ 
++        // TODO: debugging- remove
++        serviceScope.launch {
++            while (true) {
++                delay(1000L)
++                Timber.i("Service still alive")
++            }
++        }
+ 
+         updateAudioAttrs(simpleExoPlayer = exoPlayer)
+ 
+@@ -376,7 +383,7 @@
+     /** Handle hardware commands from notifications and custom actions from UI as intents */
+     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+         // No need to parse actions if none were provided
+-        Timber.i("Start command!")
++        Timber.i("Start command! ${intent?.extras?.keySet()?.map { it.toString() }}")
+ 
+         // Handle intents sent from notification clicks as media button events
+         val ke: KeyEvent? = intent?.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+@@ -391,17 +398,17 @@
+         // itself being removed (KEYCODE_MEDIA_STOP)
+         if (ke?.keyCode != KEYCODE_MEDIA_STOP) {
+             serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
++                Timber.i("Building notification: reason=${this::class.simpleName}")
+                 val notification = notificationBuilder.buildNotification(mediaSession.sessionToken)
+                 startForeground(NOW_PLAYING_NOTIFICATION, notification)
+             }
+         }
+ 
+         /**
+-         * Return [START_NOT_STICKY] to instruct the system not to restart the
+-         * service upon death by the OS. This will prevent an empty notification
+-         * from appearing on service restart
++         * Instructs the system to restart the service if media command received after the app
++         * process has been terminated
+          */
+-        return START_NOT_STICKY
++        return START_STICKY
+     }
+ 
+     override fun onLoadChildren(
+Index: app/src/main/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModel.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.features.bookdetails\n\nimport android.media.session.MediaController\nimport android.media.session.PlaybackState.*\nimport android.os.Bundle\nimport android.support.v4.media.session.PlaybackStateCompat\nimport android.text.format.DateUtils\nimport androidx.lifecycle.*\nimport com.github.michaelbull.result.Ok\nimport io.github.mattpvaughn.chronicle.R\nimport io.github.mattpvaughn.chronicle.data.local.IBookRepository\nimport io.github.mattpvaughn.chronicle.data.local.ITrackRepository\nimport io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo\nimport io.github.mattpvaughn.chronicle.data.model.*\nimport io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager\nimport io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.*\nimport io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig\nimport io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService\nimport io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration\nimport io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying\nimport io.github.mattpvaughn.chronicle.features.player.*\nimport io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.ACTIVE_TRACK\nimport io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_SEEK_TO_TRACK_WITH_ID\nimport io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_TRACK_OFFSET\nimport io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.PLEX_STATE_STOPPED\nimport io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_SAVED_TRACK_PROGRESS\nimport io.github.mattpvaughn.chronicle.util.DoubleLiveData\nimport io.github.mattpvaughn.chronicle.util.Event\nimport io.github.mattpvaughn.chronicle.util.mapAsync\nimport io.github.mattpvaughn.chronicle.util.postEvent\nimport io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*\nimport io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER\nimport kotlinx.coroutines.*\nimport kotlinx.coroutines.flow.combine\nimport timber.log.Timber\nimport javax.inject.Inject\n\n@ExperimentalCoroutinesApi\nclass AudiobookDetailsViewModel(\n    private val bookRepository: IBookRepository,\n    private val trackRepository: ITrackRepository,\n    private val cachedFileManager: ICachedFileManager,\n    // Just the skeleton of an audiobook. Only guaranteed to contain a correct [Audiobook.id], [Audiobook.title]\n    private val inputAudiobook: Audiobook,\n    private val mediaServiceConnection: MediaServiceConnection,\n    private val progressUpdater: ProgressUpdater,\n    private val plexConfig: PlexConfig,\n    private val prefsRepo: PrefsRepo,\n    private val plexMediaService: PlexMediaService,\n    currentlyPlaying: CurrentlyPlaying\n) : ViewModel() {\n\n    @Suppress(\"UNCHECKED_CAST\")\n    class Factory @Inject constructor(\n        private val bookRepository: IBookRepository,\n        private val trackRepository: ITrackRepository,\n        private val cachedFileManager: ICachedFileManager,\n        private val mediaServiceConnection: MediaServiceConnection,\n        private val progressUpdater: ProgressUpdater,\n        private val plexConfig: PlexConfig,\n        private val prefsRepo: PrefsRepo,\n        private val plexMediaService: PlexMediaService,\n        private val currentlyPlaying: CurrentlyPlaying\n    ) : ViewModelProvider.Factory {\n        lateinit var inputAudiobook: Audiobook\n        override fun <T : ViewModel?> create(modelClass: Class<T>): T {\n            check(this::inputAudiobook.isInitialized) { \"Input audiobook not provided!\" }\n            if (modelClass.isAssignableFrom(AudiobookDetailsViewModel::class.java)) {\n                return AudiobookDetailsViewModel(\n                    bookRepository,\n                    trackRepository,\n                    cachedFileManager,\n                    inputAudiobook,\n                    mediaServiceConnection,\n                    progressUpdater,\n                    plexConfig,\n                    prefsRepo,\n                    plexMediaService,\n                    currentlyPlaying\n                ) as T\n            } else {\n                throw IllegalStateException(\"Wrong class provided to ${this.javaClass.name}\")\n            }\n        }\n    }\n\n    val audiobook: LiveData<Audiobook?> = bookRepository.getAudiobook(inputAudiobook.id)\n    val tracks = trackRepository.getTracksForAudiobook(inputAudiobook.id)\n\n    // Used to cache tracks.asChapterList when tracks changes\n    private val tracksAsChaptersCache: LiveData<List<Chapter>> = mapAsync(tracks, viewModelScope) {\n        it.asChapterList()\n    }\n\n    val chapters: DoubleLiveData<Audiobook?, List<Chapter>, List<Chapter>> =\n        DoubleLiveData(\n            audiobook,\n            tracksAsChaptersCache\n        ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->\n            Timber.i(\"Chapter data updated! \")\n            if (_audiobook?.chapters?.isNotEmpty() == true) {\n                _audiobook.chapters\n            } else {\n                _tracksAsChapters ?: emptyList()\n            }\n        }\n\n    private var _messageForUser = MutableLiveData<Event<FormattableString>>()\n    val messageForUser: LiveData<Event<FormattableString>>\n        get() = _messageForUser\n\n    /**\n     * Cache status of the current audiobook. Reflects the cache status of [tracks] if they've\n     * been loaded, otherwise default to [_manualCacheStatus].\n     */\n    val cacheStatus = DoubleLiveData(\n        cachedFileManager.activeBookDownloads,\n        audiobook\n    ) { activeDownloadIDs: Set<Int>?, _audiobook: Audiobook? ->\n        Timber.i(\"Active downloads: $activeDownloadIDs\")\n        return@DoubleLiveData when {\n            _audiobook?.isCached == true -> CACHED\n            inputAudiobook.id in (activeDownloadIDs ?: emptySet()) -> CACHING\n            else -> NOT_CACHED\n        }\n    }\n\n    val cacheIconTint = Transformations.map(cacheStatus) { status ->\n        return@map when (status) {\n            CACHING -> R.color.icon // Doesn't matter, we show a spinner over it\n            NOT_CACHED -> R.color.icon\n            CACHED -> R.color.iconActive\n            null -> R.color.icon\n        }\n    }\n\n    val cacheIconDrawable: LiveData<Int> = Transformations.map(cacheStatus) { status ->\n        return@map when (status) {\n            CACHING -> R.drawable.ic_cloud_download_white // Doesn't matter, we show a spinner over it\n            NOT_CACHED -> R.drawable.ic_cloud_download_white\n            CACHED -> R.drawable.ic_cloud_done_white\n        }\n    }\n\n    private val activeBook = currentlyPlaying.book.asLiveData(viewModelScope.coroutineContext)\n\n    /** Whether the book in the current view is also the same on in the [MediaController] */\n    private val isBookInViewActive = DoubleLiveData<Audiobook, Audiobook?, Boolean>(\n        activeBook,\n        audiobook\n    ) { activeBook, currentBook ->\n        return@DoubleLiveData activeBook?.id == currentBook?.id\n                && activeBook?.id != null\n    }\n\n    /** Whether the book in the current view is playing */\n    val isBookInViewPlaying =\n        DoubleLiveData<Boolean, PlaybackStateCompat, Boolean>(\n            isBookInViewActive,\n            mediaServiceConnection.playbackState\n        ) { isBookActive, currState ->\n            return@DoubleLiveData isBookActive ?: false && currState?.isPlaying ?: false\n        }\n\n    val progressString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->\n        if (tracks.isNullOrEmpty()) {\n            return@map \"0:00/0:00\"\n        }\n        val progressStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getProgress() / 1000L)\n        val durationStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getDuration() / 1000L)\n        return@map \"$progressStr/$durationStr\"\n    }\n\n    private var _isLoadingTracks = MutableLiveData(false)\n    val isLoadingTracks: LiveData<Boolean>\n        get() = _isLoadingTracks\n\n    private var _bottomChooserState = MutableLiveData(EMPTY_BOTTOM_CHOOSER)\n    val bottomChooserState: LiveData<BottomChooserState>\n        get() = _bottomChooserState\n\n    // The maximum number of lines to shown in the info section\n    private val lineCountSummaryMinimized = 5\n    private val lineCountSummaryMaximized = Int.MAX_VALUE\n    private var _summaryLinesShown = MutableLiveData(lineCountSummaryMinimized)\n    val summaryLinesShown: LiveData<Int>\n        get() = _summaryLinesShown\n\n    val isAudioLoading = Transformations.map(mediaServiceConnection.playbackState) { state ->\n        if (state.state == PlaybackStateCompat.STATE_ERROR) {\n            Timber.i(\"Playback state: ${state.stateName}, (${state.errorMessage})\")\n        } else {\n            Timber.i(\"Playback state: ${state.stateName}\")\n        }\n        state.state == STATE_BUFFERING || state.state == STATE_CONNECTING\n    }\n\n    val showSummary = Transformations.map(audiobook) { book ->\n        book?.summary?.isNotEmpty() ?: false\n    }\n\n    val isExpanded = Transformations.map(summaryLinesShown) { lines ->\n        return@map lines == lineCountSummaryMaximized\n    }\n\n    val serverConnection = Transformations.map(plexConfig.connectionState) { it }\n\n    fun onToggleSummaryView() {\n        _summaryLinesShown.value =\n            if (_summaryLinesShown.value == lineCountSummaryMinimized) lineCountSummaryMaximized else lineCountSummaryMinimized\n    }\n\n    @InternalCoroutinesApi\n    fun connectToServer() {\n        viewModelScope.launch(Dispatchers.IO) {\n            plexConfig.connectToServer(plexMediaService)\n        }\n    }\n\n    private val networkObserver = Observer<Boolean> { isConnected ->\n        if (isConnected) {\n            loadBookDetails(inputAudiobook.id)\n        }\n    }\n\n    private val cachedChapter = DoubleLiveData(\n        chapters,\n        tracks\n    ) { _chapters: List<Chapter>?, _tracks: List<MediaItemTrack>? ->\n        Timber.i(\"Cached chapters: $_chapters\")\n        Timber.i(\"Cached progress: ${_tracks?.getProgress()}\")\n\n        if (_tracks != null && _chapters != null) {\n            var offsetRemaining = _tracks.getProgress()\n            var currChapter: Chapter? = null\n            for (chapter in _chapters) {\n                if (offsetRemaining < chapter.endTimeOffset) {\n                    currChapter = chapter\n                    break\n                }\n                offsetRemaining -= (chapter.endTimeOffset - chapter.startTimeOffset)\n            }\n            currChapter ?: EMPTY_CHAPTER\n        } else {\n            EMPTY_CHAPTER\n        }\n    }.asFlow()\n\n    val activeChapter = currentlyPlaying.chapter.combine(cachedChapter)\n    { activeChapter: Chapter, cachedChapter: Chapter ->\n        Timber.i(\"Cached: $cachedChapter, active: $activeChapter\")\n        if (activeChapter != EMPTY_CHAPTER && activeChapter.trackId == cachedChapter.trackId) {\n            activeChapter\n        } else {\n            cachedChapter\n        }\n    }.asLiveData(viewModelScope.coroutineContext)\n\n\n    init {\n        plexConfig.isConnected.observeForever(networkObserver)\n    }\n\n    /**\n     * Refresh details for the current audiobook. Mostly important because we want to refresh the\n     * progress in the audiobook is there has been new playback\n     */\n    private fun loadBookDetails(bookId: Int) {\n        Timber.i(\"Refreshing tracks!\")\n        viewModelScope.launch {\n            try {\n                // If we're just updating underlying track list, and there are already tracks/chapters\n                // loaded, don't replace chapter view with loading view.\n                //\n                // Delay for 50ms to ensure chapters have loaded from db\n                delay(50)\n                val noExistingChapters = chapters.value.isNullOrEmpty()\n                _isLoadingTracks.value = noExistingChapters\n                val trackRequest = trackRepository.loadTracksForAudiobook(bookId)\n                if (trackRequest is Ok) {\n                    val audiobook = bookRepository.getAudiobookAsync(bookId)\n                    audiobook?.let {\n                        trackRepository.syncTracksInBook(audiobook.id)\n                        bookRepository.syncAudiobook(audiobook, trackRequest.value)\n                    }\n                }\n                _isLoadingTracks.value = false\n            } catch (e: Throwable) {\n                Timber.e(\"Failed to load tracks for audiobook ${bookId}: $e\")\n                _isLoadingTracks.value = false\n            }\n        }\n    }\n\n    fun onCacheButtonClick() {\n        if (!prefsRepo.isPremium) {\n            showUserMessage(FormattableString.from(R.string.premium_required_offline_playback))\n            return\n        }\n        when (cacheStatus.value) {\n            NOT_CACHED -> {\n                Timber.i(\"Caching tracks for \\\"${audiobook.value?.title}\\\"\")\n                if (plexConfig.isConnected.value != true) {\n                    showUserMessage(FormattableString.from(R.string.unable_to_cache_audiobook))\n                } else {\n                    cachedFileManager.downloadTracks(inputAudiobook.id, inputAudiobook.title)\n                }\n            }\n            CACHED -> {\n                Timber.i(\"Already cached. Uncache?\")\n                promptUserToUncache()\n            }\n            CACHING -> {\n                Timber.i(\"Cancelling download: ${inputAudiobook.id}\")\n                cachedFileManager.cancelGroup(inputAudiobook.id)\n            }\n            else -> throw NoWhenBranchMatchedException(\"Unknown cache status. Don't know how to proceed\")\n        }\n    }\n\n    private fun showUserMessage(message: FormattableString) {\n        _messageForUser.postEvent(message)\n    }\n\n    private fun promptUserToUncache() {\n        showOptionsMenu(\n            title = FormattableString.from(R.string.delete_cache_files_prompt),\n            options = listOf(FormattableString.yes, FormattableString.no),\n            listener = object : BottomChooserItemListener() {\n                override fun onItemClicked(formattableString: FormattableString) {\n                    when (formattableString) {\n                        FormattableString.yes -> uncacheFiles()\n                        FormattableString.no -> { /* Do nothing */\n                        }\n                        else -> throw NoWhenBranchMatchedException(\"Unknown option selected!\")\n                    }\n                    hideBottomSheet()\n                }\n            }\n        )\n    }\n\n    private fun uncacheFiles() {\n        viewModelScope.launch {\n            cachedFileManager.deleteCachedBook(inputAudiobook.id)\n        }\n    }\n\n    fun pausePlayButtonClicked() {\n        if (plexConfig.isConnected.value != true && audiobook.value?.isCached == false) {\n            showUserMessage(FormattableString.from(R.string.cannot_play_media_no_server))\n            return\n        }\n\n        val pausePlayAction = {\n            pausePlay(\n                bookId = inputAudiobook.id.toString(),\n                trackId = ACTIVE_TRACK,\n                startTimeOffset = USE_SAVED_TRACK_PROGRESS,\n                forcePlayFromMediaId = false\n            )\n        }\n        if (mediaServiceConnection.isConnected.value != true) {\n            mediaServiceConnection.connect(pausePlayAction)\n        } else {\n            pausePlayAction()\n        }\n    }\n\n    /**\n     * Play or pause the audiobook with id [bookId] depending whether playback is active (as\n     * determined by [isBookInViewPlaying]\n     *\n     * Assume that [mediaServiceConnection] has connected\n     *\n     * Play behavior: start/resume playback from [startTimeOffset] milliseconds from the start of\n     * the book. [startTimeOffset] == [ACTIVE_TRACK] indicates that playback should be resumed from\n     * the most recent playback location\n     *\n     * [forcePlayFromMediaId] == true indicates to ignore playback state and play the book from the\n     * given [trackId] and [startTimeOffset] provided, otherwise pause/play/resume depending on\n     * playback state\n     */\n    private fun pausePlay(\n        bookId: String,\n        startTimeOffset: Long = USE_SAVED_TRACK_PROGRESS,\n        trackId: Long = ACTIVE_TRACK,\n        forcePlayFromMediaId: Boolean = false\n    ) {\n        if (mediaServiceConnection.isConnected.value != true) {\n            Timber.e(\"MediaServiceConnection not connected\")\n            return\n        }\n        updateProgressIfChangingBook()\n\n        val transportControls = mediaServiceConnection.transportControls ?: return\n\n        val extras = Bundle().apply {\n            putLong(KEY_START_TIME_TRACK_OFFSET, startTimeOffset)\n            putLong(KEY_SEEK_TO_TRACK_WITH_ID, trackId)\n        }\n        Timber.i(\n            \"is this book playing? ${isBookInViewPlaying.value}, this this book active? ${isBookInViewActive.value}\"\n        )\n        when {\n            forcePlayFromMediaId -> transportControls.playFromMediaId(bookId, extras)\n            isBookInViewPlaying.value == true -> transportControls.pause()\n            isBookInViewActive.value == true -> transportControls.play()\n            else -> transportControls.playFromMediaId(bookId, extras)\n        }\n    }\n\n    /**\n     * Check if there is an active audiobook which are about to be replaced by a different\n     * audiobook and if so, make a network request to inform the server that playback has ended\n     */\n    private fun updateProgressIfChangingBook() {\n        val currentlyPlayingTrackId = mediaServiceConnection.nowPlaying.value?.id\n        val isChangingBooks = if (currentlyPlayingTrackId.isNullOrEmpty()) {\n            false\n        } else {\n            Timber.i(\"Currently playing is $currentlyPlayingTrackId\")\n            tracks.value?.let { trackList ->\n                trackList.any { it.id == currentlyPlayingTrackId.toInt() }\n            } ?: false\n        }\n\n        if (isChangingBooks) {\n            if (!currentlyPlayingTrackId.isNullOrEmpty()) {\n                mediaServiceConnection.playbackState.value?.let { state ->\n                    progressUpdater.updateProgress(\n                        currentlyPlayingTrackId.toInt(),\n                        PLEX_STATE_STOPPED,\n                        state.currentPlayBackPosition,\n                        true\n                    )\n                }\n            }\n        }\n    }\n\n    /** Jumps to a chapter starting [offset] milliseconds into the audiobook */\n    fun jumpToChapter(\n        offset: Long = 0,\n        trackId: Long = TRACK_NOT_FOUND.toLong(),\n        hasUserConfirmation: Boolean = false\n    ) {\n        if (!hasUserConfirmation) {\n            showOptionsMenu(\n                title = FormattableString.from(R.string.warning_jump_to_chapter_will_clear_progress),\n                options = listOf(FormattableString.yes, FormattableString.no),\n                listener = object : BottomChooserItemListener() {\n                    override fun onItemClicked(formattableString: FormattableString) {\n                        when (formattableString) {\n                            FormattableString.yes -> jumpToChapter(offset, trackId, true)\n                            FormattableString.no -> Unit\n                            else -> throw NoWhenBranchMatchedException()\n                        }\n                        hideBottomSheet()\n                    }\n                })\n            return\n        }\n\n        val jumpToChapterAction = {\n            audiobook.value?.let { book ->\n                pausePlay(book.id.toString(), offset, trackId, forcePlayFromMediaId = true)\n            }\n        }\n        if (mediaServiceConnection.isConnected.value != true) {\n            mediaServiceConnection.connect(onConnected = jumpToChapterAction)\n        } else {\n            jumpToChapterAction()\n        }\n    }\n\n\n    private fun hideBottomSheet() {\n        Timber.i(\"Hiding bottom sheet?\")\n        _bottomChooserState.postValue(\n            _bottomChooserState.value?.copy(shouldShow = false) ?: EMPTY_BOTTOM_CHOOSER\n        )\n    }\n\n    private fun showOptionsMenu(\n        title: FormattableString,\n        options: List<FormattableString>,\n        listener: BottomChooserListener\n    ) {\n        _bottomChooserState.postValue(\n            BottomChooserState(\n                title = title,\n                options = options,\n                listener = listener,\n                shouldShow = true\n            )\n        )\n    }\n\n    override fun onCleared() {\n        plexConfig.isConnected.removeObserver(networkObserver)\n        super.onCleared()\n    }\n\n    fun toggleWatched() {\n        val prompt = R.string.prompt_mark_as_watched\n        showOptionsMenu(\n            title = FormattableString.from(prompt),\n            options = listOf(FormattableString.yes, FormattableString.no),\n            listener = object : BottomChooserItemListener() {\n                override fun onItemClicked(formattableString: FormattableString) {\n                    if (formattableString == FormattableString.yes) {\n                        setAudiobookWatched()\n                    }\n                    hideBottomSheet()\n                }\n            }\n        )\n    }\n\n    private fun setAudiobookWatched() {\n        Timber.i(\"Marking audiobook as watched\")\n        viewModelScope.launch {\n            // Plex will set tracks as unwatched if their parent becomes unwatched, so no need\n            // for [ITrackRepository.setWatched]\n            trackRepository.markTracksInBookAsWatched(inputAudiobook.id)\n            bookRepository.setWatched(inputAudiobook.id)\n        }\n    }\n\n    private var _forceSyncInProgress = MutableLiveData(false)\n    val forceSyncInProgress: LiveData<Boolean>\n        get() = _forceSyncInProgress\n\n    fun forceSyncBook(hasUserConfirmation: Boolean = false) {\n        viewModelScope.launch {\n            if (!hasUserConfirmation) {\n                showOptionsMenu(\n                    title = FormattableString.from(R.string.prompt_force_sync),\n                    options = listOf(FormattableString.yes, FormattableString.no),\n                    listener = object : BottomChooserItemListener() {\n                        override fun onItemClicked(formattableString: FormattableString) {\n                            if (formattableString == FormattableString.yes) {\n                                forceSyncBook(hasUserConfirmation = true)\n                            }\n                            hideBottomSheet()\n                        }\n                    }\n                )\n                return@launch\n            } else {\n                Timber.i(\"Refreshing track data!!!\")\n                if (plexConfig.isConnected.value != true) {\n                    showUserMessage(FormattableString.from(R.string.cannot_sync_no_server))\n                    return@launch\n                }\n                val audiobook = audiobook.value\n                if (audiobook == null) {\n                    showUserMessage(FormattableString.from(R.string.progress_sync_failed))\n                    return@launch\n                }\n                _forceSyncInProgress.value = true\n                val updatedTracks =\n                    trackRepository.syncTracksInBook(audiobook.id, forceUseNetwork = true)\n                val loadSucceeded = bookRepository.syncAudiobook(audiobook, updatedTracks, true)\n                if (loadSucceeded) {\n                    showUserMessage(FormattableString.from(R.string.progress_sync_successful))\n                } else {\n                    showUserMessage(FormattableString.from(R.string.progress_sync_failed))\n                }\n                _forceSyncInProgress.value = false\n            }\n        }\n    }\n}\n\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModel.kt b/app/src/main/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModel.kt
+--- a/app/src/main/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModel.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/main/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModel.kt	(date 1620151467092)
+@@ -41,7 +41,8 @@
+     private val bookRepository: IBookRepository,
+     private val trackRepository: ITrackRepository,
+     private val cachedFileManager: ICachedFileManager,
+-    // Just the skeleton of an audiobook. Only guaranteed to contain a correct [Audiobook.id], [Audiobook.title]
++    // Just the skeleton of an audiobook. Only guaranteed to contain a correct [Audiobook.id],
++    // [Audiobook.title], [Audiobook.isCached], [Audiobook.source]
+     private val inputAudiobook: Audiobook,
+     private val mediaServiceConnection: MediaServiceConnection,
+     private val progressUpdater: ProgressUpdater,
+Index: app/src/testShared/java/io/github/mattpvaughn/chronicle/data/sources/plex/CachedFileManagerTest.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.data.sources.plex\n\nimport io.github.mattpvaughn.chronicle.data.model.MediaItemTrack\n\nclass FakeCachedFileManager : ICachedFileManager{\n    override fun cancelCaching() {\n        TODO(\"not implemented\") //To change body of created functions use File | Settings | File Templates.\n    }\n\n    override fun downloadTracks(tracks: List<MediaItemTrack>) {\n        TODO(\"not implemented\") //To change body of created functions use File | Settings | File Templates.\n    }\n\n    override suspend fun uncacheAllInLibrary(): Int {\n        TODO(\"Not yet implemented\")\n    }\n\n    override suspend fun deleteCachedBook(tracks: List<MediaItemTrack>): Result<Unit> {\n        TODO(\"Not yet implemented\")\n    }\n\n    override suspend fun hasUserCachedTracks(): Boolean {\n        TODO(\"not implemented\") //To change body of created functions use File | Settings | File Templates.\n    }\n\n    override suspend fun refreshTrackDownloadedStatus() {\n        TODO(\"Not yet implemented\")\n    }\n\n    override suspend fun handleDownloadedTrack(downloadId: Long): Result<Long> {\n        TODO(\"Not yet implemented\")\n    }\n\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/testShared/java/io/github/mattpvaughn/chronicle/data/sources/plex/CachedFileManagerTest.kt b/app/src/testShared/java/io/github/mattpvaughn/chronicle/data/sources/plex/CachedFileManagerTest.kt
+--- a/app/src/testShared/java/io/github/mattpvaughn/chronicle/data/sources/plex/CachedFileManagerTest.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/testShared/java/io/github/mattpvaughn/chronicle/data/sources/plex/CachedFileManagerTest.kt	(date 1620151749627)
+@@ -1,34 +1,7 @@
+ package io.github.mattpvaughn.chronicle.data.sources.plex
+ 
+-import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
+-
+-class FakeCachedFileManager : ICachedFileManager{
+-    override fun cancelCaching() {
+-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+-    }
+-
+-    override fun downloadTracks(tracks: List<MediaItemTrack>) {
+-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+-    }
+-
+-    override suspend fun uncacheAllInLibrary(): Int {
+-        TODO("Not yet implemented")
+-    }
+-
+-    override suspend fun deleteCachedBook(tracks: List<MediaItemTrack>): Result<Unit> {
+-        TODO("Not yet implemented")
+-    }
++import junit.framework.TestCase
+ 
+-    override suspend fun hasUserCachedTracks(): Boolean {
+-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+-    }
+-
+-    override suspend fun refreshTrackDownloadedStatus() {
+-        TODO("Not yet implemented")
+-    }
+-
+-    override suspend fun handleDownloadedTrack(downloadId: Long): Result<Long> {
+-        TODO("Not yet implemented")
+-    }
++class CachedFileManagerTest : TestCase() {
+ 
+ }
+\ No newline at end of file
+Index: app/src/main/java/io/github/mattpvaughn/chronicle/data/local/SharedPreferencesPrefsRepo.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.data.local\n\nimport android.content.SharedPreferences\nimport com.android.billingclient.api.Purchase\nimport io.github.mattpvaughn.chronicle.BuildConfig\nimport io.github.mattpvaughn.chronicle.application.Injector\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_ALLOW_AUTO\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_AUTO_REWIND_ENABLED\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_COVER_STYLE\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_DEBUG_DISABLE_PROGRESS\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_PREMIUM\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LAST_REFRESH\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_MEDIA_TYPE\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_VIEW_STYLE\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_OFFLINE_MODE\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PAUSE_ON_FOCUS_LOST\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PLAYBACK_SPEED\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PREMIUM_TOKEN\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_REFRESH_RATE\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SHAKE_TO_SNOOZE_ENABLED\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SKIP_SILENCE\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SYNC_DIR_PATH\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.NO_PREMIUM_TOKEN\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLES\nimport io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_COVER_GRID\nimport io.github.mattpvaughn.chronicle.data.model.Audiobook\nimport io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType\nimport io.github.mattpvaughn.chronicle.injection.components.AppComponent\nimport java.io.File\nimport javax.inject.Inject\n\n/**\n * An interface for getting/setting persistent preferences for Chronicle\n */\ninterface PrefsRepo {\n    /** The directory where media files are synced */\n    var cachedMediaDir: File\n\n    /** The style of book covers in the app- i.e. rectangular, square */\n    var bookCoverStyle: String\n\n    /** Whether the app should be able to access the network */\n    var offlineMode: Boolean\n\n    /** The user's preferred speed of audio playback */\n    var playbackSpeed: Float\n\n    /** Whether the user has given access to Auto */\n    var allowAuto: Boolean\n\n    /** Whether to fast-forward through silent bits of audio during playback */\n    var skipSilence: Boolean\n\n    /** Whether the app should rewind a small bit if user hasn't played an audiobook in a while */\n    var autoRewind: Boolean\n\n    /** Whether the app will extend the sleep timer upon device shake */\n    var shakeToSnooze: Boolean\n\n    /** Pause when audio focus lost */\n    var pauseOnFocusLost: Boolean\n\n    /** Whether the app should display premium features */\n    val isPremium: Boolean\n\n    /** The last time the library was refreshed, as Unix timestamp (in millis) */\n    var lastRefreshTimeStamp: Long\n\n    /** The minimum number of minutes between data refreshes*/\n    var refreshRateMinutes: Long\n\n    /** The user's IAP token returned in a [Purchase] upon paying for an upgrade to premium */\n    var premiumPurchaseToken: String\n\n    /** The key by which the books in the library are sorted. One of [Audiobook.SORT_KEYS] */\n    var bookSortKey: String\n\n    /** The type of elements shown in the library view. One of [MediaType.TYPES]*/\n    var libraryMediaType: String\n\n    /** The style of view display in the library view (e.g. book cover, text only, etc.) */\n    var libraryBookViewStyle: String\n\n    /** Whether the library is sorted in descending (true) or ascending (false) order */\n    var isLibrarySortedDescending: Boolean\n\n    /**\n     * Get a saved preference value corresponding to [key], providing [defaultValue] if no value\n     * is already set. Return false in the case of no value already set if [defaultValue] is not\n     * provided\n     */\n    fun getBoolean(key: String, defaultValue: Boolean = false): Boolean\n\n    /** Save a preference with key == [key] and value == [value] to the preferences repo */\n    fun setBoolean(key: String, value: Boolean)\n\n    /** Clear all saved preferences */\n    fun clearAll()\n\n    /** Register an [SharedPreferences.OnSharedPreferenceChangeListener] */\n    fun registerPrefsListener(listener: SharedPreferences.OnSharedPreferenceChangeListener)\n\n    /** Unregister an already registered [SharedPreferences.OnSharedPreferenceChangeListener] */\n    fun unregisterPrefsListener(listener: SharedPreferences.OnSharedPreferenceChangeListener)\n\n    fun containsKey(key: String): Boolean\n\n    /** Disable progress tracking in the local DB for debugging purposes */\n    var debugOnlyDisableLocalProgressTracking: Boolean\n\n    companion object {\n        const val KEY_SYNC_DIR_PATH = \"key_sync_location\"\n        const val KEY_BOOK_COVER_STYLE = \"key_book_cover_style\"\n        const val KEY_APP_OPEN_COUNT = \"key_app_open_count\"\n        const val KEY_OFFLINE_MODE = \"key_offline_mode\"\n        const val KEY_LAST_REFRESH = \"key_last_refresh\"\n        const val KEY_REFRESH_RATE = \"key_refresh_rate\"\n        const val KEY_PLAYBACK_SPEED = \"key_playback_speed\"\n        const val KEY_DEBUG_DISABLE_PROGRESS = \"debug_key_disable_local_progress\"\n        const val KEY_SKIP_SILENCE = \"key_skip_silence\"\n        const val KEY_AUTO_REWIND_ENABLED = \"key_auto_rewind_enabled\"\n        const val KEY_ALLOW_AUTO = \"key_allow_auto\"\n        const val KEY_SHAKE_TO_SNOOZE_ENABLED = \"key_shake_to_snooze_enabled\"\n        const val KEY_PAUSE_ON_FOCUS_LOST = \"key_pause_on_focus_lost\"\n        const val KEY_IS_PREMIUM = \"key_is_premium\"\n        const val NO_PREMIUM_TOKEN = \"no premium token\"\n        const val KEY_PREMIUM_TOKEN = \"key_premium_token\"\n        const val KEY_BOOK_SORT_BY = \"key_sort_by\"\n        const val KEY_IS_LIBRARY_SORT_DESCENDING = \"key_is_sort_descending\"\n        const val KEY_LIBRARY_MEDIA_TYPE = \"key_media_type\"\n        const val KEY_LIBRARY_VIEW_STYLE = \"key_library_view_style\"\n        const val VIEW_STYLE_COVER_GRID = \"view_style_cover_grid\"\n        const val VIEW_STYLE_TEXT_LIST = \"view_style_text_list\"\n        const val VIEW_STYLE_DETAILS_LIST = \"view_style_details_list\"\n        val VIEW_STYLES = listOf(\n            VIEW_STYLE_COVER_GRID,\n            VIEW_STYLE_DETAILS_LIST,\n            VIEW_STYLE_TEXT_LIST\n        )\n\n        const val BOOK_COVER_STYLE_RECT = \"Rectangular\"\n        const val BOOK_COVER_STYLE_SQUARE = \"Square\"\n    }\n}\n\n/**\n *  An implementation of [PrefsRepo] wrapping [SharedPreferences]\n */\nclass SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferences: SharedPreferences) :\n    PrefsRepo {\n    override var cachedMediaDir: File\n        get() {\n            val syncLoc = sharedPreferences.getString(KEY_SYNC_DIR_PATH, \"\")\n            return if (syncLoc.isNullOrEmpty()) {\n                /** Set default location to first location in [AppComponent.externalDeviceDirs] */\n                val deviceStorage = Injector.get().externalDeviceDirs().first()\n                sharedPreferences.edit()\n                    .putString(KEY_SYNC_DIR_PATH, deviceStorage.absolutePath)\n                    .apply()\n                deviceStorage\n            } else {\n                Injector.get().externalDeviceDirs()\n                    .firstOrNull { it.absolutePath == syncLoc }\n                    ?: Injector.get().externalDeviceDirs().first()\n            }\n        }\n        set(value) = sharedPreferences.edit().putString(\n            KEY_SYNC_DIR_PATH,\n            value.absolutePath\n        ).apply()\n\n    private val defaultBookCoverStyle = \"Rectangular\"\n    override var bookCoverStyle: String\n        get() = getString(KEY_BOOK_COVER_STYLE, defaultBookCoverStyle)\n        set(value) = sharedPreferences.edit().putString(KEY_BOOK_COVER_STYLE, value).apply()\n\n    private val defaultOfflineMode = false\n    override var offlineMode: Boolean\n        get() = sharedPreferences.getBoolean(KEY_OFFLINE_MODE, defaultOfflineMode)\n        set(value) = sharedPreferences.edit().putBoolean(KEY_OFFLINE_MODE, value).apply()\n\n    private val defaultLastRefreshTimeStamp = System.currentTimeMillis()\n    override var lastRefreshTimeStamp: Long\n        get() = sharedPreferences.getLong(KEY_LAST_REFRESH, defaultLastRefreshTimeStamp)\n        set(value) = sharedPreferences.edit().putLong(KEY_LAST_REFRESH, value).apply()\n\n    private val defaultRefreshRate = 60L\n    override var refreshRateMinutes: Long\n        get() = sharedPreferences.getLong(KEY_REFRESH_RATE, defaultRefreshRate)\n        set(value) = sharedPreferences.edit().putLong(KEY_REFRESH_RATE, value).apply()\n\n    private val defaultPlaybackSpeed = 1.0f\n    override var playbackSpeed: Float\n        get() = sharedPreferences.getFloat(KEY_PLAYBACK_SPEED, defaultPlaybackSpeed)\n        set(value) = sharedPreferences.edit().putFloat(KEY_PLAYBACK_SPEED, value).apply()\n\n    private val defaultSkipSilence = false\n    override var skipSilence: Boolean\n        get() = sharedPreferences.getBoolean(KEY_SKIP_SILENCE, defaultSkipSilence)\n        set(value) = sharedPreferences.edit().putBoolean(KEY_SKIP_SILENCE, value).apply()\n\n    private val defaultAutoRewind = true\n    override var autoRewind: Boolean\n        get() = sharedPreferences.getBoolean(KEY_AUTO_REWIND_ENABLED, defaultAutoRewind)\n        set(value) = sharedPreferences.edit().putBoolean(KEY_AUTO_REWIND_ENABLED, value).apply()\n\n    private val defaultShakeToSnooze = true\n    override var shakeToSnooze: Boolean\n        get() = sharedPreferences.getBoolean(KEY_SHAKE_TO_SNOOZE_ENABLED, defaultShakeToSnooze)\n        set(value) = sharedPreferences.edit().putBoolean(KEY_SHAKE_TO_SNOOZE_ENABLED, value).apply()\n\n    private val defaultPauseOnFocusLost = true\n    override var pauseOnFocusLost: Boolean\n        get() = sharedPreferences.getBoolean(KEY_PAUSE_ON_FOCUS_LOST, defaultPauseOnFocusLost)\n        set(value) = sharedPreferences.edit().putBoolean(KEY_PAUSE_ON_FOCUS_LOST, value).apply()\n\n    private val defaultAllowAuto = true\n    override var allowAuto: Boolean\n        get() = sharedPreferences.getBoolean(KEY_ALLOW_AUTO, defaultAllowAuto)\n        set(value) = sharedPreferences.edit().putBoolean(KEY_ALLOW_AUTO, value).apply()\n\n    private val defaultIsPremium = false\n    override val isPremium: Boolean\n        get() = sharedPreferences.getBoolean(KEY_IS_PREMIUM, defaultIsPremium) || BuildConfig.DEBUG\n\n    private val defaultPremiumToken = NO_PREMIUM_TOKEN\n    override var premiumPurchaseToken: String\n        get() = getString(KEY_PREMIUM_TOKEN, defaultPremiumToken)\n        set(value) {\n            sharedPreferences.edit().putString(KEY_PREMIUM_TOKEN, value).apply()\n            sharedPreferences.edit().putBoolean(KEY_IS_PREMIUM, value != NO_PREMIUM_TOKEN).apply()\n        }\n\n    private val defaultBookSortKey = Audiobook.SORT_KEY_TITLE\n    override var bookSortKey: String\n        get() = getString(KEY_BOOK_SORT_BY, defaultBookSortKey)\n        set(value) {\n            if (value !in Audiobook.SORT_KEYS) {\n                throw IllegalArgumentException(\"Unknown sort key: $value\")\n            }\n            sharedPreferences.edit().putString(KEY_BOOK_SORT_BY, value).apply()\n        }\n\n    private val defaultIsLibrarySortDescending = true\n    override var isLibrarySortedDescending: Boolean\n        get() = getBoolean(KEY_IS_LIBRARY_SORT_DESCENDING, defaultIsLibrarySortDescending)\n        set(value) {\n            sharedPreferences.edit().putBoolean(KEY_IS_LIBRARY_SORT_DESCENDING, value).apply()\n        }\n\n    private val viewTypeBook = \"book\"\n    private val viewTypeAuthor = \"author\"\n    private val viewTypeFolder = \"folder\"\n    private val viewTypeCollection = \"collection\"\n    private val viewTypes = listOf(viewTypeBook, viewTypeAuthor, viewTypeFolder, viewTypeCollection)\n    private val defaultLibraryViewType = viewTypeBook\n    override var libraryMediaType: String\n        get() = getString(KEY_LIBRARY_MEDIA_TYPE, defaultLibraryViewType)\n        set(value) {\n            if (value !in viewTypes) {\n                throw IllegalArgumentException(\"Unknown view type key: $value\")\n            }\n            sharedPreferences.edit().putString(KEY_LIBRARY_MEDIA_TYPE, value).apply()\n        }\n\n\n    private val defaultLibraryViewStyle = VIEW_STYLE_COVER_GRID\n    override var libraryBookViewStyle: String\n        get() = getString(KEY_LIBRARY_VIEW_STYLE, defaultLibraryViewStyle)\n        set(value) {\n            if (value !in VIEW_STYLES) {\n                throw IllegalArgumentException(\"Unknown view type key: $value\")\n            }\n            sharedPreferences.edit().putString(KEY_LIBRARY_VIEW_STYLE, value).apply()\n        }\n\n    private val debugDisableLocalProgressTracking = false\n    override var debugOnlyDisableLocalProgressTracking: Boolean\n        get() = sharedPreferences.getBoolean(\n            KEY_DEBUG_DISABLE_PROGRESS,\n            debugDisableLocalProgressTracking\n        )\n        set(value) = sharedPreferences.edit().putBoolean(KEY_DEBUG_DISABLE_PROGRESS, value).apply()\n\n    override fun setBoolean(key: String, value: Boolean) {\n        sharedPreferences.edit().putBoolean(key, value).apply()\n    }\n\n    private fun getString(key: String, defaultValue: String): String {\n        return sharedPreferences.getString(key, defaultValue) ?: defaultValue\n    }\n\n    override fun getBoolean(key: String, defaultValue: Boolean): Boolean {\n        return sharedPreferences.getBoolean(key, defaultValue)\n    }\n\n    override fun clearAll() {\n        sharedPreferences.edit().clear().apply()\n    }\n\n    override fun registerPrefsListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {\n        sharedPreferences.registerOnSharedPreferenceChangeListener(listener)\n    }\n\n    override fun unregisterPrefsListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {\n        sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener)\n    }\n\n    override fun containsKey(key: String): Boolean {\n        return sharedPreferences.contains(key)\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/io/github/mattpvaughn/chronicle/data/local/SharedPreferencesPrefsRepo.kt b/app/src/main/java/io/github/mattpvaughn/chronicle/data/local/SharedPreferencesPrefsRepo.kt
+--- a/app/src/main/java/io/github/mattpvaughn/chronicle/data/local/SharedPreferencesPrefsRepo.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/main/java/io/github/mattpvaughn/chronicle/data/local/SharedPreferencesPrefsRepo.kt	(date 1627144478488)
+@@ -14,6 +14,7 @@
+ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LAST_REFRESH
+ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_MEDIA_TYPE
+ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_VIEW_STYLE
++import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_MOST_RECENT_BOOK
+ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_OFFLINE_MODE
+ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PAUSE_ON_FOCUS_LOST
+ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PLAYBACK_SPEED
+@@ -26,6 +27,7 @@
+ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLES
+ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_COVER_GRID
+ import io.github.mattpvaughn.chronicle.data.model.Audiobook
++import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
+ import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
+ import io.github.mattpvaughn.chronicle.injection.components.AppComponent
+ import java.io.File
+@@ -86,6 +88,9 @@
+     /** Whether the library is sorted in descending (true) or ascending (false) order */
+     var isLibrarySortedDescending: Boolean
+ 
++    /** The [Audiobook.id] of the most recently played book */
++    var mostRecentBook: Int
++
+     /**
+      * Get a saved preference value corresponding to [key], providing [defaultValue] if no value
+      * is already set. Return false in the case of no value already set if [defaultValue] is not
+@@ -131,6 +136,7 @@
+         const val KEY_IS_LIBRARY_SORT_DESCENDING = "key_is_sort_descending"
+         const val KEY_LIBRARY_MEDIA_TYPE = "key_media_type"
+         const val KEY_LIBRARY_VIEW_STYLE = "key_library_view_style"
++        const val KEY_MOST_RECENT_BOOK = "key_most_recent_book"
+         const val VIEW_STYLE_COVER_GRID = "view_style_cover_grid"
+         const val VIEW_STYLE_TEXT_LIST = "view_style_text_list"
+         const val VIEW_STYLE_DETAILS_LIST = "view_style_details_list"
+@@ -155,7 +161,8 @@
+             val syncLoc = sharedPreferences.getString(KEY_SYNC_DIR_PATH, "")
+             return if (syncLoc.isNullOrEmpty()) {
+                 /** Set default location to first location in [AppComponent.externalDeviceDirs] */
+-                val deviceStorage = Injector.get().externalDeviceDirs().first()
++                val deviceStorage = Injector.get().externalDeviceDirs().firstOrNull()
++                    ?: Injector.get().applicationContext().filesDir
+                 sharedPreferences.edit()
+                     .putString(KEY_SYNC_DIR_PATH, deviceStorage.absolutePath)
+                     .apply()
+@@ -163,7 +170,8 @@
+             } else {
+                 Injector.get().externalDeviceDirs()
+                     .firstOrNull { it.absolutePath == syncLoc }
+-                    ?: Injector.get().externalDeviceDirs().first()
++                    ?: Injector.get().externalDeviceDirs().firstOrNull()
++                    ?: Injector.get().applicationContext().filesDir
+             }
+         }
+         set(value) = sharedPreferences.edit().putString(
+@@ -250,6 +258,11 @@
+             sharedPreferences.edit().putBoolean(KEY_IS_LIBRARY_SORT_DESCENDING, value).apply()
+         }
+ 
++    private val defaultMostRecentBook = NO_AUDIOBOOK_FOUND_ID
++    override var mostRecentBook: Int
++        get() = sharedPreferences.getInt(KEY_MOST_RECENT_BOOK, defaultMostRecentBook)
++        set(value) = sharedPreferences.edit().putInt(KEY_MOST_RECENT_BOOK, value).apply()
++
+     private val viewTypeBook = "book"
+     private val viewTypeAuthor = "author"
+     private val viewTypeFolder = "folder"
+Index: app/src/main/java/io/github/mattpvaughn/chronicle/features/currentlyplaying/CurrentlyPlayingSingleton.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.features.currentlyplaying\n\nimport io.github.mattpvaughn.chronicle.data.model.*\nimport kotlinx.coroutines.ExperimentalCoroutinesApi\nimport kotlinx.coroutines.flow.MutableStateFlow\nimport kotlinx.coroutines.flow.StateFlow\nimport timber.log.Timber\nimport javax.inject.Singleton\n\n/**\n * A global store of state containing information on the [Audiobook]/[MediaItemTrack]/[Chapter]\n * currently playing and the relevant playback information.\n */\n@ExperimentalCoroutinesApi\ninterface CurrentlyPlaying {\n    val book: StateFlow<Audiobook>\n    val track: StateFlow<MediaItemTrack>\n    val chapter: StateFlow<Chapter>\n\n    fun setOnChapterChangeListener(listener: OnChapterChangeListener)\n    fun update(track: MediaItemTrack, book: Audiobook, tracks: List<MediaItemTrack>)\n}\n\ninterface OnChapterChangeListener {\n    fun onChapterChange(chapter: Chapter)\n}\n\n/**\n * Implementation of [CurrentlyPlaying]. Values default to placeholder values until data is\n * made available (the user\n */\n@ExperimentalCoroutinesApi\n@Singleton\nclass CurrentlyPlayingSingleton : CurrentlyPlaying {\n    override var book = MutableStateFlow(EMPTY_AUDIOBOOK)\n    override var track = MutableStateFlow(EMPTY_TRACK)\n    override var chapter = MutableStateFlow(EMPTY_CHAPTER)\n\n    private var tracks: MutableList<MediaItemTrack> = mutableListOf()\n    private val chapters: MutableList<Chapter> = mutableListOf()\n\n    private var listener: OnChapterChangeListener? = null\n\n    override fun setOnChapterChangeListener(listener: OnChapterChangeListener) {\n        this.listener = listener\n    }\n\n    override fun update(track: MediaItemTrack, book: Audiobook, tracks: List<MediaItemTrack>) {\n        this.book.value = book\n        this.track.value = track\n\n        this.tracks.clear()\n        this.tracks.addAll(tracks)\n\n        this.chapters.addAll(\n            if (book.chapters.isNotEmpty()) {\n                book.chapters\n            } else {\n                tracks.asChapterList()\n            }\n        )\n\n        if (tracks.isNotEmpty() && chapters.isNotEmpty()) {\n            val chapter = chapters.getChapterAt(track.id.toLong(), track.progress)\n            if (this.chapter.value != chapter) {\n                this.chapter.value = chapter\n                listener?.onChapterChange(chapter)\n            }\n        }\n\n        printDebug()\n    }\n\n    private fun printDebug() {\n        Timber.i(\"Currently Playing: track=${track.value.title}, index=${track.value.index}/${tracks.size}\")\n    }\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/io/github/mattpvaughn/chronicle/features/currentlyplaying/CurrentlyPlayingSingleton.kt b/app/src/main/java/io/github/mattpvaughn/chronicle/features/currentlyplaying/CurrentlyPlayingSingleton.kt
+--- a/app/src/main/java/io/github/mattpvaughn/chronicle/features/currentlyplaying/CurrentlyPlayingSingleton.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/main/java/io/github/mattpvaughn/chronicle/features/currentlyplaying/CurrentlyPlayingSingleton.kt	(date 1620145484007)
+@@ -1,5 +1,6 @@
+ package io.github.mattpvaughn.chronicle.features.currentlyplaying
+ 
++import io.github.mattpvaughn.chronicle.BuildConfig
+ import io.github.mattpvaughn.chronicle.data.model.*
+ import kotlinx.coroutines.ExperimentalCoroutinesApi
+ import kotlinx.coroutines.flow.MutableStateFlow
+@@ -68,7 +69,9 @@
+             }
+         }
+ 
+-        printDebug()
++        if (BuildConfig.DEBUG) {
++            printDebug()
++        }
+     }
+ 
+     private fun printDebug() {
+Index: app/src/main/java/io/github/mattpvaughn/chronicle/features/player/TrackListStateManager.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.features.player\n\nimport io.github.mattpvaughn.chronicle.data.model.MediaItemTrack\nimport io.github.mattpvaughn.chronicle.data.model.getActiveTrack\nimport io.github.mattpvaughn.chronicle.data.model.getTrackStartTime\nimport timber.log.Timber\nimport kotlin.math.abs\nimport kotlin.math.max\n\n/**\n * Shadows the state of tracks in the queue in order to calculate seeks for\n * [AudiobookMediaSessionCallback] with information that exoplayer's window management doesn't\n * have (access to track durations outside of current track)\n */\nclass TrackListStateManager {\n    /** The list of [MediaItemTrack]s currently playing */\n    var trackList: List<MediaItemTrack> = emptyList()\n\n    /** The index of the current track within [trackList] */\n    var currentTrackIndex: Int = 0\n        private set\n\n    /** The number of milliseconds from the start of the currently playing track */\n    var currentTrackProgress: Long = 0\n        private set\n\n    private val currentTrack: MediaItemTrack\n        get() = trackList[currentTrackIndex]\n\n    /**\n     * The number of milliseconds between current playback position and the start of the first\n     * track. This is not authoritative, as [MediaItemTrack.duration] is not necessarily correct\n     */\n    val currentBookPosition: Long\n        get() = trackList.getTrackStartTime(currentTrack) + currentTrackProgress\n\n    /**\n     * Update [currentTrackIndex] to [activeTrackIndex] and [currentTrackProgress] to\n     * [offsetFromTrackStart]\n     */\n    fun updatePosition(activeTrackIndex: Int, offsetFromTrackStart: Long) {\n        if (activeTrackIndex >= trackList.size) {\n            throw IndexOutOfBoundsException(\"Cannot set current track index = $activeTrackIndex if tracklist.size == ${trackList.size}\")\n        }\n        currentTrackIndex = activeTrackIndex\n        currentTrackProgress = offsetFromTrackStart\n    }\n\n    /**\n     * Update position based on tracks in [trackList], picking the one with the most recent\n     * [MediaItemTrack.lastViewedAt]\n     */\n    fun seekToActiveTrack() {\n        Timber.i(\"Seeking to active track\")\n        val activeTrack = trackList.getActiveTrack()\n        currentTrackIndex = trackList.indexOf(activeTrack)\n        currentTrackProgress = activeTrack.progress\n    }\n\n    /** Seeks forwards or backwards in the playlist by [offsetMillis] millis*/\n    fun seekByRelative(offsetMillis: Long) {\n        if (offsetMillis >= 0) {\n            seekForwards(offsetMillis)\n        } else {\n            seekBackwards(abs(offsetMillis))\n        }\n    }\n\n    /** Seek backwards by [offset] ms. [offset] must be a positive [Long] */\n    private fun seekBackwards(offset: Long) {\n        check(offset >= 0) { \"Attempted to seek by a negative number: $offset\" }\n        var offsetRemaining =\n            offset + (trackList[currentTrackIndex].duration - currentTrackProgress)\n        for (index in currentTrackIndex downTo 0) {\n            if (offsetRemaining < trackList[index].duration) {\n                currentTrackProgress = max(0, trackList[index].duration - offsetRemaining)\n                currentTrackIndex = index\n                return\n            } else {\n                offsetRemaining -= trackList[index].duration\n            }\n        }\n        currentTrackIndex = 0\n        currentTrackProgress = 0\n    }\n\n    private fun seekForwards(offset: Long) {\n        check(offset >= 0) { \"Attempted to seek by a negative number: $offset\" }\n        var offsetRemaining = offset + currentTrackProgress\n        for (index in currentTrackIndex until trackList.size) {\n            if (offsetRemaining < trackList[index].duration) {\n                currentTrackIndex = index\n                currentTrackProgress = offsetRemaining\n                return\n            } else {\n                offsetRemaining -= trackList[index].duration\n            }\n        }\n        currentTrackIndex = trackList.size - 1\n        currentTrackProgress = trackList.lastOrNull()?.duration ?: 0L\n    }\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/TrackListStateManager.kt b/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/TrackListStateManager.kt
+--- a/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/TrackListStateManager.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/TrackListStateManager.kt	(date 1620145787943)
+@@ -39,10 +39,9 @@
+      * [offsetFromTrackStart]
+      */
+     fun updatePosition(activeTrackIndex: Int, offsetFromTrackStart: Long) {
+-        if (activeTrackIndex >= trackList.size) {
+-            throw IndexOutOfBoundsException("Cannot set current track index = $activeTrackIndex if tracklist.size == ${trackList.size}")
+-        }
+-        currentTrackIndex = activeTrackIndex
++        // If the client attempts to set the track index beyond the possible
++        // track, bound to extremes
++        currentTrackIndex = activeTrackIndex.coerceIn(trackList.indices)
+         currentTrackProgress = offsetFromTrackStart
+     }
+ 
+Index: app/src/test/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModelTest.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.features.bookdetails\n\nimport android.support.v4.media.session.MediaControllerCompat\nimport android.util.Log\nimport androidx.arch.core.executor.testing.InstantTaskExecutorRule\nimport io.github.mattpvaughn.chronicle.data.local.IBookRepository\nimport io.github.mattpvaughn.chronicle.data.local.ITrackRepository\nimport io.github.mattpvaughn.chronicle.data.model.MediaItemTrack\nimport io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager\nimport io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo\nimport io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection\nimport io.github.mattpvaughn.chronicle.features.player.ProgressUpdater\nimport io.mockk.MockKAnnotations\nimport io.mockk.every\nimport io.mockk.impl.annotations.MockK\nimport io.mockk.impl.annotations.RelaxedMockK\nimport io.mockk.mockkStatic\nimport kotlinx.coroutines.Dispatchers\nimport kotlinx.coroutines.ExperimentalCoroutinesApi\nimport kotlinx.coroutines.ObsoleteCoroutinesApi\nimport kotlinx.coroutines.newSingleThreadContext\nimport kotlinx.coroutines.test.resetMain\nimport kotlinx.coroutines.test.setMain\nimport org.junit.After\nimport org.junit.Before\nimport org.junit.Rule\nimport org.junit.Test\n\n\n@ObsoleteCoroutinesApi\n@ExperimentalCoroutinesApi\nclass AudiobookDetailsViewModelTest {\n\n    @get:Rule\n    val instantTaskExecutorRule = InstantTaskExecutorRule()\n\n    @RelaxedMockK\n    lateinit var mockMediaController: MediaControllerCompat\n\n    @RelaxedMockK\n    lateinit var mockMediaServiceConnection: MediaServiceConnection\n\n    @RelaxedMockK\n    lateinit var mockPlexPrefsRepo: PlexPrefsRepo\n\n    @RelaxedMockK\n    lateinit var mockCachedFileManager: CachedFileManager\n\n    @RelaxedMockK\n    private lateinit var mockProgressUpdater: ProgressUpdater\n\n    @MockK\n    private lateinit var mockBookRepository: IBookRepository\n\n    @MockK\n    private lateinit var mockTrackRepository: ITrackRepository\n\n    private val mainThreadSurrogate = newSingleThreadContext(\"UI thread\")\n\n    @Before\n    fun setUp() {\n        Dispatchers.setMain(mainThreadSurrogate)\n\n        // Mock android.util.Log statically b/c not Android system stuff not automatically mocked\n        // for unit tests\n        mockkStatic(Log::class)\n        every { Log.v(any(), any()) } returns 0\n        every { Log.d(any(), any()) } returns 0\n        every { Log.i(any(), any()) } returns 0\n        every { Log.e(any(), any()) } returns 0\n\n        MockKAnnotations.init(this)\n    }\n\n    @After\n    fun tearDown() {\n        Dispatchers.resetMain() // reset main dispatcher to the original Main dispatcher\n        mainThreadSurrogate.close()\n    }\n\n    @Test\n    fun testPlay_transportControlsCalled() {\n//        val randomIdAudiobook = defaultAudiobook.copy(id = Random.nextInt(until = 10000))\n//        val viewModel = createViewModel(audiobook = randomIdAudiobook)\n\n//        viewModel.play()\n\n//        verify(exactly = 1) {\n//            mockMediaServiceConnection.transportControls?.playFromMediaId(\n//                randomIdAudiobook.id.toString(),\n//                any()\n//            )\n//        }\n    }\n\n    @Test\n    fun testJumpToTrack_transportControlsCalled() {\n//        val randomIdAudiobook = defaultAudiobook.copy(id = Random.nextInt(until = 10000))\n//        val correspondingTrackList =\n//            defaultTrackList.map { it.copy(parentKey = randomIdAudiobook.id) }\n//        val viewModel =\n//            createViewModel(audiobook = randomIdAudiobook, tracks = correspondingTrackList)\n\n//        viewModel.jumpToChapter()\n\n//        verify {\n//            mockMediaServiceConnection.transportControls?.playFromMediaId(\n//                randomIdAudiobook.id.toString(),\n//                any()\n//            )\n//        }\n    }\n\n    @Test\n    fun testOnCacheButtonClick_TracksNotLoadedAudiobookNotCached() {\n//        val audiobook = defaultAudiobook.copy(isCached = false)\n//        val viewModel = createViewModel(audiobook = audiobook, tracks = emptyList())\n\n        // Attach an observer so cacheStatus emits events\n//        val cacheStatus = viewModel.cacheStatus\n//        cacheStatus.observeForever { }\n//        viewModel.onCacheButtonClick()\n//\n//        assertThat(\n//            cacheStatus.getOrAwaitValue(),\n//            `is`(CACHING)\n//        )\n//        verify { mockCachedFileManager.downloadTracks(emptyList()) }\n    }\n\n    @Test\n    fun testOnCacheButtonClick_TracksNotLoadedAudiobookCached() {\n//        val audiobook = defaultAudiobook.copy(isCached = true)\n//        val viewModel = spyk(createViewModel(audiobook = audiobook, tracks = emptyList()))\n\n//        // Attach an observer so cacheStatus emits events\n//        viewModel.showBottomSheet.observeForever {}\n//        viewModel.cacheStatus.observeForever {}\n//        viewModel.onCacheButtonClick()\n//\n//        assertThat(\n//            viewModel.cacheStatus.getOrAwaitValue(),\n//            `is`(CACHED)\n//        )\n//        verify(exactly = 0) { mockCachedFileManager.downloadTracks(any()) }\n//        assertThat(viewModel.showBottomSheet.getOrAwaitValue(), `is`(true))\n    }\n\n    @Test\n    fun testOnCacheButtonClick_WhileCaching() {\n//        val uncachedAudiobook = defaultAudiobook.copy(isCached = false)\n        val uncachedTracks = defaultTrackList.map { it.copy(cached = false) }\n//        val viewModel =\n//            spyk(createViewModel(audiobook = uncachedAudiobook, tracks = uncachedTracks))\n//\n//        // Start caching\n//        viewModel.cacheStatus.observeForever {}\n//        viewModel.onCacheButtonClick()\n//        assertThat(\n//            viewModel.cacheStatus.getOrAwaitValue(),\n//            `is`(CACHING)\n//        )\n//\n//        // Cancel caching\n//        viewModel.onCacheButtonClick()\n//        assertThat(\n//            viewModel.cacheStatus.getOrAwaitValue(),\n//            `is`(NOT_CACHED)\n//        )\n//        verify(exactly = 1) { mockCachedFileManager.downloadTracks(any()) }\n//        verify(exactly = 1) { mockCachedFileManager.cancelCaching() }\n    }\n\n\n    //    private val defaultAudiobook = Audiobook(id = 22)\n    private val defaultTrackList = listOf(MediaItemTrack(parentKey = 22))\n\n    // Create a ViewModel with optional audiobook and track list info, where the repos only emit\n    // the provided tracks and audiobooks\n//    private fun createViewModel(\n//        bookRepository: IBookRepository = mockBookRepository,\n//        trackRepository: ITrackRepository = mockTrackRepository,\n//        audiobook: Audiobook = defaultAudiobook,\n//        tracks: List<MediaItemTrack> = defaultTrackList\n//    ): AudiobookDetailsViewModel {\n//        every { mockBookRepository.getAudiobook(any()) } returns MutableLiveData(audiobook)\n//        every { mockTrackRepository.getTracksForAudiobook(any()) } returns MutableLiveData(tracks)\n//        coEvery { mockTrackRepository.loadTracksForAudiobook(any()) } returns tracks\n//        return AudiobookDetailsViewModel(\n//            bookRepository = bookRepository,\n//            trackRepository = trackRepository,\n//            cachedFileManager = mockCachedFileManager,\n//            inputAudiobook = Audiobook(id = audiobook.id, isCached = audiobook.isCached),\n//            mediaServiceConnection = mockMediaServiceConnection,\n//            progressUpdater = mockProgressUpdater\n//        )\n//    }\n\n\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/test/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModelTest.kt b/app/src/test/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModelTest.kt
+--- a/app/src/test/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModelTest.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/test/java/io/github/mattpvaughn/chronicle/features/bookdetails/AudiobookDetailsViewModelTest.kt	(date 1620161688805)
+@@ -1,23 +1,31 @@
+ package io.github.mattpvaughn.chronicle.features.bookdetails
+ 
+ import android.support.v4.media.session.MediaControllerCompat
+-import android.util.Log
+ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
++import androidx.lifecycle.MutableLiveData
++import com.github.michaelbull.result.Ok
+ import io.github.mattpvaughn.chronicle.data.local.IBookRepository
+ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
++import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
++import io.github.mattpvaughn.chronicle.data.model.Audiobook
+ import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
++import io.github.mattpvaughn.chronicle.data.sources.MediaSource
+ import io.github.mattpvaughn.chronicle.data.sources.plex.CachedFileManager
+-import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
++import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
++import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaService
++import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
++import io.github.mattpvaughn.chronicle.features.player.EMPTY_PLAYBACK_STATE
+ import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
++import io.github.mattpvaughn.chronicle.features.player.NOTHING_PLAYING
+ import io.github.mattpvaughn.chronicle.features.player.ProgressUpdater
+ import io.mockk.MockKAnnotations
++import io.mockk.coEvery
+ import io.mockk.every
+ import io.mockk.impl.annotations.MockK
+ import io.mockk.impl.annotations.RelaxedMockK
+-import io.mockk.mockkStatic
++import io.mockk.verify
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.ExperimentalCoroutinesApi
+-import kotlinx.coroutines.ObsoleteCoroutinesApi
+ import kotlinx.coroutines.newSingleThreadContext
+ import kotlinx.coroutines.test.resetMain
+ import kotlinx.coroutines.test.setMain
+@@ -25,9 +33,9 @@
+ import org.junit.Before
+ import org.junit.Rule
+ import org.junit.Test
++import kotlin.random.Random
+ 
+ 
+-@ObsoleteCoroutinesApi
+ @ExperimentalCoroutinesApi
+ class AudiobookDetailsViewModelTest {
+ 
+@@ -37,11 +45,20 @@
+     @RelaxedMockK
+     lateinit var mockMediaController: MediaControllerCompat
+ 
++    @RelaxedMockK
++    lateinit var mockPlexConfig: PlexConfig
++
+     @RelaxedMockK
+     lateinit var mockMediaServiceConnection: MediaServiceConnection
+ 
+     @RelaxedMockK
+-    lateinit var mockPlexPrefsRepo: PlexPrefsRepo
++    lateinit var mockPrefsRepo: PrefsRepo
++
++    @RelaxedMockK
++    lateinit var mockPlexMediaService: PlexMediaService
++
++    @RelaxedMockK
++    lateinit var mockCurrentlyPlaying: CurrentlyPlaying
+ 
+     @RelaxedMockK
+     lateinit var mockCachedFileManager: CachedFileManager
+@@ -63,12 +80,6 @@
+ 
+         // Mock android.util.Log statically b/c not Android system stuff not automatically mocked
+         // for unit tests
+-        mockkStatic(Log::class)
+-        every { Log.v(any(), any()) } returns 0
+-        every { Log.d(any(), any()) } returns 0
+-        every { Log.i(any(), any()) } returns 0
+-        every { Log.e(any(), any()) } returns 0
+-
+         MockKAnnotations.init(this)
+     }
+ 
+@@ -79,36 +90,49 @@
+     }
+ 
+     @Test
+-    fun testPlay_transportControlsCalled() {
+-//        val randomIdAudiobook = defaultAudiobook.copy(id = Random.nextInt(until = 10000))
+-//        val viewModel = createViewModel(audiobook = randomIdAudiobook)
++    fun `test play button requests playback on default state`() {
++        val randomIdAudiobook = defaultAudiobook.copy(id = Random.nextInt(until = 10000))
++        val viewModel = createViewModel(audiobook = randomIdAudiobook)
+ 
+-//        viewModel.play()
++        viewModel.pausePlayButtonClicked()
+ 
+-//        verify(exactly = 1) {
+-//            mockMediaServiceConnection.transportControls?.playFromMediaId(
+-//                randomIdAudiobook.id.toString(),
+-//                any()
+-//            )
+-//        }
++        verify(exactly = 1) {
++            mockMediaServiceConnection.transportControls?.playFromMediaId(
++                randomIdAudiobook.id.toString(),
++                any()
++            )
++        }
+     }
+ 
+     @Test
+-    fun testJumpToTrack_transportControlsCalled() {
+-//        val randomIdAudiobook = defaultAudiobook.copy(id = Random.nextInt(until = 10000))
+-//        val correspondingTrackList =
+-//            defaultTrackList.map { it.copy(parentKey = randomIdAudiobook.id) }
+-//        val viewModel =
+-//            createViewModel(audiobook = randomIdAudiobook, tracks = correspondingTrackList)
++    fun `test jumpToChapter() prevents changing without user confirmation`() {
++        val viewModel = createViewModel()
+ 
+-//        viewModel.jumpToChapter()
++        viewModel.jumpToChapter(hasUserConfirmation = false)
+ 
+-//        verify {
+-//            mockMediaServiceConnection.transportControls?.playFromMediaId(
+-//                randomIdAudiobook.id.toString(),
+-//                any()
+-//            )
+-//        }
++        verify(exactly = 0) {
++            mockMediaServiceConnection.transportControls?.playFromMediaId(
++                any(),
++                any()
++            )
++        }
++    }
++
++    @Test
++    fun `test jumpToChapter() waits until service connected to begin`() {
++        every { mockMediaServiceConnection.isConnected}
++        val viewModel = createViewModel()
++
++        viewModel.jumpToChapter(
++            hasUserConfirmation = true
++        )
++
++        verify {
++            mockMediaServiceConnection.transportControls?.playFromMediaId(
++                any(),
++                any()
++            )
++        }
+     }
+ 
+     @Test
+@@ -172,29 +196,43 @@
+     }
+ 
+ 
+-    //    private val defaultAudiobook = Audiobook(id = 22)
++    private val defaultAudiobook = Audiobook(id = 22, source = MediaSource.NO_SOURCE_FOUND)
+     private val defaultTrackList = listOf(MediaItemTrack(parentKey = 22))
+ 
+     // Create a ViewModel with optional audiobook and track list info, where the repos only emit
+     // the provided tracks and audiobooks
+-//    private fun createViewModel(
+-//        bookRepository: IBookRepository = mockBookRepository,
+-//        trackRepository: ITrackRepository = mockTrackRepository,
+-//        audiobook: Audiobook = defaultAudiobook,
+-//        tracks: List<MediaItemTrack> = defaultTrackList
+-//    ): AudiobookDetailsViewModel {
+-//        every { mockBookRepository.getAudiobook(any()) } returns MutableLiveData(audiobook)
+-//        every { mockTrackRepository.getTracksForAudiobook(any()) } returns MutableLiveData(tracks)
+-//        coEvery { mockTrackRepository.loadTracksForAudiobook(any()) } returns tracks
+-//        return AudiobookDetailsViewModel(
+-//            bookRepository = bookRepository,
+-//            trackRepository = trackRepository,
+-//            cachedFileManager = mockCachedFileManager,
+-//            inputAudiobook = Audiobook(id = audiobook.id, isCached = audiobook.isCached),
+-//            mediaServiceConnection = mockMediaServiceConnection,
+-//            progressUpdater = mockProgressUpdater
+-//        )
+-//    }
++    private fun createViewModel(
++        bookRepository: IBookRepository = mockBookRepository,
++        trackRepository: ITrackRepository = mockTrackRepository,
++        audiobook: Audiobook = defaultAudiobook,
++        tracks: List<MediaItemTrack> = defaultTrackList
++    ): AudiobookDetailsViewModel {
++        every { mockBookRepository.getAudiobook(any()) } returns MutableLiveData(audiobook)
++        every { mockTrackRepository.getTracksForAudiobook(any()) } returns MutableLiveData(tracks)
++        every { mockPlexConfig.isConnected } returns MutableLiveData(true)
++        every { mockMediaServiceConnection.isConnected } returns MutableLiveData(true)
++        every { mockMediaServiceConnection.nowPlaying } returns MutableLiveData(NOTHING_PLAYING)
++        every { mockMediaServiceConnection.playbackState } returns MutableLiveData(
++            EMPTY_PLAYBACK_STATE
++        )
++        coEvery { mockTrackRepository.loadTracksForAudiobook(any()) } returns Ok(tracks)
++        return AudiobookDetailsViewModel(
++            bookRepository = bookRepository,
++            trackRepository = trackRepository,
++            cachedFileManager = mockCachedFileManager,
++            inputAudiobook = Audiobook(
++                id = audiobook.id,
++                isCached = audiobook.isCached,
++                source = audiobook.source
++            ),
++            mediaServiceConnection = mockMediaServiceConnection,
++            progressUpdater = mockProgressUpdater,
++            plexConfig = mockPlexConfig,
++            prefsRepo = mockPrefsRepo,
++            plexMediaService = mockPlexMediaService,
++            currentlyPlaying = mockCurrentlyPlaying
++        )
++    }
+ 
+ 
+ }
+\ No newline at end of file
+Index: app/src/main/java/io/github/mattpvaughn/chronicle/features/player/NotificationBuilder.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package io.github.mattpvaughn.chronicle.features.player\n\nimport android.app.Notification\nimport android.app.NotificationChannel\nimport android.app.NotificationManager\nimport android.app.PendingIntent\nimport android.content.ComponentName\nimport android.content.Context\nimport android.content.Intent\nimport android.content.pm.PackageManager.GET_ACTIVITIES\nimport android.graphics.Bitmap\nimport android.os.Build\nimport android.support.v4.media.session.MediaControllerCompat\nimport android.support.v4.media.session.MediaSessionCompat\nimport android.support.v4.media.session.PlaybackStateCompat\nimport android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE\nimport android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY\nimport android.view.KeyEvent\nimport android.view.KeyEvent.KEYCODE_MEDIA_STOP\nimport androidx.annotation.RequiresApi\nimport androidx.core.app.NotificationCompat\nimport androidx.media.app.NotificationCompat.MediaStyle\nimport androidx.media.session.MediaButtonReceiver\nimport io.github.mattpvaughn.chronicle.BuildConfig\nimport io.github.mattpvaughn.chronicle.R\nimport io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING\nimport io.github.mattpvaughn.chronicle.application.MainActivity.Companion.REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING\nimport io.github.mattpvaughn.chronicle.data.local.ITrackRepository\nimport io.github.mattpvaughn.chronicle.data.model.EMPTY_CHAPTER\nimport io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID\nimport io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig\nimport io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying\nimport io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope\nimport kotlinx.coroutines.ExperimentalCoroutinesApi\nimport timber.log.Timber\nimport javax.inject.Inject\n\nconst val NOW_PLAYING_CHANNEL: String =\n    \"io.github.mattpvaughn.chronicle.features.player\\$NOW_PLAYING_CHANNEL\"\nconst val NOW_PLAYING_NOTIFICATION: Int = 0xb32229\n\n/** Helper class to encapsulate code for building notifications. */\n@ExperimentalCoroutinesApi\n@ServiceScope\nclass NotificationBuilder @Inject constructor(\n    private val context: Context,\n    private val plexConfig: PlexConfig,\n    private val controller: MediaControllerCompat,\n    private val currentlyPlaying: CurrentlyPlaying,\n) {\n\n    private val platformNotificationManager: NotificationManager =\n        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager\n\n    private val playAction = NotificationCompat.Action(\n        R.drawable.exo_controls_play,\n        context.getString(R.string.notification_play),\n        MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PLAY)\n    )\n    private val pauseAction = NotificationCompat.Action(\n        R.drawable.exo_controls_pause,\n        context.getString(R.string.notification_pause),\n        MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE)\n    )\n    private val skipForwardsAction = NotificationCompat.Action(\n        R.drawable.ic_forward_30_white,\n        context.getString(R.string.skip_forwards),\n        makePendingIntent(mediaSkipForwardCode)\n    )\n    private val skipBackwardsAction = NotificationCompat.Action(\n        R.drawable.ic_replay_10_white,\n        context.getString(R.string.skip_backwards),\n        makePendingIntent(mediaSkipBackwardCode)\n    )\n\n    private fun makePendingIntent(keycode: Int): PendingIntent? {\n        val intent = Intent(Intent.ACTION_MEDIA_BUTTON)\n        intent.setPackage(context.packageName)\n        intent.component = ComponentName(\n            context.packageName,\n            MediaPlayerService::class.qualifiedName\n                ?: \"io.github.mattpvaughn.chronicle.features.player.MediaPlayerService\"\n        )\n        intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keycode))\n        return PendingIntent.getService(context, keycode, intent, 0)\n    }\n\n    private val stopPendingIntent = makePendingIntent(KEYCODE_MEDIA_STOP)\n\n    private val contentPendingIntent: PendingIntent\n\n    init {\n        val intent = Intent()\n        val activity = context.packageManager.getPackageInfo(context.packageName, GET_ACTIVITIES)\n            .activities.find { it.name.contains(\"MainActivity\") }\n        intent.setPackage(context.packageName)\n        intent.putExtra(FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, true)\n        intent.component = ComponentName(context.packageName, activity?.name ?: \"\")\n        contentPendingIntent = PendingIntent.getActivity(\n            context,\n            REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING,\n            intent,\n            0\n        )\n    }\n\n    var bookTitleBitmapPair: Pair<Int, Bitmap?>? = null\n\n    private var currentNotificationMetadata = NotificationData(\n        bookId = NO_AUDIOBOOK_FOUND_ID,\n        trackId = ITrackRepository.TRACK_NOT_FOUND,\n        chapterId = EMPTY_CHAPTER.id,\n        playbackState = PlaybackStateCompat.STATE_NONE\n    )\n\n    private data class NotificationData(\n        private val bookId: Int,\n        private val trackId: Int,\n        private val chapterId: Long,\n        private val playbackState: Int\n    )\n\n    private val currentID = NotificationData(\n        bookId = currentlyPlaying.book.value.id,\n        trackId = currentlyPlaying.track.value.id,\n        chapterId = currentlyPlaying.chapter.value.id,\n        playbackState = PlaybackStateCompat.STATE_NONE\n    )\n\n    /**\n     * Builds a notification representing the current playback state as representing by\n     * [CurrentlyPlaying] and the current [MediaSessionCompat]\n     *\n     * @return a notification representing the current playback state or null if one already exists\n     */\n    suspend fun buildNotification(sessionToken: MediaSessionCompat.Token): Notification? {\n        if (shouldCreateChannel()) {\n            createNowPlayingChannel()\n        }\n\n        val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)\n        val isPlaying = controller.playbackState.isPlaying\n\n        if (BuildConfig.DEBUG) {\n            Timber.i(\"Building notification! track=${currentlyPlaying.track.value.title}, index=${currentlyPlaying.track.value.index}\")\n            Timber.i(\"Building notification! chapter=${currentlyPlaying.chapter.value.title}, index=${currentlyPlaying.chapter.value.index}\")\n            Timber.i(\"Building notification! state=${controller.playbackState.stateName}, playing=$isPlaying\")\n        }\n\n        builder.addAction(skipBackwardsAction)\n        if (isPlaying) {\n            builder.addAction(pauseAction)\n        } else {\n            builder.addAction(playAction)\n        }\n        builder.addAction(skipForwardsAction)\n\n        // Add a button to manually kill the notification + service\n        builder.addAction(\n            R.drawable.ic_close_white,\n            context.getString(R.string.cancel),\n            stopPendingIntent\n        )\n\n        val mediaStyle = MediaStyle()\n            .setCancelButtonIntent(stopPendingIntent)\n            .setMediaSession(sessionToken)\n            .setShowActionsInCompactView(0, 1, 2)\n            .setShowCancelButton(true)\n\n        val smallIcon = if (isPlaying) {\n            R.drawable.ic_notification_icon_playing\n        } else {\n            R.drawable.ic_notification_icon_paused\n        }\n\n        val chapterTitle = currentlyPlaying.chapter.value.title\n\n        // NOTE: As long as [MediaStyle.setMediaSession()] hijacks the notification,\n        // title/subtitle will be pulled directly from the session, ignoring below\n        val currentBook = currentlyPlaying.book.value\n        val titles = if (chapterTitle.isNotEmpty()) {\n            Pair(chapterTitle, currentBook.title)\n        } else {\n            Pair(currentBook.title, currentBook.author)\n        }\n\n        // Only load bitmap when the book changes\n        if (bookTitleBitmapPair?.first != currentBook.id) {\n            val artUri = currentBook.thumb\n            Timber.i(\"Loading art uri: $artUri\")\n            val largeIcon = plexConfig.getBitmapFromServer(artUri)\n            // ^^^ nullable, but null is expected value for book without artwork ^^^\n            bookTitleBitmapPair = Pair(currentBook.id, largeIcon)\n        }\n\n        return builder.setContentTitle(titles.first)\n            .setContentText(titles.second)\n            .setContentIntent(controller.sessionActivity)\n            .setDeleteIntent(stopPendingIntent)\n            .setOnlyAlertOnce(true)\n            .setSmallIcon(smallIcon)\n            .setLargeIcon(bookTitleBitmapPair?.second)\n            .setStyle(mediaStyle)\n            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)\n            .build()\n    }\n\n    private fun shouldCreateChannel() =\n        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !nowPlayingChannelExists()\n\n    @RequiresApi(Build.VERSION_CODES.O)\n    private fun nowPlayingChannelExists() =\n        platformNotificationManager.getNotificationChannel(NOW_PLAYING_CHANNEL) != null\n\n    @RequiresApi(Build.VERSION_CODES.O)\n    private fun createNowPlayingChannel() {\n        val notificationChannel = NotificationChannel(\n            NOW_PLAYING_CHANNEL,\n            context.getString(R.string.notification_channel),\n            NotificationManager.IMPORTANCE_LOW\n        ).apply {\n            description = context.getString(R.string.notification_channel_description)\n        }\n\n        platformNotificationManager.createNotificationChannel(notificationChannel)\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/NotificationBuilder.kt b/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/NotificationBuilder.kt
+--- a/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/NotificationBuilder.kt	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/app/src/main/java/io/github/mattpvaughn/chronicle/features/player/NotificationBuilder.kt	(date 1627228715545)
+@@ -151,6 +151,7 @@
+         if (isPlaying) {
+             builder.addAction(pauseAction)
+         } else {
++            Timber.i("Adding play action!")
+             builder.addAction(playAction)
+         }
+         builder.addAction(skipForwardsAction)
+@@ -162,13 +163,7 @@
+             stopPendingIntent
+         )
+ 
+-        val mediaStyle = MediaStyle()
+-            .setCancelButtonIntent(stopPendingIntent)
+-            .setMediaSession(sessionToken)
+-            .setShowActionsInCompactView(0, 1, 2)
+-            .setShowCancelButton(true)
+-
+-        val smallIcon = if (isPlaying) {
++        val pausedOrPlayingButton = if (isPlaying) {
+             R.drawable.ic_notification_icon_playing
+         } else {
+             R.drawable.ic_notification_icon_paused
+@@ -194,12 +189,18 @@
+             bookTitleBitmapPair = Pair(currentBook.id, largeIcon)
+         }
+ 
++        val mediaStyle = MediaStyle()
++            .setCancelButtonIntent(stopPendingIntent)
++            .setMediaSession(sessionToken)
++            .setShowActionsInCompactView(0, 1, 2)
++            .setShowCancelButton(true)
++
+         return builder.setContentTitle(titles.first)
+             .setContentText(titles.second)
+             .setContentIntent(controller.sessionActivity)
+             .setDeleteIntent(stopPendingIntent)
+             .setOnlyAlertOnce(true)
+-            .setSmallIcon(smallIcon)
++            .setSmallIcon(pausedOrPlayingButton)
+             .setLargeIcon(bookTitleBitmapPair?.second)
+             .setStyle(mediaStyle)
+             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_1_8\" default=\"true\" project-jdk-name=\"1.8\" project-jdk-type=\"JavaSDK\">\n    <output url=\"file://$PROJECT_DIR$/build/classes\" />\n  </component>\n  <component name=\"ProjectType\">\n    <option name=\"id\" value=\"Android\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/.idea/misc.xml	(date 1632073361126)
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK">
+     <output url="file://$PROJECT_DIR$/build/classes" />
+   </component>
+   <component name="ProjectType">
+Index: .idea/inspectionProfiles/Project_Default.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><component name=\"InspectionProjectProfileManager\">\n  <profile version=\"1.0\">\n    <option name=\"myName\" value=\"Project Default\" />\n    <inspection_tool class=\"JavaDoc\" enabled=\"true\" level=\"WARNING\" enabled_by_default=\"true\">\n      <option name=\"TOP_LEVEL_CLASS_OPTIONS\">\n        <value>\n          <option name=\"ACCESS_JAVADOC_REQUIRED_FOR\" value=\"none\" />\n          <option name=\"REQUIRED_TAGS\" value=\"\" />\n        </value>\n      </option>\n      <option name=\"INNER_CLASS_OPTIONS\">\n        <value>\n          <option name=\"ACCESS_JAVADOC_REQUIRED_FOR\" value=\"none\" />\n          <option name=\"REQUIRED_TAGS\" value=\"\" />\n        </value>\n      </option>\n      <option name=\"METHOD_OPTIONS\">\n        <value>\n          <option name=\"ACCESS_JAVADOC_REQUIRED_FOR\" value=\"none\" />\n          <option name=\"REQUIRED_TAGS\" value=\"@return@param@throws or @exception\" />\n        </value>\n      </option>\n      <option name=\"FIELD_OPTIONS\">\n        <value>\n          <option name=\"ACCESS_JAVADOC_REQUIRED_FOR\" value=\"none\" />\n          <option name=\"REQUIRED_TAGS\" value=\"\" />\n        </value>\n      </option>\n      <option name=\"IGNORE_DEPRECATED\" value=\"false\" />\n      <option name=\"IGNORE_JAVADOC_PERIOD\" value=\"true\" />\n      <option name=\"IGNORE_DUPLICATED_THROWS\" value=\"false\" />\n      <option name=\"IGNORE_POINT_TO_ITSELF\" value=\"false\" />\n      <option name=\"myAdditionalJavadocTags\" value=\"attr\" />\n    </inspection_tool>\n    <inspection_tool class=\"KDocMissingDocumentation\" enabled=\"true\" level=\"INFORMATION\" enabled_by_default=\"true\" />\n  </profile>\n</component>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/inspectionProfiles/Project_Default.xml b/.idea/inspectionProfiles/Project_Default.xml
+--- a/.idea/inspectionProfiles/Project_Default.xml	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/.idea/inspectionProfiles/Project_Default.xml	(date 1632189061375)
+@@ -32,6 +32,5 @@
+       <option name="IGNORE_POINT_TO_ITSELF" value="false" />
+       <option name="myAdditionalJavadocTags" value="attr" />
+     </inspection_tool>
+-    <inspection_tool class="KDocMissingDocumentation" enabled="true" level="INFORMATION" enabled_by_default="true" />
+   </profile>
+ </component>
+\ No newline at end of file
+Index: .idea/gradle.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"GradleMigrationSettings\" migrationVersion=\"1\" />\n  <component name=\"GradleSettings\">\n    <option name=\"linkedExternalProjectsSettings\">\n      <GradleProjectSettings>\n        <option name=\"delegatedBuild\" value=\"false\" />\n        <option name=\"testRunner\" value=\"PLATFORM\" />\n        <option name=\"distributionType\" value=\"DEFAULT_WRAPPED\" />\n        <option name=\"externalProjectPath\" value=\"$PROJECT_DIR$\" />\n        <option name=\"modules\">\n          <set>\n            <option value=\"$PROJECT_DIR$\" />\n            <option value=\"$PROJECT_DIR$/app\" />\n          </set>\n        </option>\n        <option name=\"resolveModulePerSourceSet\" value=\"false\" />\n        <option name=\"useQualifiedModuleNames\" value=\"true\" />\n      </GradleProjectSettings>\n    </option>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/gradle.xml b/.idea/gradle.xml
+--- a/.idea/gradle.xml	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/.idea/gradle.xml	(date 1632189044817)
+@@ -4,10 +4,10 @@
+   <component name="GradleSettings">
+     <option name="linkedExternalProjectsSettings">
+       <GradleProjectSettings>
+-        <option name="delegatedBuild" value="false" />
+-        <option name="testRunner" value="PLATFORM" />
++        <option name="testRunner" value="GRADLE" />
+         <option name="distributionType" value="DEFAULT_WRAPPED" />
+         <option name="externalProjectPath" value="$PROJECT_DIR$" />
++        <option name="gradleJvm" value="11" />
+         <option name="modules">
+           <set>
+             <option value="$PROJECT_DIR$" />
+@@ -15,7 +15,6 @@
+           </set>
+         </option>
+         <option name="resolveModulePerSourceSet" value="false" />
+-        <option name="useQualifiedModuleNames" value="true" />
+       </GradleProjectSettings>
+     </option>
+   </component>
+Index: .idea/codeStyles/Project.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><component name=\"ProjectCodeStyleConfiguration\">\n  <code_scheme name=\"Project\" version=\"173\">\n    <JetCodeStyleSettings>\n      <option name=\"PACKAGES_TO_USE_STAR_IMPORTS\">\n        <value>\n          <package name=\"java.util\" alias=\"false\" withSubpackages=\"false\" />\n          <package name=\"kotlinx.android.synthetic\" alias=\"false\" withSubpackages=\"true\" />\n          <package name=\"io.ktor\" alias=\"false\" withSubpackages=\"true\" />\n        </value>\n      </option>\n      <option name=\"PACKAGES_IMPORT_LAYOUT\">\n        <value>\n          <package name=\"\" alias=\"false\" withSubpackages=\"true\" />\n          <package name=\"java\" alias=\"false\" withSubpackages=\"true\" />\n          <package name=\"javax\" alias=\"false\" withSubpackages=\"true\" />\n          <package name=\"kotlin\" alias=\"false\" withSubpackages=\"true\" />\n          <package name=\"\" alias=\"true\" withSubpackages=\"true\" />\n        </value>\n      </option>\n      <option name=\"CODE_STYLE_DEFAULTS\" value=\"KOTLIN_OFFICIAL\" />\n    </JetCodeStyleSettings>\n    <codeStyleSettings language=\"XML\">\n      <indentOptions>\n        <option name=\"CONTINUATION_INDENT_SIZE\" value=\"4\" />\n      </indentOptions>\n      <arrangement>\n        <rules>\n          <section>\n            <rule>\n              <match>\n                <AND>\n                  <NAME>xmlns:android</NAME>\n                  <XML_ATTRIBUTE />\n                  <XML_NAMESPACE>^$</XML_NAMESPACE>\n                </AND>\n              </match>\n            </rule>\n          </section>\n          <section>\n            <rule>\n              <match>\n                <AND>\n                  <NAME>xmlns:.*</NAME>\n                  <XML_ATTRIBUTE />\n                  <XML_NAMESPACE>^$</XML_NAMESPACE>\n                </AND>\n              </match>\n              <order>BY_NAME</order>\n            </rule>\n          </section>\n          <section>\n            <rule>\n              <match>\n                <AND>\n                  <NAME>.*:id</NAME>\n                  <XML_ATTRIBUTE />\n                  <XML_NAMESPACE>http://schemas.android.com/apk/res/android</XML_NAMESPACE>\n                </AND>\n              </match>\n            </rule>\n          </section>\n          <section>\n            <rule>\n              <match>\n                <AND>\n                  <NAME>.*:name</NAME>\n                  <XML_ATTRIBUTE />\n                  <XML_NAMESPACE>http://schemas.android.com/apk/res/android</XML_NAMESPACE>\n                </AND>\n              </match>\n            </rule>\n          </section>\n          <section>\n            <rule>\n              <match>\n                <AND>\n                  <NAME>name</NAME>\n                  <XML_ATTRIBUTE />\n                  <XML_NAMESPACE>^$</XML_NAMESPACE>\n                </AND>\n              </match>\n            </rule>\n          </section>\n          <section>\n            <rule>\n              <match>\n                <AND>\n                  <NAME>style</NAME>\n                  <XML_ATTRIBUTE />\n                  <XML_NAMESPACE>^$</XML_NAMESPACE>\n                </AND>\n              </match>\n            </rule>\n          </section>\n          <section>\n            <rule>\n              <match>\n                <AND>\n                  <NAME>.*</NAME>\n                  <XML_ATTRIBUTE />\n                  <XML_NAMESPACE>^$</XML_NAMESPACE>\n                </AND>\n              </match>\n              <order>BY_NAME</order>\n            </rule>\n          </section>\n          <section>\n            <rule>\n              <match>\n                <AND>\n                  <NAME>.*</NAME>\n                  <XML_ATTRIBUTE />\n                  <XML_NAMESPACE>http://schemas.android.com/apk/res/android</XML_NAMESPACE>\n                </AND>\n              </match>\n              <order>ANDROID_ATTRIBUTE_ORDER</order>\n            </rule>\n          </section>\n          <section>\n            <rule>\n              <match>\n                <AND>\n                  <NAME>.*</NAME>\n                  <XML_ATTRIBUTE />\n                  <XML_NAMESPACE>.*</XML_NAMESPACE>\n                </AND>\n              </match>\n              <order>BY_NAME</order>\n            </rule>\n          </section>\n        </rules>\n      </arrangement>\n    </codeStyleSettings>\n    <codeStyleSettings language=\"kotlin\">\n      <option name=\"CODE_STYLE_DEFAULTS\" value=\"KOTLIN_OFFICIAL\" />\n    </codeStyleSettings>\n  </code_scheme>\n</component>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/codeStyles/Project.xml b/.idea/codeStyles/Project.xml
+--- a/.idea/codeStyles/Project.xml	(revision d629b1d07a1de2525d31ae680dbd4322816d7383)
++++ b/.idea/codeStyles/Project.xml	(date 1632573043539)
+@@ -1,22 +1,6 @@
+ <component name="ProjectCodeStyleConfiguration">
+   <code_scheme name="Project" version="173">
+     <JetCodeStyleSettings>
+-      <option name="PACKAGES_TO_USE_STAR_IMPORTS">
+-        <value>
+-          <package name="java.util" alias="false" withSubpackages="false" />
+-          <package name="kotlinx.android.synthetic" alias="false" withSubpackages="true" />
+-          <package name="io.ktor" alias="false" withSubpackages="true" />
+-        </value>
+-      </option>
+-      <option name="PACKAGES_IMPORT_LAYOUT">
+-        <value>
+-          <package name="" alias="false" withSubpackages="true" />
+-          <package name="java" alias="false" withSubpackages="true" />
+-          <package name="javax" alias="false" withSubpackages="true" />
+-          <package name="kotlin" alias="false" withSubpackages="true" />
+-          <package name="" alias="true" withSubpackages="true" />
+-        </value>
+-      </option>
+       <option name="CODE_STYLE_DEFAULTS" value="KOTLIN_OFFICIAL" />
+     </JetCodeStyleSettings>
+     <codeStyleSettings language="XML">
