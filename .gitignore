@@ -13,6 +13,7 @@
 # android studio files
 /.idea/libraries
 /.idea/modules
+/.idea/vcs.xml
 *.iml
 
 # local config files
