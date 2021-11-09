@@ -78,6 +78,16 @@ Low priority
 
 ## DONE:
 
+Release 0.51:
+
+(November 9th)
+
+ - [ ] Larger artwork on currently playing screen
+ - [ ] Fix disappearing downloads
+ - [ ] Make "mark as watched" visible even if media not started
+ - [ ] Updates for open source release
+ - [ ] Fix completed books not appearing as completed
+
 Release 0.50:
 
 March 15th:
