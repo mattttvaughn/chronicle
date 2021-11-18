@@ -12,7 +12,7 @@ buildscript {
         moshiKotlinVersion = '1.11.0'
         okhttpVersion = '4.9.1'
         dataBindingCompilerVersion = gradleVersion // Always need to be the same.
-        roomVersion = "2.2.6"
+        roomVersion = "2.3.0"
         frescoVersion = "2.4.0"
         exoplayerVersion = "2.11.4"
         workVersion = '2.5.0'
@@ -63,6 +63,20 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+//groovy
+configurations.all {
+    resolutionStrategy.force "org.antlr:antlr4-runtime:4.7.1"
+    resolutionStrategy.force "org.antlr:antlr4-tool:4.7.1"
+}
+
+//kotlin DSL
+configurations.all {
+    resolutionStrategy {
+        force("org.antlr:antlr4-runtime:4.7.1")
+        force("org.antlr:antlr4-tool:4.7.1")
+    }
 }
 
 // Allow experimental kotlin features, like coroutines

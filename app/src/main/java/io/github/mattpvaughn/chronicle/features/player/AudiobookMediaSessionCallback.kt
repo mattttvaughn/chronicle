@@ -8,6 +8,7 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.text.format.DateUtils
 import android.view.KeyEvent
 import android.view.KeyEvent.*
+import android.widget.Toast
 import com.github.michaelbull.result.Ok
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
@@ -122,6 +123,13 @@ class AudiobookMediaSessionCallback @Inject constructor(
         currentPlayer.seekRelative(trackListStateManager, SKIP_BACKWARDS_DURATION_MS_SIGNED)
     }
 
+    private fun changeSpeed() {
+        changeSpeed(prefsRepo)
+        Timber.i("New Speed: %s", prefsRepo.playbackSpeed)
+        Toast.makeText(appContext, "New Speed: " + prefsRepo.playbackSpeed, Toast.LENGTH_SHORT)
+            .show()
+    }
+
     override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
         if (mediaButtonEvent == null) {
             return false
@@ -192,6 +200,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
             }
             SKIP_FORWARDS_STRING -> skipForwards()
             SKIP_BACKWARDS_STRING -> skipBackwards()
+            CHANGE_PLAYBACK_SPEED -> changeSpeed()
         }
     }
 

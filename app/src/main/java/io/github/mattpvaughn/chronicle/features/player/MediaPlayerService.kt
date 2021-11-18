@@ -201,7 +201,12 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         switchToPlayer(exoPlayer)
         exoPlayer.addListener(playerEventListener)
 
-        mediaSessionConnector.setCustomActionProviders(*makeCustomActionProviders(trackListManager))
+        mediaSessionConnector.setCustomActionProviders(
+            *makeCustomActionProviders(
+                trackListManager,
+                prefsRepo
+            )
+        )
         mediaSessionConnector.setQueueNavigator(queueNavigator)
         mediaSessionConnector.setPlaybackPreparer(playbackPreparer)
         mediaSessionConnector.setMediaButtonEventHandler { _, _, mediaButtonEvent ->
