@@ -8,11 +8,11 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.text.format.DateUtils
 import android.view.KeyEvent
 import android.view.KeyEvent.*
-import android.widget.Toast
 import com.github.michaelbull.result.Ok
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import io.github.mattpvaughn.chronicle.BuildConfig
@@ -49,6 +49,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val trackListStateManager: TrackListStateManager,
     private val foregroundServiceController: ForegroundServiceController,
     private val serviceController: ServiceController,
+    private val mediaSessionConnector: MediaSessionConnector,
     private val mediaSession: MediaSessionCompat,
     private val appContext: Context,
     private val currentlyPlaying: CurrentlyPlaying,
@@ -124,10 +125,8 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private fun changeSpeed() {
-        changeSpeed(prefsRepo)
+        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo)
         Timber.i("New Speed: %s", prefsRepo.playbackSpeed)
-        Toast.makeText(appContext, "New Speed: " + prefsRepo.playbackSpeed, Toast.LENGTH_SHORT)
-            .show()
     }
 
     override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
