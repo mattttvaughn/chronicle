@@ -12,6 +12,7 @@ import com.github.michaelbull.result.Ok
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import io.github.mattpvaughn.chronicle.BuildConfig
@@ -48,6 +49,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val trackListStateManager: TrackListStateManager,
     private val foregroundServiceController: ForegroundServiceController,
     private val serviceController: ServiceController,
+    private val mediaSessionConnector: MediaSessionConnector,
     private val mediaSession: MediaSessionCompat,
     private val appContext: Context,
     private val currentlyPlaying: CurrentlyPlaying,
@@ -122,6 +124,11 @@ class AudiobookMediaSessionCallback @Inject constructor(
         currentPlayer.seekRelative(trackListStateManager, SKIP_BACKWARDS_DURATION_MS_SIGNED)
     }
 
+    private fun changeSpeed() {
+        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo)
+        Timber.i("New Speed: %s", prefsRepo.playbackSpeed)
+    }
+
     override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
         if (mediaButtonEvent == null) {
             return false
@@ -192,6 +199,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
             }
             SKIP_FORWARDS_STRING -> skipForwards()
             SKIP_BACKWARDS_STRING -> skipBackwards()
+            CHANGE_PLAYBACK_SPEED -> changeSpeed()
         }
     }
 
