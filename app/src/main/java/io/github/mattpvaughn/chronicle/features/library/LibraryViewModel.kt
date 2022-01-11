@@ -118,7 +118,7 @@ class LibraryViewModel(
                 val descMultiplier = if (desc) 1 else -1
                 return@Comparator descMultiplier * when (key) {
                     SORT_KEY_AUTHOR -> book1.author.compareTo(book2.author)
-                    SORT_KEY_TITLE -> book1.titleSort.compareTo(book2.titleSort)
+                    SORT_KEY_TITLE -> sortTitleComparator(book1.titleSort, book2.titleSort)
                     SORT_KEY_PLAYS -> book2.viewedLeafCount.compareTo(book1.viewedLeafCount)
                     SORT_KEY_DURATION -> book2.duration.compareTo(book1.duration)
                     // Note: Reverse order for timestamps, because most recent should be at the top
@@ -168,6 +168,39 @@ class LibraryViewModel(
         }
     }
 
+    /** Compares Book titles using numerical ordering */
+    private fun sortTitleComparator(bookTitle1: String, bookTitle2: String): Int {
+        fun titleToArray(bookTitle: String): List<String> {
+            return bookTitle.split(Regex("(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)"))
+        }
+
+        val title1: Iterator<String> = titleToArray(bookTitle1).iterator()
+        val title2: Iterator<String> = titleToArray(bookTitle2).iterator()
+
+        while (true) {
+            val bool1: Boolean = title1.hasNext()
+            val bool2: Boolean = title2.hasNext()
+            if (!(bool1 || bool2)) {
+                return 0
+            }
+            if (!bool1) return -1
+            if (!bool2) return 1
+
+            val next1: String = title1.next()
+            val next2: String = title2.next()
+
+            try {
+                return when {
+                    next1.toInt() > next2.toInt() -> 1
+                    next1.toInt() < next2.toInt() -> -1
+                    else -> 0
+                }
+            } catch (e: NumberFormatException) {
+                val comp: Int = next1.compareTo(next2)
+                if (comp != 0) return comp
+            }
+        }
+    }
 
     fun setSearchActive(isSearchActive: Boolean) {
         _isSearchActive.postValue(isSearchActive)
