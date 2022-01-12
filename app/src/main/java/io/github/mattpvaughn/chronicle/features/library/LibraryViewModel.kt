@@ -190,11 +190,10 @@ class LibraryViewModel(
             val next2: String = title2.next()
 
             try {
-                return when {
-                    next1.toInt() > next2.toInt() -> 1
-                    next1.toInt() < next2.toInt() -> -1
-                    else -> 0
-                }
+                if (next1.toInt() > next2.toInt())
+                    return 1
+                else if (next1.toInt() < next2.toInt())
+                    return -1
             } catch (e: NumberFormatException) {
                 val comp: Int = next1.compareTo(next2)
                 if (comp != 0) return comp
