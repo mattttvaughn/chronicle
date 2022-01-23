@@ -48,7 +48,6 @@ class PlexSyncScrobbleWorker(
         val trackId = inputData.requireInt(TRACK_ID_ARG)
         val playbackState = inputData.requireString(TRACK_STATE_ARG)
         val trackProgress = inputData.requireLong(TRACK_POSITION_ARG)
-        val playbackTimeStamp = inputData.requireLong(PLAYBACK_TIME_STAMP)
         val bookProgress = inputData.requireLong(BOOK_PROGRESS)
         try {
             workerScope.launch(Injector.get().unhandledExceptionHandler()) {
@@ -64,7 +63,7 @@ class PlexSyncScrobbleWorker(
                     Injector.get().plexMediaService().progress(
                         ratingKey = trackId.toString(),
                         offset = trackProgress.toString(),
-                        playbackTime = playbackTimeStamp,
+                        playbackTime = trackProgress,
                         playQueueItemId = track.playQueueItemID,
                         key = "${MediaItemTrack.PARENT_KEY_PREFIX}$trackId",
                         // IMPORTANT: Plex normally marks as finished at 90% progress, but it
@@ -125,7 +124,6 @@ class PlexSyncScrobbleWorker(
         const val TRACK_ID_ARG = "Track ID"
         const val TRACK_STATE_ARG = "State"
         const val TRACK_POSITION_ARG = "Track position"
-        const val PLAYBACK_TIME_STAMP = "Original play time"
         const val BOOK_PROGRESS = "Book progress"
 
         fun makeWorkerData(
@@ -133,14 +131,12 @@ class PlexSyncScrobbleWorker(
             playbackState: String,
             trackProgress: Long,
             bookProgress: Long,
-            playbackTimeStamp: Long = System.currentTimeMillis()
         ): Data {
             require(trackId != TRACK_NOT_FOUND)
             return workDataOf(
                 TRACK_ID_ARG to trackId,
                 TRACK_POSITION_ARG to trackProgress,
                 TRACK_STATE_ARG to playbackState,
-                PLAYBACK_TIME_STAMP to playbackTimeStamp,
                 BOOK_PROGRESS to bookProgress
             )
         }
