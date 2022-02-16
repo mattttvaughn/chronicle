@@ -78,15 +78,19 @@ Low priority
 
 ## DONE:
 
+Release 0.51.1 (Feb 15):
+
+ - [X] Update billing library
+
 Release 0.51:
 
 (November 9th)
 
- - [ ] Larger artwork on currently playing screen
- - [ ] Fix disappearing downloads
- - [ ] Make "mark as watched" visible even if media not started
- - [ ] Updates for open source release
- - [ ] Fix completed books not appearing as completed
+ - [X] Larger artwork on currently playing screen
+ - [X] Fix disappearing downloads
+ - [X] Make "mark as watched" visible even if media not started
+ - [X] Updates for open source release
+ - [X] Fix completed books not appearing as completed
 
 Release 0.50:
 

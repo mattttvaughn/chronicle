@@ -46,7 +46,8 @@ class ChronicleBillingManager @Inject constructor(
                 Timber.i("Retrieved purchase list but it was empty or null: ${purchase.purchasesList}")
                 return
             }
-            val premiumSku = purchase.purchasesList!!.find { record -> record.sku == PREMIUM_IAP_SKU }
+            val premiumSku =
+                purchase.purchasesList!!.find { record -> PREMIUM_IAP_SKU in record.skus }
             if (premiumSku != null && premiumSku.purchaseState == PURCHASED) {
                 Timber.i("Found premium SKU in user's history: $premiumSku")
                 prefsRepo.premiumPurchaseToken = premiumSku.purchaseToken
