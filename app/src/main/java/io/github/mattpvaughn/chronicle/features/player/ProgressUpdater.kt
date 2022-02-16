@@ -159,7 +159,6 @@ class SimpleProgressUpdater @Inject constructor(
                     trackId,
                     playbackState,
                     trackProgress,
-                    currentTime,
                     bookProgress
                 )
             }
@@ -170,7 +169,6 @@ class SimpleProgressUpdater @Inject constructor(
         trackId: Int,
         playbackState: String,
         trackProgress: Long,
-        currentTime: Long,
         bookProgress: Long
     ) {
         val syncWorkerConstraints =
@@ -179,7 +177,6 @@ class SimpleProgressUpdater @Inject constructor(
             trackId = trackId,
             playbackState = playbackState,
             trackProgress = trackProgress,
-            playbackTimeStamp = currentTime,
             bookProgress = bookProgress
         )
         val worker = OneTimeWorkRequestBuilder<PlexSyncScrobbleWorker>()
