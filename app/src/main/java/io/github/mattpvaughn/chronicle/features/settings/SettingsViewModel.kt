@@ -555,6 +555,20 @@ class SettingsViewModel(
                 }),
             PreferenceModel(
                 type = PreferenceType.CLICKABLE,
+                title = FormattableString.from(R.string.settings_github_title),
+                explanation = FormattableString.from(R.string.settings_github_explanation),
+                click = object : PreferenceClick {
+                    override fun onClick() {
+                        _webLink.postEvent("https://github.com/mattttvaughn/chronicle")
+                    }
+                }),
+            PreferenceModel(
+                type = PreferenceType.CLICKABLE,
+                title = FormattableString.from(R.string.settings_version_title),
+                explanation = FormattableString.from(BuildConfig.VERSION_NAME),
+                ),
+            PreferenceModel(
+                type = PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_licenses_title),
                 explanation = FormattableString.from(R.string.settings_licenses_explanation),
                 click = object : PreferenceClick {

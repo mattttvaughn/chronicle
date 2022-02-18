@@ -3,11 +3,11 @@
 *.class
 
 # generated files
-/build
-/captures
-/bin
-/gen
-/target
+build/
+captures/
+bin/
+gen/
+target/
 
 # android studio files
 /.idea/libraries
@@ -17,14 +17,25 @@
 
 # local config files
 .gradle
-/local.properties
+local.properties
 build.xml
 
 # etc
-.DS_Store
 .externalNativeBuild
 .cxx
 *.swp
 *.un~
 .*.un~
 *.keystore
+
+# OS Generated Files
+*~
+._*
+.DS_Store
+.DS_Store?
+.Spotlight-V100
+.Trashes
+Desktop.ini
+ehthumbs.db
+Icon?
+Thumbs.db
