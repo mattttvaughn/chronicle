@@ -226,6 +226,8 @@
     <string name="settings_licenses_explanation">Open source libraries used by Chronicle</string>
     <string name="settings_subreddit_title">reddit.com/r/ChronicleApp</string>
     <string name="settings_subreddit_explanation">Share bug reports, request features, and learn what\'s coming next in Chronicle</string>
+    <string name="settings_github_title">github.com/mattttvaughn/chronicle</string>
+    <string name="settings_github_explanation">Chronicle is open source!</string>
     <string name="settings_clear_downloads_warning">This will delete your downloaded files. Continue?</string>
     <string name="settings_shake_to_snooze_title">Shake to snooze</string>
     <string name="settings_shake_to_snooze_explanation">Shaking device will snooze sleep timer by 5 minutes</string>
@@ -257,6 +259,7 @@
     <string name="pin">Pin</string>
     <string name="playback_error_unknown">Unknown playback error</string>
     <string name="toggle_watched">Toggle Watched</string>
+    <string name="settings_version_title">Version information</string>
 
 
 </resources>
