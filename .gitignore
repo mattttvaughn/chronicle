@@ -10,9 +10,7 @@ gen/
 target/
 
 # android studio files
-/.idea/libraries
-/.idea/modules
-/.idea/vcs.xml
+.idea/
 *.iml
 
 # local config files

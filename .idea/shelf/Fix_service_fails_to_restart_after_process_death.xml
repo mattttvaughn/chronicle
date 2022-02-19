@@ -1,4 +1,0 @@
-<changelist name="Fix_service_fails_to_restart_after_process_death" date="1627144819336" recycled="false">
-  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Fix_service_fails_to_restart_after_process_death/shelved.patch" />
-  <option name="DESCRIPTION" value="Fix service fails to restart after process death" />
-</changelist>
