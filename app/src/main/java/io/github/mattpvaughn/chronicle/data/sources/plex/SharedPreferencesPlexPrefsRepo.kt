@@ -20,6 +20,9 @@ interface PlexPrefsRepo {
      */
     var accountAuthToken: String
 
+    // TODO: exposes the most privileged token we currently have access to (via new class/func-
+    //       wouldn't be appropriate to use this class for it)
+
     /** The active user profile */
     var user: PlexUser?
 
