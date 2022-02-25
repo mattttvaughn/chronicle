@@ -78,6 +78,10 @@ Low priority
 
 ## DONE:
 
+Release 0.52.2 (Feb 25):
+
+ - [X] Fix broken login for single-user accounts
+
 Release 0.51.1 (Feb 15):
 
  - [X] Update billing library

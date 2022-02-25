@@ -91,7 +91,6 @@ class PlexLoginRepo @Inject constructor(
     }
 
     override fun chooseUser(responseUser: PlexUser) {
-        check(!responseUser.authToken.isNullOrEmpty())
         plexPrefsRepo.user = responseUser
         _loginState.postEvent(LOGGED_IN_NO_SERVER_CHOSEN)
     }
