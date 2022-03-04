@@ -286,8 +286,8 @@ class LibraryViewModel(
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             try {
                 _isRefreshing.postValue(true)
-                bookRepository.refreshData()
-                trackRepository.refreshData()
+                bookRepository.refreshDataPaginated()
+                trackRepository.refreshDataPaginated()
             } catch (e: Throwable) {
                 _messageForUser.postEvent("Failed to refresh data")
             } finally {
