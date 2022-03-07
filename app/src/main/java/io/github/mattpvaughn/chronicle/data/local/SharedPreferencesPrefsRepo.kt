@@ -223,7 +223,7 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
 
     private val defaultIsPremium = false
     override val isPremium: Boolean
-        get() = sharedPreferences.getBoolean(KEY_IS_PREMIUM, defaultIsPremium) || BuildConfig.DEBUG
+        get() = true
 
     private val defaultPremiumToken = NO_PREMIUM_TOKEN
     override var premiumPurchaseToken: String
