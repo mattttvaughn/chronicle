@@ -8,6 +8,7 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.text.format.DateUtils
 import android.view.KeyEvent
 import android.view.KeyEvent.*
+import androidx.lifecycle.Observer
 import com.github.michaelbull.result.Ok
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
@@ -31,6 +32,7 @@ import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Compan
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_TRACK_OFFSET
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_SAVED_TRACK_PROGRESS
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
+import io.github.mattpvaughn.chronicle.util.observeOnce
 import kotlinx.coroutines.*
 import timber.log.Timber
 import javax.inject.Inject
@@ -249,7 +251,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
                 trackRepository.getTracksForAudiobookAsync(bookId.toInt())
             }
             if (tracks.isNullOrEmpty()) {
-                handlePlayBookWithNoTracks(bookId, tracks, extras)
+                handlePlayBookWithNoTracks(bookId, tracks, extras, playWhenReady)
                 return@launch
             }
 
@@ -344,7 +346,8 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private suspend fun handlePlayBookWithNoTracks(
         bookId: String,
         tracks: List<MediaItemTrack>,
-        extras: Bundle
+        extras: Bundle,
+        playWhenReady: Boolean
     ) {
         Timber.i("No known tracks for book: $bookId, attempting to fetch them")
         // Tracks haven't been loaded by UI for this track, so load it here
@@ -362,7 +365,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
             if (audiobook != null) {
                 bookRepository.syncAudiobook(audiobook, tracks)
             }
-            playBook(bookId, extras, true)
+            playBook(bookId, extras, playWhenReady)
         }
     }
 
@@ -384,26 +387,31 @@ class AudiobookMediaSessionCallback @Inject constructor(
      * refreshing data.
      */
     private fun resumePlayFromEmpty(playWhenReady: Boolean) {
-        // This is ugly but the callback shares the lifecycle of the service, so as long as the
-        // method is only called once we're okay...
-        plexConfig.isConnected.observeForever {
-            // Don't try starting playback until we've connected to a server
-            if (!it) {
-                return@observeForever
-            }
-
-            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                val mostRecentBook = bookRepository.getMostRecentlyPlayed()
-                if (mostRecentBook == EMPTY_AUDIOBOOK) {
-                    return@launch
+        val connectedObserver = object : Observer<Boolean> {
+            override fun onChanged(isConnected: Boolean) {
+                // Don't try starting playback until we've connected to a server
+                if (!isConnected) {
+                    return
                 }
-                if (playWhenReady) {
-                    onPlayFromMediaId(mostRecentBook.id.toString(), null)
-                } else {
-                    onPrepareFromMediaId(mostRecentBook.id.toString(), null)
+
+                // Only run these resume methods once after reconnecting
+                plexConfig.isConnected.removeObserver(this)
+
+                serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+                    val mostRecentBook = bookRepository.getMostRecentlyPlayed()
+                    if (mostRecentBook == EMPTY_AUDIOBOOK) {
+                        return@launch
+                    }
+                    if (playWhenReady) {
+                        onPlayFromMediaId(mostRecentBook.id.toString(), null)
+                    } else {
+                        onPrepareFromMediaId(mostRecentBook.id.toString(), null)
+                    }
                 }
             }
         }
+
+        plexConfig.isConnected.observeForever(connectedObserver)
     }
 
     // Kill the playback service when stop() is called, so Service can be recreated when needed
