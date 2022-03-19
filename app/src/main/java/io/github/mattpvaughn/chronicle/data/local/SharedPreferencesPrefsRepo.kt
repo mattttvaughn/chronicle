@@ -221,7 +221,7 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         get() = sharedPreferences.getBoolean(KEY_ALLOW_AUTO, defaultAllowAuto)
         set(value) = sharedPreferences.edit().putBoolean(KEY_ALLOW_AUTO, value).apply()
 
-    private val defaultIsPremium = false
+    private val defaultIsPremium = true
     override val isPremium: Boolean
         get() = true
 
