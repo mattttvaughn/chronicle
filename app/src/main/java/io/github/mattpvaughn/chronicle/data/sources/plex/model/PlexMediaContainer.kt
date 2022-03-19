@@ -17,7 +17,9 @@ data class PlexMediaContainer(
     val metadata: List<PlexDirectory> = emptyList(),
     val mediaProvider: MediaProvider? = null,
     val devices: List<PlexServer> = emptyList(),
-    val size: Long = 0
+    val size: Long = 0,
+    val totalSize: Long = 0,
+    val offset: Long = 0
 )
 
 @JsonClass(generateAdapter = true)

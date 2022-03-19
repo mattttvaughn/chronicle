@@ -45,6 +45,13 @@ interface PlexMediaService {
         @Path("libraryId") libraryId: String
     ): PlexMediaContainerWrapper
 
+    @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_ALBUM")
+    suspend fun retrieveAlbumPage(
+        @Path("libraryId") libraryId: String,
+        @Query("X-Plex-Container-Start") containerStart: Int = 0,
+        @Query("X-Plex-Container-Size") containerSize: Int = 100,
+    ): PlexMediaContainerWrapper
+
     @GET("/library/metadata/{trackId}")
     suspend fun retrieveChapterInfo(
         @Path("trackId") trackId: Int,
@@ -121,5 +128,12 @@ interface PlexMediaService {
     /** Loads all [MediaType.TRACK]s available in the server */
     @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_TRACK")
     suspend fun retrieveAllTracksInLibrary(@Path("libraryId") libraryId: String): PlexMediaContainerWrapper
+
+    @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_TRACK")
+    suspend fun retrieveTracksPaginated(
+        @Path("libraryId") libraryId: String,
+        @Query("X-Plex-Container-Start") containerStart: Int = 0,
+        @Query("X-Plex-Container-Size") containerSize: Int = 100,
+    ): PlexMediaContainerWrapper
 }
 
