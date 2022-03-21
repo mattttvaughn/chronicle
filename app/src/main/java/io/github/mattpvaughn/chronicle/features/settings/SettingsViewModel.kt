@@ -405,6 +405,57 @@ class SettingsViewModel(
                 defaultValue = prefsRepo.pauseOnFocusLost
             ),
             PreferenceModel(
+                type = PreferenceType.CLICKABLE,
+                title = FormattableString.ResourceString(
+                    stringRes = R.string.settings_jump_forward_value,
+                    // feels gross
+                    placeHolderStrings = listOf(
+                        when {
+                            prefsRepo.jumpForwardSeconds > 0 -> {
+                                "${prefsRepo.jumpForwardSeconds} " + Injector.get()
+                                    .applicationContext().resources.getString(R.string.seconds)
+                            }
+                            else -> throw NoWhenBranchMatchedException()
+                        }
+                    )
+                ),
+                explanation = FormattableString.from(R.string.settings_jump_forward_explanation),
+                click = object : PreferenceClick {
+                    override fun onClick() {
+                        showOptionsMenu(
+                            options = listOf(
+                                FormattableString.from(R.string.settings_jump_forward_10_seconds),
+                                FormattableString.from(R.string.settings_jump_forward_15_seconds),
+                                FormattableString.from(R.string.settings_jump_forward_20_seconds),
+                                FormattableString.from(R.string.settings_jump_forward_30_seconds),
+                                FormattableString.from(R.string.settings_jump_forward_60_seconds),
+                                FormattableString.from(R.string.settings_jump_forward_90_seconds)
+                            ),
+                            title = FormattableString.from(R.string.settings_jump_forward_title),
+                            listener = object : BottomChooserItemListener() {
+                                override fun onItemClicked(formattableString: FormattableString) {
+                                    check(formattableString is FormattableString.ResourceString)
+                                    when (formattableString.stringRes) {
+                                        R.string.settings_jump_forward_10_seconds -> prefsRepo.jumpForwardSeconds =
+                                            10L
+                                        R.string.settings_jump_forward_15_seconds -> prefsRepo.jumpForwardSeconds =
+                                            15L
+                                        R.string.settings_jump_forward_20_seconds -> prefsRepo.jumpForwardSeconds =
+                                            20L
+                                        R.string.settings_jump_forward_30_seconds -> prefsRepo.jumpForwardSeconds =
+                                            30L
+                                        R.string.settings_jump_forward_60_seconds -> prefsRepo.jumpForwardSeconds =
+                                            60L
+                                        R.string.settings_jump_forward_90_seconds -> prefsRepo.jumpForwardSeconds =
+                                            90L
+                                        else -> throw NoWhenBranchMatchedException("Unknown item: ${formattableString.stringRes}")
+                                    }
+                                    setBottomSheetVisibility(false)
+                                }
+                            })
+                    }
+                }),
+            PreferenceModel(
                 PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_account)
             ),

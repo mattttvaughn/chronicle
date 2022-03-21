@@ -19,6 +19,7 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PAUSE_
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PLAYBACK_SPEED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PREMIUM_TOKEN
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_REFRESH_RATE
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_JUMP_FORWARD_SECONDS
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SHAKE_TO_SNOOZE_ENABLED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SKIP_SILENCE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SYNC_DIR_PATH
@@ -71,6 +72,9 @@ interface PrefsRepo {
     /** The minimum number of minutes between data refreshes*/
     var refreshRateMinutes: Long
 
+    /** The time interval to jump forward in the player view.*/
+    var jumpForwardSeconds: Long
+
     /** The user's IAP token returned in a [Purchase] upon paying for an upgrade to premium */
     var premiumPurchaseToken: String
 
@@ -117,6 +121,7 @@ interface PrefsRepo {
         const val KEY_OFFLINE_MODE = "key_offline_mode"
         const val KEY_LAST_REFRESH = "key_last_refresh"
         const val KEY_REFRESH_RATE = "key_refresh_rate"
+        const val KEY_JUMP_FORWARD_SECONDS = "key_jump_forward_seconds"
         const val KEY_PLAYBACK_SPEED = "key_playback_speed"
         const val KEY_DEBUG_DISABLE_PROGRESS = "debug_key_disable_local_progress"
         const val KEY_SKIP_SILENCE = "key_skip_silence"
@@ -190,6 +195,11 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
     override var refreshRateMinutes: Long
         get() = sharedPreferences.getLong(KEY_REFRESH_RATE, defaultRefreshRate)
         set(value) = sharedPreferences.edit().putLong(KEY_REFRESH_RATE, value).apply()
+
+    private val defaultJumpForwardSeconds = 30L
+    override var jumpForwardSeconds: Long
+        get() = sharedPreferences.getLong(KEY_JUMP_FORWARD_SECONDS, defaultJumpForwardSeconds)
+        set(value) = sharedPreferences.edit().putLong(KEY_JUMP_FORWARD_SECONDS, value).apply()
 
     private val defaultPlaybackSpeed = 1.0f
     override var playbackSpeed: Float

@@ -118,7 +118,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
 
     private fun skipForwards() {
         Timber.i("Track manager is $trackListStateManager")
-        currentPlayer.seekRelative(trackListStateManager, SKIP_FORWARDS_DURATION_MS_SIGNED)
+        currentPlayer.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * 1000)
     }
 
     private fun skipBackwards() {

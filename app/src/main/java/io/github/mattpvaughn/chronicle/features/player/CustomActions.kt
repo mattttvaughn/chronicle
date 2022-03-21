@@ -26,8 +26,8 @@ fun makeCustomActionProviders(
         SimpleCustomActionProvider(SKIP_BACKWARDS) { player: Player, _: String, _: Bundle? ->
             player.seekRelative(trackListStateManager, SKIP_BACKWARDS_DURATION_MS_SIGNED)
         },
-        SimpleCustomActionProvider(SKIP_FORWARDS) { player: Player, _: String, _: Bundle? ->
-            player.seekRelative(trackListStateManager, SKIP_FORWARDS_DURATION_MS_SIGNED)
+        SimpleCustomActionProvider(makeSkipForward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
+            player.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds)
         },
         SimpleCustomActionProvider(makeChangeSpeed(prefsRepo)) { player: Player, _: String, _: Bundle? ->
             changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo)
@@ -61,15 +61,38 @@ fun changeSpeed(
     )
 }
 
-const val SKIP_FORWARDS_DURATION_MS_SIGNED = 30000L
+// const val SKIP_FORWARDS_DURATION_MS_SIGNED = 30000L
 const val SKIP_BACKWARDS_DURATION_MS_SIGNED = -10000L
 
 const val SKIP_FORWARDS_STRING = "Skip forwards"
+/*
 val SKIP_FORWARDS: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
     SKIP_FORWARDS_STRING,
     SKIP_FORWARDS_STRING,
     R.drawable.ic_forward_30_white
 ).build()
+*/
+
+fun makeSkipForward(
+    prefsRepo: PrefsRepo
+): PlaybackStateCompat.CustomAction {
+    val drawable: Int = when (prefsRepo.jumpForwardSeconds) {
+        10L -> R.drawable.ic_forward_5_white
+        15L -> R.drawable.ic_replay_10_white
+        20L -> R.drawable.ic_forward_30_white
+        30L -> R.drawable.ic_forward_30_white
+        60L -> R.drawable.ic_forward_30_white
+        90L -> R.drawable.ic_forward_30_white
+        else -> R.drawable.ic_search_white
+    }
+    return PlaybackStateCompat.CustomAction.Builder(
+        SKIP_FORWARDS_STRING,
+        SKIP_FORWARDS_STRING,
+        drawable
+    ).build()
+}
+
+
 
 const val SKIP_BACKWARDS_STRING = "Skip backwards"
 val SKIP_BACKWARDS: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
