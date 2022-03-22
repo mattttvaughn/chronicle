@@ -424,32 +424,85 @@ class SettingsViewModel(
                     override fun onClick() {
                         showOptionsMenu(
                             options = listOf(
-                                FormattableString.from(R.string.settings_jump_forward_10_seconds),
-                                FormattableString.from(R.string.settings_jump_forward_15_seconds),
-                                FormattableString.from(R.string.settings_jump_forward_20_seconds),
-                                FormattableString.from(R.string.settings_jump_forward_30_seconds),
-                                FormattableString.from(R.string.settings_jump_forward_60_seconds),
-                                FormattableString.from(R.string.settings_jump_forward_90_seconds)
+                                FormattableString.from(R.string.settings_jump_10_seconds),
+                                FormattableString.from(R.string.settings_jump_15_seconds),
+                                FormattableString.from(R.string.settings_jump_20_seconds),
+                                FormattableString.from(R.string.settings_jump_30_seconds),
+                                FormattableString.from(R.string.settings_jump_60_seconds),
+                                FormattableString.from(R.string.settings_jump_90_seconds)
                             ),
                             title = FormattableString.from(R.string.settings_jump_forward_title),
                             listener = object : BottomChooserItemListener() {
                                 override fun onItemClicked(formattableString: FormattableString) {
                                     check(formattableString is FormattableString.ResourceString)
                                     when (formattableString.stringRes) {
-                                        R.string.settings_jump_forward_10_seconds -> prefsRepo.jumpForwardSeconds =
+                                        R.string.settings_jump_10_seconds -> prefsRepo.jumpForwardSeconds =
                                             10L
-                                        R.string.settings_jump_forward_15_seconds -> prefsRepo.jumpForwardSeconds =
+                                        R.string.settings_jump_15_seconds -> prefsRepo.jumpForwardSeconds =
                                             15L
-                                        R.string.settings_jump_forward_20_seconds -> prefsRepo.jumpForwardSeconds =
+                                        R.string.settings_jump_20_seconds -> prefsRepo.jumpForwardSeconds =
                                             20L
-                                        R.string.settings_jump_forward_30_seconds -> prefsRepo.jumpForwardSeconds =
+                                        R.string.settings_jump_30_seconds -> prefsRepo.jumpForwardSeconds =
                                             30L
-                                        R.string.settings_jump_forward_60_seconds -> prefsRepo.jumpForwardSeconds =
+                                        R.string.settings_jump_60_seconds -> prefsRepo.jumpForwardSeconds =
                                             60L
-                                        R.string.settings_jump_forward_90_seconds -> prefsRepo.jumpForwardSeconds =
+                                        R.string.settings_jump_90_seconds -> prefsRepo.jumpForwardSeconds =
                                             90L
                                         else -> throw NoWhenBranchMatchedException("Unknown item: ${formattableString.stringRes}")
                                     }
+                                    // todo: update UI → change ImageView?
+                                    setBottomSheetVisibility(false)
+                                }
+                            })
+                    }
+                }),
+            PreferenceModel(
+                type = PreferenceType.CLICKABLE,
+                title = FormattableString.ResourceString(
+                    stringRes = R.string.settings_jump_backward_value,
+                    // feels gross
+                    placeHolderStrings = listOf(
+                        when {
+                            prefsRepo.jumpBackwardSeconds > 0 -> {
+                                "${prefsRepo.jumpBackwardSeconds} " + Injector.get()
+                                    .applicationContext().resources.getString(R.string.seconds)
+                            }
+                            else -> throw NoWhenBranchMatchedException()
+                        }
+                    )
+                ),
+                explanation = FormattableString.from(R.string.settings_jump_backward_explanation),
+                click = object : PreferenceClick {
+                    override fun onClick() {
+                        showOptionsMenu(
+                            options = listOf(
+                                FormattableString.from(R.string.settings_jump_10_seconds),
+                                FormattableString.from(R.string.settings_jump_15_seconds),
+                                FormattableString.from(R.string.settings_jump_20_seconds),
+                                FormattableString.from(R.string.settings_jump_30_seconds),
+                                FormattableString.from(R.string.settings_jump_60_seconds),
+                                FormattableString.from(R.string.settings_jump_90_seconds)
+                            ),
+                            title = FormattableString.from(R.string.settings_jump_backward_title),
+                            listener = object : BottomChooserItemListener() {
+                                override fun onItemClicked(formattableString: FormattableString) {
+                                    check(formattableString is FormattableString.ResourceString)
+                                    when (formattableString.stringRes) {
+                                        R.string.settings_jump_10_seconds -> prefsRepo.jumpBackwardSeconds =
+                                            10L
+                                        R.string.settings_jump_15_seconds -> prefsRepo.jumpBackwardSeconds =
+                                            15L
+                                        R.string.settings_jump_20_seconds -> prefsRepo.jumpBackwardSeconds =
+                                            20L
+                                        R.string.settings_jump_30_seconds -> prefsRepo.jumpBackwardSeconds =
+                                            30L
+                                        R.string.settings_jump_60_seconds -> prefsRepo.jumpBackwardSeconds =
+                                            60L
+                                        R.string.settings_jump_90_seconds -> prefsRepo.jumpBackwardSeconds =
+                                            90L
+                                        else -> throw NoWhenBranchMatchedException("Unknown item: ${formattableString.stringRes}")
+                                    }
+                                    // todo: update UI → change ImageView?
                                     setBottomSheetVisibility(false)
                                 }
                             })

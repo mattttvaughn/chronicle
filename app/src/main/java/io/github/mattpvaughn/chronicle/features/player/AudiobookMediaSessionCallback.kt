@@ -18,6 +18,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
@@ -118,12 +119,12 @@ class AudiobookMediaSessionCallback @Inject constructor(
 
     private fun skipForwards() {
         Timber.i("Track manager is $trackListStateManager")
-        currentPlayer.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * 1000)
+        currentPlayer.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
     }
 
     private fun skipBackwards() {
         Timber.i("Track manager is $trackListStateManager")
-        currentPlayer.seekRelative(trackListStateManager, SKIP_BACKWARDS_DURATION_MS_SIGNED)
+        currentPlayer.seekRelative(trackListStateManager, prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1)
     }
 
     private fun changeSpeed() {

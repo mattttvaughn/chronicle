@@ -11,7 +11,9 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector.CustomActionProvider
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
+import timber.log.Timber
 
 
 /**
@@ -23,17 +25,16 @@ fun makeCustomActionProviders(
     prefsRepo: PrefsRepo
 ): Array<CustomActionProvider> {
     return arrayOf(
-        SimpleCustomActionProvider(SKIP_BACKWARDS) { player: Player, _: String, _: Bundle? ->
-            player.seekRelative(trackListStateManager, SKIP_BACKWARDS_DURATION_MS_SIGNED)
+        SimpleCustomActionProvider(makeSkipBackward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
+            player.seekRelative(trackListStateManager, prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1)
         },
         SimpleCustomActionProvider(makeSkipForward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
-            player.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds)
+            player.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
         },
         SimpleCustomActionProvider(makeChangeSpeed(prefsRepo)) { player: Player, _: String, _: Bundle? ->
             changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo)
         }
     )
-
 }
 
 fun changeSpeed(
@@ -61,29 +62,19 @@ fun changeSpeed(
     )
 }
 
-// const val SKIP_FORWARDS_DURATION_MS_SIGNED = 30000L
-const val SKIP_BACKWARDS_DURATION_MS_SIGNED = -10000L
-
 const val SKIP_FORWARDS_STRING = "Skip forwards"
-/*
-val SKIP_FORWARDS: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
-    SKIP_FORWARDS_STRING,
-    SKIP_FORWARDS_STRING,
-    R.drawable.ic_forward_30_white
-).build()
-*/
 
 fun makeSkipForward(
     prefsRepo: PrefsRepo
 ): PlaybackStateCompat.CustomAction {
     val drawable: Int = when (prefsRepo.jumpForwardSeconds) {
-        10L -> R.drawable.ic_forward_5_white
-        15L -> R.drawable.ic_replay_10_white
-        20L -> R.drawable.ic_forward_30_white
+        10L -> R.drawable.ic_forward_10_white
+        15L -> R.drawable.ic_forward_15_white
+        20L -> R.drawable.ic_forward_20_white
         30L -> R.drawable.ic_forward_30_white
-        60L -> R.drawable.ic_forward_30_white
-        90L -> R.drawable.ic_forward_30_white
-        else -> R.drawable.ic_search_white
+        60L -> R.drawable.ic_forward_60_white
+        90L -> R.drawable.ic_forward_90_white
+        else -> R.drawable.ic_forward_30_white
     }
     return PlaybackStateCompat.CustomAction.Builder(
         SKIP_FORWARDS_STRING,
@@ -92,14 +83,26 @@ fun makeSkipForward(
     ).build()
 }
 
-
-
 const val SKIP_BACKWARDS_STRING = "Skip backwards"
-val SKIP_BACKWARDS: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
-    SKIP_BACKWARDS_STRING,
-    SKIP_BACKWARDS_STRING,
-    R.drawable.ic_replay_10_white
-).build()
+
+fun makeSkipBackward(
+    prefsRepo: PrefsRepo
+): PlaybackStateCompat.CustomAction {
+    val drawable: Int = when (prefsRepo.jumpBackwardSeconds) {
+        10L -> R.drawable.ic_replay_10_white
+        15L -> R.drawable.ic_replay_15_white
+        20L -> R.drawable.ic_replay_20_white
+        30L -> R.drawable.ic_replay_30_white
+        60L -> R.drawable.ic_replay_60_white
+        90L -> R.drawable.ic_replay_90_white
+        else -> R.drawable.ic_replay_30_white
+    }
+    return PlaybackStateCompat.CustomAction.Builder(
+        SKIP_BACKWARDS_STRING,
+        SKIP_BACKWARDS_STRING,
+        drawable
+    ).build()
+}
 
 const val CHANGE_PLAYBACK_SPEED = "Change Speed"
 

@@ -63,12 +63,15 @@ class NotificationBuilder @Inject constructor(
         MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE)
     )
     private val skipForwardsAction = NotificationCompat.Action(
-        R.drawable.ic_forward_30_white,
+        R.drawable.ic_forward_white,
+        // TODO: Access prefsRepo.jumpBackwardSeconds for custom icon
         context.getString(R.string.skip_forwards),
         makePendingIntent(mediaSkipForwardCode)
     )
+
     private val skipBackwardsAction = NotificationCompat.Action(
-        R.drawable.ic_replay_10_white,
+        R.drawable.ic_replay_white,
+        // TODO: Access prefsRepo.jumpBackwardSeconds for custom icon
         context.getString(R.string.skip_backwards),
         makePendingIntent(mediaSkipBackwardCode)
     )

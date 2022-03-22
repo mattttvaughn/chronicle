@@ -347,11 +347,19 @@ class CurrentlyPlayingViewModel(
 
     fun skipForwards() {
         // seekRelative(SKIP_FORWARDS, SKIP_FORWARDS_DURATION_MS_SIGNED)
-        seekRelative(makeSkipForward(prefsRepo), prefsRepo.jumpForwardSeconds * 1000)
+        seekRelative(makeSkipForward(prefsRepo), prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
+    }
+
+    fun getJumpForwardSeconds() : Long {
+        return prefsRepo.jumpForwardSeconds
+    }
+
+    fun getJumpBackwardSeconds() : Long {
+        return prefsRepo.jumpBackwardSeconds
     }
 
     fun skipBackwards() {
-        seekRelative(SKIP_BACKWARDS, SKIP_BACKWARDS_DURATION_MS_SIGNED)
+        seekRelative(makeSkipBackward(prefsRepo), prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1)
     }
 
     private fun seekRelative(action: PlaybackStateCompat.CustomAction, offset: Long) {
