@@ -12,7 +12,6 @@ import android.text.format.DateUtils
 import androidx.lifecycle.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.michaelbull.result.Ok
-import com.google.android.exoplayer2.Player
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
@@ -346,7 +345,6 @@ class CurrentlyPlayingViewModel(
     }
 
     fun skipForwards() {
-        // seekRelative(SKIP_FORWARDS, SKIP_FORWARDS_DURATION_MS_SIGNED)
         seekRelative(makeSkipForward(prefsRepo), prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
     }
 
@@ -354,12 +352,12 @@ class CurrentlyPlayingViewModel(
         return prefsRepo.jumpForwardSeconds
     }
 
-    fun getJumpBackwardSeconds() : Long {
-        return prefsRepo.jumpBackwardSeconds
-    }
-
     fun skipBackwards() {
         seekRelative(makeSkipBackward(prefsRepo), prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1)
+    }
+
+    fun getJumpBackwardSeconds() : Long {
+        return prefsRepo.jumpBackwardSeconds
     }
 
     private fun seekRelative(action: PlaybackStateCompat.CustomAction, offset: Long) {
