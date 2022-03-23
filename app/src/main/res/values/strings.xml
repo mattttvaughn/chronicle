@@ -162,6 +162,9 @@
     <string name="sleep_timer_duration_15_minutes">15 minutes</string>
     <string name="sleep_timer_duration_30_minutes">30 minutes</string>
     <string name="sleep_timer_duration_40_minutes">40 minutes</string>
+    <string name="sleep_timer_duration_60_minutes">60 minutes</string>
+    <string name="sleep_timer_duration_90_minutes">90 minutes</string>
+    <string name="sleep_timer_duration_120_minutes">120 minutes</string>
     <string name="sleep_timer_duration_end_of_chapter">End of chapter</string>
     <string name="sleep_timer_append">+5 minutes</string>
     <string name="cancel">Cancel</string>

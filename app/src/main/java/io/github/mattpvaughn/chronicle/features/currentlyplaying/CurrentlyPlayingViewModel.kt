@@ -446,6 +446,9 @@ class CurrentlyPlayingViewModel(
                 FormattableString.from(R.string.sleep_timer_duration_15_minutes),
                 FormattableString.from(R.string.sleep_timer_duration_30_minutes),
                 FormattableString.from(R.string.sleep_timer_duration_40_minutes),
+                FormattableString.from(R.string.sleep_timer_duration_60_minutes),
+                FormattableString.from(R.string.sleep_timer_duration_90_minutes),
+                FormattableString.from(R.string.sleep_timer_duration_120_minutes),
                 FormattableString.from(R.string.sleep_timer_duration_end_of_chapter)
             )
         }
@@ -468,6 +471,18 @@ class CurrentlyPlayingViewModel(
                     }
                     R.string.sleep_timer_duration_40_minutes -> {
                         val duration = 40 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                        BEGIN to duration
+                    }
+                    R.string.sleep_timer_duration_60_minutes -> {
+                        val duration = 60 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                        BEGIN to duration
+                    }
+                    R.string.sleep_timer_duration_90_minutes -> {
+                        val duration = 90 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                        BEGIN to duration
+                    }
+                    R.string.sleep_timer_duration_120_minutes -> {
+                        val duration = 120 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
                         BEGIN to duration
                     }
                     R.string.sleep_timer_duration_end_of_chapter -> {
