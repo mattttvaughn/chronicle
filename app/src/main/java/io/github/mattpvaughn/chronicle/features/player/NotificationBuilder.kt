@@ -65,7 +65,7 @@ class NotificationBuilder @Inject constructor(
         MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE)
     )
 
-    private fun getJumpForwardIcon() : Int {
+    private fun makeJumpForwardsIcon() : Int {
         return when (prefsRepo.jumpForwardSeconds) {
             10L -> R.drawable.ic_forward_10_white
             15L -> R.drawable.ic_forward_15_white
@@ -77,13 +77,14 @@ class NotificationBuilder @Inject constructor(
         }
     }
 
-    private val skipForwardsAction = NotificationCompat.Action(
-        getJumpForwardIcon(),
+    var _jumpForwardSeconds = prefsRepo.jumpForwardSeconds
+    private var skipForwardsAction = NotificationCompat.Action(
+        makeJumpForwardsIcon(),
         context.getString(R.string.skip_forwards),
         makePendingIntent(mediaSkipForwardCode)
     )
 
-    private fun getJumpBackwardIcon() : Int {
+    private fun makeJumpBackwardsIcon() : Int {
         return when (prefsRepo.jumpBackwardSeconds) {
             10L -> R.drawable.ic_replay_10_white
             15L -> R.drawable.ic_replay_15_white
@@ -95,8 +96,9 @@ class NotificationBuilder @Inject constructor(
         }
     }
 
-    private val skipBackwardsAction = NotificationCompat.Action(
-        getJumpBackwardIcon(),
+    var _jumpBackwardSeconds = prefsRepo.jumpBackwardSeconds
+    private var skipBackwardsAction = NotificationCompat.Action(
+        makeJumpBackwardsIcon(),
         context.getString(R.string.skip_backwards),
         makePendingIntent(mediaSkipBackwardCode)
     )
@@ -174,12 +176,29 @@ class NotificationBuilder @Inject constructor(
             Timber.i("Building notification! chapter=${currentlyPlaying.chapter.value.title}, index=${currentlyPlaying.chapter.value.index}")
             Timber.i("Building notification! state=${controller.playbackState.stateName}, playing=$isPlaying")
         }
-
+        if(_jumpBackwardSeconds != prefsRepo.jumpBackwardSeconds) {
+            Timber.i("jumpBackwardSeconds changed $_jumpBackwardSeconds -> ${prefsRepo.jumpBackwardSeconds}")
+            skipBackwardsAction = NotificationCompat.Action(
+                makeJumpBackwardsIcon(),
+                context.getString(R.string.skip_backwards),
+                makePendingIntent(mediaSkipBackwardCode)
+            )
+            _jumpBackwardSeconds = prefsRepo.jumpBackwardSeconds
+        }
         builder.addAction(skipBackwardsAction)
         if (isPlaying) {
             builder.addAction(pauseAction)
         } else {
             builder.addAction(playAction)
+        }
+        if(_jumpForwardSeconds != prefsRepo.jumpForwardSeconds) {
+            Timber.i("jumpForwardSeconds changed $_jumpForwardSeconds -> ${prefsRepo.jumpForwardSeconds}")
+            skipForwardsAction = NotificationCompat.Action(
+                makeJumpForwardsIcon(),
+                context.getString(R.string.skip_forwards),
+                makePendingIntent(mediaSkipForwardCode)
+            )
+            _jumpForwardSeconds = prefsRepo.jumpForwardSeconds
         }
         builder.addAction(skipForwardsAction)
 

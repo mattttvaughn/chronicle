@@ -382,16 +382,8 @@ class CurrentlyPlayingViewModel(
         seekRelative(makeSkipForward(prefsRepo), prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
     }
 
-    fun getJumpForwardSeconds() : Long {
-        return prefsRepo.jumpForwardSeconds
-    }
-
     fun skipBackwards() {
         seekRelative(makeSkipBackward(prefsRepo), prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1)
-    }
-
-    fun getJumpBackwardSeconds() : Long {
-        return prefsRepo.jumpBackwardSeconds
     }
 
     private fun seekRelative(action: PlaybackStateCompat.CustomAction, offset: Long) {
