@@ -95,7 +95,7 @@ fun makeSkipBackward(
         30L -> R.drawable.ic_replay_30_white
         60L -> R.drawable.ic_replay_60_white
         90L -> R.drawable.ic_replay_90_white
-        else -> R.drawable.ic_replay_30_white
+        else -> R.drawable.ic_replay_10_white
     }
     return PlaybackStateCompat.CustomAction.Builder(
         SKIP_BACKWARDS_STRING,

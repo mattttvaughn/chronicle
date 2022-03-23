@@ -234,9 +234,19 @@ class CurrentlyPlayingViewModel(
     val sleepTimerChooserState: LiveData<BottomChooserState>
         get() = _sleepTimerChooserState
 
+    private var _jumpForwardsIcon = MutableLiveData(makeJumpForwardsIcon())
+    val jumpForwardsIcon: LiveData<Int>
+        get() = _jumpForwardsIcon
+
+    private var _jumpBackwardsIcon = MutableLiveData(makeJumpBackwardsIcon())
+    val jumpBackwardsIcon: LiveData<Int>
+        get() = _jumpBackwardsIcon
+
     private val prefsChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             PrefsRepo.KEY_PLAYBACK_SPEED -> _speed.postValue(prefsRepo.playbackSpeed)
+            PrefsRepo.KEY_JUMP_FORWARD_SECONDS -> _jumpForwardsIcon.value = makeJumpForwardsIcon()
+            PrefsRepo.KEY_JUMP_BACKWARD_SECONDS -> _jumpBackwardsIcon.value = makeJumpBackwardsIcon()
         }
     }
 
@@ -341,6 +351,30 @@ class CurrentlyPlayingViewModel(
                     } // do nothing?
                 }
             }
+        }
+    }
+
+    fun makeJumpForwardsIcon(): Int {
+        return when (prefsRepo.jumpForwardSeconds) {
+            10L -> R.drawable.ic_forward_10_white
+            15L -> R.drawable.ic_forward_15_white
+            20L -> R.drawable.ic_forward_20_white
+            30L -> R.drawable.ic_forward_30_white
+            60L -> R.drawable.ic_forward_60_white
+            90L -> R.drawable.ic_forward_90_white
+            else -> R.drawable.ic_forward_30_white
+        }
+    }
+
+    fun makeJumpBackwardsIcon(): Int {
+        return when (prefsRepo.jumpBackwardSeconds) {
+            10L -> R.drawable.ic_replay_10_white
+            15L -> R.drawable.ic_replay_15_white
+            20L -> R.drawable.ic_replay_20_white
+            30L -> R.drawable.ic_replay_30_white
+            60L -> R.drawable.ic_replay_60_white
+            90L -> R.drawable.ic_replay_90_white
+            else -> R.drawable.ic_replay_10_white
         }
     }
 

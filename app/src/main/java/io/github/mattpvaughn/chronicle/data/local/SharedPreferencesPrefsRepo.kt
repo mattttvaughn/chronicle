@@ -206,7 +206,7 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         get() = sharedPreferences.getLong(KEY_JUMP_FORWARD_SECONDS, defaultJumpForwardSeconds)
         set(value) = sharedPreferences.edit().putLong(KEY_JUMP_FORWARD_SECONDS, value).apply()
 
-    private val defaultJumpBackwardSeconds = 30L
+    private val defaultJumpBackwardSeconds = 10L
     override var jumpBackwardSeconds: Long
         get() = sharedPreferences.getLong(KEY_JUMP_BACKWARD_SECONDS, defaultJumpBackwardSeconds)
         set(value) = sharedPreferences.edit().putLong(KEY_JUMP_BACKWARD_SECONDS, value).apply()
