@@ -358,34 +358,10 @@ class CurrentlyPlayingViewModel(
 
     fun skipToNext() {
         skipToChapter(SKIP_TO_NEXT, forward = true)
-        /* val nextChapterIndex = currentlyPlaying.chapter.value.index.toInt() + 1
-            if(nextChapterIndex <= currentlyPlaying.book.value.chapters.size) { // or is it better to compare against chapters.last().index?
-                val nextChapter = currentlyPlaying.book.value.chapters[nextChapterIndex-1] // chapter index starts with 1 ???
-                Timber.d("NEXT CHAPTER: index=${nextChapter.index} id=${nextChapter.id} trackId=${nextChapter.trackId}  offset=${nextChapter.startTimeOffset} title=${nextChapter.title}")
-                jumpToChapter(nextChapter.startTimeOffset, currentlyPlaying.track.value.id,hasUserConfirmation = true)
-                // TODO: currentlyPlaying is not updated → skipToNext currently only works once
-            } else {
-                val toast = Toast.makeText(Injector.get().applicationContext(),"@string/skip_forwards_reached_last_chapter",Toast.LENGTH_LONG)
-                toast.setGravity(Gravity.BOTTOM,0,200)
-                toast.show()
-            } */
     }
 
     fun skipToPrevious() {
         skipToChapter(SKIP_TO_PREVIOUS, forward = false)
-/*
-        var previousChapterIndex: Int = if((currentPlayer.currentPosition - currentlyPlaying.chapter.value.startTimeOffset) < (SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS * MILLIS_PER_SECOND)) {
-            Timber.d("skipToPrevious → skip to previous chapter")
-            currentlyPlaying.chapter.value.index.toInt()
-        } else {
-            Timber.d("skipToPrevious → back to start of current chapter")
-            currentlyPlaying.chapter.value.index.toInt() - 1
-        }
-        if(previousChapterIndex < 1) previousChapterIndex = 1
-        val previousChapter = currentlyPlaying.book.value.chapters[previousChapterIndex-1]
-        Timber.d("PREVIOUS CHAPTER: index=${previousChapter.index} id=${previousChapter.id} trackId=${previousChapter.trackId}  offset=${previousChapter.startTimeOffset} title=${previousChapter.title}")
-        jumpToChapter(previousChapter.startTimeOffset, currentlyPlaying.track.value.id,hasUserConfirmation = true)
-        // TODO: currentlyPlaying is not updated → skipToPrevious currently only works once */
     }
 
     private fun skipToChapter(action: PlaybackStateCompat.CustomAction, forward: Boolean) {
@@ -400,7 +376,7 @@ class CurrentlyPlayingViewModel(
                 if(forward) {
                     skipToChapterIndex = currentlyPlaying.chapter.value.index.toInt() + 1
                     if(skipToChapterIndex <= currentlyPlaying.book.value.chapters.size) {// or is it better to compare against chapters.last().index?
-                        val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex - 1]
+                        val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex - 1] // chapter index starts with 1 ???
                         jumpToChapter(skipToChapter.startTimeOffset,currentlyPlaying.track.value.id,hasUserConfirmation = true)
                     } else {
                         val toast = Toast.makeText(
@@ -484,7 +460,6 @@ class CurrentlyPlayingViewModel(
             }
         }
     }
-
 
 
     /** Jumps to a given track with [MediaItemTrack.id] == [trackId] */

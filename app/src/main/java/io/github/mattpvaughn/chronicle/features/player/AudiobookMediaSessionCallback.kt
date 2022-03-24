@@ -136,10 +136,10 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private fun skipToPrevious() {
         var previousChapterIndex: Int = if((currentPlayer.currentPosition - currentlyPlaying.chapter.value.startTimeOffset) < (SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS * MILLIS_PER_SECOND)) {
             Timber.d("skipToPrevious → skip to previous chapter")
-            currentlyPlaying.chapter.value.index.toInt()
+            currentlyPlaying.chapter.value.index.toInt() -1
         } else {
             Timber.d("skipToPrevious → back to start of current chapter")
-            currentlyPlaying.chapter.value.index.toInt() - 1
+            currentlyPlaying.chapter.value.index.toInt()
         }
         if(previousChapterIndex < 1) previousChapterIndex = 1
         val previousChapter = currentlyPlaying.book.value.chapters[previousChapterIndex-1]

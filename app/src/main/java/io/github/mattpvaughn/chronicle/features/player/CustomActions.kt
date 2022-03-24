@@ -56,13 +56,13 @@ fun makeCustomActionProviders(
         SimpleCustomActionProvider(SKIP_TO_PREVIOUS) { player: Player, _: String, _: Bundle? ->
             var previousChapterIndex: Int = if((player.currentPosition - currentlyPlaying.chapter.value.startTimeOffset) < (SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS * MILLIS_PER_SECOND)) {
                 Timber.d("skipToPrevious → skip to previous chapter")
-                currentlyPlaying.chapter.value.index.toInt()
+                currentlyPlaying.chapter.value.index.toInt() -1
             } else {
                 Timber.d("skipToPrevious → back to start of current chapter")
-                currentlyPlaying.chapter.value.index.toInt() - 1
+                currentlyPlaying.chapter.value.index.toInt()
             }
             if(previousChapterIndex < 1) previousChapterIndex = 1
-            val previousChapter = currentlyPlaying.book.value.chapters[previousChapterIndex]
+            val previousChapter = currentlyPlaying.book.value.chapters[previousChapterIndex-1]
             Timber.d("PREVIOUS CHAPTER: index=${previousChapter.index} id=${previousChapter.id} trackId=${previousChapter.trackId}  offset=${previousChapter.startTimeOffset} title=${previousChapter.title}")
             player.seekTo(trackListStateManager.currentTrackIndex, previousChapter.startTimeOffset)
             // TODO: currentlyPlaying is not updated → skipToPrevious currently only works once
