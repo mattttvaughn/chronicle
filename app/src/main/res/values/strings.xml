@@ -95,10 +95,12 @@
     <!-- Playback -->
     <string name="notification_channel">Now playing</string>
     <string name="notification_channel_description">Shows currently playing music</string>
-    <string name="notification_skip_to_previous">Skip to previous track</string>
     <string name="notification_play">Play</string>
     <string name="notification_pause">Pause</string>
+    <string name="skip_to_previous">Skip to previous track/chapter</string>
+    <string name="skip_to_next">Skip to next track/chapter</string>
     <string name="skip_forwards">Skip forwards</string>
+    <string name="skip_forwards_reached_last_chapter">You already reached the last chapter/track</string>
     <string name="skip_backwards">Skip backwards</string>
     <string name="pause_play_button">Pause/Play button</string>
     <string name="warning_jump_to_chapter_will_clear_progress">This will clear your saved progress. Continue?</string>

@@ -205,7 +205,8 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
             *makeCustomActionProviders(
                 trackListManager,
                 mediaSessionConnector,
-                prefsRepo
+                prefsRepo,
+                currentlyPlaying
             )
         )
         mediaSessionConnector.setQueueNavigator(queueNavigator)

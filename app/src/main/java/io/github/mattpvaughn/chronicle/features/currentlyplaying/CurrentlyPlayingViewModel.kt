@@ -9,6 +9,8 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED
 import android.text.format.DateUtils
+import android.view.Gravity
+import android.widget.Toast
 import androidx.lifecycle.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.michaelbull.result.Ok
@@ -354,6 +356,71 @@ class CurrentlyPlayingViewModel(
         }
     }
 
+    fun skipToNext() {
+        skipToChapter(SKIP_TO_NEXT, forward = true)
+        /* val nextChapterIndex = currentlyPlaying.chapter.value.index.toInt() + 1
+            if(nextChapterIndex <= currentlyPlaying.book.value.chapters.size) { // or is it better to compare against chapters.last().index?
+                val nextChapter = currentlyPlaying.book.value.chapters[nextChapterIndex-1] // chapter index starts with 1 ???
+                Timber.d("NEXT CHAPTER: index=${nextChapter.index} id=${nextChapter.id} trackId=${nextChapter.trackId}  offset=${nextChapter.startTimeOffset} title=${nextChapter.title}")
+                jumpToChapter(nextChapter.startTimeOffset, currentlyPlaying.track.value.id,hasUserConfirmation = true)
+                // TODO: currentlyPlaying is not updated → skipToNext currently only works once
+            } else {
+                val toast = Toast.makeText(Injector.get().applicationContext(),"@string/skip_forwards_reached_last_chapter",Toast.LENGTH_LONG)
+                toast.setGravity(Gravity.BOTTOM,0,200)
+                toast.show()
+            } */
+    }
+
+    fun skipToPrevious() {
+        skipToChapter(SKIP_TO_PREVIOUS, forward = false)
+/*
+        var previousChapterIndex: Int = if((currentPlayer.currentPosition - currentlyPlaying.chapter.value.startTimeOffset) < (SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS * MILLIS_PER_SECOND)) {
+            Timber.d("skipToPrevious → skip to previous chapter")
+            currentlyPlaying.chapter.value.index.toInt()
+        } else {
+            Timber.d("skipToPrevious → back to start of current chapter")
+            currentlyPlaying.chapter.value.index.toInt() - 1
+        }
+        if(previousChapterIndex < 1) previousChapterIndex = 1
+        val previousChapter = currentlyPlaying.book.value.chapters[previousChapterIndex-1]
+        Timber.d("PREVIOUS CHAPTER: index=${previousChapter.index} id=${previousChapter.id} trackId=${previousChapter.trackId}  offset=${previousChapter.startTimeOffset} title=${previousChapter.title}")
+        jumpToChapter(previousChapter.startTimeOffset, currentlyPlaying.track.value.id,hasUserConfirmation = true)
+        // TODO: currentlyPlaying is not updated → skipToPrevious currently only works once */
+    }
+
+    private fun skipToChapter(action: PlaybackStateCompat.CustomAction, forward: Boolean) {
+        val transportControls = mediaServiceConnection.transportControls
+        mediaServiceConnection.let { connection ->
+            if (connection.nowPlaying.value != NOTHING_PLAYING) {
+                // Service will be alive, so we can let it handle the action
+                Timber.i("Seeking!")
+                transportControls?.sendCustomAction(action, null)
+            } else {
+                var skipToChapterIndex : Int
+                if(forward) {
+                    skipToChapterIndex = currentlyPlaying.chapter.value.index.toInt() + 1
+                    if(skipToChapterIndex <= currentlyPlaying.book.value.chapters.size) {// or is it better to compare against chapters.last().index?
+                        val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex - 1]
+                        jumpToChapter(skipToChapter.startTimeOffset,currentlyPlaying.track.value.id,hasUserConfirmation = true)
+                    } else {
+                        val toast = Toast.makeText(
+                            Injector.get().applicationContext(),"@string/skip_forwards_reached_last_chapter",
+                            Toast.LENGTH_LONG)
+                        toast.setGravity(Gravity.BOTTOM,0,200)
+                        toast.show()
+                    }
+                } else {
+                    skipToChapterIndex = currentlyPlaying.chapter.value.index.toInt() - 1
+                    if(skipToChapterIndex < 1) skipToChapterIndex = 1
+                    val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex-1]
+                    jumpToChapter(skipToChapter.startTimeOffset, currentlyPlaying.track.value.id,hasUserConfirmation = true)
+                }
+            }
+        }
+    }
+
+
+
     fun makeJumpForwardsIcon(): Int {
         return when (prefsRepo.jumpForwardSeconds) {
             10L -> R.drawable.ic_forward_10_white
@@ -417,6 +484,7 @@ class CurrentlyPlayingViewModel(
             }
         }
     }
+
 
 
     /** Jumps to a given track with [MediaItemTrack.id] == [trackId] */

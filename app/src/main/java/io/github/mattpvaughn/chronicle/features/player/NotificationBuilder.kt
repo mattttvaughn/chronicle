@@ -65,6 +65,18 @@ class NotificationBuilder @Inject constructor(
         MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE)
     )
 
+    private val skipToNextAction = NotificationCompat.Action(
+        R.drawable.ic_skip_next_white,
+        context.getString(R.string.skip_to_next),
+        makePendingIntent(mediaSkipToNextCode)
+    )
+
+    private val skipToPreviousAction = NotificationCompat.Action(
+        R.drawable.ic_skip_previous_white,
+        context.getString(R.string.skip_to_previous),
+        makePendingIntent(mediaSkipToPreviousCode)
+    )
+
     private fun makeJumpForwardsIcon() : Int {
         return when (prefsRepo.jumpForwardSeconds) {
             10L -> R.drawable.ic_forward_10_white
@@ -176,12 +188,13 @@ class NotificationBuilder @Inject constructor(
         }
 
         builder.addAction(skipBackwardsAction())
+        builder.addAction(skipToPreviousAction)
         if (isPlaying) {
             builder.addAction(pauseAction)
         } else {
             builder.addAction(playAction)
         }
-
+        builder.addAction(skipToNextAction)
         builder.addAction(skipForwardsAction())
 
         // Add a button to manually kill the notification + service
@@ -194,7 +207,7 @@ class NotificationBuilder @Inject constructor(
         val mediaStyle = MediaStyle()
             .setCancelButtonIntent(stopPendingIntent)
             .setMediaSession(sessionToken)
-            .setShowActionsInCompactView(0, 1, 2)
+            .setShowActionsInCompactView(1, 2, 3) // not sure if skip to previous/next or jump backwards/forwards is preferred in CompactView
             .setShowCancelButton(true)
 
         val smallIcon = if (isPlaying) {

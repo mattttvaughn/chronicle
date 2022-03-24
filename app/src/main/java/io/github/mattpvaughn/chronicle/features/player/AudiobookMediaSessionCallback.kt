@@ -6,8 +6,10 @@ import android.os.Bundle
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.text.format.DateUtils
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.KeyEvent.*
+import android.widget.Toast
 import androidx.lifecycle.Observer
 import com.github.michaelbull.result.Ok
 import com.google.android.exoplayer2.ExoPlayer
@@ -117,6 +119,35 @@ class AudiobookMediaSessionCallback @Inject constructor(
         }
     }
 
+    private fun skipToNext() {
+        val nextChapterIndex = currentlyPlaying.chapter.value.index.toInt() + 1
+        if(nextChapterIndex <= currentlyPlaying.book.value.chapters.size) { // or is it better to compare against chapters.last().index?
+            val nextChapter = currentlyPlaying.book.value.chapters[nextChapterIndex-1] // chapter index starts with 1 ???
+            Timber.d("NEXT CHAPTER: index=${nextChapter.index} id=${nextChapter.id} trackId=${nextChapter.trackId}  offset=${nextChapter.startTimeOffset} title=${nextChapter.title}")
+            currentPlayer.seekTo(trackListStateManager.currentTrackIndex, nextChapter.startTimeOffset)
+            // TODO: currentlyPlaying is not updated → skipToNext currently only works once
+        } else {
+            val toast = Toast.makeText(appContext,"@string/skip_forwards_reached_last_chapter",Toast.LENGTH_LONG)
+            toast.setGravity(Gravity.BOTTOM,0,200)
+            toast.show()
+        }
+    }
+
+    private fun skipToPrevious() {
+        var previousChapterIndex: Int = if((currentPlayer.currentPosition - currentlyPlaying.chapter.value.startTimeOffset) < (SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS * MILLIS_PER_SECOND)) {
+            Timber.d("skipToPrevious → skip to previous chapter")
+            currentlyPlaying.chapter.value.index.toInt()
+        } else {
+            Timber.d("skipToPrevious → back to start of current chapter")
+            currentlyPlaying.chapter.value.index.toInt() - 1
+        }
+        if(previousChapterIndex < 1) previousChapterIndex = 1
+        val previousChapter = currentlyPlaying.book.value.chapters[previousChapterIndex-1]
+        Timber.d("PREVIOUS CHAPTER: index=${previousChapter.index} id=${previousChapter.id} trackId=${previousChapter.trackId}  offset=${previousChapter.startTimeOffset} title=${previousChapter.title}")
+        currentPlayer.seekTo(trackListStateManager.currentTrackIndex, previousChapter.startTimeOffset)
+        // TODO: currentlyPlaying is not updated → skipToPrevious currently only works once
+    }
+
     private fun skipForwards() {
         Timber.i("Track manager is $trackListStateManager")
         currentPlayer.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
@@ -128,7 +159,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private fun changeSpeed() {
-        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo)
+        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying)
         Timber.i("New Speed: %s", prefsRepo.playbackSpeed)
     }
 
@@ -144,11 +175,19 @@ class AudiobookMediaSessionCallback @Inject constructor(
             // These really handle bluetooth media actions only, but the framework handles
             // pause/play for inline wired headphones
             return when (ke.keyCode) {
-                KEYCODE_MEDIA_NEXT, KEYCODE_MEDIA_SKIP_FORWARD -> {
+                KEYCODE_MEDIA_NEXT -> {
+                    skipToNext()
+                    true
+                }
+                KEYCODE_MEDIA_PREVIOUS -> {
+                    skipToPrevious()
+                    true
+                }
+                KEYCODE_MEDIA_SKIP_FORWARD -> {
                     skipForwards()
                     true
                 }
-                KEYCODE_MEDIA_PREVIOUS, KEYCODE_MEDIA_SKIP_BACKWARD -> {
+                KEYCODE_MEDIA_SKIP_BACKWARD -> {
                     skipBackwards()
                     true
                 }
@@ -203,6 +242,8 @@ class AudiobookMediaSessionCallback @Inject constructor(
             SKIP_FORWARDS_STRING -> skipForwards()
             SKIP_BACKWARDS_STRING -> skipBackwards()
             CHANGE_PLAYBACK_SPEED -> changeSpeed()
+            SKIP_TO_NEXT_STRING -> skipToNext()
+            SKIP_TO_PREVIOUS_STRING -> skipToPrevious()
         }
     }
 

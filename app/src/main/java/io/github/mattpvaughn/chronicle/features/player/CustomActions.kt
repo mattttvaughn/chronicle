@@ -4,15 +4,21 @@ import android.os.Build
 import android.os.Build.VERSION_CODES.M
 import android.os.Bundle
 import android.support.v4.media.session.PlaybackStateCompat
+import android.view.Gravity
 import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD
 import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD
+import android.view.KeyEvent.KEYCODE_MEDIA_NEXT
+import android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS
+import android.widget.Toast
 import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector.CustomActionProvider
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
+import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import timber.log.Timber
 
 
@@ -22,7 +28,8 @@ import timber.log.Timber
 fun makeCustomActionProviders(
     trackListStateManager: TrackListStateManager,
     mediaSessionConnector: MediaSessionConnector,
-    prefsRepo: PrefsRepo
+    prefsRepo: PrefsRepo,
+    currentlyPlaying: CurrentlyPlaying
 ): Array<CustomActionProvider> {
     return arrayOf(
         SimpleCustomActionProvider(makeSkipBackward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
@@ -31,8 +38,37 @@ fun makeCustomActionProviders(
         SimpleCustomActionProvider(makeSkipForward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
             player.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
         },
+        SimpleCustomActionProvider(SKIP_TO_NEXT) { player: Player, _: String, _: Bundle? ->
+            val nextChapterIndex = currentlyPlaying.chapter.value.index.toInt() + 1
+            if(nextChapterIndex <= currentlyPlaying.book.value.chapters.size) { // or is it better to compare against chapters.last().index?
+                val nextChapter = currentlyPlaying.book.value.chapters[nextChapterIndex-1] // chapter index starts with 1 ???
+                Timber.d("NEXT CHAPTER: index=${nextChapter.index} id=${nextChapter.id} trackId=${nextChapter.trackId}  offset=${nextChapter.startTimeOffset} title=${nextChapter.title}")
+                player.seekTo(trackListStateManager.currentTrackIndex, nextChapter.startTimeOffset)
+                // TODO: currentlyPlaying is not updated → skipToNext currently only works once
+            } else {
+                val toast = Toast.makeText(
+                    Injector.get().applicationContext(),"@string/skip_forwards_reached_last_chapter",
+                    Toast.LENGTH_LONG)
+                toast.setGravity(Gravity.BOTTOM,0,200)
+                toast.show()
+            }
+        },
+        SimpleCustomActionProvider(SKIP_TO_PREVIOUS) { player: Player, _: String, _: Bundle? ->
+            var previousChapterIndex: Int = if((player.currentPosition - currentlyPlaying.chapter.value.startTimeOffset) < (SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS * MILLIS_PER_SECOND)) {
+                Timber.d("skipToPrevious → skip to previous chapter")
+                currentlyPlaying.chapter.value.index.toInt()
+            } else {
+                Timber.d("skipToPrevious → back to start of current chapter")
+                currentlyPlaying.chapter.value.index.toInt() - 1
+            }
+            if(previousChapterIndex < 1) previousChapterIndex = 1
+            val previousChapter = currentlyPlaying.book.value.chapters[previousChapterIndex]
+            Timber.d("PREVIOUS CHAPTER: index=${previousChapter.index} id=${previousChapter.id} trackId=${previousChapter.trackId}  offset=${previousChapter.startTimeOffset} title=${previousChapter.title}")
+            player.seekTo(trackListStateManager.currentTrackIndex, previousChapter.startTimeOffset)
+            // TODO: currentlyPlaying is not updated → skipToPrevious currently only works once
+        },
         SimpleCustomActionProvider(makeChangeSpeed(prefsRepo)) { player: Player, _: String, _: Bundle? ->
-            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo)
+            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying)
         }
     )
 }
@@ -40,7 +76,8 @@ fun makeCustomActionProviders(
 fun changeSpeed(
     trackListStateManager: TrackListStateManager,
     mediaSessionConnector: MediaSessionConnector,
-    prefsRepo: PrefsRepo
+    prefsRepo: PrefsRepo,
+    currentlyPlaying: CurrentlyPlaying
 ) {
     when (prefsRepo.playbackSpeed) {
         0.5f -> prefsRepo.playbackSpeed = 0.7f
@@ -57,10 +94,28 @@ fun changeSpeed(
         *makeCustomActionProviders(
             trackListStateManager,
             mediaSessionConnector,
-            prefsRepo
+            prefsRepo,
+            currentlyPlaying
         )
     )
 }
+
+/** Threshold to decide whether to jump to the beginning of the current chapter or to the previous chapter. */
+const val SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS = 30L
+
+const val SKIP_TO_NEXT_STRING = "Skip to next"
+val SKIP_TO_NEXT: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
+    SKIP_TO_NEXT_STRING,
+    SKIP_TO_NEXT_STRING,
+    R.drawable.ic_skip_next_white
+).build()
+
+const val SKIP_TO_PREVIOUS_STRING = "Skip to previous"
+val SKIP_TO_PREVIOUS: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
+    SKIP_TO_PREVIOUS_STRING,
+    SKIP_TO_PREVIOUS_STRING,
+    R.drawable.ic_skip_previous_white
+).build()
 
 const val SKIP_FORWARDS_STRING = "Skip forwards"
 
@@ -129,6 +184,8 @@ fun makeChangeSpeed(
 
 val mediaSkipForwardCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_SKIP_FORWARD else 272
 val mediaSkipBackwardCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_SKIP_BACKWARD else 273
+val mediaSkipToNextCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_NEXT else 87
+val mediaSkipToPreviousCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_PREVIOUS else 88
 
 class SimpleCustomActionProvider(
     private val customAction: PlaybackStateCompat.CustomAction,
