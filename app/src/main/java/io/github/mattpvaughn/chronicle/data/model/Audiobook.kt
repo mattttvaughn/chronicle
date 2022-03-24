@@ -31,6 +31,7 @@ data class Audiobook constructor(
     val parentId: Int = -1,
     val genre: String = "",
     val summary: String = "",
+    val year: Int = 0,
     val addedAt: Long = 0L,
     /** last Unix timestamp that some metadata was changed in server */
     val updatedAt: Long = 0L,
@@ -64,6 +65,7 @@ data class Audiobook constructor(
             parentId = dir.parentRatingKey,
             genre = dir.plexGenres.joinToString(separator = ", "),
             summary = dir.summary,
+            year = dir.parentYear.takeIf { it != 0} ?: dir.year,
             addedAt = dir.addedAt,
             updatedAt = dir.updatedAt,
             lastViewedAt = dir.lastViewedAt,
@@ -113,6 +115,7 @@ data class Audiobook constructor(
         const val SORT_KEY_AUTHOR = "author"
         const val SORT_KEY_GENRE = "title"
         const val SORT_KEY_RELEASE_DATE = "release_date"
+        const val SORT_KEY_YEAR = "year"
         const val SORT_KEY_DURATION = "duration"
         const val SORT_KEY_RATING = "rating"
         const val SORT_KEY_CRITIC_RATING = "critic_rating"
@@ -125,6 +128,7 @@ data class Audiobook constructor(
             SORT_KEY_AUTHOR,
             SORT_KEY_GENRE,
             SORT_KEY_RELEASE_DATE,
+            SORT_KEY_YEAR,
             SORT_KEY_RATING,
             SORT_KEY_CRITIC_RATING,
             SORT_KEY_DATE_ADDED,

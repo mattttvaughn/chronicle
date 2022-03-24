@@ -249,6 +249,12 @@
                         android:tag="@string/key_sort_by_date_played"
                         android:text="@string/sort_by_date_played" />
 
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/key_sort_by_year"
+                        android:text="@string/sort_by_year" />
+
                     <!--                    <com.google.android.material.chip.Chip-->
                     <!--                        android:layout_width="wrap_content"-->
                     <!--                        android:layout_height="wrap_content"-->

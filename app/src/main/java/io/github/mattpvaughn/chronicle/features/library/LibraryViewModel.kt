@@ -18,6 +18,7 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_D
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_DATE_PLAYED
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_DURATION
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_PLAYS
+import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_YEAR
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_TITLE
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.getProgress
@@ -125,6 +126,7 @@ class LibraryViewModel(
                     // of descending, even though the timestamp is larger
                     SORT_KEY_DATE_ADDED -> book2.addedAt.compareTo(book1.addedAt)
                     SORT_KEY_DATE_PLAYED -> book2.lastViewedAt.compareTo(book1.lastViewedAt)
+                    SORT_KEY_YEAR -> book2.year.compareTo(book1.year)
                     else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
                 }
             })
