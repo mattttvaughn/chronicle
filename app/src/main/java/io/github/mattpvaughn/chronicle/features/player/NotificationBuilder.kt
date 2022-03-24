@@ -77,8 +77,7 @@ class NotificationBuilder @Inject constructor(
         }
     }
 
-    var _jumpForwardSeconds = prefsRepo.jumpForwardSeconds
-    private var skipForwardsAction = NotificationCompat.Action(
+    private fun skipForwardsAction() = NotificationCompat.Action(
         makeJumpForwardsIcon(),
         context.getString(R.string.skip_forwards),
         makePendingIntent(mediaSkipForwardCode)
@@ -96,8 +95,7 @@ class NotificationBuilder @Inject constructor(
         }
     }
 
-    var _jumpBackwardSeconds = prefsRepo.jumpBackwardSeconds
-    private var skipBackwardsAction = NotificationCompat.Action(
+    private fun skipBackwardsAction() = NotificationCompat.Action(
         makeJumpBackwardsIcon(),
         context.getString(R.string.skip_backwards),
         makePendingIntent(mediaSkipBackwardCode)
@@ -176,31 +174,15 @@ class NotificationBuilder @Inject constructor(
             Timber.i("Building notification! chapter=${currentlyPlaying.chapter.value.title}, index=${currentlyPlaying.chapter.value.index}")
             Timber.i("Building notification! state=${controller.playbackState.stateName}, playing=$isPlaying")
         }
-        if(_jumpBackwardSeconds != prefsRepo.jumpBackwardSeconds) {
-            Timber.i("jumpBackwardSeconds changed $_jumpBackwardSeconds -> ${prefsRepo.jumpBackwardSeconds}")
-            skipBackwardsAction = NotificationCompat.Action(
-                makeJumpBackwardsIcon(),
-                context.getString(R.string.skip_backwards),
-                makePendingIntent(mediaSkipBackwardCode)
-            )
-            _jumpBackwardSeconds = prefsRepo.jumpBackwardSeconds
-        }
-        builder.addAction(skipBackwardsAction)
+
+        builder.addAction(skipBackwardsAction())
         if (isPlaying) {
             builder.addAction(pauseAction)
         } else {
             builder.addAction(playAction)
         }
-        if(_jumpForwardSeconds != prefsRepo.jumpForwardSeconds) {
-            Timber.i("jumpForwardSeconds changed $_jumpForwardSeconds -> ${prefsRepo.jumpForwardSeconds}")
-            skipForwardsAction = NotificationCompat.Action(
-                makeJumpForwardsIcon(),
-                context.getString(R.string.skip_forwards),
-                makePendingIntent(mediaSkipForwardCode)
-            )
-            _jumpForwardSeconds = prefsRepo.jumpForwardSeconds
-        }
-        builder.addAction(skipForwardsAction)
+
+        builder.addAction(skipForwardsAction())
 
         // Add a button to manually kill the notification + service
         builder.addAction(
