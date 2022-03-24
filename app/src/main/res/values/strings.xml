@@ -98,8 +98,8 @@
     <string name="notification_skip_to_previous">Skip to previous track</string>
     <string name="notification_play">Play</string>
     <string name="notification_pause">Pause</string>
-    <string name="skip_forwards">Skip forwards 30 seconds</string>
-    <string name="skip_backwards">Skip backwards 10 seconds</string>
+    <string name="skip_forwards">Skip forwards</string>
+    <string name="skip_backwards">Skip backwards</string>
     <string name="pause_play_button">Pause/Play button</string>
     <string name="warning_jump_to_chapter_will_clear_progress">This will clear your saved progress. Continue?</string>
     <string name="playback_error">Playback error: %1$s</string>
@@ -239,6 +239,20 @@
     <string name="prompt_clear_downloads_allow_retain">Would you like to keep your downloaded files?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+
+    <string name="settings_jump_forward_value">Jump forward: %1$s</string>
+    <string name="settings_jump_forward_title">Jump forward</string>
+    <string name="settings_jump_forward_explanation">Time interval for jumping forward in the player</string>
+    <string name="settings_jump_backward_value">Jump backward: %1$s</string>
+    <string name="settings_jump_backward_title">Jump backward</string>
+    <string name="settings_jump_backward_explanation">Time interval for jumping backward in the player</string>
+    <string name="seconds">seconds</string>
+    <string name="settings_jump_10_seconds">10 seconds</string>
+    <string name="settings_jump_15_seconds">15 seconds</string>
+    <string name="settings_jump_20_seconds">20 seconds</string>
+    <string name="settings_jump_30_seconds">30 seconds</string>
+    <string name="settings_jump_60_seconds">60 seconds</string>
+    <string name="settings_jump_90_seconds">90 seconds</string>
 
     <!-- Android Auto -->
     <string name="allow_auto">Enable Android Auto</string>

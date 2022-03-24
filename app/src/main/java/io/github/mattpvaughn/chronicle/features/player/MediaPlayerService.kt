@@ -265,6 +265,16 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
             PrefsRepo.KEY_PAUSE_ON_FOCUS_LOST -> {
                 updateAudioAttrs(exoPlayer)
             }
+            PrefsRepo.KEY_JUMP_FORWARD_SECONDS, PrefsRepo.KEY_JUMP_BACKWARD_SECONDS -> {
+                serviceScope.launch {
+                    withContext(Dispatchers.IO) {
+                        sessionToken?.let {
+                            val notification = notificationBuilder.buildNotification(it)
+                            startForeground(NOW_PLAYING_NOTIFICATION, notification)
+                        }
+                    }
+                }
+            }
         }
     }
 

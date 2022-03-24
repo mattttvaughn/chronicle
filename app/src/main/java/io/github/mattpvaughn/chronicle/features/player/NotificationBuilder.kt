@@ -26,6 +26,7 @@ import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING
 import io.github.mattpvaughn.chronicle.application.MainActivity.Companion.REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.EMPTY_CHAPTER
 import io.github.mattpvaughn.chronicle.data.model.NO_AUDIOBOOK_FOUND_ID
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
@@ -47,6 +48,7 @@ class NotificationBuilder @Inject constructor(
     private val plexConfig: PlexConfig,
     private val controller: MediaControllerCompat,
     private val currentlyPlaying: CurrentlyPlaying,
+    private val prefsRepo: PrefsRepo
 ) {
 
     private val platformNotificationManager: NotificationManager =
@@ -62,13 +64,39 @@ class NotificationBuilder @Inject constructor(
         context.getString(R.string.notification_pause),
         MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE)
     )
-    private val skipForwardsAction = NotificationCompat.Action(
-        R.drawable.ic_forward_30_white,
+
+    private fun makeJumpForwardsIcon() : Int {
+        return when (prefsRepo.jumpForwardSeconds) {
+            10L -> R.drawable.ic_forward_10_white
+            15L -> R.drawable.ic_forward_15_white
+            20L -> R.drawable.ic_forward_20_white
+            30L -> R.drawable.ic_forward_30_white
+            60L -> R.drawable.ic_forward_60_white
+            90L -> R.drawable.ic_forward_90_white
+            else -> R.drawable.ic_forward_30_white
+        }
+    }
+
+    private fun skipForwardsAction() = NotificationCompat.Action(
+        makeJumpForwardsIcon(),
         context.getString(R.string.skip_forwards),
         makePendingIntent(mediaSkipForwardCode)
     )
-    private val skipBackwardsAction = NotificationCompat.Action(
-        R.drawable.ic_replay_10_white,
+
+    private fun makeJumpBackwardsIcon() : Int {
+        return when (prefsRepo.jumpBackwardSeconds) {
+            10L -> R.drawable.ic_replay_10_white
+            15L -> R.drawable.ic_replay_15_white
+            20L -> R.drawable.ic_replay_20_white
+            30L -> R.drawable.ic_replay_30_white
+            60L -> R.drawable.ic_replay_60_white
+            90L -> R.drawable.ic_replay_90_white
+            else -> R.drawable.ic_replay_10_white
+        }
+    }
+
+    private fun skipBackwardsAction() = NotificationCompat.Action(
+        makeJumpBackwardsIcon(),
         context.getString(R.string.skip_backwards),
         makePendingIntent(mediaSkipBackwardCode)
     )
@@ -147,13 +175,14 @@ class NotificationBuilder @Inject constructor(
             Timber.i("Building notification! state=${controller.playbackState.stateName}, playing=$isPlaying")
         }
 
-        builder.addAction(skipBackwardsAction)
+        builder.addAction(skipBackwardsAction())
         if (isPlaying) {
             builder.addAction(pauseAction)
         } else {
             builder.addAction(playAction)
         }
-        builder.addAction(skipForwardsAction)
+
+        builder.addAction(skipForwardsAction())
 
         // Add a button to manually kill the notification + service
         builder.addAction(

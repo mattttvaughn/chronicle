@@ -405,6 +405,86 @@ class SettingsViewModel(
                 defaultValue = prefsRepo.pauseOnFocusLost
             ),
             PreferenceModel(
+                type = PreferenceType.CLICKABLE,
+                title = FormattableString.ResourceString(
+                    stringRes = R.string.settings_jump_forward_value,
+                    // feels gross
+                    placeHolderStrings = listOf(
+                        "${prefsRepo.jumpForwardSeconds} " + Injector.get()
+                            .applicationContext().resources.getString(R.string.seconds)
+                    )
+                ),
+                explanation = FormattableString.from(R.string.settings_jump_forward_explanation),
+                click = object : PreferenceClick {
+                    override fun onClick() {
+                        showOptionsMenu(
+                            options = listOf(
+                                FormattableString.from(R.string.settings_jump_10_seconds),
+                                FormattableString.from(R.string.settings_jump_15_seconds),
+                                FormattableString.from(R.string.settings_jump_20_seconds),
+                                FormattableString.from(R.string.settings_jump_30_seconds),
+                                FormattableString.from(R.string.settings_jump_60_seconds),
+                                FormattableString.from(R.string.settings_jump_90_seconds)
+                            ),
+                            title = FormattableString.from(R.string.settings_jump_forward_title),
+                            listener = object : BottomChooserItemListener() {
+                                override fun onItemClicked(formattableString: FormattableString) {
+                                    check(formattableString is FormattableString.ResourceString)
+                                    prefsRepo.jumpForwardSeconds = when (formattableString.stringRes) {
+                                        R.string.settings_jump_10_seconds -> 10L
+                                        R.string.settings_jump_15_seconds -> 15L
+                                        R.string.settings_jump_20_seconds -> 20L
+                                        R.string.settings_jump_30_seconds -> 30L
+                                        R.string.settings_jump_60_seconds -> 60L
+                                        R.string.settings_jump_90_seconds -> 90L
+                                        else -> 30L
+                                    }
+                                    setBottomSheetVisibility(false)
+                                }
+                            })
+                    }
+                }),
+            PreferenceModel(
+                type = PreferenceType.CLICKABLE,
+                title = FormattableString.ResourceString(
+                    stringRes = R.string.settings_jump_backward_value,
+                    // feels gross
+                    placeHolderStrings = listOf(
+                        "${prefsRepo.jumpBackwardSeconds} " + Injector.get()
+                            .applicationContext().resources.getString(R.string.seconds)
+                    )
+                ),
+                explanation = FormattableString.from(R.string.settings_jump_backward_explanation),
+                click = object : PreferenceClick {
+                    override fun onClick() {
+                        showOptionsMenu(
+                            options = listOf(
+                                FormattableString.from(R.string.settings_jump_10_seconds),
+                                FormattableString.from(R.string.settings_jump_15_seconds),
+                                FormattableString.from(R.string.settings_jump_20_seconds),
+                                FormattableString.from(R.string.settings_jump_30_seconds),
+                                FormattableString.from(R.string.settings_jump_60_seconds),
+                                FormattableString.from(R.string.settings_jump_90_seconds)
+                            ),
+                            title = FormattableString.from(R.string.settings_jump_backward_title),
+                            listener = object : BottomChooserItemListener() {
+                                override fun onItemClicked(formattableString: FormattableString) {
+                                    check(formattableString is FormattableString.ResourceString)
+                                    prefsRepo.jumpBackwardSeconds = when (formattableString.stringRes) {
+                                        R.string.settings_jump_10_seconds -> 10L
+                                        R.string.settings_jump_15_seconds -> 15L
+                                        R.string.settings_jump_20_seconds -> 20L
+                                        R.string.settings_jump_30_seconds -> 30L
+                                        R.string.settings_jump_60_seconds -> 60L
+                                        R.string.settings_jump_90_seconds -> 90L
+                                        else -> 10L
+                                    }
+                                    setBottomSheetVisibility(false)
+                                }
+                            })
+                    }
+                }),
+            PreferenceModel(
                 PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_account)
             ),
