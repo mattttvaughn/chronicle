@@ -358,6 +358,7 @@ class CurrentlyPlayingViewModel(
 
     fun skipToNext() {
         skipToChapter(SKIP_TO_NEXT, forward = true)
+
     }
 
     fun skipToPrevious() {
@@ -372,30 +373,29 @@ class CurrentlyPlayingViewModel(
                 Timber.i("Seeking!")
                 transportControls?.sendCustomAction(action, null)
             } else {
+                val currentChapterIndex = currentlyPlaying.book.value.chapters.indexOf(currentlyPlaying.chapter.value)
                 var skipToChapterIndex : Int
                 if(forward) {
-                    skipToChapterIndex = currentlyPlaying.chapter.value.index.toInt() + 1
-                    if(skipToChapterIndex <= currentlyPlaying.book.value.chapters.size) {// or is it better to compare against chapters.last().index?
-                        val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex - 1] // chapter index starts with 1 ???
+                    skipToChapterIndex = currentChapterIndex + 1
+                    if(skipToChapterIndex < currentlyPlaying.book.value.chapters.size) {
+                        val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex]
                         jumpToChapter(skipToChapter.startTimeOffset,currentlyPlaying.track.value.id,hasUserConfirmation = true)
                     } else {
                         val toast = Toast.makeText(
-                            Injector.get().applicationContext(),"@string/skip_forwards_reached_last_chapter",
+                            Injector.get().applicationContext(), R.string.skip_forwards_reached_last_chapter,
                             Toast.LENGTH_LONG)
                         toast.setGravity(Gravity.BOTTOM,0,200)
                         toast.show()
                     }
                 } else {
-                    skipToChapterIndex = currentlyPlaying.chapter.value.index.toInt() - 1
-                    if(skipToChapterIndex < 1) skipToChapterIndex = 1
-                    val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex-1]
+                    skipToChapterIndex = currentChapterIndex - 1
+                    if(skipToChapterIndex < 0) skipToChapterIndex = 0
+                    val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex]
                     jumpToChapter(skipToChapter.startTimeOffset, currentlyPlaying.track.value.id,hasUserConfirmation = true)
                 }
             }
         }
     }
-
-
 
     fun makeJumpForwardsIcon(): Int {
         return when (prefsRepo.jumpForwardSeconds) {
