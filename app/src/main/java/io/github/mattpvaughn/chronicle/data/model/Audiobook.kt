@@ -65,7 +65,7 @@ data class Audiobook constructor(
             parentId = dir.parentRatingKey,
             genre = dir.plexGenres.joinToString(separator = ", "),
             summary = dir.summary,
-            year = dir.parentYear.takeIf { it != 0} ?: dir.year,
+            year = dir.year.takeIf { it != 0} ?: dir.parentYear,
             addedAt = dir.addedAt,
             updatedAt = dir.updatedAt,
             lastViewedAt = dir.lastViewedAt,

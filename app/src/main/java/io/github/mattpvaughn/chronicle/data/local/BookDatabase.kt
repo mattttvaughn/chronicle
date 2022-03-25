@@ -24,7 +24,8 @@ fun getBookDatabase(context: Context): BookDatabase {
                 BOOK_MIGRATION_3_4,
                 BOOK_MIGRATION_4_5,
                 BOOK_MIGRATION_5_6,
-                BOOK_MIGRATION_6_7
+                BOOK_MIGRATION_6_7,
+                BOOK_MIGRATION_7_8
             ).build()
         }
     }
@@ -67,7 +68,13 @@ val BOOK_MIGRATION_6_7 = object : Migration(6, 7) {
     }
 }
 
-@Database(entities = [Audiobook::class], version = 7, exportSchema = false)
+val BOOK_MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE Audiobook ADD COLUMN year INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+@Database(entities = [Audiobook::class], version = 8, exportSchema = false)
 abstract class BookDatabase : RoomDatabase() {
     abstract val bookDao: BookDao
 }
