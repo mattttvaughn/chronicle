@@ -29,7 +29,8 @@ fun makeCustomActionProviders(
     trackListStateManager: TrackListStateManager,
     mediaSessionConnector: MediaSessionConnector,
     prefsRepo: PrefsRepo,
-    currentlyPlaying: CurrentlyPlaying
+    currentlyPlaying: CurrentlyPlaying,
+    progressUpdater: ProgressUpdater
 ): Array<CustomActionProvider> {
     return arrayOf(
         SimpleCustomActionProvider(makeSkipBackward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
@@ -39,36 +40,13 @@ fun makeCustomActionProviders(
             player.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
         },
         SimpleCustomActionProvider(SKIP_TO_NEXT) { player: Player, _: String, _: Bundle? ->
-            val nextChapterIndex = currentlyPlaying.chapter.value.index.toInt() + 1
-            if(nextChapterIndex <= currentlyPlaying.book.value.chapters.size) { // or is it better to compare against chapters.last().index?
-                val nextChapter = currentlyPlaying.book.value.chapters[nextChapterIndex-1] // chapter index starts with 1 ???
-                Timber.d("NEXT CHAPTER: index=${nextChapter.index} id=${nextChapter.id} trackId=${nextChapter.trackId}  offset=${nextChapter.startTimeOffset} title=${nextChapter.title}")
-                player.seekTo(trackListStateManager.currentTrackIndex, nextChapter.startTimeOffset)
-                // TODO: currentlyPlaying is not updated → skipToNext currently only works once
-            } else {
-                val toast = Toast.makeText(
-                    Injector.get().applicationContext(),"@string/skip_forwards_reached_last_chapter",
-                    Toast.LENGTH_LONG)
-                toast.setGravity(Gravity.BOTTOM,0,200)
-                toast.show()
-            }
+            player.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
         },
         SimpleCustomActionProvider(SKIP_TO_PREVIOUS) { player: Player, _: String, _: Bundle? ->
-            var previousChapterIndex: Int = if((player.currentPosition - currentlyPlaying.chapter.value.startTimeOffset) < (SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS * MILLIS_PER_SECOND)) {
-                Timber.d("skipToPrevious → skip to previous chapter")
-                currentlyPlaying.chapter.value.index.toInt() -1
-            } else {
-                Timber.d("skipToPrevious → back to start of current chapter")
-                currentlyPlaying.chapter.value.index.toInt()
-            }
-            if(previousChapterIndex < 1) previousChapterIndex = 1
-            val previousChapter = currentlyPlaying.book.value.chapters[previousChapterIndex-1]
-            Timber.d("PREVIOUS CHAPTER: index=${previousChapter.index} id=${previousChapter.id} trackId=${previousChapter.trackId}  offset=${previousChapter.startTimeOffset} title=${previousChapter.title}")
-            player.seekTo(trackListStateManager.currentTrackIndex, previousChapter.startTimeOffset)
-            // TODO: currentlyPlaying is not updated → skipToPrevious currently only works once
-        },
+            player.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater)
+      },
         SimpleCustomActionProvider(makeChangeSpeed(prefsRepo)) { player: Player, _: String, _: Bundle? ->
-            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying)
+            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater)
         }
     )
 }
@@ -77,7 +55,8 @@ fun changeSpeed(
     trackListStateManager: TrackListStateManager,
     mediaSessionConnector: MediaSessionConnector,
     prefsRepo: PrefsRepo,
-    currentlyPlaying: CurrentlyPlaying
+    currentlyPlaying: CurrentlyPlaying,
+    progressUpdater: ProgressUpdater
 ) {
     when (prefsRepo.playbackSpeed) {
         0.5f -> prefsRepo.playbackSpeed = 0.7f
@@ -95,7 +74,8 @@ fun changeSpeed(
             trackListStateManager,
             mediaSessionConnector,
             prefsRepo,
-            currentlyPlaying
+            currentlyPlaying,
+            progressUpdater
         )
     )
 }

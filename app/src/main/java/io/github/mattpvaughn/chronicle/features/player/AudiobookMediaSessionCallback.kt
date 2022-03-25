@@ -19,6 +19,7 @@ import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import io.github.mattpvaughn.chronicle.BuildConfig
+import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
@@ -58,6 +59,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val mediaSession: MediaSessionCompat,
     private val appContext: Context,
     private val currentlyPlaying: CurrentlyPlaying,
+    private val progressUpdater: ProgressUpdater,
     defaultPlayer: SimpleExoPlayer
 ) : MediaSessionCompat.Callback() {
 
@@ -119,33 +121,13 @@ class AudiobookMediaSessionCallback @Inject constructor(
         }
     }
 
+
     private fun skipToNext() {
-        val nextChapterIndex = currentlyPlaying.chapter.value.index.toInt() + 1
-        if(nextChapterIndex <= currentlyPlaying.book.value.chapters.size) { // or is it better to compare against chapters.last().index?
-            val nextChapter = currentlyPlaying.book.value.chapters[nextChapterIndex-1] // chapter index starts with 1 ???
-            Timber.d("NEXT CHAPTER: index=${nextChapter.index} id=${nextChapter.id} trackId=${nextChapter.trackId}  offset=${nextChapter.startTimeOffset} title=${nextChapter.title}")
-            currentPlayer.seekTo(trackListStateManager.currentTrackIndex, nextChapter.startTimeOffset)
-            // TODO: currentlyPlaying is not updated → skipToNext currently only works once
-        } else {
-            val toast = Toast.makeText(appContext,"@string/skip_forwards_reached_last_chapter",Toast.LENGTH_LONG)
-            toast.setGravity(Gravity.BOTTOM,0,200)
-            toast.show()
-        }
+        currentPlayer.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
     }
 
     private fun skipToPrevious() {
-        var previousChapterIndex: Int = if((currentPlayer.currentPosition - currentlyPlaying.chapter.value.startTimeOffset) < (SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS * MILLIS_PER_SECOND)) {
-            Timber.d("skipToPrevious → skip to previous chapter")
-            currentlyPlaying.chapter.value.index.toInt() -1
-        } else {
-            Timber.d("skipToPrevious → back to start of current chapter")
-            currentlyPlaying.chapter.value.index.toInt()
-        }
-        if(previousChapterIndex < 1) previousChapterIndex = 1
-        val previousChapter = currentlyPlaying.book.value.chapters[previousChapterIndex-1]
-        Timber.d("PREVIOUS CHAPTER: index=${previousChapter.index} id=${previousChapter.id} trackId=${previousChapter.trackId}  offset=${previousChapter.startTimeOffset} title=${previousChapter.title}")
-        currentPlayer.seekTo(trackListStateManager.currentTrackIndex, previousChapter.startTimeOffset)
-        // TODO: currentlyPlaying is not updated → skipToPrevious currently only works once
+        currentPlayer.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater)
     }
 
     private fun skipForwards() {
@@ -159,7 +141,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private fun changeSpeed() {
-        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying)
+        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater)
         Timber.i("New Speed: %s", prefsRepo.playbackSpeed)
     }
 
