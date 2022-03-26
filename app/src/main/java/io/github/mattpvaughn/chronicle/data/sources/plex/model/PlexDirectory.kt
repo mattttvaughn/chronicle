@@ -22,6 +22,8 @@ data class PlexDirectory(
     val thumb: String = "",
     val size: Int = 0,
     val summary: String = "",
+    val parentYear: Int = 0,
+    val year: Int = 0,
     val addedAt: Long = 0,
     val updatedAt: Long = 0,
     val viewedLeafCount: Long = 0,
