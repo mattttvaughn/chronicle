@@ -58,7 +58,7 @@
                 android:contentDescription="@string/not_played_dog_ear"
                 android:cropToPadding="false"
                 android:elevation="10dp"
-                android:src="@drawable/ic_baseline_square_white"
+                android:src="@drawable/ic_not_played_dog_ear"
                 android:visibility="@{audiobook.viewCount == 0L ? audiobook.progress == 0L ? View.VISIBLE : View.GONE : View.GONE}" />
 
             <androidx.core.widget.ContentLoadingProgressBar

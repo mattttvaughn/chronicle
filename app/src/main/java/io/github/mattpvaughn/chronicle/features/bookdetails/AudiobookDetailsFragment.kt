@@ -164,10 +164,8 @@ class AudiobookDetailsFragment : Fragment() {
             }
         }
 
-        // todo: not sure if there is a better way to only observe viewCount and not the whole audiobook
-        viewModel.audiobook.observe(viewLifecycleOwner) { book ->
-            Timber.d("audiobook.observe called")
-            val icon = if(book?.viewCount == 0L) R.drawable.ic_visibility else R.drawable.ic_visibility_off
+        viewModel.isWatchedIcon.observe(viewLifecycleOwner) { icon ->
+            Timber.d("isWatchedIcon.observe called")
             binding.detailsToolbar.menu.findItem(R.id.toggle_watched).setIcon(icon)
         }
 

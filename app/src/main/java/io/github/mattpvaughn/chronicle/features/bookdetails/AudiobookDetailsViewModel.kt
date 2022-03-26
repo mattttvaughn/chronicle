@@ -260,6 +260,9 @@ class AudiobookDetailsViewModel(
         }
     }.asLiveData(viewModelScope.coroutineContext)
 
+    val isWatchedIcon : LiveData<Int> = audiobook.map {
+        if (it?.viewCount != 0L) R.drawable.ic_visibility_off else R.drawable.ic_visibility
+    }
 
     init {
         plexConfig.isConnected.observeForever(networkObserver)
@@ -553,7 +556,6 @@ class AudiobookDetailsViewModel(
         Timber.i("Marking audiobook as unwatched")
         viewModelScope.launch {
             bookRepository.setUnwatched(inputAudiobook.id)
-            // anything else to update here?
         }
         val toast = Toast.makeText(
             Injector.get().applicationContext(), R.string.marked_as_unplayed,
