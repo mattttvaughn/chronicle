@@ -60,6 +60,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val appContext: Context,
     private val currentlyPlaying: CurrentlyPlaying,
     private val progressUpdater: ProgressUpdater,
+    private val notificationBuilder: NotificationBuilder,
     defaultPlayer: SimpleExoPlayer
 ) : MediaSessionCompat.Callback() {
 
@@ -122,12 +123,20 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
 
-    private fun skipToNext() {
-        currentPlayer.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
+    private fun skipToNext(
+        notificationBuilder: NotificationBuilder,
+        mediaController: MediaControllerCompat,
+        serviceScope: CoroutineScope
+    ) {
+        currentPlayer.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
     }
 
-    private fun skipToPrevious() {
-        currentPlayer.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater)
+    private fun skipToPrevious(
+        notificationBuilder: NotificationBuilder,
+        mediaController: MediaControllerCompat,
+        serviceScope: CoroutineScope
+    ) {
+        currentPlayer.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
     }
 
     private fun skipForwards() {
@@ -141,7 +150,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private fun changeSpeed() {
-        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater)
+        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
         Timber.i("New Speed: %s", prefsRepo.playbackSpeed)
     }
 
@@ -158,11 +167,11 @@ class AudiobookMediaSessionCallback @Inject constructor(
             // pause/play for inline wired headphones
             return when (ke.keyCode) {
                 KEYCODE_MEDIA_NEXT -> {
-                    skipToNext()
+                    skipToNext(notificationBuilder,mediaController,serviceScope)
                     true
                 }
                 KEYCODE_MEDIA_PREVIOUS -> {
-                    skipToPrevious()
+                    skipToPrevious(notificationBuilder,mediaController,serviceScope)
                     true
                 }
                 KEYCODE_MEDIA_SKIP_FORWARD -> {
@@ -224,8 +233,8 @@ class AudiobookMediaSessionCallback @Inject constructor(
             SKIP_FORWARDS_STRING -> skipForwards()
             SKIP_BACKWARDS_STRING -> skipBackwards()
             CHANGE_PLAYBACK_SPEED -> changeSpeed()
-            SKIP_TO_NEXT_STRING -> skipToNext()
-            SKIP_TO_PREVIOUS_STRING -> skipToPrevious()
+            SKIP_TO_NEXT_STRING -> skipToNext(notificationBuilder,mediaController,serviceScope)
+            SKIP_TO_PREVIOUS_STRING -> skipToPrevious(notificationBuilder,mediaController,serviceScope)
         }
     }
 
