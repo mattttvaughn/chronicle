@@ -42,6 +42,7 @@
     <string name="cast">Cast</string>
     <string name="toggle_library_sort_descending">Sort descending, click to toggle</string>
     <string name="toggle_library_sort_ascending">Sort ascending, click to toggle</string>
+    <string name="not_played_dog_ear">Not played yet</string>
 
     <!-- Filter UI -->
     <string name="sort_by">Sort by:</string>
@@ -64,6 +65,7 @@
     <string name="view_style_book_cover">Book cover</string>
     <string name="view_style_text_list">Text</string>
     <string name="view_style_cover_and_text_list">Details</string>
+    <string name="hide_played_switch">Hide played audiobooks?</string>
 
     <!-- Book details-->
     <string name="audiobook_info">Audiobook info</string>
@@ -75,7 +77,10 @@
     <string name="download">Download</string>
     <string name="downloading_book">Downloading book</string>
     <string name="failed_to_connect_to_server">Can\'t connect to server</string>
-    <string name="prompt_mark_as_watched">Mark as watched?</string>
+    <string name="prompt_mark_as_played">Mark as played?</string>
+    <string name="prompt_mark_as_unplayed">Mark as unplayed?</string>
+    <string name="marked_as_played">Marked audiobook as played.</string>
+    <string name="marked_as_unplayed">Marked audiobook as unplayed.</string>
     <string name="cannot_play_media_no_server">Cannot play media- not connected to any server!</string>
     <string name="prompt_mark_as_unwatched">Mark as unwatched?</string>
     <string name="failed_to_sync_progress">Failed to sync progress</string>

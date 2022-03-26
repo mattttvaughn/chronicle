@@ -10,6 +10,7 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_C
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_DEBUG_DISABLE_PROGRESS
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_HIDE_PLAYED_AUDIOBOOKS
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_PREMIUM
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LAST_REFRESH
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_MEDIA_TYPE
@@ -94,6 +95,9 @@ interface PrefsRepo {
     /** Whether the library is sorted in descending (true) or ascending (false) order */
     var isLibrarySortedDescending: Boolean
 
+    /** Whether played audiobooks should be hidden in the library */
+    var hidePlayedAudiobooks: Boolean
+
     /**
      * Get a saved preference value corresponding to [key], providing [defaultValue] if no value
      * is already set. Return false in the case of no value already set if [defaultValue] is not
@@ -139,6 +143,7 @@ interface PrefsRepo {
         const val KEY_PREMIUM_TOKEN = "key_premium_token"
         const val KEY_BOOK_SORT_BY = "key_sort_by"
         const val KEY_IS_LIBRARY_SORT_DESCENDING = "key_is_sort_descending"
+        const val KEY_HIDE_PLAYED_AUDIOBOOKS = "key_hide_played_audiobooks"
         const val KEY_LIBRARY_MEDIA_TYPE = "key_media_type"
         const val KEY_LIBRARY_VIEW_STYLE = "key_library_view_style"
         const val VIEW_STYLE_COVER_GRID = "view_style_cover_grid"
@@ -269,6 +274,11 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         set(value) {
             sharedPreferences.edit().putBoolean(KEY_IS_LIBRARY_SORT_DESCENDING, value).apply()
         }
+
+    private val defaultHidePlayedAudiobooks = false
+    override var hidePlayedAudiobooks: Boolean
+        get() = getBoolean(KEY_HIDE_PLAYED_AUDIOBOOKS, defaultHidePlayedAudiobooks)
+        set(value) = sharedPreferences.edit().putBoolean(KEY_HIDE_PLAYED_AUDIOBOOKS, value).apply()
 
     private val viewTypeBook = "book"
     private val viewTypeAuthor = "author"

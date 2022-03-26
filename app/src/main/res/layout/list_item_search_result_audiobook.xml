@@ -17,6 +17,8 @@
             name="searchResultClick"
             type="io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick" />
 
+        <import type="android.view.View" />
+
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -28,6 +30,19 @@
         android:paddingTop="@dimen/margin_small"
         android:paddingRight="@dimen/screen_horizontal_padding"
         android:paddingBottom="@dimen/margin_small">
+
+        <ImageView
+            android:id="@+id/not_played_dog_ear"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_gravity="end|top"
+            android:contentDescription="@string/not_played_dog_ear"
+            android:cropToPadding="false"
+            android:elevation="10dp"
+            android:src="@drawable/ic_not_played_dog_ear"
+            android:visibility="@{audiobook.viewCount == 0L ? audiobook.progress == 0L ? View.VISIBLE : View.GONE : View.GONE}"
+            app:layout_constraintEnd_toEndOf="@+id/book_cover_img"
+            app:layout_constraintTop_toTopOf="@+id/book_cover_img" />
 
         <com.facebook.drawee.view.SimpleDraweeView
             android:id="@+id/book_cover_img"

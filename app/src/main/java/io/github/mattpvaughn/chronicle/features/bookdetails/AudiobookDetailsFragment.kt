@@ -163,6 +163,12 @@ class AudiobookDetailsFragment : Fragment() {
                 if (isSyncing) syncIcon.start() else syncIcon.stop()
             }
         }
+
+        viewModel.isWatchedIcon.observe(viewLifecycleOwner) { icon ->
+            Timber.d("isWatchedIcon.observe called")
+            binding.detailsToolbar.menu.findItem(R.id.toggle_watched).setIcon(icon)
+        }
+
         return binding.root
     }
 

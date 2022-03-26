@@ -5,9 +5,12 @@ import android.media.session.PlaybackState.*
 import android.os.Bundle
 import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
+import android.view.Gravity
+import android.widget.Toast
 import androidx.lifecycle.*
 import com.github.michaelbull.result.Ok
 import io.github.mattpvaughn.chronicle.R
+import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
@@ -257,6 +260,9 @@ class AudiobookDetailsViewModel(
         }
     }.asLiveData(viewModelScope.coroutineContext)
 
+    val isWatchedIcon : LiveData<Int> = audiobook.map {
+        if (it?.viewCount != 0L) R.drawable.ic_visibility_off else R.drawable.ic_visibility
+    }
 
     init {
         plexConfig.isConnected.observeForever(networkObserver)
@@ -504,14 +510,26 @@ class AudiobookDetailsViewModel(
     }
 
     fun toggleWatched() {
-        val prompt = R.string.prompt_mark_as_watched
+
+        val notPlayedYet = (audiobook.value?.viewCount ?: 0) == 0L
+
+        val prompt = if(notPlayedYet) {
+            R.string.prompt_mark_as_played
+        } else {
+            R.string.prompt_mark_as_unplayed
+        }
+
         showOptionsMenu(
             title = FormattableString.from(prompt),
             options = listOf(FormattableString.yes, FormattableString.no),
             listener = object : BottomChooserItemListener() {
                 override fun onItemClicked(formattableString: FormattableString) {
                     if (formattableString == FormattableString.yes) {
-                        setAudiobookWatched()
+                        if(notPlayedYet) {
+                            setAudiobookWatched()
+                        } else {
+                            setAudiobookUnwatched()
+                        }
                     }
                     hideBottomSheet()
                 }
@@ -527,6 +545,23 @@ class AudiobookDetailsViewModel(
             trackRepository.markTracksInBookAsWatched(inputAudiobook.id)
             bookRepository.setWatched(inputAudiobook.id)
         }
+        val toast = Toast.makeText(
+            Injector.get().applicationContext(), R.string.marked_as_played,
+            Toast.LENGTH_LONG)
+        toast.setGravity(Gravity.BOTTOM,0,200)
+        toast.show()
+    }
+
+    private fun setAudiobookUnwatched() {
+        Timber.i("Marking audiobook as unwatched")
+        viewModelScope.launch {
+            bookRepository.setUnwatched(inputAudiobook.id)
+        }
+        val toast = Toast.makeText(
+            Injector.get().applicationContext(), R.string.marked_as_unplayed,
+            Toast.LENGTH_LONG)
+        toast.setGravity(Gravity.BOTTOM,0,200)
+        toast.show()
     }
 
     private var _forceSyncInProgress = MutableLiveData(false)

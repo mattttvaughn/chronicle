@@ -9,6 +9,7 @@ import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_HIDE_PLAYED_AUDIOBOOKS
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_VIEW_STYLE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_OFFLINE_MODE
@@ -91,6 +92,12 @@ class LibraryViewModel(
         sharedPreferences
     )
 
+    val arePlayedAudiobooksHidden = BooleanPreferenceLiveData(
+        KEY_HIDE_PLAYED_AUDIOBOOKS,
+        false,
+        sharedPreferences
+    )
+
     private val sortKey =
         StringPreferenceLiveData(KEY_BOOK_SORT_BY, SORT_KEY_TITLE, sharedPreferences)
     val isOffline = BooleanPreferenceLiveData(KEY_OFFLINE_MODE, false, sharedPreferences)
@@ -98,23 +105,25 @@ class LibraryViewModel(
     private var prevBooks = emptyList<Audiobook>()
 
     private val allBooks = bookRepository.getAllBooks()
-    val books = QuadLiveDataAsync(
+    val books = QuintLiveDataAsync(
         viewModelScope,
         allBooks,
         isSortDescending,
         sortKey,
+        arePlayedAudiobooksHidden,
         isOffline
-    ) { _books, _isDescending, _sortKey, _isOffline ->
+    ) { _books, _isDescending, _sortKey, _hidePlayed, _isOffline ->
         if (_books.isNullOrEmpty()) {
-            return@QuadLiveDataAsync emptyList<Audiobook>()
+            return@QuintLiveDataAsync emptyList<Audiobook>()
         }
 
         // Use defaults if provided null values
         val desc = _isDescending ?: true
         val key = _sortKey ?: SORT_KEY_TITLE
+        val hidePlayed = _hidePlayed ?: false
         val offline = _isOffline ?: false
 
-        val results = _books.filter { !offline || it.isCached && offline }
+        val results = _books.filter { (!offline || it.isCached && offline) && (!hidePlayed || hidePlayed && it.viewCount == 0L) }
             .sortedWith(Comparator { book1, book2 ->
                 val descMultiplier = if (desc) 1 else -1
                 return@Comparator descMultiplier * when (key) {
@@ -133,12 +142,12 @@ class LibraryViewModel(
 
         // If nothing has changed, return prevBooks
         if (prevBooks.map { it.id } == results.map { it.id }) {
-            return@QuadLiveDataAsync prevBooks
+            return@QuintLiveDataAsync prevBooks
         }
 
         prevBooks = results
 
-        return@QuadLiveDataAsync results
+        return@QuintLiveDataAsync results
     }
 
     private var _messageForUser = MutableLiveData<Event<String>>()
@@ -321,6 +330,12 @@ class LibraryViewModel(
     /** Toggles the direction which the library is sorted in (ascending vs. descending) */
     fun toggleSortDirection() {
         prefsRepo.isLibrarySortedDescending = !prefsRepo.isLibrarySortedDescending
+    }
+
+    /** Toggles whether to show or hide played audiobooks in the library */
+    fun toggleHidePlayedAudiobooks() {
+        Timber.i("toggleHidePlayedAudiobooks")
+        prefsRepo.hidePlayedAudiobooks = !prefsRepo.hidePlayedAudiobooks
     }
 
 }
