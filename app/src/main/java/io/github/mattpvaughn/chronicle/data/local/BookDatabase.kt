@@ -163,6 +163,9 @@ interface BookDao {
 
     @Query("UPDATE Audiobook SET viewCount = viewCount + 1 WHERE id = :bookId")
     suspend fun setWatched(bookId: Int)
+
+    @Query("UPDATE Audiobook SET viewCount = 0 WHERE id = :bookId")
+    suspend fun setUnwatched(bookId: Int)
 }
 
 

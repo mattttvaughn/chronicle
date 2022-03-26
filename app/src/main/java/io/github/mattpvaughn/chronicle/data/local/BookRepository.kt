@@ -129,6 +129,8 @@ interface IBookRepository {
     /** Sets the book's [Audiobook.progress] to 0 in the DB and the server */
     suspend fun setWatched(bookId: Int)
 
+    suspend fun setUnwatched(bookId: Int)
+
     /** Loads an [Audiobook] in from the network */
     suspend fun fetchBookAsync(bookId: Int): Audiobook?
 
@@ -345,6 +347,17 @@ class BookRepository @Inject constructor(
                 plexMediaService.watched(bookId.toString())
                 bookDao.setWatched(bookId)
                 bookDao.resetBookProgress(bookId)
+            } catch (t: Throwable) {
+                Timber.e("Failed to update watched status: $t")
+            }
+        }
+    }
+
+    override suspend fun setUnwatched(bookId: Int) {
+        withContext(Dispatchers.IO) {
+            try {
+                plexMediaService.unwatched(bookId.toString())
+                bookDao.setUnwatched(bookId)
             } catch (t: Throwable) {
                 Timber.e("Failed to update watched status: $t")
             }
