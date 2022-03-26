@@ -52,6 +52,17 @@
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <ImageView
+                android:id="@+id/not_played_dog_ear"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="end|top"
+                android:contentDescription="@string/not_played_dog_ear"
+                android:cropToPadding="false"
+                android:elevation="10dp"
+                android:src="@drawable/ic_baseline_square_white"
+                android:visibility="@{audiobook.viewCount == 0L ? audiobook.progress == 0L ? View.VISIBLE : View.GONE : View.GONE}" />
+
             <androidx.core.widget.ContentLoadingProgressBar
                 android:id="@+id/book_progress"
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"

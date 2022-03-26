@@ -42,6 +42,7 @@
     <string name="cast">Cast</string>
     <string name="toggle_library_sort_descending">Sort descending, click to toggle</string>
     <string name="toggle_library_sort_ascending">Sort ascending, click to toggle</string>
+    <string name="not_played_dog_ear">Not played yet</string>
 
     <!-- Filter UI -->
     <string name="sort_by">Sort by:</string>
@@ -64,6 +65,7 @@
     <string name="view_style_book_cover">Book cover</string>
     <string name="view_style_text_list">Text</string>
     <string name="view_style_cover_and_text_list">Details</string>
+    <string name="hide_played_switch">Hide played audiobooks?</string>
 
     <!-- Book details-->
     <string name="audiobook_info">Audiobook info</string>
