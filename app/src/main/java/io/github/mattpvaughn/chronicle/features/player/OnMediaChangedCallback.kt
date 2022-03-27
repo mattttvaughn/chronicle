@@ -110,6 +110,10 @@ class OnMediaChangedCallback @Inject constructor(
                 becomingNoisyReceiver.unregister()
                 if (notification != null) {
                     notificationManager.notify(NOW_PLAYING_NOTIFICATION, notification)
+                    foregroundServiceController.startForeground(
+                        NOW_PLAYING_NOTIFICATION,
+                        notification
+                    )
                 }
                 // Enables dismiss-on-swipe when paused- swiping triggers the delete
                 // intent on the notification to be called, which kills the service
