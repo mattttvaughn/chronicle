@@ -76,15 +76,14 @@ class OnMediaChangedCallback @Inject constructor(
         }
     }
 
-    /**
-     * TODO: eventually handle chapter changes
-     */
     override fun onChapterChange(chapter: Chapter) {
-//        mediaController.playbackState?.let { state ->
-//            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-//                updateNotification(state.state)
-//            }
-//        }
+        Timber.d("onChapterChange called: chapter = [${chapter.index}] ${chapter.title} || current: [${currentlyPlaying.chapter.value.index}] ${currentlyPlaying.chapter.value.title}")
+
+        mediaController.playbackState?.let { state ->
+            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+                updateNotification(state.state)
+            }
+        }
     }
 
     private suspend fun updateNotification(state: Int) {

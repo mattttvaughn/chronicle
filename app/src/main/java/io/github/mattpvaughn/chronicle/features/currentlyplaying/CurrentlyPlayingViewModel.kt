@@ -9,6 +9,8 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED
 import android.text.format.DateUtils
+import android.view.Gravity
+import android.widget.Toast
 import androidx.lifecycle.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.michaelbull.result.Ok
@@ -349,6 +351,47 @@ class CurrentlyPlayingViewModel(
                     playbackState.isPlaying -> transportControls.pause()
                     else -> {
                     } // do nothing?
+                }
+            }
+        }
+    }
+
+    fun skipToNext() {
+        skipToChapter(SKIP_TO_NEXT, forward = true)
+
+    }
+
+    fun skipToPrevious() {
+        skipToChapter(SKIP_TO_PREVIOUS, forward = false)
+    }
+
+    private fun skipToChapter(action: PlaybackStateCompat.CustomAction, forward: Boolean) {
+        val transportControls = mediaServiceConnection.transportControls
+        mediaServiceConnection.let { connection ->
+            if (connection.nowPlaying.value != NOTHING_PLAYING) {
+                // Service will be alive, so we can let it handle the action
+                Timber.i("Seeking!")
+                transportControls?.sendCustomAction(action, null)
+            } else {
+                val currentChapterIndex = currentlyPlaying.book.value.chapters.indexOf(currentlyPlaying.chapter.value)
+                var skipToChapterIndex : Int
+                if(forward) {
+                    skipToChapterIndex = currentChapterIndex + 1
+                    if(skipToChapterIndex < currentlyPlaying.book.value.chapters.size) {
+                        val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex]
+                        jumpToChapter(skipToChapter.startTimeOffset,currentlyPlaying.track.value.id,hasUserConfirmation = true)
+                    } else {
+                        val toast = Toast.makeText(
+                            Injector.get().applicationContext(), R.string.skip_forwards_reached_last_chapter,
+                            Toast.LENGTH_LONG)
+                        toast.setGravity(Gravity.BOTTOM,0,200)
+                        toast.show()
+                    }
+                } else {
+                    skipToChapterIndex = currentChapterIndex - 1
+                    if(skipToChapterIndex < 0) skipToChapterIndex = 0
+                    val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex]
+                    jumpToChapter(skipToChapter.startTimeOffset, currentlyPlaying.track.value.id,hasUserConfirmation = true)
                 }
             }
         }

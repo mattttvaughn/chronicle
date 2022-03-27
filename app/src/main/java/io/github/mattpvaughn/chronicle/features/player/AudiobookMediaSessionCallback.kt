@@ -33,7 +33,6 @@ import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Compan
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.KEY_START_TIME_TRACK_OFFSET
 import io.github.mattpvaughn.chronicle.features.player.MediaPlayerService.Companion.USE_SAVED_TRACK_PROGRESS
 import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
-import io.github.mattpvaughn.chronicle.util.observeOnce
 import kotlinx.coroutines.*
 import timber.log.Timber
 import javax.inject.Inject
@@ -56,6 +55,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private val mediaSession: MediaSessionCompat,
     private val appContext: Context,
     private val currentlyPlaying: CurrentlyPlaying,
+    private val progressUpdater: ProgressUpdater,
     defaultPlayer: SimpleExoPlayer
 ) : MediaSessionCompat.Callback() {
 
@@ -117,6 +117,15 @@ class AudiobookMediaSessionCallback @Inject constructor(
         }
     }
 
+
+    private fun skipToNext() {
+        currentPlayer.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
+    }
+
+    private fun skipToPrevious() {
+        currentPlayer.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater)
+    }
+
     private fun skipForwards() {
         Timber.i("Track manager is $trackListStateManager")
         currentPlayer.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
@@ -128,7 +137,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private fun changeSpeed() {
-        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo)
+        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater)
         Timber.i("New Speed: %s", prefsRepo.playbackSpeed)
     }
 
@@ -144,11 +153,19 @@ class AudiobookMediaSessionCallback @Inject constructor(
             // These really handle bluetooth media actions only, but the framework handles
             // pause/play for inline wired headphones
             return when (ke.keyCode) {
-                KEYCODE_MEDIA_NEXT, KEYCODE_MEDIA_SKIP_FORWARD -> {
+                KEYCODE_MEDIA_NEXT -> {
+                    skipToNext()
+                    true
+                }
+                KEYCODE_MEDIA_PREVIOUS -> {
+                    skipToPrevious()
+                    true
+                }
+                KEYCODE_MEDIA_SKIP_FORWARD -> {
                     skipForwards()
                     true
                 }
-                KEYCODE_MEDIA_PREVIOUS, KEYCODE_MEDIA_SKIP_BACKWARD -> {
+                KEYCODE_MEDIA_SKIP_BACKWARD -> {
                     skipBackwards()
                     true
                 }
@@ -203,6 +220,8 @@ class AudiobookMediaSessionCallback @Inject constructor(
             SKIP_FORWARDS_STRING -> skipForwards()
             SKIP_BACKWARDS_STRING -> skipBackwards()
             CHANGE_PLAYBACK_SPEED -> changeSpeed()
+            SKIP_TO_NEXT_STRING -> skipToNext()
+            SKIP_TO_PREVIOUS_STRING -> skipToPrevious()
         }
     }
 

@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD
 import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD
+import android.view.KeyEvent.KEYCODE_MEDIA_NEXT
+import android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS
 import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
@@ -13,7 +15,7 @@ import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector.Cust
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import timber.log.Timber
+import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 
 
 /**
@@ -22,7 +24,9 @@ import timber.log.Timber
 fun makeCustomActionProviders(
     trackListStateManager: TrackListStateManager,
     mediaSessionConnector: MediaSessionConnector,
-    prefsRepo: PrefsRepo
+    prefsRepo: PrefsRepo,
+    currentlyPlaying: CurrentlyPlaying,
+    progressUpdater: ProgressUpdater
 ): Array<CustomActionProvider> {
     return arrayOf(
         SimpleCustomActionProvider(makeSkipBackward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
@@ -31,8 +35,14 @@ fun makeCustomActionProviders(
         SimpleCustomActionProvider(makeSkipForward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
             player.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
         },
+        SimpleCustomActionProvider(SKIP_TO_NEXT) { player: Player, _: String, _: Bundle? ->
+            player.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
+        },
+        SimpleCustomActionProvider(SKIP_TO_PREVIOUS) { player: Player, _: String, _: Bundle? ->
+            player.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater)
+      },
         SimpleCustomActionProvider(makeChangeSpeed(prefsRepo)) { player: Player, _: String, _: Bundle? ->
-            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo)
+            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater)
         }
     )
 }
@@ -40,7 +50,9 @@ fun makeCustomActionProviders(
 fun changeSpeed(
     trackListStateManager: TrackListStateManager,
     mediaSessionConnector: MediaSessionConnector,
-    prefsRepo: PrefsRepo
+    prefsRepo: PrefsRepo,
+    currentlyPlaying: CurrentlyPlaying,
+    progressUpdater: ProgressUpdater
 ) {
     when (prefsRepo.playbackSpeed) {
         0.5f -> prefsRepo.playbackSpeed = 0.7f
@@ -57,10 +69,29 @@ fun changeSpeed(
         *makeCustomActionProviders(
             trackListStateManager,
             mediaSessionConnector,
-            prefsRepo
+            prefsRepo,
+            currentlyPlaying,
+            progressUpdater
         )
     )
 }
+
+/** Threshold to decide whether to jump to the beginning of the current chapter or to the previous chapter. */
+const val SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS = 30L
+
+const val SKIP_TO_NEXT_STRING = "Skip to next"
+val SKIP_TO_NEXT: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
+    SKIP_TO_NEXT_STRING,
+    SKIP_TO_NEXT_STRING,
+    R.drawable.ic_skip_next_white
+).build()
+
+const val SKIP_TO_PREVIOUS_STRING = "Skip to previous"
+val SKIP_TO_PREVIOUS: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
+    SKIP_TO_PREVIOUS_STRING,
+    SKIP_TO_PREVIOUS_STRING,
+    R.drawable.ic_skip_previous_white
+).build()
 
 const val SKIP_FORWARDS_STRING = "Skip forwards"
 
@@ -129,6 +160,8 @@ fun makeChangeSpeed(
 
 val mediaSkipForwardCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_SKIP_FORWARD else 272
 val mediaSkipBackwardCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_SKIP_BACKWARD else 273
+val mediaSkipToNextCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_NEXT else 87
+val mediaSkipToPreviousCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_PREVIOUS else 88
 
 class SimpleCustomActionProvider(
     private val customAction: PlaybackStateCompat.CustomAction,

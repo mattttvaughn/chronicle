@@ -37,49 +37,121 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 
-                    <androidx.constraintlayout.widget.Guideline
-                        android:id="@+id/left_gutter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        app:layout_constraintGuide_begin="@dimen/screen_horizontal_padding" />
+                    <ImageView
+                        android:id="@+id/skip_to_previous"
+                        android:layout_width="@dimen/list_icon_size"
+                        android:layout_height="@dimen/list_icon_size"
+                        android:layout_margin="@dimen/margin_normal"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="@string/skip_to_previous"
+                        android:onClick="@{() -> viewModel.skipToPrevious()}"
+                        android:src="@drawable/ic_skip_previous_white"
+                        app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                        app:layout_constraintHorizontal_chainStyle="packed"
+                        app:layout_constraintLeft_toLeftOf="@id/left_gutter"
+                        app:layout_constraintRight_toLeftOf="@id/rewind_button"
+                        app:layout_constraintTop_toTopOf="@id/details_pause_play"/>
 
-                    <androidx.constraintlayout.widget.Guideline
-                        android:id="@+id/right_gutter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
+                    <ImageView
+                        android:id="@+id/rewind_button"
+                        android:layout_width="@dimen/list_icon_size"
+                        android:layout_height="@dimen/list_icon_size"
+                        android:layout_margin="@dimen/margin_normal"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="@string/skip_backwards"
+                        android:focusable="true"
+                        android:onClick="@{() -> viewModel.skipBackwards()}"
+                        android:src="@{viewModel.jumpBackwardsIcon}"
+                        app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                        app:layout_constraintLeft_toRightOf="@id/skip_to_previous"
+                        app:layout_constraintRight_toLeftOf="@id/details_pause_play"
+                        app:layout_constraintTop_toTopOf="@id/details_pause_play" />
 
-                    <com.facebook.drawee.view.SimpleDraweeView
-                        android:id="@+id/details_artwork"
-                        serverConnected="@{plexConfig.isConnected()}"
-                        srcRounded="@{viewModel.audiobook.thumb}"
-                        android:contentDescription="@{viewModel.audiobook.title}"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="@dimen/margin_large"
-                        android:layout_marginRight="@dimen/margin_large"
-                        android:visibility="@integer/currently_playing_artwork_visibility"
-                        android:layout_marginTop="@dimen/app_bar_height"
-                        app:layout_constraintLeft_toLeftOf="parent"
-                        app:layout_constraintRight_toRightOf="parent"
-                        app:layout_constraintHeight_max="@dimen/currently_playing_artwork_max_size"
-                        app:layout_constraintWidth_max="@dimen/currently_playing_artwork_max_size"
-                        app:viewAspectRatio="1"
-                        app:layout_constraintTop_toTopOf="parent"
-                        tools:src="@drawable/example_cover" />
+                    <ImageView
+                        android:id="@+id/details_pause_play"
+                        android:layout_width="@dimen/details_play_button"
+                        android:layout_height="@dimen/details_play_button"
+                        android:layout_margin="@dimen/margin_normal"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="@string/pause_play_button"
+                        android:focusable="true"
+                        android:onClick="@{() -> viewModel.play()}"
+                        android:src="@{viewModel.isPlaying() ? @drawable/ic_pause_button_large_colored : @drawable/ic_play_button_large_colored}"
+                        app:layout_constraintLeft_toRightOf="@id/rewind_button"
+                        app:layout_constraintRight_toLeftOf="@id/skip_forward_button"
+                        app:layout_constraintTop_toBottomOf="@id/book_title"
+                        tools:src="@drawable/ic_pause_button_large_colored" />
 
-                    <TextView
-                        android:id="@+id/progress"
-                        style="@style/TextAppearance.Body2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@{viewModel.bookProgressString + '/' + viewModel.bookDurationString}"
-                        app:layout_constraintRight_toRightOf="@id/details_artwork"
-                        android:visibility="@integer/currently_playing_artwork_visibility"
-                        app:layout_constraintTop_toBottomOf="@id/details_artwork"
-                        tools:text="1:21/3:52" />
+                    <ImageView
+                        android:id="@+id/skip_forward_button"
+                        android:layout_width="@dimen/list_icon_size"
+                        android:layout_height="@dimen/list_icon_size"
+                        android:layout_margin="@dimen/margin_normal"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="@string/skip_forwards"
+                        android:focusable="true"
+                        android:onClick="@{() -> viewModel.skipForwards()}"
+                        android:src="@{viewModel.jumpForwardsIcon}"
+                        app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                        app:layout_constraintLeft_toRightOf="@id/details_pause_play"
+                        app:layout_constraintRight_toLeftOf="@id/skip_to_next"
+                        app:layout_constraintTop_toTopOf="@id/details_pause_play" />
+
+                    <ImageView
+                        android:id="@+id/skip_to_next"
+                        android:layout_width="@dimen/list_icon_size"
+                        android:layout_height="@dimen/list_icon_size"
+                        android:layout_margin="@dimen/margin_normal"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="@string/skip_to_next"
+                        android:focusable="true"
+                        android:onClick="@{() -> viewModel.skipToNext() }"
+                        android:src="@drawable/ic_skip_next_white"
+                        app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
+                        app:layout_constraintLeft_toRightOf="@id/skip_forward_button"
+                        app:layout_constraintRight_toRightOf="@id/right_gutter"
+                        app:layout_constraintTop_toTopOf="@id/details_pause_play" />
+
+
+                    <ImageView
+                        android:id="@+id/change_speed_button"
+                        android:layout_width="@dimen/list_icon_size"
+                        android:layout_height="@dimen/list_icon_size"
+                        android:layout_margin="@dimen/margin_normal"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:onClick="@{() -> viewModel.showSpeedChooser()}"
+                        app:layout_constraintEnd_toStartOf="@+id/sleep_timer_button"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/details_pause_play"
+                        app:playbackSpeed="@{viewModel.speed}"
+                        tools:ignore="ContentDescription"
+                        tools:src="@drawable/ic_speed_up_1_0x" />
+
+                    <ImageView
+                        android:id="@+id/sleep_timer_button"
+                        android:layout_width="@dimen/list_icon_size"
+                        android:layout_height="@dimen/list_icon_size"
+                        android:layout_margin="@dimen/margin_normal"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="@string/sleep_timer"
+                        android:focusable="true"
+                        android:onClick="@{() -> viewModel.showSleepTimerOptions() }"
+                        android:src="@drawable/ic_sleep_timer"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintEnd_toStartOf="@+id/right_gutter"
+                        app:layout_constraintHorizontal_bias="0.5"
+                        app:layout_constraintStart_toEndOf="@+id/change_speed_button"
+                        app:layout_constraintTop_toBottomOf="@+id/details_pause_play"
+                        app:tint="@{viewModel.isSleepTimerActive() ? @color/iconActive : @color/icon}" />
 
                     <SeekBar
                         android:id="@+id/chapter_progress_seekbar"
@@ -94,6 +166,16 @@
                         app:layout_constraintRight_toRightOf="@id/right_gutter"
                         app:layout_constraintTop_toBottomOf="@id/progress" />
 
+                    <TextView
+                        android:id="@+id/progress"
+                        style="@style/TextAppearance.Body2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@{viewModel.bookProgressString + '/' + viewModel.bookDurationString}"
+                        android:visibility="@integer/currently_playing_artwork_visibility"
+                        app:layout_constraintRight_toRightOf="@id/details_artwork"
+                        app:layout_constraintTop_toBottomOf="@id/details_artwork"
+                        tools:text="1:21/3:52" />
 
                     <TextView
                         android:id="@+id/chapter_progress"
@@ -143,98 +225,49 @@
                         app:layout_constraintTop_toBottomOf="@id/chapter_title"
                         tools:text="Author name won't overflow" />
 
-                    <ImageView
-                        android:id="@+id/change_speed_button"
-                        android:layout_width="@dimen/list_icon_size"
-                        android:layout_height="@dimen/list_icon_size"
-                        android:background="?android:attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:layout_margin="@dimen/margin_normal"
-                        android:onClick="@{() -> viewModel.showSpeedChooser()}"
-                        app:layout_constraintHorizontal_chainStyle="packed"
-                        app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
-                        app:layout_constraintLeft_toLeftOf="@id/left_gutter"
-                        app:layout_constraintRight_toLeftOf="@id/rewind_button"
-                        app:layout_constraintTop_toTopOf="@id/details_pause_play"
-                        app:playbackSpeed="@{viewModel.speed}"
-                        tools:src="@drawable/ic_speed_up_1_0x"
-                        tools:ignore="ContentDescription" />
-
-                    <ImageView
-                        android:id="@+id/rewind_button"
-                        android:layout_width="@dimen/list_icon_size"
-                        android:layout_height="@dimen/list_icon_size"
-                        android:layout_margin="@dimen/margin_normal"
-                        android:background="?android:attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:onClick="@{() -> viewModel.skipBackwards()}"
-                        android:src="@{viewModel.jumpBackwardsIcon}"
-                        android:contentDescription="@string/skip_backwards"
-                        app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
-                        app:layout_constraintLeft_toRightOf="@id/change_speed_button"
-                        app:layout_constraintRight_toLeftOf="@id/details_pause_play"
-                        app:layout_constraintTop_toTopOf="@id/details_pause_play" />
-
-                    <ImageView
-                        android:id="@+id/details_pause_play"
-                        android:layout_width="@dimen/details_play_button"
-                        android:layout_height="@dimen/details_play_button"
-                        android:contentDescription="@string/pause_play_button"
-                        android:layout_margin="@dimen/margin_normal"
-                        android:background="?android:attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:onClick="@{() -> viewModel.play()}"
-                        android:src="@{viewModel.isPlaying() ? @drawable/ic_pause_button_large_colored : @drawable/ic_play_button_large_colored}"
-                        app:layout_constraintLeft_toRightOf="@id/rewind_button"
-                        app:layout_constraintRight_toLeftOf="@id/skip_forward_button"
-                        app:layout_constraintTop_toBottomOf="@id/book_title"
-                        tools:src="@drawable/ic_pause_button_large_colored" />
-
-                    <ImageView
-                        android:id="@+id/skip_forward_button"
-                        android:layout_width="@dimen/list_icon_size"
-                        android:layout_height="@dimen/list_icon_size"
-                        android:layout_margin="@dimen/margin_normal"
-                        android:background="?android:attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:contentDescription="@string/skip_forwards"
-                        android:focusable="true"
-                        android:onClick="@{() -> viewModel.skipForwards()}"
-                        android:src="@{viewModel.jumpForwardsIcon}"
-                        app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
-                        app:layout_constraintLeft_toRightOf="@id/details_pause_play"
-                        app:layout_constraintRight_toLeftOf="@id/sleep_timer_button"
-                        app:layout_constraintTop_toTopOf="@id/details_pause_play" />
-
-                    <ImageView
-                        android:id="@+id/sleep_timer_button"
-                        android:layout_width="@dimen/list_icon_size"
-                        android:layout_height="@dimen/list_icon_size"
-                        android:background="?android:attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:layout_margin="@dimen/margin_normal"
-                        android:focusable="true"
-                        android:contentDescription="@string/sleep_timer"
-                        android:onClick="@{() -> viewModel.showSleepTimerOptions() }"
-                        android:src="@drawable/ic_sleep_timer"
-                        app:tint="@{viewModel.isSleepTimerActive() ? @color/iconActive : @color/icon}"
-                        app:layout_constraintBottom_toBottomOf="@id/details_pause_play"
-                        app:layout_constraintLeft_toRightOf="@id/skip_forward_button"
-                        app:layout_constraintRight_toRightOf="@id/right_gutter"
-                        app:layout_constraintTop_toTopOf="@id/details_pause_play" />
-
                     <TextView
                         android:id="@+id/chapters_title"
                         style="@style/TextAppearance.Title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="56dp"
                         android:padding="@dimen/margin_normal"
                         android:text="@string/chapters"
                         app:layout_constraintLeft_toLeftOf="parent"
                         app:layout_constraintTop_toBottomOf="@id/details_pause_play" />
+
+                    <androidx.constraintlayout.widget.Guideline
+                        android:id="@+id/left_gutter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        app:layout_constraintGuide_begin="@dimen/screen_horizontal_padding" />
+
+                    <androidx.constraintlayout.widget.Guideline
+                        android:id="@+id/right_gutter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
+
+                    <com.facebook.drawee.view.SimpleDraweeView
+                        android:id="@+id/details_artwork"
+                        serverConnected="@{plexConfig.isConnected()}"
+                        srcRounded="@{viewModel.audiobook.thumb}"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="@dimen/margin_large"
+                        android:layout_marginTop="@dimen/app_bar_height"
+                        android:layout_marginRight="@dimen/margin_large"
+                        android:contentDescription="@{viewModel.audiobook.title}"
+                        android:visibility="@integer/currently_playing_artwork_visibility"
+                        app:layout_constraintHeight_max="@dimen/currently_playing_artwork_max_size"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintWidth_max="@dimen/currently_playing_artwork_max_size"
+                        app:viewAspectRatio="1"
+                        tools:src="@drawable/example_cover" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -282,8 +315,9 @@
             bottomChooserState="@{viewModel.sleepTimerChooserState}"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:elevation="4dp" />
+            android:elevation="4dp"
+            app:layout_anchor="@+id/bottom_sheet_chooser"
+            app:layout_anchorGravity="center" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>
-
