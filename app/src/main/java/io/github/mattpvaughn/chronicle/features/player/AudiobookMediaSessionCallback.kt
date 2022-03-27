@@ -128,7 +128,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
         mediaController: MediaControllerCompat,
         serviceScope: CoroutineScope
     ) {
-        currentPlayer.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
+        currentPlayer.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope, foregroundServiceController)
     }
 
     private fun skipToPrevious(
@@ -136,7 +136,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
         mediaController: MediaControllerCompat,
         serviceScope: CoroutineScope
     ) {
-        currentPlayer.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
+        currentPlayer.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope, foregroundServiceController)
     }
 
     private fun skipForwards() {
@@ -150,7 +150,7 @@ class AudiobookMediaSessionCallback @Inject constructor(
     }
 
     private fun changeSpeed() {
-        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
+        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope, foregroundServiceController)
         Timber.i("New Speed: %s", prefsRepo.playbackSpeed)
     }
 

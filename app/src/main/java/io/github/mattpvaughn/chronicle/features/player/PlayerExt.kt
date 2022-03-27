@@ -41,7 +41,8 @@ fun Player.skipToNext(
     progressUpdater: ProgressUpdater,
     notificationBuilder: NotificationBuilder,
     controller: MediaControllerCompat,
-    serviceScope: CoroutineScope
+    serviceScope: CoroutineScope,
+    foregroundServiceController: ForegroundServiceController
 ) {
     Timber.i("Player.skipToNext called")
     val currentChapterIndex = currentlyPlaying.book.value.chapters.indexOf(currentlyPlaying.chapter.value)
@@ -57,7 +58,10 @@ fun Player.skipToNext(
         seekTo(containingTrackIndex, nextChapter.startTimeOffset + 300)
         progressUpdater.updateProgressWithoutParameters()
         serviceScope.launch {
-            notificationBuilder.buildNotification(controller.sessionToken)
+            val notification = notificationBuilder.buildNotification(controller.sessionToken)
+            if (notification != null) {
+                foregroundServiceController.startForeground(NOW_PLAYING_NOTIFICATION, notification)
+            }
         }
     } else {
         val toast = Toast.makeText(
@@ -77,7 +81,8 @@ fun Player.skipToPrevious(
     progressUpdater: ProgressUpdater,
     notificationBuilder: NotificationBuilder,
     controller: MediaControllerCompat,
-    serviceScope: CoroutineScope
+    serviceScope: CoroutineScope,
+    foregroundServiceController: ForegroundServiceController
 ) {
     Timber.i("Player.skipToPrevious called")
     val currentChapterIndex = currentlyPlaying.book.value.chapters.indexOf(currentlyPlaying.chapter.value)
@@ -100,6 +105,9 @@ fun Player.skipToPrevious(
     seekTo(containingTrackIndex, previousChapter.startTimeOffset)
     progressUpdater.updateProgressWithoutParameters()
     serviceScope.launch {
-        notificationBuilder.buildNotification(controller.sessionToken)
+        val notification = notificationBuilder.buildNotification(controller.sessionToken)
+        if (notification != null) {
+            foregroundServiceController.startForeground(NOW_PLAYING_NOTIFICATION, notification)
+        }
     }
 }

@@ -35,7 +35,8 @@ fun makeCustomActionProviders(
     progressUpdater: ProgressUpdater,
     notificationBuilder: NotificationBuilder,
     mediaController: MediaControllerCompat,
-    serviceScope: CoroutineScope
+    serviceScope: CoroutineScope,
+    foregroundServiceController: ForegroundServiceController
 ): Array<CustomActionProvider> {
     return arrayOf(
         SimpleCustomActionProvider(makeSkipBackward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
@@ -45,14 +46,13 @@ fun makeCustomActionProviders(
             player.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
         },
         SimpleCustomActionProvider(SKIP_TO_NEXT) { player: Player, _: String, _: Bundle? ->
-            player.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
-
+            player.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope, foregroundServiceController)
         },
         SimpleCustomActionProvider(SKIP_TO_PREVIOUS) { player: Player, _: String, _: Bundle? ->
-            player.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
+            player.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope, foregroundServiceController)
       },
         SimpleCustomActionProvider(makeChangeSpeed(prefsRepo)) { player: Player, _: String, _: Bundle? ->
-            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
+            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope, foregroundServiceController)
         }
     )
 }
@@ -65,7 +65,8 @@ fun changeSpeed(
     progressUpdater: ProgressUpdater,
     notificationBuilder: NotificationBuilder,
     mediaController: MediaControllerCompat,
-    serviceScope: CoroutineScope
+    serviceScope: CoroutineScope,
+    foregroundServiceController: ForegroundServiceController
 ) {
     when (prefsRepo.playbackSpeed) {
         0.5f -> prefsRepo.playbackSpeed = 0.7f
@@ -87,7 +88,8 @@ fun changeSpeed(
             progressUpdater,
             notificationBuilder,
             mediaController,
-            serviceScope
+            serviceScope,
+            foregroundServiceController
         )
     )
 }
