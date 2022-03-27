@@ -3,6 +3,7 @@ package io.github.mattpvaughn.chronicle.features.player
 import android.os.Build
 import android.os.Build.VERSION_CODES.M
 import android.os.Bundle
+import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.Gravity
 import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD
@@ -19,6 +20,7 @@ import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
+import kotlinx.coroutines.CoroutineScope
 import timber.log.Timber
 
 
@@ -30,7 +32,10 @@ fun makeCustomActionProviders(
     mediaSessionConnector: MediaSessionConnector,
     prefsRepo: PrefsRepo,
     currentlyPlaying: CurrentlyPlaying,
-    progressUpdater: ProgressUpdater
+    progressUpdater: ProgressUpdater,
+    notificationBuilder: NotificationBuilder,
+    mediaController: MediaControllerCompat,
+    serviceScope: CoroutineScope
 ): Array<CustomActionProvider> {
     return arrayOf(
         SimpleCustomActionProvider(makeSkipBackward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
@@ -40,13 +45,14 @@ fun makeCustomActionProviders(
             player.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
         },
         SimpleCustomActionProvider(SKIP_TO_NEXT) { player: Player, _: String, _: Bundle? ->
-            player.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
+            player.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
+
         },
         SimpleCustomActionProvider(SKIP_TO_PREVIOUS) { player: Player, _: String, _: Bundle? ->
-            player.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater)
+            player.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
       },
         SimpleCustomActionProvider(makeChangeSpeed(prefsRepo)) { player: Player, _: String, _: Bundle? ->
-            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater)
+            changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater, notificationBuilder, mediaController, serviceScope)
         }
     )
 }
@@ -56,7 +62,10 @@ fun changeSpeed(
     mediaSessionConnector: MediaSessionConnector,
     prefsRepo: PrefsRepo,
     currentlyPlaying: CurrentlyPlaying,
-    progressUpdater: ProgressUpdater
+    progressUpdater: ProgressUpdater,
+    notificationBuilder: NotificationBuilder,
+    mediaController: MediaControllerCompat,
+    serviceScope: CoroutineScope
 ) {
     when (prefsRepo.playbackSpeed) {
         0.5f -> prefsRepo.playbackSpeed = 0.7f
@@ -75,7 +84,10 @@ fun changeSpeed(
             mediaSessionConnector,
             prefsRepo,
             currentlyPlaying,
-            progressUpdater
+            progressUpdater,
+            notificationBuilder,
+            mediaController,
+            serviceScope
         )
     )
 }
