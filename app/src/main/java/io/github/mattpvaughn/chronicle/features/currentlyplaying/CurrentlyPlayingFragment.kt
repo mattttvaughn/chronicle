@@ -3,15 +3,16 @@ package io.github.mattpvaughn.chronicle.features.currentlyplaying
 import android.content.Context
 import android.content.IntentFilter
 import android.os.Bundle
+import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.SeekBar
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.google.android.material.slider.Slider
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.COLLAPSED
 import io.github.mattpvaughn.chronicle.data.model.Chapter
@@ -87,17 +88,24 @@ class CurrentlyPlayingFragment : Fragment() {
                 viewModel.jumpToChapter(chapter.startTimeOffset, chapter.trackId.toInt())
             }
         })
-        binding.chapterProgressSeekbar.setOnSeekBarChangeListener(object :
-            SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {}
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
 
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                if (seekBar != null) {
-                    viewModel.seekTo(seekBar.progress.toDouble() / seekBar.max)
-                }
+        binding.chapterProgressSeekbar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: Slider) {
+                // Responds to when slider's touch event is being started
+            }
+
+            override fun onStopTrackingTouch(slider: Slider) {
+                // Responds to when slider's touch event is being stopped
+                viewModel.seekTo(slider.value.toDouble() / slider.valueTo)
             }
         })
+
+        binding.chapterProgressSeekbar.setLabelFormatter { value: Float ->
+            DateUtils.formatElapsedTime(
+                StringBuilder(),
+                value.toLong() / 1000
+            )
+        }
 
         viewModel.activeChapter.observe(viewLifecycleOwner) { chapter ->
             Timber.i("Updating current chapter: (${chapter.trackId}, ${chapter.discNumber}, ${chapter.index})")

@@ -85,6 +85,24 @@
         <item name="searchViewStyle">@style/SearchViewTheme</item>
     </style>
 
+    <!-- Progress Slider -->
+    <style name="ProgressSliderTooltip" parent="Widget.MaterialComponents.Tooltip">
+        <item name="backgroundTint">@color/colorAccent</item>
+        <item name="android:textAppearance">@style/ProgressSliderTextAppearance</item>
+
+        <item name="android:background">@color/colorAccent</item>
+        <item name="fontWeight">400</item>
+        <item name="fontFamily">@font/lato</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+    </style>
+
+    <style name="ProgressSliderTextAppearance" parent="@style/TextAppearance.MaterialComponents.Tooltip">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="fontFamily">@font/lato</item>
+        <item name="fontWeight">600</item>
+    </style>
+
     <!-- Bottom Navigation -->
     <style name="Widget.BottomNavigationView" parent="Widget.Design.BottomNavigationView">
         <item name="fontFamily">@font/lato_bold</item>
