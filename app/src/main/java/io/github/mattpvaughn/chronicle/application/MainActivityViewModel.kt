@@ -167,6 +167,7 @@ class MainActivityViewModel(
             COLLAPSED -> _currentlyPlayingLayoutState.postValue(EXPANDED)
             EXPANDED -> _currentlyPlayingLayoutState.postValue(COLLAPSED)
             HIDDEN -> throw IllegalStateException("Cannot click on hidden sheet!")
+            else -> {}
         }
     }
 

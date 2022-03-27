@@ -5,12 +5,11 @@ apply plugin: "kotlin-parcelize"
 apply plugin: "com.google.android.gms.oss-licenses-plugin"
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "29.0.3"
+    compileSdkVersion 31
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionCode 23
         versionName "0.52.0"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
@@ -92,8 +91,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-process:$lifecycleVersion"
 
     // Google Play Billing
-    implementation "com.android.billingclient:billing:$billingVersion"
-    implementation "com.android.billingclient:billing-ktx:$billingVersion"
+    implementation "com.github.akshaaatt:Google-IAP:$iapWrapperVersion"
 
     // Retrofit
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"

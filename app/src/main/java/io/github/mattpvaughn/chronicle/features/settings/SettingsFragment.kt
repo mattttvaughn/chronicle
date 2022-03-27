@@ -95,7 +95,6 @@ class SettingsFragment : Fragment() {
         })
 
         viewModel.upgradeToPremium.observeEvent(viewLifecycleOwner) {
-            Timber.i(chronicleBillingManager.billingClient.toString())
             chronicleBillingManager.launchBillingFlow(requireActivity())
         }
 

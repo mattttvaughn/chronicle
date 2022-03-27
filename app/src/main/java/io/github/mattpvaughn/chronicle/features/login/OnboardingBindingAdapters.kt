@@ -21,6 +21,7 @@ fun bindLoadingStatus(
         LoadingStatus.ERROR -> recyclerView.visibility = View.GONE
         LoadingStatus.DONE -> recyclerView.visibility = View.VISIBLE
         LoadingStatus.LOADING -> recyclerView.visibility = View.GONE
+        else -> {}
     }
 }
 
@@ -30,6 +31,7 @@ fun bindLoadingStatus(errorView: TextView, loadingStatus: LoadingStatus?) {
         LoadingStatus.ERROR -> errorView.visibility = View.VISIBLE
         LoadingStatus.DONE -> errorView.visibility = View.GONE
         LoadingStatus.LOADING -> errorView.visibility = View.GONE
+        else -> {}
     }
 }
 
@@ -42,6 +44,7 @@ fun bindLoadingStatus(
         LoadingStatus.ERROR -> progressBar.visibility = View.GONE
         LoadingStatus.DONE -> progressBar.visibility = View.GONE
         LoadingStatus.LOADING -> progressBar.visibility = View.VISIBLE
+        else -> {}
     }
 }
 

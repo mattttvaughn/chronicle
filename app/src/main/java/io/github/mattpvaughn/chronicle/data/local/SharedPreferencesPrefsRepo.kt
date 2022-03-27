@@ -1,7 +1,6 @@
 package io.github.mattpvaughn.chronicle.data.local
 
 import android.content.SharedPreferences
-import com.android.billingclient.api.Purchase
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_ALLOW_AUTO
