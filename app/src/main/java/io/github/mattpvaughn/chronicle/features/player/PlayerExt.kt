@@ -1,6 +1,5 @@
 package io.github.mattpvaughn.chronicle.features.player
 
-import android.support.v4.media.session.MediaControllerCompat
 import android.view.Gravity
 import android.widget.Toast
 import com.google.android.exoplayer2.Player
@@ -8,8 +7,6 @@ import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import timber.log.Timber
 import kotlin.math.abs
 
@@ -38,11 +35,7 @@ fun Player.seekRelative(trackListStateManager: TrackListStateManager, durationMi
 fun Player.skipToNext(
     trackListStateManager: TrackListStateManager,
     currentlyPlaying: CurrentlyPlaying,
-    progressUpdater: ProgressUpdater,
-    notificationBuilder: NotificationBuilder,
-    controller: MediaControllerCompat,
-    serviceScope: CoroutineScope,
-    foregroundServiceController: ForegroundServiceController
+    progressUpdater: ProgressUpdater
 ) {
     Timber.i("Player.skipToNext called")
     val currentChapterIndex = currentlyPlaying.book.value.chapters.indexOf(currentlyPlaying.chapter.value)
@@ -57,12 +50,6 @@ fun Player.skipToNext(
         val containingTrackIndex = trackListStateManager.trackList.indexOf(containingTrack)
         seekTo(containingTrackIndex, nextChapter.startTimeOffset + 300)
         progressUpdater.updateProgressWithoutParameters()
-        serviceScope.launch {
-            val notification = notificationBuilder.buildNotification(controller.sessionToken)
-            if (notification != null) {
-                foregroundServiceController.startForeground(NOW_PLAYING_NOTIFICATION, notification)
-            }
-        }
     } else {
         val toast = Toast.makeText(
             Injector.get().applicationContext(),
@@ -78,11 +65,7 @@ fun Player.skipToNext(
 fun Player.skipToPrevious(
     trackListStateManager: TrackListStateManager,
     currentlyPlaying: CurrentlyPlaying,
-    progressUpdater: ProgressUpdater,
-    notificationBuilder: NotificationBuilder,
-    controller: MediaControllerCompat,
-    serviceScope: CoroutineScope,
-    foregroundServiceController: ForegroundServiceController
+    progressUpdater: ProgressUpdater
 ) {
     Timber.i("Player.skipToPrevious called")
     val currentChapterIndex = currentlyPlaying.book.value.chapters.indexOf(currentlyPlaying.chapter.value)
@@ -104,10 +87,4 @@ fun Player.skipToPrevious(
     val containingTrackIndex = trackListStateManager.trackList.indexOf(containingTrack)
     seekTo(containingTrackIndex, previousChapter.startTimeOffset)
     progressUpdater.updateProgressWithoutParameters()
-    serviceScope.launch {
-        val notification = notificationBuilder.buildNotification(controller.sessionToken)
-        if (notification != null) {
-            foregroundServiceController.startForeground(NOW_PLAYING_NOTIFICATION, notification)
-        }
-    }
 }

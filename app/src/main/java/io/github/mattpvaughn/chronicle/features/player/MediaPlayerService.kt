@@ -207,11 +207,7 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
                 mediaSessionConnector,
                 prefsRepo,
                 currentlyPlaying,
-                progressUpdater,
-                notificationBuilder,
-                mediaController,
-                serviceScope,
-                this
+                progressUpdater
             )
         )
         mediaSessionConnector.setQueueNavigator(queueNavigator)
