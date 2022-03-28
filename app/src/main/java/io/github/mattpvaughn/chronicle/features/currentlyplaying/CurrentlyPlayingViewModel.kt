@@ -39,6 +39,8 @@ import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -150,6 +152,16 @@ class CurrentlyPlayingViewModel(
         )
     }
 
+    val chapterProgressForSlider = currentlyPlaying.chapter.combine(currentlyPlaying.track)
+    { chapter: Chapter, track: MediaItemTrack ->
+        track.progress - chapter.startTimeOffset
+    }.filter { !isSliding }.asLiveData(viewModelScope.coroutineContext)
+
+    val trackProgressForSlider = currentlyPlaying.track
+        .filter { !isSliding }
+        .map { it.progress }
+        .asLiveData(viewModelScope.coroutineContext)
+
     val chapterDuration = Transformations.map(currentChapter) {
         return@map it.endTimeOffset - it.startTimeOffset
     }
@@ -160,6 +172,8 @@ class CurrentlyPlayingViewModel(
             duration / 1000
         )
     }
+
+    var isSliding = false
 
     private var _isSleepTimerActive = MutableLiveData(false)
     val isSleepTimerActive: LiveData<Boolean>
