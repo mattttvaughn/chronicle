@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
-        targetSdkVersion 31
+        targetSdkVersion 30
         versionCode 23
         versionName "0.52.0"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
@@ -175,7 +175,7 @@ dependencies {
     implementation "com.michael-bull.kotlin-result:kotlin-result:$kotlinResultVersion"
 
     // Test for memory leaks
-    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.4"
+    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.8.1"
 
 
     /* ~~~~~~~~~~~~ Local Tests ~~~~~~~~~~ */
