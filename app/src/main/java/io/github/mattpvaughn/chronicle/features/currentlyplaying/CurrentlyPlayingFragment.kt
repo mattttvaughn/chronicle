@@ -91,11 +91,11 @@ class CurrentlyPlayingFragment : Fragment() {
 
         binding.chapterProgressSeekbar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
             override fun onStartTrackingTouch(slider: Slider) {
-                // Responds to when slider's touch event is being started
+                viewModel.isSliding = true
             }
 
             override fun onStopTrackingTouch(slider: Slider) {
-                // Responds to when slider's touch event is being stopped
+                viewModel.isSliding = false
                 viewModel.seekTo(slider.value.toDouble() / slider.valueTo)
             }
         })
