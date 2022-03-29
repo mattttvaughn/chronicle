@@ -197,13 +197,6 @@ class NotificationBuilder @Inject constructor(
         builder.addAction(skipToNextAction)
         builder.addAction(skipForwardsAction())
 
-        // Add a button to manually kill the notification + service
-        builder.addAction(
-            R.drawable.ic_close_white,
-            context.getString(R.string.cancel),
-            stopPendingIntent
-        )
-
         val mediaStyle = MediaStyle()
             .setCancelButtonIntent(stopPendingIntent)
             .setMediaSession(sessionToken)
