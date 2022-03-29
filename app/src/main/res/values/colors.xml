@@ -12,6 +12,7 @@
     <color name="iconActive">@color/colorAccent</color>
     <color name="iconDisabled">@color/textSecondary</color>
     <color name="iconFailed">#FF4444</color>
+    <color name="sleepTimerCountdownOverlayColor">#A8121212</color>
 
     <!-- For audiobook grid id -->
     <color name="imagePlaceholderColor">#33B998CC</color>
