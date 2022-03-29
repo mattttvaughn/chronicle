@@ -187,15 +187,15 @@ class NotificationBuilder @Inject constructor(
             Timber.i("Building notification! state=${controller.playbackState.stateName}, playing=$isPlaying")
         }
 
-        builder.addAction(skipBackwardsAction())
         builder.addAction(skipToPreviousAction)
+        builder.addAction(skipBackwardsAction())
         if (isPlaying) {
             builder.addAction(pauseAction)
         } else {
             builder.addAction(playAction)
         }
-        builder.addAction(skipToNextAction)
         builder.addAction(skipForwardsAction())
+        builder.addAction(skipToNextAction)
 
         // Add a button to manually kill the notification + service
         builder.addAction(
