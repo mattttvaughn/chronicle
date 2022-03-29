@@ -227,7 +227,7 @@ class NotificationBuilder @Inject constructor(
             Pair(currentBook.title, currentBook.author)
         }
 
-        // Only load bitmap when the book changes
+        // Only load bitmap when the book changes or the bitmap got recycled
         if (bookTitleBitmapPair?.first != currentBook.id || bookTitleBitmapPair?.second?.isRecycled != false) {
             val artUri = currentBook.thumb
             Timber.i("Loading art uri: $artUri")
