@@ -55,14 +55,23 @@ fun changeSpeed(
     progressUpdater: ProgressUpdater
 ) {
     when (prefsRepo.playbackSpeed) {
-        0.5f -> prefsRepo.playbackSpeed = 0.7f
-        0.7f -> prefsRepo.playbackSpeed = 1.0f
-        1.0f -> prefsRepo.playbackSpeed = 1.2f
-        1.2f -> prefsRepo.playbackSpeed = 1.5f
-        1.5f -> prefsRepo.playbackSpeed = 1.7f
-        1.7f -> prefsRepo.playbackSpeed = 2.0f
-        2.0f -> prefsRepo.playbackSpeed = 3.0f
-        3.0f -> prefsRepo.playbackSpeed = 0.5f
+        0.5f -> prefsRepo.playbackSpeed = 0.6f
+        0.6f -> prefsRepo.playbackSpeed = 0.7f
+        0.7f -> prefsRepo.playbackSpeed = 0.8f
+        0.8f -> prefsRepo.playbackSpeed = 0.9f
+        0.9f -> prefsRepo.playbackSpeed = 1.0f
+        1.0f -> prefsRepo.playbackSpeed = 1.1f
+        1.1f -> prefsRepo.playbackSpeed = 1.2f
+        1.2f -> prefsRepo.playbackSpeed = 1.3f
+        1.3f -> prefsRepo.playbackSpeed = 1.4f
+        1.4f -> prefsRepo.playbackSpeed = 1.5f
+        1.5f -> prefsRepo.playbackSpeed = 1.6f
+        1.6f -> prefsRepo.playbackSpeed = 1.7f
+        1.7f -> prefsRepo.playbackSpeed = 1.8f
+        1.8f -> prefsRepo.playbackSpeed = 1.9f
+        1.9f -> prefsRepo.playbackSpeed = 2.0f
+        2.0f -> prefsRepo.playbackSpeed = 2.5f
+        2.5f -> prefsRepo.playbackSpeed = 3.0f
         else -> prefsRepo.playbackSpeed = 1.0f
     }
     mediaSessionConnector.setCustomActionProviders(
@@ -142,12 +151,22 @@ fun makeChangeSpeed(
 ): PlaybackStateCompat.CustomAction {
     val drawable: Int = when (prefsRepo.playbackSpeed) {
         0.5f -> R.drawable.ic_speed_up_0_5x
+        0.6f -> R.drawable.ic_speed_up_0_6x
         0.7f -> R.drawable.ic_speed_up_0_7x
+        0.8f -> R.drawable.ic_speed_up_0_8x
+        0.9f -> R.drawable.ic_speed_up_0_9x
         1.0f -> R.drawable.ic_speed_up_1_0x
+        1.1f -> R.drawable.ic_speed_up_1_1x
         1.2f -> R.drawable.ic_speed_up_1_2x
+        1.3f -> R.drawable.ic_speed_up_1_3x
+        1.4f -> R.drawable.ic_speed_up_1_4x
         1.5f -> R.drawable.ic_speed_up_1_5x
+        1.6f -> R.drawable.ic_speed_up_1_6x
         1.7f -> R.drawable.ic_speed_up_1_7x
+        1.8f -> R.drawable.ic_speed_up_1_8x
+        1.9f -> R.drawable.ic_speed_up_1_9x
         2.0f -> R.drawable.ic_speed_up_2_0x
+        2.5f -> R.drawable.ic_speed_up_2_5x
         3.0f -> R.drawable.ic_speed_up_3_0x
         else -> R.drawable.ic_speed_up_1_0x
     }
