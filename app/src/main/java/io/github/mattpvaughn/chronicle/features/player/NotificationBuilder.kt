@@ -228,7 +228,7 @@ class NotificationBuilder @Inject constructor(
         }
 
         // Only load bitmap when the book changes
-        if (bookTitleBitmapPair?.first != currentBook.id) {
+        if (bookTitleBitmapPair?.first != currentBook.id || bookTitleBitmapPair?.second?.isRecycled != false) {
             val artUri = currentBook.thumb
             Timber.i("Loading art uri: $artUri")
             val largeIcon = plexConfig.getBitmapFromServer(artUri)
