@@ -625,12 +625,22 @@ class CurrentlyPlayingViewModel(
             title = FormattableString.from(R.string.playback_speed_title),
             options = listOf(
                 FormattableString.from(R.string.playback_speed_0_5x),
+                FormattableString.from(R.string.playback_speed_0_6x),
                 FormattableString.from(R.string.playback_speed_0_7x),
+                FormattableString.from(R.string.playback_speed_0_8x),
+                FormattableString.from(R.string.playback_speed_0_9x),
                 FormattableString.from(R.string.playback_speed_1_0x),
+                FormattableString.from(R.string.playback_speed_1_1x),
                 FormattableString.from(R.string.playback_speed_1_2x),
+                FormattableString.from(R.string.playback_speed_1_3x),
+                FormattableString.from(R.string.playback_speed_1_4x),
                 FormattableString.from(R.string.playback_speed_1_5x),
+                FormattableString.from(R.string.playback_speed_1_6x),
                 FormattableString.from(R.string.playback_speed_1_7x),
+                FormattableString.from(R.string.playback_speed_1_8x),
+                FormattableString.from(R.string.playback_speed_1_9x),
                 FormattableString.from(R.string.playback_speed_2_0x),
+                FormattableString.from(R.string.playback_speed_2_5x),
                 FormattableString.from(R.string.playback_speed_3_0x)
             ),
             listener = object : BottomChooserItemListener() {
@@ -639,12 +649,22 @@ class CurrentlyPlayingViewModel(
 
                     prefsRepo.playbackSpeed = when (formattableString.stringRes) {
                         R.string.playback_speed_0_5x -> 0.5f
+                        R.string.playback_speed_0_6x -> 0.6f
                         R.string.playback_speed_0_7x -> 0.7f
+                        R.string.playback_speed_0_8x -> 0.8f
+                        R.string.playback_speed_0_9x -> 0.9f
                         R.string.playback_speed_1_0x -> 1.0f
+                        R.string.playback_speed_1_1x -> 1.1f
                         R.string.playback_speed_1_2x -> 1.2f
+                        R.string.playback_speed_1_3x -> 1.3f
+                        R.string.playback_speed_1_4x -> 1.4f
                         R.string.playback_speed_1_5x -> 1.5f
+                        R.string.playback_speed_1_6x -> 1.6f
                         R.string.playback_speed_1_7x -> 1.7f
+                        R.string.playback_speed_1_8x -> 1.8f
+                        R.string.playback_speed_1_9x -> 1.9f
                         R.string.playback_speed_2_0x -> 2.0f
+                        R.string.playback_speed_2_5x -> 2.5f
                         R.string.playback_speed_3_0x -> 3.0f
                         else -> throw NoWhenBranchMatchedException("Unknown playback speed selected")
                     }
