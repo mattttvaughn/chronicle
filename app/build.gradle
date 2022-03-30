@@ -67,6 +67,17 @@ android {
         freeCompilerArgs += ["-Xopt-in=kotlin.time.ExperimentalTime"]
         freeCompilerArgs += ["-Xopt-in=kotlinx.coroutines.InternalCoroutinesApi"]
     }
+    flavorDimensions "freeAsInBeer"
+    productFlavors {
+        freeAsInBeer {
+            dimension "freeAsInBeer"
+            buildConfigField "boolean", "FREE_AS_IN_BEER", "true"
+        }
+        googlePlay {
+            dimension "freeAsInBeer"
+            buildConfigField "boolean", "FREE_AS_IN_BEER", "false"
+        }
+    }
 }
 
 dependencies {
