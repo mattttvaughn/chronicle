@@ -32,12 +32,12 @@ interface OnChapterChangeListener {
 @ExperimentalCoroutinesApi
 @Singleton
 class CurrentlyPlayingSingleton : CurrentlyPlaying {
-    override var book = MutableStateFlow(EMPTY_AUDIOBOOK)
-    override var track = MutableStateFlow(EMPTY_TRACK)
-    override var chapter = MutableStateFlow(EMPTY_CHAPTER)
+    override val book = MutableStateFlow(EMPTY_AUDIOBOOK)
+    override val track = MutableStateFlow(EMPTY_TRACK)
+    override val chapter = MutableStateFlow(EMPTY_CHAPTER)
 
-    private var tracks: MutableList<MediaItemTrack> = mutableListOf()
-    private val chapters: MutableList<Chapter> = mutableListOf()
+    private var tracks: List<MediaItemTrack> = emptyList()
+    private var chapters: List<Chapter> = emptyList()
 
     private var listener: OnChapterChangeListener? = null
 
@@ -49,16 +49,13 @@ class CurrentlyPlayingSingleton : CurrentlyPlaying {
         this.book.value = book
         this.track.value = track
 
-        this.tracks.clear()
-        this.tracks.addAll(tracks)
+        this.tracks = tracks
 
-        this.chapters.addAll(
-            if (book.chapters.isNotEmpty()) {
-                book.chapters
-            } else {
-                tracks.asChapterList()
-            }
-        )
+        this.chapters = if (book.chapters.isNotEmpty()) {
+            book.chapters
+        } else {
+            tracks.asChapterList()
+        }
 
         if (tracks.isNotEmpty() && chapters.isNotEmpty()) {
             val chapter = chapters.getChapterAt(track.id.toLong(), track.progress)
