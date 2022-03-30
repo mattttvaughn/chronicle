@@ -179,7 +179,11 @@ class CurrentlyPlayingViewModel(
     val isSleepTimerActive: LiveData<Boolean>
         get() = _isSleepTimerActive
 
-    private var sleepTimerTimeRemaining = 0L
+    private var sleepTimerTimeRemaining = MutableLiveData(0L)
+
+    val sleepTimerTimeRemainingString = Transformations.map(sleepTimerTimeRemaining) {
+        return@map DateUtils.formatElapsedTime(StringBuilder(), it / 1000)
+    }
 
     val isPlaying: LiveData<Boolean> =
         Transformations.map(mediaServiceConnection.playbackState) { state ->
@@ -522,7 +526,7 @@ class CurrentlyPlayingViewModel(
         } else {
             FormattableString.ResourceString(
                 R.string.sleep_timer_active_title,
-                placeHolderStrings = listOf(DateUtils.formatElapsedTime(sleepTimerTimeRemaining / MILLIS_PER_SECOND))
+                placeHolderStrings = listOf(sleepTimerTimeRemainingString.value ?: "<Error>")
             )
         }
         val options = if (isSleepTimerActive.value == true) {
@@ -690,12 +694,13 @@ class CurrentlyPlayingViewModel(
             val timeLeftMillis = intent.getLongExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, 0L)
             val shouldSleepSleepTimerBeActive = timeLeftMillis > 0L
             _isSleepTimerActive.postValue(shouldSleepSleepTimerBeActive)
-            sleepTimerTimeRemaining = timeLeftMillis
+            sleepTimerTimeRemaining.value = timeLeftMillis
+
             if (shouldSleepSleepTimerBeActive) {
                 setSleepTimerTitle(
                     FormattableString.ResourceString(
                         stringRes = R.string.sleep_timer_active_title,
-                        placeHolderStrings = listOf(DateUtils.formatElapsedTime(timeLeftMillis / MILLIS_PER_SECOND))
+                        placeHolderStrings = listOf(sleepTimerTimeRemainingString.value ?: "<Error>")
                     )
                 )
             } else {

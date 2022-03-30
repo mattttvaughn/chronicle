@@ -69,6 +69,10 @@
         <item name="android:minEms">15</item>
     </style>
 
+    <style name="TextAppearance.SleepTimerCountdown" parent="TextAppearance.Title">
+        <item name="android:textSize">32sp</item>
+    </style>
+
     <!-- Searchbar style courtesy of: https://stackoverflow.com/questions/30369246/implementing-searchview-as-per-the-material-design-guidelines -->
     <style name="SearchViewTheme" parent="Widget.AppCompat.SearchView.ActionBar">
         <item name="layout">@layout/toolbar_search_view</item>

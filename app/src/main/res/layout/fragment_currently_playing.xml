@@ -275,6 +275,22 @@
                         app:viewAspectRatio="1"
                         tools:src="@drawable/example_cover" />
 
+                    <TextView
+                        android:id="@+id/sleep_timer_countdown"
+                        style="@style/TextAppearance.SleepTimerCountdown"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:background="@color/sleepTimerCountdownOverlayColor"
+                        android:gravity="center"
+                        android:text="@{viewModel.sleepTimerTimeRemainingString}"
+                        android:visibility="@{viewModel.isSleepTimerActive() ? View.VISIBLE : View.GONE}"
+                        app:layout_constraintBottom_toBottomOf="@+id/details_artwork"
+                        app:layout_constraintEnd_toEndOf="@+id/details_artwork"
+                        app:layout_constraintStart_toStartOf="@+id/details_artwork"
+                        app:layout_constraintTop_toTopOf="@+id/details_artwork"
+                        app:viewAspectRatio="1"
+                        tools:text="59:59" />
+
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <androidx.appcompat.widget.Toolbar
