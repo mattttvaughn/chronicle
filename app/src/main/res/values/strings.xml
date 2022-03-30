@@ -152,15 +152,13 @@
 
     <!-- Speed chooser -->
     <string name="playback_speed_desc">Playback speed: %1$s times normal speed</string>
-    <string name="playback_speed_title">Playback speed</string>
-    <string name="playback_speed_0_5x">0.5x</string>
-    <string name="playback_speed_0_7x">0.7x</string>
+    <string name="playback_speed_title">Choose playback speed</string>
+    <string name="playback_speed_min">0.5x</string>
     <string name="playback_speed_1_0x">1.0x</string>
     <string name="playback_speed_1_2x">1.2x</string>
     <string name="playback_speed_1_5x">1.5x</string>
-    <string name="playback_speed_1_7x">1.7x</string>
     <string name="playback_speed_2_0x">2.0x</string>
-    <string name="playback_speed_3_0x">3.0x</string>
+    <string name="playback_speed_max">3.0x</string>
 
     <!-- Sleep timer-->
     <string name="sleep_timer">Sleep timer</string>

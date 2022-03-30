@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+        <variable
+            name="viewModel"
+            type="io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingViewModel" />
+
+        <import type="android.view.View" />
+    </data>
+
+
+
+        <LinearLayout
+            android:id="@+id/bottom_sheet_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:id="@+id/bottom_sheet_handle"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/bottom_sheet_handle_height"
+                android:background="@color/colorPrimary"
+                app:boxCornerRadiusTopEnd="@dimen/audiobook_item_radius"
+                app:boxCornerRadiusTopStart="@dimen/audiobook_item_radius">
+
+                <TextView
+                    style="@style/TextAppearance.Subtitle.Settings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="@dimen/screen_horizontal_padding"
+                    android:text="@string/playback_speed_title"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="16sp" />
+
+            </FrameLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark">
+
+                <TextView
+                    android:id="@+id/speed_min"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="32dp"
+                    android:text="@string/playback_speed_min"
+                    app:layout_constraintBottom_toBottomOf="@+id/speed_slider"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/speed_slider" />
+
+                <TextView
+                    android:id="@+id/speed_max"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="32dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_weight="1"
+                    android:text="@string/playback_speed_max"
+                    app:layout_constraintBottom_toBottomOf="@+id/speed_slider"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/speed_slider" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/speed_presets"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="24dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/speed_slider"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/speed_1.0"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/playback_speed_1_0x"
+                        android:text="@string/playback_speed_1_0x"
+                        android:value="1.0f"
+                        app:chipBackgroundColor="@color/chip_same_background_color" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/speed_1.2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/playback_speed_1_2x"
+                        android:text="@string/playback_speed_1_2x"
+                        android:value="1.2f"
+                        app:chipBackgroundColor="@color/chip_same_background_color" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/speed_1.5"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/playback_speed_1_5x"
+                        android:text="@string/playback_speed_1_5x"
+                        android:value="1.5f"
+                        app:chipBackgroundColor="@color/chip_same_background_color" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/speed_2.0"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:tag="@string/playback_speed_2_0x"
+                        android:text="@string/playback_speed_2_0x"
+                        android:value="2.0f"
+                        app:chipBackgroundColor="@color/chip_same_background_color" />
+
+                </com.google.android.material.chip.ChipGroup>
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/speed_slider"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:stepSize="0.05"
+                    android:value="@{viewModel.speed}"
+                    android:valueFrom="@{viewModel.PLAYBACK_SPEED_MIN}"
+                    android:valueTo="@{viewModel.PLAYBACK_SPEED_MAX}"
+                    app:labelBehavior="visible"
+                    app:labelStyle="@style/ProgressSliderTooltip"
+                    app:layout_constraintEnd_toStartOf="@id/speed_max"
+                    app:layout_constraintStart_toEndOf="@+id/speed_min"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:thumbColor="@color/progressTintColor"
+                    app:thumbRadius="8dp"
+                    app:tickVisible="false"
+                    app:trackColorActive="@color/progressTintColor"
+                    app:trackColorInactive="@color/progressTrackTintColor"
+                    app:trackHeight="3dp" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+        </LinearLayout>
+
+</layout>
