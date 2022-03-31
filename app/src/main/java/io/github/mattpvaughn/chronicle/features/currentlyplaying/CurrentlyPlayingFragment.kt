@@ -68,12 +68,10 @@ class CurrentlyPlayingFragment : Fragment() {
         super.onStop()
     }
 
-    private val modalBottomSheetSpeedChooser = ModalBottomSheetSpeedChooser()
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         // Activity and context are non-null on view creation. This informs lint about that
         val binding = FragmentCurrentlyPlayingBinding.inflate(inflater, container, false)
@@ -125,17 +123,14 @@ class CurrentlyPlayingFragment : Fragment() {
             currentlyPlayingInterface.setBottomSheetState(COLLAPSED)
         }
 
-        viewModel.showModalBottomSheetSpeedChooser.observe(viewLifecycleOwner) { visible ->
-            if(visible) modalBottomSheetSpeedChooser.show(childFragmentManager, ModalBottomSheetSpeedChooser.TAG)
-        }
-
-        viewModel.speed.observe(viewLifecycleOwner) { value ->
-            Timber.i("viewModel.speed.observe → $value")
-            // todo: remove → only for debugging
-        }
-        viewModel.playbackSpeedString.observe(viewLifecycleOwner) { value ->
-            Timber.i("viewModel.playbackSpeedString.observe → $value")
-            // todo: remove → only for debugging
+        viewModel.showModalBottomSheetSpeedChooser.observe(viewLifecycleOwner) { eventShowChooser ->
+            if (!eventShowChooser.hasBeenHandled) {
+                ModalBottomSheetSpeedChooser().show(
+                    childFragmentManager,
+                    ModalBottomSheetSpeedChooser.TAG
+                )
+                eventShowChooser.getContentIfNotHandled()
+            }
         }
 
         return binding.root
