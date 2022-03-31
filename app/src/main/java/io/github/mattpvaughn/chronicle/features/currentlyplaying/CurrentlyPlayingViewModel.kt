@@ -11,7 +11,6 @@ import android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED
 import android.text.format.DateUtils
 import android.view.Gravity
 import android.widget.Toast
-import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.michaelbull.result.Ok
@@ -55,8 +54,7 @@ class CurrentlyPlayingViewModel(
     private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
     private val plexConfig: PlexConfig,
-    private val currentlyPlaying: CurrentlyPlaying,
-    private val fragmentManager: FragmentManager
+    private val currentlyPlaying: CurrentlyPlaying
     ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -67,8 +65,7 @@ class CurrentlyPlayingViewModel(
         private val mediaServiceConnection: MediaServiceConnection,
         private val prefsRepo: PrefsRepo,
         private val plexConfig: PlexConfig,
-        private val currentlyPlaying: CurrentlyPlaying,
-        private val fragmentManager: FragmentManager
+        private val currentlyPlaying: CurrentlyPlaying
         ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
@@ -79,8 +76,7 @@ class CurrentlyPlayingViewModel(
                     mediaServiceConnection,
                     prefsRepo,
                     plexConfig,
-                    currentlyPlaying,
-                    fragmentManager
+                    currentlyPlaying
                 ) as T
             } else {
                 throw IllegalArgumentException("Incorrect class type provided")
@@ -138,6 +134,10 @@ class CurrentlyPlayingViewModel(
     val playbackSpeedString = Transformations.map(speed) { speed ->
         return@map String.format("%.2f", speed) + "x"
     }
+
+    private var _showModalBottomSheetSpeedChooser = MutableLiveData(false)
+    val showModalBottomSheetSpeedChooser: LiveData<Boolean>
+        get() = _showModalBottomSheetSpeedChooser
 
     val activeTrackId: LiveData<Int> =
         Transformations.map(mediaServiceConnection.nowPlaying) { metadata ->
@@ -255,8 +255,6 @@ class CurrentlyPlayingViewModel(
     val bottomChooserState: LiveData<BottomChooserState>
         get() = _bottomChooserState
 
-    private val modalBottomSheetSpeedChooser = ModalBottomSheetSpeedChooser()
-
     private var _sleepTimerChooserState = MutableLiveData(EMPTY_BOTTOM_CHOOSER)
     val sleepTimerChooserState: LiveData<BottomChooserState>
         get() = _sleepTimerChooserState
@@ -271,10 +269,6 @@ class CurrentlyPlayingViewModel(
 
     private val prefsChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
-            PrefsRepo.KEY_PLAYBACK_SPEED -> _speed.postValue(
-                if(prefsRepo.playbackSpeed < PLAYBACK_SPEED_MIN || prefsRepo.playbackSpeed > PLAYBACK_SPEED_MAX) PLAYBACK_SPEED_DEFAULT
-                else prefsRepo.playbackSpeed
-            )
             PrefsRepo.KEY_JUMP_FORWARD_SECONDS -> _jumpForwardsIcon.value = makeJumpForwardsIcon()
             PrefsRepo.KEY_JUMP_BACKWARD_SECONDS -> _jumpBackwardsIcon.value = makeJumpBackwardsIcon()
         }
@@ -635,14 +629,17 @@ class CurrentlyPlayingViewModel(
             _showUserMessage.postEvent("Error: variable playback speed is a premium feature")
             return
         }
-        modalBottomSheetSpeedChooser.show(fragmentManager, ModalBottomSheetSpeedChooser.TAG)
+        _showModalBottomSheetSpeedChooser.postValue(true)
     }
 
     fun updatePlaybackSpeed(value : Float) {
         Timber.d("updatePlaybackSpeed → $value")
-        prefsRepo.playbackSpeed =
+        val newSpeed =
             if(value < PLAYBACK_SPEED_MIN || value > PLAYBACK_SPEED_MAX) PLAYBACK_SPEED_DEFAULT
             else value
+
+        _speed.postValue(newSpeed)
+        prefsRepo.playbackSpeed = newSpeed
     }
 
     private fun hideSleepTimerChooser() {

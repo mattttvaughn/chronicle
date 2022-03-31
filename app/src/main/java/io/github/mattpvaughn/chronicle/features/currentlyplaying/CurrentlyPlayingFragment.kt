@@ -22,6 +22,7 @@ import io.github.mattpvaughn.chronicle.features.bookdetails.ChapterListAdapter
 import io.github.mattpvaughn.chronicle.features.bookdetails.TrackClickListener
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer
 import io.github.mattpvaughn.chronicle.util.observeEvent
+import io.github.mattpvaughn.chronicle.views.ModalBottomSheetSpeedChooser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import timber.log.Timber
 import javax.inject.Inject
@@ -66,6 +67,8 @@ class CurrentlyPlayingFragment : Fragment() {
         localBroadcastManager.unregisterReceiver(viewModel.onUpdateSleepTimer)
         super.onStop()
     }
+
+    private val modalBottomSheetSpeedChooser = ModalBottomSheetSpeedChooser()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -120,6 +123,19 @@ class CurrentlyPlayingFragment : Fragment() {
 
         binding.detailsToolbar.setNavigationOnClickListener {
             currentlyPlayingInterface.setBottomSheetState(COLLAPSED)
+        }
+
+        viewModel.showModalBottomSheetSpeedChooser.observe(viewLifecycleOwner) { visible ->
+            if(visible) modalBottomSheetSpeedChooser.show(childFragmentManager, ModalBottomSheetSpeedChooser.TAG)
+        }
+
+        viewModel.speed.observe(viewLifecycleOwner) { value ->
+            Timber.i("viewModel.speed.observe → $value")
+            // todo: remove → only for debugging
+        }
+        viewModel.playbackSpeedString.observe(viewLifecycleOwner) { value ->
+            Timber.i("viewModel.playbackSpeedString.observe → $value")
+            // todo: remove → only for debugging
         }
 
         return binding.root
