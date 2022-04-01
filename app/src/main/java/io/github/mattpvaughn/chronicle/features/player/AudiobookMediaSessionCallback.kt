@@ -148,19 +148,11 @@ class AudiobookMediaSessionCallback @Inject constructor(
             // These really handle bluetooth media actions only, but the framework handles
             // pause/play for inline wired headphones
             return when (ke.keyCode) {
-                KEYCODE_MEDIA_NEXT -> {
-                    skipToNext()
-                    true
-                }
-                KEYCODE_MEDIA_PREVIOUS -> {
-                    skipToPrevious()
-                    true
-                }
-                KEYCODE_MEDIA_SKIP_FORWARD -> {
+                KEYCODE_MEDIA_NEXT, KEYCODE_MEDIA_SKIP_FORWARD -> {
                     skipForwards()
                     true
                 }
-                KEYCODE_MEDIA_SKIP_BACKWARD -> {
+                KEYCODE_MEDIA_PREVIOUS, KEYCODE_MEDIA_SKIP_BACKWARD -> {
                     skipBackwards()
                     true
                 }
