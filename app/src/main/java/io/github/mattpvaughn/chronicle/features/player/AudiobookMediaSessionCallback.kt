@@ -136,11 +136,6 @@ class AudiobookMediaSessionCallback @Inject constructor(
         currentPlayer.seekRelative(trackListStateManager, prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1)
     }
 
-    private fun changeSpeed() {
-        changeSpeed(trackListStateManager, mediaSessionConnector, prefsRepo, currentlyPlaying, progressUpdater)
-        Timber.i("New Speed: %s", prefsRepo.playbackSpeed)
-    }
-
     override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
         if (mediaButtonEvent == null) {
             return false
@@ -219,7 +214,6 @@ class AudiobookMediaSessionCallback @Inject constructor(
             }
             SKIP_FORWARDS_STRING -> skipForwards()
             SKIP_BACKWARDS_STRING -> skipBackwards()
-            CHANGE_PLAYBACK_SPEED -> changeSpeed()
             SKIP_TO_NEXT_STRING -> skipToNext()
             SKIP_TO_PREVIOUS_STRING -> skipToPrevious()
         }

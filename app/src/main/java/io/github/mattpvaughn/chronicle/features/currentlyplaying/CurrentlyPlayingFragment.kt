@@ -22,6 +22,7 @@ import io.github.mattpvaughn.chronicle.features.bookdetails.ChapterListAdapter
 import io.github.mattpvaughn.chronicle.features.bookdetails.TrackClickListener
 import io.github.mattpvaughn.chronicle.features.player.SleepTimer
 import io.github.mattpvaughn.chronicle.util.observeEvent
+import io.github.mattpvaughn.chronicle.views.ModalBottomSheetSpeedChooser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import timber.log.Timber
 import javax.inject.Inject
@@ -70,7 +71,7 @@ class CurrentlyPlayingFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         // Activity and context are non-null on view creation. This informs lint about that
         val binding = FragmentCurrentlyPlayingBinding.inflate(inflater, container, false)
@@ -120,6 +121,16 @@ class CurrentlyPlayingFragment : Fragment() {
 
         binding.detailsToolbar.setNavigationOnClickListener {
             currentlyPlayingInterface.setBottomSheetState(COLLAPSED)
+        }
+
+        viewModel.showModalBottomSheetSpeedChooser.observe(viewLifecycleOwner) { eventShowChooser ->
+            if (!eventShowChooser.hasBeenHandled) {
+                ModalBottomSheetSpeedChooser().show(
+                    childFragmentManager,
+                    ModalBottomSheetSpeedChooser.TAG
+                )
+                eventShowChooser.getContentIfNotHandled()
+            }
         }
 
         return binding.root

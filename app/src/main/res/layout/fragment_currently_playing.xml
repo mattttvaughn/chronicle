@@ -118,22 +118,23 @@
                         app:layout_constraintRight_toRightOf="@id/right_gutter"
                         app:layout_constraintTop_toTopOf="@id/details_pause_play" />
 
-
-                    <ImageView
+                    <Button
                         android:id="@+id/change_speed_button"
-                        android:layout_width="@dimen/list_icon_size"
-                        android:layout_height="@dimen/list_icon_size"
-                        android:layout_margin="@dimen/margin_normal"
-                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:clickable="true"
                         android:focusable="true"
-                        android:onClick="@{() -> viewModel.showSpeedChooser()}"
+                        android:onClick="@{() -> viewModel.showPlaybackSpeedChooser()}"
+                        android:text="@{viewModel.playbackSpeedString}"
+                        android:textAllCaps="false"
+                        android:textColor="@color/icon"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:layout_constraintBottom_toBottomOf="@+id/sleep_timer_button"
                         app:layout_constraintEnd_toStartOf="@+id/sleep_timer_button"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/details_pause_play"
-                        app:playbackSpeed="@{viewModel.speed}"
-                        tools:ignore="ContentDescription"
-                        tools:src="@drawable/ic_speed_up_1_0x" />
+                        app:layout_constraintTop_toTopOf="@+id/sleep_timer_button" />
 
                     <ImageView
                         android:id="@+id/sleep_timer_button"

@@ -204,7 +204,6 @@ class MediaPlayerService : MediaBrowserServiceCompat(), ForegroundServiceControl
         mediaSessionConnector.setCustomActionProviders(
             *makeCustomActionProviders(
                 trackListManager,
-                mediaSessionConnector,
                 prefsRepo,
                 currentlyPlaying,
                 progressUpdater

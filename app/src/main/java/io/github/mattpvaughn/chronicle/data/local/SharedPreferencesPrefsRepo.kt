@@ -29,6 +29,7 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_COVER_GRID
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaType
+import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingViewModel.Companion.PLAYBACK_SPEED_DEFAULT
 import io.github.mattpvaughn.chronicle.injection.components.AppComponent
 import java.io.File
 import javax.inject.Inject
@@ -215,7 +216,7 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         get() = sharedPreferences.getLong(KEY_JUMP_BACKWARD_SECONDS, defaultJumpBackwardSeconds)
         set(value) = sharedPreferences.edit().putLong(KEY_JUMP_BACKWARD_SECONDS, value).apply()
 
-    private val defaultPlaybackSpeed = 1.0f
+    private val defaultPlaybackSpeed = PLAYBACK_SPEED_DEFAULT
     override var playbackSpeed: Float
         get() = sharedPreferences.getFloat(KEY_PLAYBACK_SPEED, defaultPlaybackSpeed)
         set(value) = sharedPreferences.edit().putFloat(KEY_PLAYBACK_SPEED, value).apply()

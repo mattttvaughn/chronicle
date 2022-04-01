@@ -37,6 +37,7 @@ import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerActi
 import io.github.mattpvaughn.chronicle.util.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
+import io.github.mattpvaughn.chronicle.views.ModalBottomSheetSpeedChooser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
@@ -53,8 +54,9 @@ class CurrentlyPlayingViewModel(
     private val mediaServiceConnection: MediaServiceConnection,
     private val prefsRepo: PrefsRepo,
     private val plexConfig: PlexConfig,
-    private val currentlyPlaying: CurrentlyPlaying
-) : ViewModel() {
+    private val currentlyPlaying: CurrentlyPlaying,
+    sharedPrefs: SharedPreferences
+    ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
     class Factory @Inject constructor(
@@ -64,8 +66,9 @@ class CurrentlyPlayingViewModel(
         private val mediaServiceConnection: MediaServiceConnection,
         private val prefsRepo: PrefsRepo,
         private val plexConfig: PlexConfig,
-        private val currentlyPlaying: CurrentlyPlaying
-    ) : ViewModelProvider.Factory {
+        private val currentlyPlaying: CurrentlyPlaying,
+        private val sharedPrefs: SharedPreferences,
+        ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
                 return CurrentlyPlayingViewModel(
@@ -75,7 +78,8 @@ class CurrentlyPlayingViewModel(
                     mediaServiceConnection,
                     prefsRepo,
                     plexConfig,
-                    currentlyPlaying
+                    currentlyPlaying,
+                    sharedPrefs
                 ) as T
             } else {
                 throw IllegalArgumentException("Incorrect class type provided")
@@ -126,9 +130,22 @@ class CurrentlyPlayingViewModel(
             }
         }
 
-    private var _speed = MutableLiveData(prefsRepo.playbackSpeed)
-    val speed: LiveData<Float>
-        get() = _speed
+    val speed = FloatPreferenceLiveData(
+        PrefsRepo.KEY_PLAYBACK_SPEED,
+        PLAYBACK_SPEED_DEFAULT,
+        sharedPrefs
+    ).map {
+        Timber.i("Speed: %.2f", it)
+        return@map it.coerceIn(PLAYBACK_SPEED_MIN, PLAYBACK_SPEED_MAX)
+    }
+
+    val playbackSpeedString = Transformations.map(speed) { speed ->
+        return@map String.format("%.2f", speed) + "x"
+    }
+
+    private var _showModalBottomSheetSpeedChooser = MutableLiveData<Event<Unit>>()
+    val showModalBottomSheetSpeedChooser: LiveData<Event<Unit>>
+        get() = _showModalBottomSheetSpeedChooser
 
     val activeTrackId: LiveData<Int> =
         Transformations.map(mediaServiceConnection.nowPlaying) { metadata ->
@@ -264,7 +281,6 @@ class CurrentlyPlayingViewModel(
 
     private val prefsChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
-            PrefsRepo.KEY_PLAYBACK_SPEED -> _speed.postValue(prefsRepo.playbackSpeed)
             PrefsRepo.KEY_JUMP_FORWARD_SECONDS -> _jumpForwardsIcon.value = makeJumpForwardsIcon()
             PrefsRepo.KEY_JUMP_BACKWARD_SECONDS -> _jumpBackwardsIcon.value = makeJumpBackwardsIcon()
         }
@@ -620,42 +636,12 @@ class CurrentlyPlayingViewModel(
         )
     }
 
-    fun showSpeedChooser() {
+    fun showPlaybackSpeedChooser() {
         if (!prefsRepo.isPremium) {
             _showUserMessage.postEvent("Error: variable playback speed is a premium feature")
             return
         }
-        showOptionsMenu(
-            title = FormattableString.from(R.string.playback_speed_title),
-            options = listOf(
-                FormattableString.from(R.string.playback_speed_0_5x),
-                FormattableString.from(R.string.playback_speed_0_7x),
-                FormattableString.from(R.string.playback_speed_1_0x),
-                FormattableString.from(R.string.playback_speed_1_2x),
-                FormattableString.from(R.string.playback_speed_1_5x),
-                FormattableString.from(R.string.playback_speed_1_7x),
-                FormattableString.from(R.string.playback_speed_2_0x),
-                FormattableString.from(R.string.playback_speed_3_0x)
-            ),
-            listener = object : BottomChooserItemListener() {
-                override fun onItemClicked(formattableString: FormattableString) {
-                    check(formattableString is FormattableString.ResourceString)
-
-                    prefsRepo.playbackSpeed = when (formattableString.stringRes) {
-                        R.string.playback_speed_0_5x -> 0.5f
-                        R.string.playback_speed_0_7x -> 0.7f
-                        R.string.playback_speed_1_0x -> 1.0f
-                        R.string.playback_speed_1_2x -> 1.2f
-                        R.string.playback_speed_1_5x -> 1.5f
-                        R.string.playback_speed_1_7x -> 1.7f
-                        R.string.playback_speed_2_0x -> 2.0f
-                        R.string.playback_speed_3_0x -> 3.0f
-                        else -> throw NoWhenBranchMatchedException("Unknown playback speed selected")
-                    }
-                    hideOptionsMenu()
-                }
-            }
-        )
+        _showModalBottomSheetSpeedChooser.postEvent(Unit)
     }
 
     private fun hideSleepTimerChooser() {
@@ -684,7 +670,6 @@ class CurrentlyPlayingViewModel(
             )
         )
     }
-
 
     val onUpdateSleepTimer = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -741,5 +726,12 @@ class CurrentlyPlayingViewModel(
                 mediaServiceConnection.transportControls?.seekTo(offset)
             }
         }
+    }
+
+    companion object {
+        /** Minimal and maximal allowed playback speed. */
+        const val PLAYBACK_SPEED_MIN = 0.5f
+        const val PLAYBACK_SPEED_DEFAULT = 1.0f
+        const val PLAYBACK_SPEED_MAX = 3.0f
     }
 }

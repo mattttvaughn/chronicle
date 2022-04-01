@@ -110,6 +110,7 @@
     <!-- Bottom Navigation -->
     <style name="Widget.BottomNavigationView" parent="Widget.Design.BottomNavigationView">
         <item name="fontFamily">@font/lato_bold</item>
+        <item name="android:minHeight">0dp</item> // Fix for BottomNavigationView label above icon → https://stackoverflow.com/questions/70773346/bottomnavigationview-shows-label-over-icon
     </style>
 
 </resources>

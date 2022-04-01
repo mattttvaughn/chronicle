@@ -17,6 +17,7 @@ import io.github.mattpvaughn.chronicle.features.settings.SettingsViewModel
 import io.github.mattpvaughn.chronicle.injection.modules.ActivityModule
 import io.github.mattpvaughn.chronicle.injection.scopes.ActivityScope
 import io.github.mattpvaughn.chronicle.navigation.Navigator
+import io.github.mattpvaughn.chronicle.views.ModalBottomSheetSpeedChooser
 
 @ActivityScope
 @Component(dependencies = [AppComponent::class], modules = [ActivityModule::class])
@@ -37,5 +38,6 @@ interface ActivityComponent {
     fun inject(homeFragment: HomeFragment)
     fun inject(settingsFragment: SettingsFragment)
     fun inject(currentlyPlayingFragment: CurrentlyPlayingFragment)
+    fun inject(modalBottomSheetSpeedChooser: ModalBottomSheetSpeedChooser)
 }
 

@@ -52,3 +52,28 @@ class StringPreferenceLiveData(
         sharedPreferences.unregisterOnSharedPreferenceChangeListener(prefListener)
     }
 }
+
+/** Exposes a string in [SharedPreferences] as [LiveData] */
+class FloatPreferenceLiveData(
+    private val key: String,
+    private val defaultValue: Float,
+    private val sharedPreferences: SharedPreferences
+) : LiveData<Float>() {
+    private val prefListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+            if (key == this@FloatPreferenceLiveData.key) {
+                sharedPreferences?.getFloat(key, defaultValue)?.let {
+                    value = it
+                }
+            }
+        }
+
+    override fun onActive() {
+        sharedPreferences.registerOnSharedPreferenceChangeListener(prefListener)
+        value = sharedPreferences.getFloat(key, defaultValue)
+    }
+
+    override fun onInactive() {
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(prefListener)
+    }
+}
