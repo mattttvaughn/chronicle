@@ -140,11 +140,9 @@ class HomeViewModel(
         if (query.isEmpty()) {
             _searchResults.postValue(emptyList())
         } else {
-            bookRepository.search(query).observeOnce(
-                Observer {
-                    _searchResults.postValue(it)
-                }
-            )
+            bookRepository.search(query).observeOnce {
+                _searchResults.postValue(it)
+            }
         }
     }
 
