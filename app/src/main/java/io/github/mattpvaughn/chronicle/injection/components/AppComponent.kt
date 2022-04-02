@@ -35,6 +35,7 @@ interface AppComponent {
     fun plexPrefs(): PlexPrefsRepo
     fun prefsRepo(): PrefsRepo
     fun trackRepo(): ITrackRepository
+    fun librarySyncRepo(): LibrarySyncRepository
     fun bookRepo(): IBookRepository
     fun workManager(): WorkManager
     fun unhandledExceptionHandler(): CoroutineExceptionHandler

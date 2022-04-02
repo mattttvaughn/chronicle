@@ -5,17 +5,14 @@ import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
-import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.LibrarySyncRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.data.model.getProgress
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.library.LibraryViewModel
 import io.github.mattpvaughn.chronicle.util.DoubleLiveData
 import io.github.mattpvaughn.chronicle.util.Event
 import io.github.mattpvaughn.chronicle.util.observeOnce
-import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -23,7 +20,7 @@ import javax.inject.Inject
 class HomeViewModel(
     private val plexConfig: PlexConfig,
     private val bookRepository: IBookRepository,
-    private val trackRepository: ITrackRepository,
+    private val librarySyncRepository: LibrarySyncRepository,
     private val prefsRepo: PrefsRepo
 ) : ViewModel() {
 
@@ -31,7 +28,7 @@ class HomeViewModel(
     class Factory @Inject constructor(
         private val plexConfig: PlexConfig,
         private val bookRepository: IBookRepository,
-        private val trackRepository: ITrackRepository,
+        private val librarySyncRepository: LibrarySyncRepository,
         private val prefsRepo: PrefsRepo,
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -39,7 +36,7 @@ class HomeViewModel(
                 return HomeViewModel(
                     plexConfig,
                     bookRepository,
-                    trackRepository,
+                    librarySyncRepository,
                     prefsRepo
                 ) as T
             } else {
@@ -62,9 +59,7 @@ class HomeViewModel(
             } ?: emptyList()
         }
 
-    private var _isRefreshing = MutableLiveData<Boolean>()
-    val isRefreshing: LiveData<Boolean>
-        get() = _isRefreshing
+    val isRefreshing = librarySyncRepository.isRefreshing
 
     private var _messageForUser = MutableLiveData<Event<String>>()
     val messageForUser: LiveData<Event<String>>
@@ -163,32 +158,6 @@ class HomeViewModel(
      * [LibraryViewModel]
      */
     fun refreshData() {
-        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            try {
-                _isRefreshing.postValue(true)
-                bookRepository.refreshDataPaginated()
-                trackRepository.refreshDataPaginated()
-            } catch (e: Throwable) {
-                _messageForUser.postEvent("Failed to refresh data: ${e.message}")
-            } finally {
-                _isRefreshing.postValue(false)
-            }
-
-            // Update audiobooks which depend on track data
-            val audiobooks = bookRepository.getAllBooksAsync()
-            val tracks = trackRepository.getAllTracksAsync()
-            audiobooks.forEach { book ->
-                // TODO: O(n^2) so could be bad for big libs, grouping by tracks first would be O(n)
-
-                // Not necessarily in the right order, but it doesn't matter for updateTrackData
-                val tracksInAudiobook = tracks.filter { it.parentKey == book.id }
-                bookRepository.updateTrackData(
-                    bookId = book.id,
-                    bookProgress = tracksInAudiobook.getProgress(),
-                    bookDuration = tracksInAudiobook.getDuration(),
-                    trackCount = tracksInAudiobook.size
-                )
-            }
-        }
+        librarySyncRepository.refreshLibrary()
     }
 }

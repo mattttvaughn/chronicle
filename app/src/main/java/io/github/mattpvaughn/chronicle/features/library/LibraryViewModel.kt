@@ -7,6 +7,7 @@ import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
+import io.github.mattpvaughn.chronicle.data.local.LibrarySyncRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_HIDE_PLAYED_AUDIOBOOKS
@@ -22,11 +23,9 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_P
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_TITLE
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_YEAR
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
-import io.github.mattpvaughn.chronicle.data.model.getProgress
 import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.CACHED
 import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager.CacheStatus.NOT_CACHED
-import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.util.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserListener
@@ -42,6 +41,7 @@ class LibraryViewModel(
     private val trackRepository: ITrackRepository,
     private val prefsRepo: PrefsRepo,
     private val cachedFileManager: ICachedFileManager,
+    private val librarySyncRepository: LibrarySyncRepository,
     sharedPreferences: SharedPreferences
 ) : ViewModel() {
 
@@ -51,7 +51,8 @@ class LibraryViewModel(
         private val trackRepository: ITrackRepository,
         private val prefsRepo: PrefsRepo,
         private val cachedFileManager: ICachedFileManager,
-        private val sharedPreferences: SharedPreferences
+        private val librarySyncRepository: LibrarySyncRepository,
+        private val sharedPreferences: SharedPreferences,
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
@@ -60,7 +61,8 @@ class LibraryViewModel(
                     trackRepository,
                     prefsRepo,
                     cachedFileManager,
-                    sharedPreferences
+                    librarySyncRepository,
+                    sharedPreferences,
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from LibraryViewModel.Factory")
@@ -68,9 +70,7 @@ class LibraryViewModel(
         }
     }
 
-    private var _isRefreshing = MutableLiveData<Boolean>()
-    val isRefreshing: LiveData<Boolean>
-        get() = _isRefreshing
+    val isRefreshing = librarySyncRepository.isRefreshing
 
     private var _isSearchActive = MutableLiveData<Boolean>()
     val isSearchActive: LiveData<Boolean>
@@ -288,40 +288,8 @@ class LibraryViewModel(
         )
     }
 
-    /**
-     * Pull most recent data from server and update repositories.
-     *
-     * Update book info for fields where child tracks serve as source of truth, like how
-     * [Audiobook.duration] serves as a delegate for [List<MediaItemTrack>.getDuration()]
-     *
-     * TODO: maybe refresh data in the repository whenever a query is made? repeating code b/w
-     *       here and [HomeViewModel]
-     */
     fun refreshData() {
-        viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            try {
-                _isRefreshing.postValue(true)
-                bookRepository.refreshDataPaginated()
-                trackRepository.refreshDataPaginated()
-            } catch (e: Throwable) {
-                _messageForUser.postEvent("Failed to refresh data")
-            } finally {
-                _isRefreshing.postValue(false)
-            }
-
-            val audiobooks = bookRepository.getAllBooksAsync()
-            val tracks = trackRepository.getAllTracksAsync()
-            audiobooks.forEach { book ->
-                val tracksInAudiobook = tracks.filter { it.parentKey == book.id }
-                Timber.i("Book progress: ${tracksInAudiobook.getProgress()}")
-                bookRepository.updateTrackData(
-                    bookId = book.id,
-                    bookProgress = tracksInAudiobook.getProgress(),
-                    bookDuration = tracksInAudiobook.getDuration(),
-                    trackCount = tracksInAudiobook.size
-                )
-            }
-        }
+        librarySyncRepository.refreshLibrary()
     }
 
     /** Shows/hides the filter/sort/view menu to the user. Show if [isVisible] is true, hide otherwise */
