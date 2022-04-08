@@ -18,6 +18,7 @@ import javax.inject.Singleton
 class LibrarySyncRepository @Inject constructor(
     private val bookRepository: BookRepository,
     private val trackRepository: TrackRepository,
+    private val collectionsRepository: CollectionsRepository
 ) {
 
     private var repoJob = Job()
@@ -55,6 +56,8 @@ class LibrarySyncRepository @Inject constructor(
                     trackCount = tracksInAudiobook.size
                 )
             }
+
+            collectionsRepository.refreshCollectionsPaginated()
         }
     }
 

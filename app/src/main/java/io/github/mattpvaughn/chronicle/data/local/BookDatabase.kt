@@ -25,7 +25,7 @@ fun getBookDatabase(context: Context): BookDatabase {
                 BOOK_MIGRATION_4_5,
                 BOOK_MIGRATION_5_6,
                 BOOK_MIGRATION_6_7,
-                BOOK_MIGRATION_7_8
+                BOOK_MIGRATION_7_8,
             ).build()
         }
     }

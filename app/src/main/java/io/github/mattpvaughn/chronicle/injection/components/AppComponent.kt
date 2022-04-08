@@ -30,13 +30,16 @@ interface AppComponent {
     fun sharedPrefs(): SharedPreferences
     fun trackDao(): TrackDao
     fun bookDao(): BookDao
+    fun collectionsDao(): CollectionsDao
     fun moshi(): Moshi
     fun plexLoginRepo(): IPlexLoginRepo
     fun plexPrefs(): PlexPrefsRepo
     fun prefsRepo(): PrefsRepo
     fun trackRepo(): ITrackRepository
     fun librarySyncRepo(): LibrarySyncRepository
+    fun collectionsRepo(): CollectionsRepository
     fun bookRepo(): IBookRepository
+    fun bookRepos(): BookRepository
     fun workManager(): WorkManager
     fun unhandledExceptionHandler(): CoroutineExceptionHandler
     fun plexConfig(): PlexConfig

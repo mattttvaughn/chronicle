@@ -135,5 +135,17 @@ interface PlexMediaService {
         @Query("X-Plex-Container-Start") containerStart: Int = 0,
         @Query("X-Plex-Container-Size") containerSize: Int = 100,
     ): PlexMediaContainerWrapper
+
+    @GET("/library/sections/{libraryId}/collections?includeCollections=1")
+    suspend fun retrieveCollectionsPaginated(
+        @Path("libraryId") libraryId: String,
+        @Query("X-Plex-Container-Start") containerStart: Int = 0,
+        @Query("X-Plex-Container-Size") containerSize: Int = 100,
+    ): PlexMediaContainerWrapper
+
+    @GET("/library/collections/{collectionId}/children")
+    suspend fun fetchBooksInCollection(
+        @Path("collectionId") collectionId: Int,
+    ): PlexMediaContainerWrapper
 }
 
