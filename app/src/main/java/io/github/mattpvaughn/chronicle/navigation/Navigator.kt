@@ -12,6 +12,8 @@ import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFrag
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_ID
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_AUDIOBOOK_TITLE
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment.Companion.ARG_IS_AUDIOBOOK_CACHED
+import io.github.mattpvaughn.chronicle.features.collections.CollectionDetailsFragment
+import io.github.mattpvaughn.chronicle.features.collections.CollectionsFragment
 import io.github.mattpvaughn.chronicle.features.home.HomeFragment
 import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
 import io.github.mattpvaughn.chronicle.features.login.ChooseLibraryFragment
@@ -123,6 +125,12 @@ class Navigator @Inject constructor(
         fragmentManager.beginTransaction().replace(R.id.fragNavHost, libraryFragment).commit()
     }
 
+    fun showCollections() {
+        clearBackStack()
+        val collectionsFragment = CollectionsFragment.newInstance()
+        fragmentManager.beginTransaction().replace(R.id.fragNavHost, collectionsFragment).commit()
+    }
+
     fun showSettings() {
         clearBackStack()
         val settingsFragment = SettingsFragment.newInstance()
@@ -141,6 +149,14 @@ class Navigator @Inject constructor(
         fragmentManager.beginTransaction()
             .replace(R.id.fragNavHost, detailsFrag)
             .addToBackStack(AudiobookDetailsFragment.TAG)
+            .commit()
+    }
+
+    fun showCollectionDetails(collectionId: Int) {
+        val collectionDetails = CollectionDetailsFragment.newInstance(collectionId)
+        fragmentManager.beginTransaction()
+            .replace(R.id.fragNavHost, collectionDetails)
+            .addToBackStack(CollectionDetailsFragment.TAG)
             .commit()
     }
 

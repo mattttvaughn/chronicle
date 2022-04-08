@@ -11,6 +11,7 @@ import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.FEATURE_FLAG_IS_AUTO_ENABLED
 import io.github.mattpvaughn.chronicle.application.Injector
+import io.github.mattpvaughn.chronicle.data.local.CollectionsRepository
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
@@ -53,6 +54,7 @@ class SettingsViewModel(
     private val plexConfig: PlexConfig,
     private val workManager: WorkManager,
     private val plexPrefs: PlexPrefsRepo,
+    private val collectionsRepository: CollectionsRepository
 ) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
@@ -66,6 +68,7 @@ class SettingsViewModel(
         private val plexConfig: PlexConfig,
         private val workManager: WorkManager,
         private val plexPrefs: PlexPrefsRepo,
+        private val collectionsRepository: CollectionsRepository
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
@@ -78,7 +81,8 @@ class SettingsViewModel(
                     cachedFileManager = cachedFileManager,
                     plexConfig = plexConfig,
                     workManager = workManager,
-                    plexPrefs = plexPrefs
+                    plexPrefs = plexPrefs,
+                    collectionsRepository = collectionsRepository
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from SettingsViewModel.Factory")
@@ -793,6 +797,7 @@ class SettingsViewModel(
             withContext(Dispatchers.IO) {
                 bookRepository.clear()
                 trackRepository.clear()
+                collectionsRepository.clear()
             }
             mediaServiceConnection.transportControls?.stop()
             when (navigateTo) {
