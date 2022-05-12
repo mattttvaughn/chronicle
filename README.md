@@ -7,6 +7,7 @@ The best Android Audiobook Player for Plex. Stream or download audiobooks hosted
  - Sync audiobook progress on device
  - Support for file formats: mp3, m4a, m4b
  - Adjustable playback speed
+ - Auto-rewind
  - Sleep timer
  - Skip silent audio
  - Download books for playing any time, even when offline
@@ -19,5 +20,11 @@ The best Android Audiobook Player for Plex. Stream or download audiobooks hosted
 <img src="https://raw.githubusercontent.com/mattttvaughn/chronicle/develop/images/library.png" alt="Library screen" height="200">
 <img src="https://raw.githubusercontent.com/mattttvaughn/chronicle/develop/images/currentlyplaying.png" alt="Player" height="200">
 </p>
+
+
+#### Useful Links
+
+ - [Plex Audiobook Guide](https://github.com/seanap/Plex-Audiobook-Guide)
+ - [Chronicle subreddit](https://www.reddit.com/r/ChronicleApp/)
 
 
