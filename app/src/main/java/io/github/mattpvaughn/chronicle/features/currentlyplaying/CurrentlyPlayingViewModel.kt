@@ -37,7 +37,6 @@ import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerActi
 import io.github.mattpvaughn.chronicle.util.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
-import io.github.mattpvaughn.chronicle.views.ModalBottomSheetSpeedChooser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter

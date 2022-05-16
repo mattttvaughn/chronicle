@@ -3,6 +3,7 @@ package io.github.mattpvaughn.chronicle.data.sources.plex.model
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import io.github.mattpvaughn.chronicle.data.model.Collection
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 
 @JsonClass(generateAdapter = true)
@@ -31,4 +32,8 @@ fun PlexMediaContainer.asAudiobooks(): List<Audiobook> {
 
 fun PlexMediaContainer.asTrackList(): List<MediaItemTrack> {
     return metadata.asMediaItemTracks()
+}
+
+fun PlexMediaContainer.asCollections(): List<Collection> {
+    return metadata.map { Collection.from(it) }
 }

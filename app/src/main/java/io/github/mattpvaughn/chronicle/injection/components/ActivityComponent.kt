@@ -6,6 +6,8 @@ import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsFragment
 import io.github.mattpvaughn.chronicle.features.bookdetails.AudiobookDetailsViewModel
+import io.github.mattpvaughn.chronicle.features.collections.CollectionDetailsFragment
+import io.github.mattpvaughn.chronicle.features.collections.CollectionsFragment
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingFragment
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayingViewModel
 import io.github.mattpvaughn.chronicle.features.home.HomeFragment
@@ -37,6 +39,8 @@ interface ActivityComponent {
     fun inject(detailsFragment: AudiobookDetailsFragment)
     fun inject(homeFragment: HomeFragment)
     fun inject(settingsFragment: SettingsFragment)
+    fun inject(collectionsFragment: CollectionsFragment)
+    fun inject(collectionDetailsFragment: CollectionDetailsFragment)
     fun inject(currentlyPlayingFragment: CurrentlyPlayingFragment)
     fun inject(modalBottomSheetSpeedChooser: ModalBottomSheetSpeedChooser)
 }

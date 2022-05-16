@@ -10,6 +10,7 @@
     <string name="not_connected">No network connection</string>
     <string name="tab_home">Home</string>
     <string name="tab_library">Library</string>
+    <string name="tab_collections">Collections</string>
     <string name="tab_settings">Settings</string>
 
     <!-- Login page -->

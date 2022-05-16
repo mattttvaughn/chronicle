@@ -78,6 +78,10 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
+    fun provideCollectionsDao(): CollectionsDao = getCollectionsDatabase(app.applicationContext).collectionsDao
+
+    @Provides
+    @Singleton
     fun provideInternalDeviceDirs(): File = app.applicationContext.filesDir
 
     @Provides
