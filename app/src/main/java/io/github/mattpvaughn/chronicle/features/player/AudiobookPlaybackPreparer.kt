@@ -45,7 +45,7 @@ class AudiobookPlaybackPreparer @Inject constructor(
 
     override fun getSupportedPrepareActions(): Long =
         ACTION_PREPARE_FROM_MEDIA_ID or ACTION_PLAY_FROM_MEDIA_ID or
-                ACTION_PREPARE_FROM_SEARCH or ACTION_PLAY_FROM_SEARCH
+            ACTION_PREPARE_FROM_SEARCH or ACTION_PLAY_FROM_SEARCH
 
     override fun onPrepareFromMediaId(bookId: String, playWhenReady: Boolean, extras: Bundle) {
         mediaSource.whenReady {
@@ -60,7 +60,6 @@ class AudiobookPlaybackPreparer @Inject constructor(
     override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle) = Unit
 
     override fun onPrepare(playWhenReady: Boolean) = Unit
-
 }
 
 fun buildPlaylist(tracks: List<MediaItemTrack>, plexConfig: PlexConfig): List<MediaMetadataCompat> {

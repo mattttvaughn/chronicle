@@ -20,5 +20,3 @@ fun PlexServer.asServer(): ServerModel {
         owned = this.owned
     )
 }
-
-

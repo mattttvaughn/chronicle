@@ -43,4 +43,3 @@ interface ServiceComponent {
 
     fun inject(mediaPlayerService: MediaPlayerService)
 }
-

@@ -38,7 +38,6 @@ class UserListAdapter(val clickListener: UserClickListener) :
     }
 }
 
-
 class UserDiffCallback : DiffUtil.ItemCallback<PlexUser>() {
     override fun areItemsTheSame(oldItem: PlexUser, newItem: PlexUser): Boolean {
         return oldItem.id == newItem.id
@@ -48,4 +47,3 @@ class UserDiffCallback : DiffUtil.ItemCallback<PlexUser>() {
         return oldItem.title == newItem.title
     }
 }
-

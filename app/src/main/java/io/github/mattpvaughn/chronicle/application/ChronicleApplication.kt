@@ -138,29 +138,32 @@ open class ChronicleApplication : Application() {
             getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             connectivityManager.registerDefaultNetworkCallback(object :
-                ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) {
-                    connectToServer()
-                    super.onAvailable(network)
-                }
-
-                override fun onLost(network: Network) {
-                    // Prevent from running on ConnectivityThread, because onLost is apparently
-                    // called on ConnectivityThread with no warning
-                    applicationScope.launch {
-                        withContext(Dispatchers.Main) {
-                            plexConfig.connectionHasBeenLost()
-                        }
+                    ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) {
+                        connectToServer()
+                        super.onAvailable(network)
                     }
-                    super.onLost(network)
-                }
-            })
+
+                    override fun onLost(network: Network) {
+                        // Prevent from running on ConnectivityThread, because onLost is apparently
+                        // called on ConnectivityThread with no warning
+                        applicationScope.launch {
+                            withContext(Dispatchers.Main) {
+                                plexConfig.connectionHasBeenLost()
+                            }
+                        }
+                        super.onLost(network)
+                    }
+                })
         } else {
             // network listener for sdk 24 and below
-            registerReceiver(networkStateListener, IntentFilter().apply {
-                @Suppress("DEPRECATION")
-                addAction(ConnectivityManager.CONNECTIVITY_ACTION)
-            })
+            registerReceiver(
+                networkStateListener,
+                IntentFilter().apply {
+                    @Suppress("DEPRECATION")
+                    addAction(ConnectivityManager.CONNECTIVITY_ACTION)
+                }
+            )
         }
         val server = plexPrefs.server
         if (server != null) {
@@ -220,5 +223,4 @@ open class ChronicleApplication : Application() {
         Fresco.getImagePipeline().clearMemoryCaches()
         super.onLowMemory()
     }
-
 }

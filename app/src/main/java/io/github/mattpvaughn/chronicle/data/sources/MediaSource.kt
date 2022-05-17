@@ -31,5 +31,4 @@ interface MediaSource {
     companion object {
         const val NO_SOURCE_FOUND = -1L
     }
-
 }

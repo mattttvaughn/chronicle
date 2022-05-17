@@ -14,7 +14,6 @@ import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
 import timber.log.Timber
 
-
 @BindingAdapter(value = ["srcRounded", "serverConnected"], requireAll = true)
 fun bindImageRounded(
     draweeView: SimpleDraweeView,
@@ -34,7 +33,6 @@ fun bindImageRounded(
     // If no server is connected, don't bother fetching from server, just check cache
     val request = ImageRequest.fromUri(url)
     draweeView.setImageRequest(request)
-
 }
 
 /**
@@ -74,7 +72,6 @@ class UrlQueryCacheKey(private val url: Uri?) : CacheKey {
         return url?.query.toString()
     }
 }
-
 
 // NOTE: this will not work for Android versions HoneyComb and below, and DataBinding overrides the
 // tag set on all outermost layouts in a data bound layout xml

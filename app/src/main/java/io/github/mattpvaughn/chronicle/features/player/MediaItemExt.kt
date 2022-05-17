@@ -30,5 +30,3 @@ fun makeBrowsable(
     mediaDescription.setExtras(extras)
     return MediaItem(mediaDescription.build(), FLAG_BROWSABLE)
 }
-
-

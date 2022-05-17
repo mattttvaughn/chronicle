@@ -46,6 +46,6 @@ fun PlexDirectory.asLibrary(): PlexLibrary {
         name = title,
         type = MediaType.TYPES.find { mediaType -> mediaType.typeString == this.type }
             ?: MediaType.ARTIST,
-        id = key)
+        id = key
+    )
 }
-

@@ -40,4 +40,3 @@ interface ActivityComponent {
     fun inject(currentlyPlayingFragment: CurrentlyPlayingFragment)
     fun inject(modalBottomSheetSpeedChooser: ModalBottomSheetSpeedChooser)
 }
-

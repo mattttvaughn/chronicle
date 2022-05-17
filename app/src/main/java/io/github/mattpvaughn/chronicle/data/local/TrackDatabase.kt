@@ -7,7 +7,6 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 
-
 private const val TRACK_DATABASE_NAME = "track_db"
 
 private lateinit var INSTANCE: TrackDatabase
@@ -80,7 +79,7 @@ interface TrackDao {
     fun clear()
 
     @Query("UPDATE MediaItemTrack SET cached = :isCached WHERE id = :trackId")
-    fun updateCachedStatus(trackId: Int, isCached: Boolean) : Int
+    fun updateCachedStatus(trackId: Int, isCached: Boolean): Int
 
     @Query("SELECT * FROM MediaItemTrack WHERE cached = :isCached")
     fun getCachedTracksAsync(isCached: Boolean = true): List<MediaItemTrack>
@@ -93,8 +92,4 @@ interface TrackDao {
 
     @Query("SELECT * FROM MediaItemTrack WHERE title LIKE :title")
     suspend fun findTrackByTitle(title: String): MediaItemTrack?
-
-
 }
-
-

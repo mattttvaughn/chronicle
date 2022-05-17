@@ -137,8 +137,6 @@ class SettingsList : FrameLayout {
                 }
             }
         }
-
-
     }
 
     class PreferenceItemDiffCallback : DiffUtil.ItemCallback<PreferenceModel>() {

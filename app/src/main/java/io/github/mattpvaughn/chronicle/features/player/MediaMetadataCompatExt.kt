@@ -16,7 +16,6 @@ package io.github.mattpvaughn.chronicle.features.player
  * limitations under the License.
  */
 
-
 import android.graphics.Bitmap
 import android.net.Uri
 import android.support.v4.media.MediaBrowserCompat.MediaItem
@@ -29,7 +28,6 @@ import com.google.android.exoplayer2.upstream.DataSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.util.toUri
 import timber.log.Timber
-
 
 /** Useful extensions for [MediaMetadataCompat]. */
 inline val MediaMetadataCompat.id: String?
@@ -304,9 +302,11 @@ fun List<MediaMetadataCompat>.toMediaSource(
 
     val concatenatingMediaSource = ConcatenatingMediaSource()
     forEach {
-        Timber.i("Media uri is: ${it.mediaUri}," +
+        Timber.i(
+            "Media uri is: ${it.mediaUri}," +
                 "server auth token is ${plexPrefsRepo.server?.accessToken}," +
-                "user is ${plexPrefsRepo.accountAuthToken}")
+                "user is ${plexPrefsRepo.accountAuthToken}"
+        )
         concatenatingMediaSource.addMediaSource(it.toMediaSource(dataSourceFactory))
     }
     return concatenatingMediaSource

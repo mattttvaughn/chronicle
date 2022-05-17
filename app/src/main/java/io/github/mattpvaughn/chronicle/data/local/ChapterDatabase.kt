@@ -52,5 +52,3 @@ interface ChapterDao {
     @Query("DELETE FROM Chapter WHERE id IN (:chaptersToRemove)")
     fun removeAll(chaptersToRemove: List<Long>): Int
 }
-
-

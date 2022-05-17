@@ -30,7 +30,6 @@ class ChooseUserFragment : Fragment() {
         const val TAG = "Choose user fragment"
     }
 
-
     @Inject
     lateinit var viewModelFactory: ChooseUserViewModel.Factory
     private lateinit var viewModel: ChooseUserViewModel
@@ -78,9 +77,11 @@ class ChooseUserFragment : Fragment() {
             viewModelFactory
         ).get(ChooseUserViewModel::class.java)
 
-        userListAdapter = UserListAdapter(UserClickListener { user ->
-            viewModel.pickUser(user)
-        })
+        userListAdapter = UserListAdapter(
+            UserClickListener { user ->
+                viewModel.pickUser(user)
+            }
+        )
         tempBinding.userList.adapter = userListAdapter
 
         tempBinding.pinEdittext.addTextChangedListener(pinListener)
@@ -103,14 +104,17 @@ class ChooseUserFragment : Fragment() {
             return@setOnEditorActionListener false
         }
 
-        viewModel.pinErrorMessage.observe(viewLifecycleOwner, Observer
-        {
-            if (!it.isNullOrEmpty()) {
-                tempBinding.pinEdittext.error = it
-            } else {
-                tempBinding.pinEdittext.error = null
+        viewModel.pinErrorMessage.observe(
+            viewLifecycleOwner,
+            Observer
+            {
+                if (!it.isNullOrEmpty()) {
+                    tempBinding.pinEdittext.error = it
+                } else {
+                    tempBinding.pinEdittext.error = null
+                }
             }
-        })
+        )
 
         tempBinding.viewModel = viewModel
         binding = tempBinding

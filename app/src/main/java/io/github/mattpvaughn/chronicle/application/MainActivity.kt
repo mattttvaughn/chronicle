@@ -44,7 +44,6 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
-
 @ActivityScope
 class MainActivity : AppCompatActivity() {
 
@@ -171,19 +170,22 @@ class MainActivity : AppCompatActivity() {
         )
         transaction.commit()
         val handle = findViewById<View>(R.id.currently_playing_handle)
-        val gd = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onScroll(
-                e1: MotionEvent?,
-                e2: MotionEvent?,
-                distanceX: Float,
-                distanceY: Float
-            ): Boolean {
-                if (distanceY > distanceX) {
-                    viewModel.onCurrentlyPlayingHandleDragged()
+        val gd = GestureDetector(
+            this,
+            object : GestureDetector.SimpleOnGestureListener() {
+                override fun onScroll(
+                    e1: MotionEvent?,
+                    e2: MotionEvent?,
+                    distanceX: Float,
+                    distanceY: Float
+                ): Boolean {
+                    if (distanceY > distanceX) {
+                        viewModel.onCurrentlyPlayingHandleDragged()
+                    }
+                    return super.onScroll(e1, e2, distanceX, distanceY)
                 }
-                return super.onScroll(e1, e2, distanceX, distanceY)
             }
-        })
+        )
         handle.setOnTouchListener { v, event ->
             gd.onTouchEvent(event)
             v.onTouchEvent(event)
@@ -237,7 +239,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
 
     private val onPlaybackError = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {

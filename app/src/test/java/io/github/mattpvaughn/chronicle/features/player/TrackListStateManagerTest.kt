@@ -51,7 +51,6 @@ class TrackListStateManagerTest {
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
             `is`(Pair((1), (45L)))
         )
-
     }
 
     @Test
@@ -181,6 +180,5 @@ class TrackListStateManagerTest {
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
             `is`(Pair((1), (25L)))
         )
-
     }
 }

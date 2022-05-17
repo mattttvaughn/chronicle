@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-
 class MainActivityViewModel(
     loginRepo: IPlexLoginRepo,
     private val trackRepository: ITrackRepository,
@@ -101,7 +100,7 @@ class MainActivityViewModel(
         }
     }
 
-    val currentChapterTitle= DoubleLiveData(tracks, chapters) { _tracks, _chapters ->
+    val currentChapterTitle = DoubleLiveData(tracks, chapters) { _tracks, _chapters ->
         if (_chapters.isNullOrEmpty() || _tracks.isNullOrEmpty()) {
             return@DoubleLiveData "No track playing"
         }
@@ -157,7 +156,6 @@ class MainActivityViewModel(
         }
     }
 
-
     /**
      * React to clicks on the "currently playing" modal, which is shown at the bottom of the
      * R.layout.activity_main view when media is active (can be playing or paused)
@@ -204,7 +202,6 @@ class MainActivityViewModel(
         _currentlyPlayingLayoutState.postValue(state)
     }
 
-
     fun showUserMessage(errorMessage: String) {
         Timber.i("Showing error message: $errorMessage")
         _errorMessage.postEvent(errorMessage)
@@ -230,4 +227,3 @@ class MainActivityViewModel(
         }
     }
 }
-

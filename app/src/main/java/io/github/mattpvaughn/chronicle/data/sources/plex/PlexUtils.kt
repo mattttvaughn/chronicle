@@ -7,4 +7,3 @@ package io.github.mattpvaughn.chronicle.data.sources.plex
 fun getMediaItemUri(machineIdentifier: String, mediaId: String): String {
     return "server://$machineIdentifier/com.plexapp.plugins.library/library/metadata/$mediaId"
 }
-

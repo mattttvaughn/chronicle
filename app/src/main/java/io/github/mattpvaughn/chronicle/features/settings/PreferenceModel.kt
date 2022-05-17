@@ -25,8 +25,10 @@ interface PreferenceClick {
 
 enum class PreferenceType { TITLE, CLICKABLE, BOOLEAN, INTEGER, FLOAT }
 
-val prefIntMap = mapOf(PreferenceType.TITLE to 1,
-                       PreferenceType.CLICKABLE to 2,
-                       PreferenceType.BOOLEAN to 3,
-                       PreferenceType.INTEGER to 4,
-                       PreferenceType.FLOAT to 5)
+val prefIntMap = mapOf(
+    PreferenceType.TITLE to 1,
+    PreferenceType.CLICKABLE to 2,
+    PreferenceType.BOOLEAN to 3,
+    PreferenceType.INTEGER to 4,
+    PreferenceType.FLOAT to 5
+)

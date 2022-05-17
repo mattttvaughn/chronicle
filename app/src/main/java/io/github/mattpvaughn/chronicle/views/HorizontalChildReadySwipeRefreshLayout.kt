@@ -37,7 +37,6 @@ class HorizontalChildReadySwipeRefreshLayout : SwipeRefreshLayout {
                     declined = true
                     return false
                 }
-
             }
         }
         return super.onInterceptTouchEvent(ev)

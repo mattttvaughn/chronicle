@@ -5,8 +5,8 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
-import io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick
 import io.github.mattpvaughn.chronicle.databinding.ListItemSearchResultAudiobookBinding
+import io.github.mattpvaughn.chronicle.features.library.LibraryFragment.AudiobookClick
 
 class AudiobookSearchAdapter(private val audiobookClick: AudiobookClick) : ListAdapter<Audiobook, AudiobookSearchAdapter.ViewHolder>(AudiobookDiffCallback()) {
 
@@ -44,4 +44,3 @@ class AudiobookSearchAdapter(private val audiobookClick: AudiobookClick) : ListA
         }
     }
 }
-
