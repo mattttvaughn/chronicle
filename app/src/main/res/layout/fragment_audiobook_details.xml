@@ -78,10 +78,22 @@
                         style="@style/TextAppearance.Body2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
                         android:text="@{viewModel.progressString}"
+                        app:layout_constraintEnd_toStartOf="@+id/progressPercentage"
                         app:layout_constraintRight_toRightOf="@id/details_artwork"
                         app:layout_constraintTop_toBottomOf="@id/details_artwork"
                         tools:text="1:21/3:52" />
+
+                    <TextView
+                        android:id="@+id/progressPercentage"
+                        style="@style/TextAppearance.Body2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@{viewModel.progressPercentageString}"
+                        app:layout_constraintRight_toRightOf="@id/details_artwork"
+                        app:layout_constraintTop_toBottomOf="@id/details_artwork"
+                        tools:text="35%" />
 
                     <FrameLayout
                         android:id="@+id/download_indicator_container"
