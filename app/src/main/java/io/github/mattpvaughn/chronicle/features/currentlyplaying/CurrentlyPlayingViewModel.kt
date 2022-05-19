@@ -218,12 +218,17 @@ class CurrentlyPlayingViewModel(
         return@map DateUtils.formatElapsedTime(StringBuilder(), track.duration / 1000)
     }
 
-    val bookProgressString = Transformations.map(tracks) {
-        return@map DateUtils.formatElapsedTime(StringBuilder(), it.getProgress() / 1000)
+    val progressString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->
+        if (tracks.isEmpty()) {
+            return@map "0:00/0:00"
+        }
+        val progressStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getProgress() / 1000L)
+        val durationStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getDuration() / 1000L)
+        return@map "$progressStr/$durationStr"
     }
 
-    val bookDurationString = Transformations.map(audiobook) {
-        return@map DateUtils.formatElapsedTime(StringBuilder(), it?.duration?.div(1000) ?: 0)
+    val progressPercentageString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->
+        return@map "${tracks.getProgressPercentage()}%"
     }
 
     private val cachedChapter = DoubleLiveData(

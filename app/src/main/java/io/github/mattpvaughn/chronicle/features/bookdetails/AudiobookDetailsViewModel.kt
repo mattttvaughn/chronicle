@@ -177,12 +177,7 @@ class AudiobookDetailsViewModel(
     }
 
     val progressPercentageString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->
-        if (tracks.isEmpty()) {
-            return@map "0%"
-        }
-        val percentComplete =
-            ((tracks.getProgress() / tracks.getDuration().toDouble()) * 100).roundToInt()
-        return@map "$percentComplete%"
+        return@map "${tracks.getProgressPercentage()}%"
     }
 
     private var _isLoadingTracks = MutableLiveData(false)
