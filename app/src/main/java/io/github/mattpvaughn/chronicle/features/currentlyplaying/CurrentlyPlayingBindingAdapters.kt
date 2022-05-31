@@ -13,7 +13,6 @@ import io.github.mattpvaughn.chronicle.application.MainActivityViewModel
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.*
 import timber.log.Timber
 
-
 @BindingAdapter("bottomSheetState")
 fun setBottomSheetState(parent: ConstraintLayout, state: MainActivityViewModel.BottomSheetState) {
     Timber.i("Bottom sheet state is $state")

@@ -6,7 +6,6 @@ import okhttp3.Interceptor
 import okhttp3.Response
 import timber.log.Timber
 
-
 /**
  * Injects plex required headers
  *
@@ -62,5 +61,4 @@ class PlexInterceptor(
 
         return chain.proceed(requestBuilder.build())
     }
-
 }

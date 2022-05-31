@@ -9,7 +9,6 @@ import androidx.recyclerview.widget.RecyclerView
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 
-
 @BindingAdapter("bookList")
 fun bindRecyclerView(recyclerView: RecyclerView, data: List<Audiobook>?) {
     val adapter = recyclerView.adapter as AudiobookAdapter
@@ -39,4 +38,3 @@ fun setSquareAspectRatio(constraintLayout: ConstraintLayout, isSquare: Boolean) 
 }
 
 val GLOBAL_CONSTRAINT = ConstraintSet()
-

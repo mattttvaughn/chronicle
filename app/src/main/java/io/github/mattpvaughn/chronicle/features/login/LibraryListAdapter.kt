@@ -43,7 +43,6 @@ class LibraryListAdapter(val clickListener: LibraryClickListener) :
     }
 }
 
-
 class LibraryDiffCallback : DiffUtil.ItemCallback<PlexLibrary>() {
     override fun areItemsTheSame(oldItem: PlexLibrary, newItem: PlexLibrary): Boolean {
         return oldItem.name == newItem.name
@@ -53,4 +52,3 @@ class LibraryDiffCallback : DiffUtil.ItemCallback<PlexLibrary>() {
         return oldItem == newItem
     }
 }
-

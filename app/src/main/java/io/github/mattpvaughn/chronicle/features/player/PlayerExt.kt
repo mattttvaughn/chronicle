@@ -10,7 +10,6 @@ import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlayin
 import timber.log.Timber
 import kotlin.math.abs
 
-
 /**
  * Seek in the play queue by an offset of [durationMillis]. Positive [duration] seeks forwards,
  * negative [duration] seeks backwards

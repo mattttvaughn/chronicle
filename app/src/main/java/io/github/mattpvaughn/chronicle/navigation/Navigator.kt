@@ -41,24 +41,27 @@ class Navigator @Inject constructor(
 
     init {
         // never remove observer, but this is a singleton so it's okay
-        plexLoginRepo.loginEvent.observe(activity, Observer { event ->
-            if (event.hasBeenHandled) {
-                return@Observer
-            }
-            Timber.i("Login event changed to ${event.peekContent()}")
-            when (event.getContentIfNotHandled()) {
-                LOGGED_IN_NO_USER_CHOSEN -> showUserChooser()
-                LOGGED_IN_NO_SERVER_CHOSEN -> showServerChooser()
-                LOGGED_IN_NO_LIBRARY_CHOSEN -> showLibraryChooser()
-                LOGGED_IN_FULLY -> showHome()
-                FAILED_TO_LOG_IN -> {
+        plexLoginRepo.loginEvent.observe(
+            activity,
+            Observer { event ->
+                if (event.hasBeenHandled) {
+                    return@Observer
                 }
-                NOT_LOGGED_IN -> showLogin()
-                AWAITING_LOGIN_RESULTS -> {
+                Timber.i("Login event changed to ${event.peekContent()}")
+                when (event.getContentIfNotHandled()) {
+                    LOGGED_IN_NO_USER_CHOSEN -> showUserChooser()
+                    LOGGED_IN_NO_SERVER_CHOSEN -> showServerChooser()
+                    LOGGED_IN_NO_LIBRARY_CHOSEN -> showLibraryChooser()
+                    LOGGED_IN_FULLY -> showHome()
+                    FAILED_TO_LOG_IN -> {
+                    }
+                    NOT_LOGGED_IN -> showLogin()
+                    AWAITING_LOGIN_RESULTS -> {
+                    }
+                    else -> throw NoWhenBranchMatchedException("Unknown login event: $event")
                 }
-                else -> throw NoWhenBranchMatchedException("Unknown login event: $event")
             }
-        })
+        )
     }
 
     fun showLogin() {
@@ -95,7 +98,6 @@ class Navigator @Inject constructor(
             .replace(R.id.fragNavHost, frag, ChooseLibraryFragment.TAG)
             .commit()
     }
-
 
     fun showHome() {
         clearBackStack()
@@ -182,7 +184,6 @@ class Navigator @Inject constructor(
                 true
             }
         }
-
     }
 
     private fun isFragmentWithTagVisible(tag: String): Boolean {

@@ -77,7 +77,7 @@ class NotificationBuilder @Inject constructor(
         makePendingIntent(mediaSkipToPreviousCode)
     )
 
-    private fun makeJumpForwardsIcon() : Int {
+    private fun makeJumpForwardsIcon(): Int {
         return when (prefsRepo.jumpForwardSeconds) {
             10L -> R.drawable.ic_forward_10_white
             15L -> R.drawable.ic_forward_15_white
@@ -95,7 +95,7 @@ class NotificationBuilder @Inject constructor(
         makePendingIntent(mediaSkipForwardCode)
     )
 
-    private fun makeJumpBackwardsIcon() : Int {
+    private fun makeJumpBackwardsIcon(): Int {
         return when (prefsRepo.jumpBackwardSeconds) {
             10L -> R.drawable.ic_replay_10_white
             15L -> R.drawable.ic_replay_15_white

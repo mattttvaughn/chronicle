@@ -27,5 +27,4 @@ class FakePlexPrefsRepo @Inject constructor() : PlexPrefsRepo {
         const val VALID_AUTH_TOKEN = "0d8g93huwsdoij2cxxqw"
         const val INVALID_AUTH_TOKEN = ""
     }
-
 }

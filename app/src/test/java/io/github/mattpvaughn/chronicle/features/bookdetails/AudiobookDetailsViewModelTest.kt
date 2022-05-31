@@ -26,7 +26,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class AudiobookDetailsViewModelTest {
@@ -171,7 +170,6 @@ class AudiobookDetailsViewModelTest {
 //        verify(exactly = 1) { mockCachedFileManager.cancelCaching() }
     }
 
-
     //    private val defaultAudiobook = Audiobook(id = 22)
     private val defaultTrackList = listOf(MediaItemTrack(parentKey = 22))
 
@@ -195,6 +193,4 @@ class AudiobookDetailsViewModelTest {
 //            progressUpdater = mockProgressUpdater
 //        )
 //    }
-
-
 }

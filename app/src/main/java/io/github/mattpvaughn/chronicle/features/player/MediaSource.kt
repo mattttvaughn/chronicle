@@ -109,6 +109,4 @@ abstract class AbstractMediaSource : MediaSource {
                 true
             }
         }
-
 }
-

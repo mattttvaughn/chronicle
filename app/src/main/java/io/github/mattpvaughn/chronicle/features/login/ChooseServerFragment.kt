@@ -16,7 +16,6 @@ import io.github.mattpvaughn.chronicle.data.model.ServerModel
 import io.github.mattpvaughn.chronicle.databinding.OnboardingPlexChooseServerBinding
 import javax.inject.Inject
 
-
 class ChooseServerFragment : Fragment() {
 
     companion object {
@@ -54,24 +53,32 @@ class ChooseServerFragment : Fragment() {
             viewModelFactory
         ).get(ChooseServerViewModel::class.java)
 
-        serverAdapter = ServerListAdapter(ServerClickListener { serverModel ->
-            viewModel.chooseServer(serverModel)
-        })
+        serverAdapter = ServerListAdapter(
+            ServerClickListener { serverModel ->
+                viewModel.chooseServer(serverModel)
+            }
+        )
 
         binding.serverList.adapter = serverAdapter
 
-        viewModel.servers.observe(viewLifecycleOwner, Observer { servers ->
-            servers?.let {
-                serverAdapter.submitList(it)
+        viewModel.servers.observe(
+            viewLifecycleOwner,
+            Observer { servers ->
+                servers?.let {
+                    serverAdapter.submitList(it)
+                }
             }
-        })
+        )
 
-        viewModel.userMessage.observe(viewLifecycleOwner, Observer {
-            if (it.hasBeenHandled) {
-                return@Observer
+        viewModel.userMessage.observe(
+            viewLifecycleOwner,
+            Observer {
+                if (it.hasBeenHandled) {
+                    return@Observer
+                }
+                Toast.makeText(requireContext(), it.getContentIfNotHandled(), LENGTH_SHORT).show()
             }
-            Toast.makeText(requireContext(), it.getContentIfNotHandled(), LENGTH_SHORT).show()
-        })
+        )
 
         binding.chooseServerViewModel = viewModel
         return binding.root

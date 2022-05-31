@@ -184,5 +184,3 @@ class ServiceModule(private val service: MediaPlayerService) {
     @ServiceScope
     fun toneManager() = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
 }
-
-

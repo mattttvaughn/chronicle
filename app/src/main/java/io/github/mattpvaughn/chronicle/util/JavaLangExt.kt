@@ -16,7 +16,6 @@ package io.github.mattpvaughn.chronicle.util
  * limitations under the License.
  */
 
-
 import android.net.Uri
 import java.net.URLEncoder
 import java.nio.charset.Charset

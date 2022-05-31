@@ -19,7 +19,6 @@ import io.github.mattpvaughn.chronicle.util.Event
 import timber.log.Timber
 import javax.inject.Inject
 
-
 class ChooseLibraryFragment : Fragment() {
 
     companion object {
@@ -68,25 +67,31 @@ class ChooseLibraryFragment : Fragment() {
                 LibraryClickListener { library ->
                     Timber.i("Library name: $library")
                     plexLoginRepo.chooseLibrary(library)
-                })
+                }
+            )
 
         binding.libraryList.adapter = libraryAdapter
 
-        viewModel.userMessage.observe(viewLifecycleOwner, Observer { message: Event<String> ->
-            if (!message.hasBeenHandled) {
-                Toast.makeText(context, message.getContentIfNotHandled(), Toast.LENGTH_SHORT).show()
+        viewModel.userMessage.observe(
+            viewLifecycleOwner,
+            Observer { message: Event<String> ->
+                if (!message.hasBeenHandled) {
+                    Toast.makeText(context, message.getContentIfNotHandled(), Toast.LENGTH_SHORT).show()
+                }
             }
-        })
+        )
 
-        viewModel.libraries.observe(viewLifecycleOwner, Observer { libraries ->
-            libraries?.apply {
-                libraryAdapter.submitList(this)
+        viewModel.libraries.observe(
+            viewLifecycleOwner,
+            Observer { libraries ->
+                libraries?.apply {
+                    libraryAdapter.submitList(this)
+                }
             }
-        })
+        )
 
         return binding.root
     }
-
 }
 
 class LibraryClickListener(val clickListener: (plexLibrary: PlexLibrary) -> Unit) {

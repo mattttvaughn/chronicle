@@ -25,4 +25,3 @@ object MediaTypes {
     val FOLDER = MediaType.FOLDER
     val COLLECTION = MediaType.COLLECTION
 }
-

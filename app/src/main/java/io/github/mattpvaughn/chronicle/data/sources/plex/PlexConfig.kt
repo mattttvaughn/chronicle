@@ -151,7 +151,6 @@ class PlexConfig @Inject constructor(private val plexPrefsRepo: PlexPrefsRepo) {
         _connectionState.value = NOT_CONNECTED
     }
 
-
     private var prevConnectToServerJob: CompletableJob? = null
 
     @InternalCoroutinesApi

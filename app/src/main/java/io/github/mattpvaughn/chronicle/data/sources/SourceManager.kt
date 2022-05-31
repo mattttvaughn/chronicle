@@ -45,6 +45,5 @@ class SourceManager @Inject constructor(
         val tracks = sources.map { source ->
             source.fetchTracks().component1() ?: emptyList()
         }
-
     }
 }

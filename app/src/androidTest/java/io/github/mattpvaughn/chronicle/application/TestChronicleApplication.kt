@@ -6,7 +6,6 @@ import io.github.mattpvaughn.chronicle.injection.modules.UITestAppModule
 import timber.log.Timber
 import javax.inject.Singleton
 
-
 @Singleton
 class TestChronicleApplication : ChronicleApplication() {
     override fun initializeComponent(): AppComponent {

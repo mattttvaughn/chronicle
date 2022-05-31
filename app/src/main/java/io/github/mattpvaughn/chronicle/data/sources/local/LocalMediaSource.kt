@@ -29,5 +29,4 @@ class LocalMediaSource : MediaSource {
     }
 
     override val isDownloadable: Boolean = false
-
 }

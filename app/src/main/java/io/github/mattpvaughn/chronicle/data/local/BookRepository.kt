@@ -409,7 +409,7 @@ class BookRepository @Inject constructor(
     ): Boolean {
         Timber.i(
             "Loading chapter data. Book ID is ${audiobook.id}, it is ${
-                if (audiobook.isCached) "cached" else "uncached"
+            if (audiobook.isCached) "cached" else "uncached"
             }, tracks are $tracks"
         )
         withContext(Dispatchers.IO) {
@@ -456,7 +456,6 @@ class BookRepository @Inject constructor(
                 chapters = chapters
             )
             bookDao.update(merged)
-
         }
         return true
     }

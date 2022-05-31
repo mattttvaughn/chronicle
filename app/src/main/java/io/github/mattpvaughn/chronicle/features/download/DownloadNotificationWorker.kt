@@ -105,7 +105,6 @@ class DownloadNotificationWorker(
             }
         }
 
-
         return@withContext Result.success()
     }
 
@@ -137,9 +136,9 @@ class DownloadNotificationWorker(
                 }.distinct()
             )
         }.filter {
-            it.bookName.isNotEmpty()
-                    && it.bookId != NO_AUDIOBOOK_FOUND_ID
-                    && (it.status in listOf(Status.FAILED, Status.COMPLETED))
+            it.bookName.isNotEmpty() &&
+                it.bookId != NO_AUDIOBOOK_FOUND_ID &&
+                (it.status in listOf(Status.FAILED, Status.COMPLETED))
         }
 
         if (bookStatuses.isNotEmpty()) {
@@ -170,7 +169,6 @@ class DownloadNotificationWorker(
         val status: Status,
         val errors: List<String>
     )
-
 
     /** Creates a notification channel if required by the given version of Android SDK */
     private fun createNotificationChannelAsNeeded() {
@@ -249,7 +247,7 @@ class DownloadNotificationWorker(
 
         return NotificationCompat.Builder(applicationContext, DOWNLOAD_CHANNEL)
             .setContentTitle(finishedTitle)
-            //set content text to support devices running API level < 24
+            // set content text to support devices running API level < 24
             .setContentText(finishedContent)
             .setSmallIcon(resultIcon)
             .setStyle(finishedDownloadList)
@@ -275,7 +273,8 @@ class DownloadNotificationWorker(
                 Status.FAILED -> R.string.download_failed_notification_content
                 Status.COMPLETED -> R.string.download_successful_notification_content
                 else -> return null
-            }, bookName
+            },
+            bookName
         )
 
         val content = if (downloadResult.errors.isEmpty()) {
@@ -382,7 +381,7 @@ class DownloadNotificationWorker(
 
         return NotificationCompat.Builder(applicationContext, DOWNLOAD_CHANNEL)
             .setContentTitle(downloadSummary)
-            //set content text to support devices running API level < 24
+            // set content text to support devices running API level < 24
             .setContentText(downloadsToShow.firstOrNull() ?: "")
             .setSmallIcon(R.drawable.ic_cloud_download_white)
             .setStyle(downloadsList)
@@ -484,7 +483,5 @@ class DownloadNotificationWorker(
                 worker
             ).enqueue()
         }
-
     }
-
 }

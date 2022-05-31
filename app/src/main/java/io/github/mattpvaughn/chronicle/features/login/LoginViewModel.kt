@@ -10,7 +10,6 @@ import io.github.mattpvaughn.chronicle.util.postEvent
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
 class LoginViewModel(private val plexLoginRepo: IPlexLoginRepo) : ViewModel() {
 
     class Factory @Inject constructor(private val plexLoginRepo: IPlexLoginRepo) :
@@ -23,7 +22,6 @@ class LoginViewModel(private val plexLoginRepo: IPlexLoginRepo) : ViewModel() {
             throw IllegalArgumentException("Unknown ViewHolder class")
         }
     }
-
 
     private var _authEvent = MutableLiveData<Event<OAuthResponse?>>()
     val authEvent: LiveData<Event<OAuthResponse?>>

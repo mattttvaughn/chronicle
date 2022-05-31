@@ -42,7 +42,6 @@ interface ICachedFileManager {
     suspend fun deleteCachedBook(bookId: Int)
     suspend fun hasUserCachedTracks(): Boolean
     suspend fun refreshTrackDownloadedStatus()
-
 }
 
 interface SimpleSet<T> {
@@ -112,7 +111,6 @@ class CachedFileManager @Inject constructor(
                 }
             }
         }
-
     }
 
     /**
@@ -170,15 +168,16 @@ class CachedFileManager @Inject constructor(
         dest: String
     ) = plexConfig.makeDownloadRequest(track.media, bookId, bookTitle, dest)
 
-
     override suspend fun uncacheAllInLibrary(): Int {
         Timber.i("Removing books from library")
         val cachedTrackNamesForLibrary = trackRepository.getCachedTracks()
             .map { it.getCachedFileName() }
         val allCachedTrackFiles = externalFileDirs.flatMap { dir ->
-            dir.listFiles(FileFilter {
-                MediaItemTrack.cachedFilePattern.matches(it.name)
-            })?.toList() ?: emptyList()
+            dir.listFiles(
+                FileFilter {
+                    MediaItemTrack.cachedFilePattern.matches(it.name)
+                }
+            )?.toList() ?: emptyList()
         }
         allCachedTrackFiles.forEach {
             Timber.i("Cached for library: $cachedTrackNamesForLibrary")
@@ -243,10 +242,13 @@ class CachedFileManager @Inject constructor(
         get() = _activeBookDownloads
 
     init {
-        applicationContext.registerReceiver(downloadListener, IntentFilter().apply {
-            addAction(DownloadNotificationWorker.ACTION_CANCEL_BOOK_DOWNLOAD)
-            addAction(DownloadNotificationWorker.ACTION_CANCEL_ALL_DOWNLOADS)
-        })
+        applicationContext.registerReceiver(
+            downloadListener,
+            IntentFilter().apply {
+                addAction(DownloadNotificationWorker.ACTION_CANCEL_BOOK_DOWNLOAD)
+                addAction(DownloadNotificationWorker.ACTION_CANCEL_ALL_DOWNLOADS)
+            }
+        )
 
         // singleton so we can observe downloads always
         fetch.addListener(object : FetchGroupStartFinishListener() {
@@ -295,9 +297,11 @@ class CachedFileManager @Inject constructor(
      */
     override suspend fun refreshTrackDownloadedStatus() {
         val idToFileMap = HashMap<Int, File>()
-        val trackIdsFoundOnDisk = prefsRepo.cachedMediaDir.listFiles(FileFilter {
-            MediaItemTrack.cachedFilePattern.matches(it.name)
-        })?.map {
+        val trackIdsFoundOnDisk = prefsRepo.cachedMediaDir.listFiles(
+            FileFilter {
+                MediaItemTrack.cachedFilePattern.matches(it.name)
+            }
+        )?.map {
             val id = MediaItemTrack.getTrackIdFromFileName(it.name)
             idToFileMap[id] = it
             id
@@ -345,10 +349,12 @@ class CachedFileManager @Inject constructor(
             val isBookCached = bookTrackCacheCount == bookTrackCount && bookTrackCount > 0
             val book = bookRepository.getAudiobookAsync(bookId)
             if (book != null) {
-                bookRepository.update(book.copy(
-                    isCached = isBookCached,
-                    chapters = book.chapters.map { it.copy(downloaded = isBookCached) }
-                ))
+                bookRepository.update(
+                    book.copy(
+                        isCached = isBookCached,
+                        chapters = book.chapters.map { it.copy(downloaded = isBookCached) }
+                    )
+                )
             }
         }
     }
@@ -358,8 +364,5 @@ class CachedFileManager @Inject constructor(
      * the persistent part in [MediaItemTrack.media]
      */
     private suspend fun migrateCachedFiles() {
-
     }
-
 }
-

@@ -117,7 +117,6 @@ class AudiobookMediaSessionCallback @Inject constructor(
         }
     }
 
-
     private fun skipToNext() {
         currentPlayer.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
     }
@@ -430,4 +429,3 @@ class AudiobookMediaSessionCallback @Inject constructor(
         serviceController.stopService()
     }
 }
-

@@ -5,7 +5,6 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
 
-
 const val PLEX_LOGIN_SERVICE_URL = "https://plex.tv"
 const val PLACEHOLDER_URL = "https://fake-base-url-should-never-be-called.yyy"
 
@@ -33,7 +32,6 @@ interface PlexLoginService {
         @Query("includeRelay") shouldIncludeRelay: Int = 1
     ): List<PlexServer>
 }
-
 
 interface PlexMediaService {
     /** A basic check used to tell whether a server is online. Returns a lightweight response */
@@ -136,4 +134,3 @@ interface PlexMediaService {
         @Query("X-Plex-Container-Size") containerSize: Int = 100,
     ): PlexMediaContainerWrapper
 }
-

@@ -4,10 +4,10 @@ import android.os.Build
 import android.os.Build.VERSION_CODES.M
 import android.os.Bundle
 import android.support.v4.media.session.PlaybackStateCompat
-import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD
-import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD
 import android.view.KeyEvent.KEYCODE_MEDIA_NEXT
 import android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS
+import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD
+import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD
 import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector.CustomActionProvider
@@ -16,7 +16,6 @@ import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-
 
 /**
  * The custom actions provided to [MediaSessionConnector.setCustomActionProviders()] for the app
@@ -40,7 +39,7 @@ fun makeCustomActionProviders(
         },
         SimpleCustomActionProvider(SKIP_TO_PREVIOUS) { player: Player, _: String, _: Bundle? ->
             player.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater)
-      },
+        },
     )
 }
 
@@ -125,5 +124,4 @@ class SimpleCustomActionProvider(
     ) {
         action(player, action, extras)
     }
-
 }

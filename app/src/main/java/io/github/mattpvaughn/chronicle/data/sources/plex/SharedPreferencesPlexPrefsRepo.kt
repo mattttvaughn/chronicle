@@ -169,7 +169,6 @@ class SharedPreferencesPlexPrefsRepo @Inject constructor(
         return combinedList.map { Connection(it) }
     }
 
-
     // TODO: ensure this is only usable for a certain amount of time
     override var oAuthTempId: Long
         get() = prefs.getLong(PREFS_TEMP_ID, NO_TEMP_ID_FOUND)

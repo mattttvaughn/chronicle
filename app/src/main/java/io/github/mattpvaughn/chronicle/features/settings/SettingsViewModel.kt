@@ -206,7 +206,8 @@ class SettingsViewModel(
                                     }
                                     setBottomSheetVisibility(false)
                                 }
-                            })
+                            }
+                        )
                     }
                 }
             ),
@@ -265,31 +266,42 @@ class SettingsViewModel(
                                 override fun onItemClicked(formattableString: FormattableString) {
                                     check(formattableString is FormattableString.ResourceString)
                                     when (formattableString.stringRes) {
-                                        R.string.settings_refresh_rate_always -> prefsRepo.refreshRateMinutes =
-                                            0
-                                        R.string.settings_refresh_rate_15_minutes -> prefsRepo.refreshRateMinutes =
-                                            15
-                                        R.string.settings_refresh_rate_1_hour -> prefsRepo.refreshRateMinutes =
-                                            60
-                                        R.string.settings_refresh_rate_3_hours -> prefsRepo.refreshRateMinutes =
-                                            180
-                                        R.string.settings_refresh_rate_6_hours -> prefsRepo.refreshRateMinutes =
-                                            360
-                                        R.string.settings_refresh_rate_1_day -> prefsRepo.refreshRateMinutes =
-                                            60 * 24
-                                        R.string.settings_refresh_rate_3_days -> prefsRepo.refreshRateMinutes =
-                                            60 * 24 * 3
-                                        R.string.settings_refresh_rate_1_week -> prefsRepo.refreshRateMinutes =
-                                            60 * 24 * 7
-                                        R.string.settings_refresh_rate_manual -> prefsRepo.refreshRateMinutes =
-                                            Long.MAX_VALUE
+                                        R.string.settings_refresh_rate_always ->
+                                            prefsRepo.refreshRateMinutes =
+                                                0
+                                        R.string.settings_refresh_rate_15_minutes ->
+                                            prefsRepo.refreshRateMinutes =
+                                                15
+                                        R.string.settings_refresh_rate_1_hour ->
+                                            prefsRepo.refreshRateMinutes =
+                                                60
+                                        R.string.settings_refresh_rate_3_hours ->
+                                            prefsRepo.refreshRateMinutes =
+                                                180
+                                        R.string.settings_refresh_rate_6_hours ->
+                                            prefsRepo.refreshRateMinutes =
+                                                360
+                                        R.string.settings_refresh_rate_1_day ->
+                                            prefsRepo.refreshRateMinutes =
+                                                60 * 24
+                                        R.string.settings_refresh_rate_3_days ->
+                                            prefsRepo.refreshRateMinutes =
+                                                60 * 24 * 3
+                                        R.string.settings_refresh_rate_1_week ->
+                                            prefsRepo.refreshRateMinutes =
+                                                60 * 24 * 7
+                                        R.string.settings_refresh_rate_manual ->
+                                            prefsRepo.refreshRateMinutes =
+                                                Long.MAX_VALUE
                                         else -> throw NoWhenBranchMatchedException("Unknown item: ${formattableString.stringRes}")
                                     }
                                     setBottomSheetVisibility(false)
                                 }
-                            })
+                            }
+                        )
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 type = PreferenceType.CLICKABLE,
                 title = FormattableString.ResourceString(
@@ -331,9 +343,11 @@ class SettingsViewModel(
                                     }
                                     setBottomSheetVisibility(false)
                                 }
-                            })
+                            }
+                        )
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 type = PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_delete_synced_title),
@@ -366,7 +380,8 @@ class SettingsViewModel(
                             }
                         )
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 PreferenceType.BOOLEAN,
                 FormattableString.from(R.string.settings_offline_mode_title),
@@ -441,9 +456,11 @@ class SettingsViewModel(
                                     }
                                     setBottomSheetVisibility(false)
                                 }
-                            })
+                            }
+                        )
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 type = PreferenceType.CLICKABLE,
                 title = FormattableString.ResourceString(
@@ -481,9 +498,11 @@ class SettingsViewModel(
                                     }
                                     setBottomSheetVisibility(false)
                                 }
-                            })
+                            }
+                        )
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_account)
@@ -527,7 +546,8 @@ class SettingsViewModel(
                             )
                         }
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_change_server),
@@ -556,7 +576,8 @@ class SettingsViewModel(
                             )
                         }
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_change_user),
@@ -585,7 +606,8 @@ class SettingsViewModel(
                             )
                         }
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_log_out),
@@ -619,7 +641,8 @@ class SettingsViewModel(
                         }
                         Timber.i("Logging out")
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_etc)
@@ -632,7 +655,8 @@ class SettingsViewModel(
                     override fun onClick() {
                         _webLink.postEvent("https://www.reddit.com/r/ChronicleApp")
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 type = PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_github_title),
@@ -641,12 +665,13 @@ class SettingsViewModel(
                     override fun onClick() {
                         _webLink.postEvent("https://github.com/mattttvaughn/chronicle")
                     }
-                }),
+                }
+            ),
             PreferenceModel(
                 type = PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_version_title),
                 explanation = FormattableString.from(BuildConfig.VERSION_NAME),
-                ),
+            ),
             PreferenceModel(
                 type = PreferenceType.CLICKABLE,
                 title = FormattableString.from(R.string.settings_licenses_title),
@@ -655,7 +680,8 @@ class SettingsViewModel(
                     override fun onClick() {
                         _showLicenseActivity.postValue(true)
                     }
-                })
+                }
+            )
         )
 
         if (BuildConfig.DEBUG) {
@@ -672,7 +698,8 @@ class SettingsViewModel(
                             override fun onClick() {
                                 prefsRepo.clearAll()
                             }
-                        }),
+                        }
+                    ),
                     PreferenceModel(
                         PreferenceType.CLICKABLE,
                         FormattableString.from(string = "Clear DB"),
@@ -680,7 +707,8 @@ class SettingsViewModel(
                             override fun onClick() {
                                 clearConfig(clearDownloads = false)
                             }
-                        }),
+                        }
+                    ),
                     PreferenceModel(
                         PreferenceType.CLICKABLE,
                         FormattableString.from(string = "Clear cached images"),
@@ -692,7 +720,8 @@ class SettingsViewModel(
                                     }
                                 }
                             }
-                        }),
+                        }
+                    ),
                     PreferenceModel(
                         PreferenceType.BOOLEAN,
                         FormattableString.from(string = "Disable local progress tracking"),
@@ -739,7 +768,6 @@ class SettingsViewModel(
             ExistingWorkPolicy.REPLACE,
             worker
         ).enqueue()
-
     }
 
     private enum class NavigationDestination {
@@ -786,5 +814,4 @@ class SettingsViewModel(
     fun setShowLicenseActivity(showLicense: Boolean) {
         _showLicenseActivity.postValue(showLicense)
     }
-
 }

@@ -8,9 +8,11 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_AUTO_R
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_COVER_STYLE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_BOOK_SORT_BY
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_DEBUG_DISABLE_PROGRESS
-import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_HIDE_PLAYED_AUDIOBOOKS
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_LIBRARY_SORT_DESCENDING
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_IS_PREMIUM
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_JUMP_BACKWARD_SECONDS
+import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_JUMP_FORWARD_SECONDS
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LAST_REFRESH
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_MEDIA_TYPE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_LIBRARY_VIEW_STYLE
@@ -19,8 +21,6 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PAUSE_
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PLAYBACK_SPEED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_PREMIUM_TOKEN
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_REFRESH_RATE
-import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_JUMP_FORWARD_SECONDS
-import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_JUMP_BACKWARD_SECONDS
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SHAKE_TO_SNOOZE_ENABLED
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SKIP_SILENCE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.KEY_SYNC_DIR_PATH
@@ -248,9 +248,9 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
 
     private val defaultIsPremium = false
     override val isPremium: Boolean
-        get() = sharedPreferences.getBoolean(KEY_IS_PREMIUM, defaultIsPremium)
-                || BuildConfig.DEBUG
-                || BuildConfig.FREE_AS_IN_BEER
+        get() = sharedPreferences.getBoolean(KEY_IS_PREMIUM, defaultIsPremium) ||
+            BuildConfig.DEBUG ||
+            BuildConfig.FREE_AS_IN_BEER
 
     private val defaultPremiumToken = NO_PREMIUM_TOKEN
     override var premiumPurchaseToken: String
@@ -296,7 +296,6 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
             }
             sharedPreferences.edit().putString(KEY_LIBRARY_MEDIA_TYPE, value).apply()
         }
-
 
     private val defaultLibraryViewStyle = VIEW_STYLE_COVER_GRID
     override var libraryBookViewStyle: String
