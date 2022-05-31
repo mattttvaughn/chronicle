@@ -19,8 +19,9 @@ fun List<PlexDirectory>?.asMediaItemTracks(): List<MediaItemTrack> {
     } ?: emptyList()
 }
 
+/**
+ * @return the total duration of all the tracks
+ */
 fun List<MediaItemTrack>.getDuration(): Long {
-    var acc = 0L
-    this.forEach { track -> acc += track.duration }
-    return acc
+    return this.asSequence().map(MediaItemTrack::duration).sum()
 }

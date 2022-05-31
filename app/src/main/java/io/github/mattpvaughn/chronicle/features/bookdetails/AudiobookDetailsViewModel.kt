@@ -38,6 +38,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.combine
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 @ExperimentalCoroutinesApi
 class AudiobookDetailsViewModel(
@@ -167,12 +168,16 @@ class AudiobookDetailsViewModel(
         }
 
     val progressString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->
-        if (tracks.isNullOrEmpty()) {
+        if (tracks.isEmpty()) {
             return@map "0:00/0:00"
         }
         val progressStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getProgress() / 1000L)
         val durationStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getDuration() / 1000L)
         return@map "$progressStr/$durationStr"
+    }
+
+    val progressPercentageString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->
+        return@map "${tracks.getProgressPercentage()}%"
     }
 
     private var _isLoadingTracks = MutableLiveData(false)

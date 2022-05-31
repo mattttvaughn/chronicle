@@ -8,9 +8,11 @@ import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRA
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack.Companion.EMPTY_TRACK
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
+import io.github.mattpvaughn.chronicle.data.sources.plex.model.getDuration
 import io.github.mattpvaughn.chronicle.features.player.*
 import timber.log.Timber
 import java.io.File
+import kotlin.math.roundToInt
 
 /**
  * A model for an audio track (i.e. a song)
@@ -183,7 +185,7 @@ fun List<MediaItemTrack>?.getTrackContainingOffset(offset: Long): MediaItemTrack
 }
 
 /**
- * Return the progress of the current track plus the duration of all previous tracks
+ * @return the progress of the current track plus the duration of all previous tracks
  */
 fun List<MediaItemTrack>.getProgress(): Long {
     if (isEmpty()) {
@@ -192,6 +194,16 @@ fun List<MediaItemTrack>.getProgress(): Long {
     val currentTrackProgress = getActiveTrack().progress
     val previousTracksDuration = getTrackStartTime(getActiveTrack())
     return currentTrackProgress + previousTracksDuration
+}
+
+/**
+ * @return progress as percent
+ */
+fun List<MediaItemTrack>.getProgressPercentage(): Int {
+    if (isEmpty() || getDuration() == 0L) {
+        return 0
+    }
+    return ((getProgress() / getDuration().toDouble()) * 100).roundToInt()
 }
 
 /**
