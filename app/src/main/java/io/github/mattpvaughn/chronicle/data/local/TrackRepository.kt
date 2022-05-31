@@ -256,7 +256,6 @@ class TrackRepository @Inject constructor(
         }
     }
 
-
     override fun getTracksForAudiobook(bookId: Int): LiveData<List<MediaItemTrack>> {
         return trackDao.getTracksForAudiobook(bookId, prefsRepo.offlineMode)
     }
@@ -381,9 +380,9 @@ class TrackRepository @Inject constructor(
             if (networkTrackIdentifier in localTrackIdentifiers) {
                 Timber.e("Moving disappeared track: ${networkTrack.title}")
                 val cachedTrack = localTracks.firstOrNull {
-                    networkTrackIdentifier.duration == it.duration
-                            && networkTrackIdentifier.parentId == it.parentKey
-                            && networkTrackIdentifier.title == it.title
+                    networkTrackIdentifier.duration == it.duration &&
+                        networkTrackIdentifier.parentId == it.parentKey &&
+                        networkTrackIdentifier.title == it.title
                 }
                 if (cachedTrack != null) {
                     val cachedFile = File(prefsRepo.cachedMediaDir, cachedTrack.getCachedFileName())

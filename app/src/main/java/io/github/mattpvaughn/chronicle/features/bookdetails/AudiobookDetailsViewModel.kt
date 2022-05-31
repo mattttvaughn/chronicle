@@ -155,7 +155,7 @@ class AudiobookDetailsViewModel(
         audiobook
     ) { activeBook, currentBook ->
         return@DoubleLiveData activeBook?.id == currentBook?.id &&
-                activeBook?.id != null
+            activeBook?.id != null
     }
 
     /** Whether the book in the current view is playing */

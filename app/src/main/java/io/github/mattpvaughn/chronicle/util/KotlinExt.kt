@@ -11,4 +11,3 @@ fun <T> LiveData<T>.observeOnce(observer: Observer<T>) {
         }
     })
 }
-

@@ -22,7 +22,6 @@ import io.github.mattpvaughn.chronicle.features.library.LibraryFragment.Audioboo
 import io.github.mattpvaughn.chronicle.navigation.Navigator
 import javax.inject.Inject
 
-
 class HomeFragment : Fragment() {
 
     @Inject
@@ -47,7 +46,8 @@ class HomeFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
 
@@ -73,15 +73,21 @@ class HomeFragment : Fragment() {
             viewModel.refreshData()
         }
 
-        viewModel.isRefreshing.observe(viewLifecycleOwner, Observer {
-            binding.swipeToRefresh.isRefreshing = it
-        })
-
-        viewModel.messageForUser.observe(viewLifecycleOwner, Observer {
-            if (!it.hasBeenHandled) {
-                Toast.makeText(context, it.getContentIfNotHandled(), LENGTH_SHORT).show()
+        viewModel.isRefreshing.observe(
+            viewLifecycleOwner,
+            Observer {
+                binding.swipeToRefresh.isRefreshing = it
             }
-        })
+        )
+
+        viewModel.messageForUser.observe(
+            viewLifecycleOwner,
+            Observer {
+                if (!it.hasBeenHandled) {
+                    Toast.makeText(context, it.getContentIfNotHandled(), LENGTH_SHORT).show()
+                }
+            }
+        )
 
         (activity as MainActivity).setSupportActionBar(binding.toolbar)
 
@@ -130,7 +136,6 @@ class HomeFragment : Fragment() {
                 }
                 return true
             }
-
         })
     }
 
@@ -144,5 +149,4 @@ class HomeFragment : Fragment() {
         @JvmStatic
         fun newInstance() = HomeFragment()
     }
-
 }

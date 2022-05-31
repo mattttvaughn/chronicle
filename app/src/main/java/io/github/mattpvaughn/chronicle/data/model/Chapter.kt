@@ -5,7 +5,6 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 
-
 @Entity
 data class Chapter constructor(
     val title: String = "",
@@ -83,4 +82,3 @@ class ChapterListConverter {
         return chapters.joinToString("®") { "${it.title}©${it.id}©${it.index}©${it.startTimeOffset}©${it.endTimeOffset}©${it.discNumber}©${it.downloaded}©${it.trackId}©${it.bookId}" }
     }
 }
-

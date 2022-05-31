@@ -8,7 +8,6 @@ import com.google.android.exoplayer2.Timeline
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
 import javax.inject.Inject
 
-
 /** A [TimelineQueueNavigator] with behavior appropriate for audiobook playback */
 class QueueNavigator @Inject constructor(
     mediaSession: MediaSessionCompat
@@ -39,4 +38,3 @@ class QueueNavigator @Inject constructor(
         }
     }
 }
-

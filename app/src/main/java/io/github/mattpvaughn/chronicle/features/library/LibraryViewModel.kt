@@ -19,8 +19,8 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_D
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_DATE_PLAYED
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_DURATION
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_PLAYS
-import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_YEAR
 import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_TITLE
+import io.github.mattpvaughn.chronicle.data.model.Audiobook.Companion.SORT_KEY_YEAR
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.model.getProgress
 import io.github.mattpvaughn.chronicle.data.sources.plex.ICachedFileManager
@@ -124,21 +124,23 @@ class LibraryViewModel(
         val offline = _isOffline ?: false
 
         val results = _books.filter { (!offline || it.isCached && offline) && (!hidePlayed || hidePlayed && it.viewCount == 0L) }
-            .sortedWith(Comparator { book1, book2 ->
-                val descMultiplier = if (desc) 1 else -1
-                return@Comparator descMultiplier * when (key) {
-                    SORT_KEY_AUTHOR -> book1.author.compareTo(book2.author)
-                    SORT_KEY_TITLE -> book1.titleSort.compareTo(book2.titleSort)
-                    SORT_KEY_PLAYS -> book2.viewedLeafCount.compareTo(book1.viewedLeafCount)
-                    SORT_KEY_DURATION -> book2.duration.compareTo(book1.duration)
-                    // Note: Reverse order for timestamps, because most recent should be at the top
-                    // of descending, even though the timestamp is larger
-                    SORT_KEY_DATE_ADDED -> book2.addedAt.compareTo(book1.addedAt)
-                    SORT_KEY_DATE_PLAYED -> book2.lastViewedAt.compareTo(book1.lastViewedAt)
-                    SORT_KEY_YEAR -> book2.year.compareTo(book1.year)
-                    else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
+            .sortedWith(
+                Comparator { book1, book2 ->
+                    val descMultiplier = if (desc) 1 else -1
+                    return@Comparator descMultiplier * when (key) {
+                        SORT_KEY_AUTHOR -> book1.author.compareTo(book2.author)
+                        SORT_KEY_TITLE -> book1.titleSort.compareTo(book2.titleSort)
+                        SORT_KEY_PLAYS -> book2.viewedLeafCount.compareTo(book1.viewedLeafCount)
+                        SORT_KEY_DURATION -> book2.duration.compareTo(book1.duration)
+                        // Note: Reverse order for timestamps, because most recent should be at the top
+                        // of descending, even though the timestamp is larger
+                        SORT_KEY_DATE_ADDED -> book2.addedAt.compareTo(book1.addedAt)
+                        SORT_KEY_DATE_PLAYED -> book2.lastViewedAt.compareTo(book1.lastViewedAt)
+                        SORT_KEY_YEAR -> book2.year.compareTo(book1.year)
+                        else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
+                    }
                 }
-            })
+            )
 
         // If nothing has changed, return prevBooks
         if (prevBooks.map { it.id } == results.map { it.id }) {
@@ -179,7 +181,6 @@ class LibraryViewModel(
         }
     }
 
-
     fun setSearchActive(isSearchActive: Boolean) {
         _isSearchActive.postValue(isSearchActive)
     }
@@ -190,9 +191,11 @@ class LibraryViewModel(
         if (query.isEmpty()) {
             _searchResults.postValue(emptyList())
         } else {
-            bookRepository.search(query).observeOnce(Observer {
-                _searchResults.postValue(it)
-            })
+            bookRepository.search(query).observeOnce(
+                Observer {
+                    _searchResults.postValue(it)
+                }
+            )
         }
     }
 
@@ -259,7 +262,8 @@ class LibraryViewModel(
                             else -> throw NoWhenBranchMatchedException()
                         }
                     }
-                })
+                }
+            )
         }
 
         // Prompt user to download
@@ -337,5 +341,4 @@ class LibraryViewModel(
         Timber.i("toggleHidePlayedAudiobooks")
         prefsRepo.hidePlayedAudiobooks = !prefsRepo.hidePlayedAudiobooks
     }
-
 }

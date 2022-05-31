@@ -6,4 +6,3 @@ import androidx.databinding.BindingAdapter
 fun setPreferencesForList(settingsList: SettingsList, prefs: List<PreferenceModel>) {
     settingsList.setPreferences(prefs)
 }
-

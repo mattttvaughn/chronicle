@@ -18,7 +18,6 @@ import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
-
 @OptIn(InternalCoroutinesApi::class)
 class ChooseLibraryViewModel @Inject constructor(
     private val plexMediaService: PlexMediaService,
@@ -74,7 +73,6 @@ class ChooseLibraryViewModel @Inject constructor(
             loadLibraries()
         }
     }
-
 
     init {
         viewModelScope.launch {

@@ -26,9 +26,7 @@ import io.github.mattpvaughn.chronicle.features.player.MediaServiceConnection
 import io.github.mattpvaughn.chronicle.navigation.Navigator
 import io.github.mattpvaughn.chronicle.util.observeEvent
 import io.github.mattpvaughn.chronicle.views.getString
-import timber.log.Timber
 import javax.inject.Inject
-
 
 class SettingsFragment : Fragment() {
 
@@ -76,7 +74,8 @@ class SettingsFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
 
@@ -86,30 +85,39 @@ class SettingsFragment : Fragment() {
         binding.viewModel = viewModel
         binding.lifecycleOwner = viewLifecycleOwner
 
-        viewModel.messageForUser.observe(viewLifecycleOwner, Observer { message ->
-            if (!message.hasBeenHandled) {
-                val formattableString = message.getContentIfNotHandled()
-                Toast.makeText(context, resources.getString(formattableString), Toast.LENGTH_SHORT)
-                    .show()
+        viewModel.messageForUser.observe(
+            viewLifecycleOwner,
+            Observer { message ->
+                if (!message.hasBeenHandled) {
+                    val formattableString = message.getContentIfNotHandled()
+                    Toast.makeText(context, resources.getString(formattableString), Toast.LENGTH_SHORT)
+                        .show()
+                }
             }
-        })
+        )
 
         viewModel.upgradeToPremium.observeEvent(viewLifecycleOwner) {
             chronicleBillingManager.launchBillingFlow(requireActivity())
         }
 
-        viewModel.webLink.observe(viewLifecycleOwner, Observer {
-            if (!it.hasBeenHandled) {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.getContentIfNotHandled())))
+        viewModel.webLink.observe(
+            viewLifecycleOwner,
+            Observer {
+                if (!it.hasBeenHandled) {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.getContentIfNotHandled())))
+                }
             }
-        })
+        )
 
-        viewModel.showLicenseActivity.observe(viewLifecycleOwner, Observer {
-            if (it) {
-                startActivity(Intent(context, OssLicensesMenuActivity::class.java))
-                viewModel.setShowLicenseActivity(false)
+        viewModel.showLicenseActivity.observe(
+            viewLifecycleOwner,
+            Observer {
+                if (it) {
+                    startActivity(Intent(context, OssLicensesMenuActivity::class.java))
+                    viewModel.setShowLicenseActivity(false)
+                }
             }
-        })
+        )
 
         return binding.root
     }

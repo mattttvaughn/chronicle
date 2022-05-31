@@ -118,7 +118,6 @@ class MediaServiceConnection @Inject constructor(
         mediaBrowser.connect()
         mediaControllerCallback.onConnected = onConnected
     }
-
 }
 
 val EMPTY_PLAYBACK_STATE: PlaybackStateCompat = Builder()
@@ -130,5 +129,3 @@ val NOTHING_PLAYING: MediaMetadataCompat = MediaMetadataCompat.Builder()
     .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "")
     .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 0)
     .build()
-
-

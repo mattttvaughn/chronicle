@@ -57,7 +57,6 @@ data class MediaItemTrack(
                 genre = metadata.genre ?: "",
                 artwork = metadata.artUri.toString()
             )
-
         }
 
         val EMPTY_TRACK = MediaItemTrack(TRACK_NOT_FOUND)
@@ -139,7 +138,6 @@ data class MediaItemTrack(
         return index.compareTo(other.index)
     }
 }
-
 
 /**
  * Returns the timestamp (in ms) corresponding to the start of [track] with respect to the

@@ -43,7 +43,6 @@ class ServerListAdapter(val clickListener: ServerClickListener) :
     }
 }
 
-
 class ServerDiffCallback : DiffUtil.ItemCallback<ServerModel>() {
     override fun areItemsTheSame(oldItem: ServerModel, newItem: ServerModel): Boolean {
         return oldItem.name == newItem.name
@@ -53,4 +52,3 @@ class ServerDiffCallback : DiffUtil.ItemCallback<ServerModel>() {
         return oldItem == newItem
     }
 }
-

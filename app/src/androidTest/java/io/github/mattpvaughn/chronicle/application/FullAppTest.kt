@@ -8,4 +8,3 @@ package io.github.mattpvaughn.chronicle.application
  * provide a lot of value for not a lot of work
  */
 class FullAppTest
-

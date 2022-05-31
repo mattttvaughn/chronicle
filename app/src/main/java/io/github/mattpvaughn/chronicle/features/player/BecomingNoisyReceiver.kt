@@ -45,5 +45,3 @@ class BecomingNoisyReceiver @Inject constructor(
         }
     }
 }
-
-

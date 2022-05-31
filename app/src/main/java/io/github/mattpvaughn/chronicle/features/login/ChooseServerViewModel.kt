@@ -54,9 +54,11 @@ class ChooseServerViewModel @Inject constructor(
                 val serverContainer = plexLoginService.resources()
                 Timber.i("Server: $serverContainer")
                 _loadingStatus.value = LoadingStatus.DONE
-                _servers.postValue(serverContainer
-                    .filter { it.provides.contains("server") }
-                    .map { it.asServer() })
+                _servers.postValue(
+                    serverContainer
+                        .filter { it.provides.contains("server") }
+                        .map { it.asServer() }
+                )
             } catch (e: Throwable) {
                 Timber.e(e, "Failed to get servers")
                 _userMessage.postEvent("Failed to load servers: ${e.message}")

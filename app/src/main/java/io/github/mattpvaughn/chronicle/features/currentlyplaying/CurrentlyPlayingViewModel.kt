@@ -37,7 +37,6 @@ import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerActi
 import io.github.mattpvaughn.chronicle.util.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.*
 import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.BottomChooserState.Companion.EMPTY_BOTTOM_CHOOSER
-import io.github.mattpvaughn.chronicle.views.ModalBottomSheetSpeedChooser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
@@ -56,7 +55,7 @@ class CurrentlyPlayingViewModel(
     private val plexConfig: PlexConfig,
     private val currentlyPlaying: CurrentlyPlaying,
     sharedPrefs: SharedPreferences
-    ) : ViewModel() {
+) : ViewModel() {
 
     @Suppress("UNCHECKED_CAST")
     class Factory @Inject constructor(
@@ -68,7 +67,7 @@ class CurrentlyPlayingViewModel(
         private val plexConfig: PlexConfig,
         private val currentlyPlaying: CurrentlyPlaying,
         private val sharedPrefs: SharedPreferences,
-        ) : ViewModelProvider.Factory {
+    ) : ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
                 return CurrentlyPlayingViewModel(
@@ -157,8 +156,7 @@ class CurrentlyPlayingViewModel(
 
     val currentChapter = currentlyPlaying.chapter.asLiveData(viewModelScope.coroutineContext)
 
-    val chapterProgress = currentlyPlaying.chapter.combine(currentlyPlaying.track)
-    { chapter: Chapter, track: MediaItemTrack ->
+    val chapterProgress = currentlyPlaying.chapter.combine(currentlyPlaying.track) { chapter: Chapter, track: MediaItemTrack ->
         track.progress - chapter.startTimeOffset
     }.asLiveData(viewModelScope.coroutineContext)
 
@@ -169,8 +167,7 @@ class CurrentlyPlayingViewModel(
         )
     }
 
-    val chapterProgressForSlider = currentlyPlaying.chapter.combine(currentlyPlaying.track)
-    { chapter: Chapter, track: MediaItemTrack ->
+    val chapterProgressForSlider = currentlyPlaying.chapter.combine(currentlyPlaying.track) { chapter: Chapter, track: MediaItemTrack ->
         track.progress - chapter.startTimeOffset
     }.filter { !isSliding }.asLiveData(viewModelScope.coroutineContext)
 
@@ -254,8 +251,7 @@ class CurrentlyPlayingViewModel(
         }
     }.asFlow()
 
-    val activeChapter = currentlyPlaying.chapter.combine(cachedChapter)
-    { activeChapter: Chapter, cachedChapter: Chapter ->
+    val activeChapter = currentlyPlaying.chapter.combine(cachedChapter) { activeChapter: Chapter, cachedChapter: Chapter ->
         Timber.i("Cached: $cachedChapter, active: $activeChapter")
         if (activeChapter != EMPTY_CHAPTER && activeChapter.trackId == cachedChapter.trackId) {
             activeChapter
@@ -397,7 +393,6 @@ class CurrentlyPlayingViewModel(
 
     fun skipToNext() {
         skipToChapter(SKIP_TO_NEXT, forward = true)
-
     }
 
     fun skipToPrevious() {
@@ -413,24 +408,25 @@ class CurrentlyPlayingViewModel(
                 transportControls?.sendCustomAction(action, null)
             } else {
                 val currentChapterIndex = currentlyPlaying.book.value.chapters.indexOf(currentlyPlaying.chapter.value)
-                var skipToChapterIndex : Int
-                if(forward) {
+                var skipToChapterIndex: Int
+                if (forward) {
                     skipToChapterIndex = currentChapterIndex + 1
-                    if(skipToChapterIndex < currentlyPlaying.book.value.chapters.size) {
+                    if (skipToChapterIndex < currentlyPlaying.book.value.chapters.size) {
                         val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex]
-                        jumpToChapter(skipToChapter.startTimeOffset,currentlyPlaying.track.value.id,hasUserConfirmation = true)
+                        jumpToChapter(skipToChapter.startTimeOffset, currentlyPlaying.track.value.id, hasUserConfirmation = true)
                     } else {
                         val toast = Toast.makeText(
                             Injector.get().applicationContext(), R.string.skip_forwards_reached_last_chapter,
-                            Toast.LENGTH_LONG)
-                        toast.setGravity(Gravity.BOTTOM,0,200)
+                            Toast.LENGTH_LONG
+                        )
+                        toast.setGravity(Gravity.BOTTOM, 0, 200)
                         toast.show()
                     }
                 } else {
                     skipToChapterIndex = currentChapterIndex - 1
-                    if(skipToChapterIndex < 0) skipToChapterIndex = 0
+                    if (skipToChapterIndex < 0) skipToChapterIndex = 0
                     val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex]
-                    jumpToChapter(skipToChapter.startTimeOffset, currentlyPlaying.track.value.id,hasUserConfirmation = true)
+                    jumpToChapter(skipToChapter.startTimeOffset, currentlyPlaying.track.value.id, hasUserConfirmation = true)
                 }
             }
         }
@@ -500,7 +496,6 @@ class CurrentlyPlayingViewModel(
         }
     }
 
-
     /** Jumps to a given track with [MediaItemTrack.id] == [trackId] */
     fun jumpToChapter(
         startTimeOffset: Long = 0,
@@ -520,7 +515,8 @@ class CurrentlyPlayingViewModel(
                         }
                         hideOptionsMenu()
                     }
-                })
+                }
+            )
             return
         }
 
@@ -602,8 +598,12 @@ class CurrentlyPlayingViewModel(
                         BEGIN to duration
                     }
                     R.string.sleep_timer_duration_end_of_chapter -> {
-                        val duration = ((chapterDuration.value ?: 0L) - (chapterProgress.value
-                            ?: 0L) / prefsRepo.playbackSpeed).toLong()
+                        val duration = (
+                            (chapterDuration.value ?: 0L) - (
+                                chapterProgress.value
+                                    ?: 0L
+                                ) / prefsRepo.playbackSpeed
+                            ).toLong()
                         BEGIN to duration
                     }
                     R.string.sleep_timer_append -> {

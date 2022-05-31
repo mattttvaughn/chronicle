@@ -60,7 +60,6 @@ fun bindUsers(recyclerView: RecyclerView, data: List<PlexUser>) {
     adapter.submitList(data)
 }
 
-
 @BindingAdapter("listData")
 fun bindLibraryData(recyclerView: RecyclerView, data: List<PlexLibrary>) {
     val adapter = recyclerView.adapter as LibraryListAdapter

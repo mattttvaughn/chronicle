@@ -26,7 +26,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import timber.log.Timber
 import javax.inject.Inject
 
-
 @ExperimentalCoroutinesApi
 class AudiobookDetailsFragment : Fragment() {
 
@@ -68,7 +67,8 @@ class AudiobookDetailsFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         Timber.i("AudiobookDetailsFragment onCreateView()")

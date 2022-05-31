@@ -82,11 +82,9 @@ class UITestAppModule(private val context: Context) {
     fun provideMediaController(mediaServiceConnection: MediaServiceConnection): MediaControllerCompat? =
         mediaServiceConnection.mediaController
 
-
     @Provides
     @Singleton
     fun workManager(): WorkManager = WorkManager.getInstance(context)
-
 
     @Provides
     @Singleton
@@ -96,7 +94,6 @@ class UITestAppModule(private val context: Context) {
         } else {
             HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.NONE)
         }
-
 
     @Provides
     @Singleton

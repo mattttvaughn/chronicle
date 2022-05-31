@@ -4,6 +4,6 @@ import io.github.mattpvaughn.chronicle.injection.components.AppComponent
 
 class Injector private constructor() {
     companion object {
-        fun get() : AppComponent = ChronicleApplication.get().appComponent
+        fun get(): AppComponent = ChronicleApplication.get().appComponent
     }
 }

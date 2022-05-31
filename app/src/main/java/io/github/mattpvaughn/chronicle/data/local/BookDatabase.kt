@@ -7,7 +7,6 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 
-
 private const val BOOK_DATABASE_NAME = "book_db"
 
 private lateinit var INSTANCE: BookDatabase
@@ -174,5 +173,3 @@ interface BookDao {
     @Query("UPDATE Audiobook SET viewCount = 0 WHERE id = :bookId")
     suspend fun setUnwatched(bookId: Int)
 }
-
-

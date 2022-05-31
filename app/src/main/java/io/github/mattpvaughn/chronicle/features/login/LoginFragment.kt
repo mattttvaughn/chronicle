@@ -22,7 +22,6 @@ import io.github.mattpvaughn.chronicle.databinding.OnboardingLoginBinding
 import timber.log.Timber
 import javax.inject.Inject
 
-
 class LoginFragment : Fragment() {
 
     companion object {
@@ -63,13 +62,16 @@ class LoginFragment : Fragment() {
         binding.enableAuto.visibility =
             if (FEATURE_FLAG_IS_AUTO_ENABLED) View.VISIBLE else View.GONE
 
-        loginViewModel.isLoading.observe(viewLifecycleOwner, Observer { isLoading ->
-            if (isLoading) {
-                binding.loading.visibility = View.VISIBLE
-            } else {
-                binding.loading.visibility = View.GONE
+        loginViewModel.isLoading.observe(
+            viewLifecycleOwner,
+            Observer { isLoading ->
+                if (isLoading) {
+                    binding.loading.visibility = View.VISIBLE
+                } else {
+                    binding.loading.visibility = View.GONE
+                }
             }
-        })
+        )
 
         binding.oauthLogin.setOnClickListener {
             loginViewModel.loginWithOAuth()
@@ -81,39 +83,42 @@ class LoginFragment : Fragment() {
             prefsRepo.allowAuto = isChecked
         }
 
-        loginViewModel.authEvent.observe(viewLifecycleOwner, Observer { authRequestEvent ->
-            val oAuthPin = authRequestEvent.getContentIfNotHandled()
-            if (oAuthPin != null) {
-                val backButton =
-                    resources.getDrawable(R.drawable.ic_arrow_back_white, requireActivity().theme)
-                        .apply { setTint(Color.BLACK) }
-                val backButtonBitmap: Bitmap? =
-                    if (backButton is BitmapDrawable) backButton.bitmap else null
+        loginViewModel.authEvent.observe(
+            viewLifecycleOwner,
+            Observer { authRequestEvent ->
+                val oAuthPin = authRequestEvent.getContentIfNotHandled()
+                if (oAuthPin != null) {
+                    val backButton =
+                        resources.getDrawable(R.drawable.ic_arrow_back_white, requireActivity().theme)
+                            .apply { setTint(Color.BLACK) }
+                    val backButtonBitmap: Bitmap? =
+                        if (backButton is BitmapDrawable) backButton.bitmap else null
 
-                val customTabsIntentBuilder =
-                    CustomTabsIntent.Builder()
-                        .setToolbarColor(
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                resources.getColor(R.color.colorPrimary, requireActivity().theme)
-                            } else {
-                                resources.getColor(R.color.colorPrimary)
-                            }
-                        )
-                        .setShowTitle(true)
+                    val customTabsIntentBuilder =
+                        CustomTabsIntent.Builder()
+                            .setToolbarColor(
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                    resources.getColor(R.color.colorPrimary, requireActivity().theme)
+                                } else {
+                                    resources.getColor(R.color.colorPrimary)
+                                }
+                            )
+                            .setShowTitle(true)
 
-                if (backButtonBitmap != null) {
-                    customTabsIntentBuilder.setCloseButtonIcon(backButtonBitmap)
+                    if (backButtonBitmap != null) {
+                        customTabsIntentBuilder.setCloseButtonIcon(backButtonBitmap)
+                    }
+
+                    val customTabsIntent = customTabsIntentBuilder.build()
+
+                    // make login url
+                    val url = loginViewModel.makeOAuthLoginUrl(oAuthPin.clientIdentifier, oAuthPin.code)
+
+                    loginViewModel.setLaunched(true)
+                    customTabsIntent.launchUrl(requireContext(), url)
                 }
-
-                val customTabsIntent = customTabsIntentBuilder.build()
-
-                // make login url
-                val url = loginViewModel.makeOAuthLoginUrl(oAuthPin.clientIdentifier, oAuthPin.code)
-
-                loginViewModel.setLaunched(true)
-                customTabsIntent.launchUrl(requireContext(), url)
             }
-        })
+        )
 
         return binding.root
     }

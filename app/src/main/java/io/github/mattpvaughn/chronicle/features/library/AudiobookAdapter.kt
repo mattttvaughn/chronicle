@@ -41,7 +41,6 @@ class AudiobookAdapter(
         else -> throw IllegalStateException("Unknown view style")
     }
 
-
     private var serverConnected: Boolean = false
 
     override fun getItemId(position: Int): Long {
@@ -165,8 +164,8 @@ class AudiobookDiffCallback : DiffUtil.ItemCallback<Audiobook>() {
 
     /** Changes which require a redraw of the view */
     override fun areContentsTheSame(oldItem: Audiobook, newItem: Audiobook): Boolean {
-        return oldItem.thumb == newItem.thumb && oldItem.title == newItem.title
-                && oldItem.author == newItem.author && oldItem.isCached == newItem.isCached
-                && oldItem.progress == newItem.progress
+        return oldItem.thumb == newItem.thumb && oldItem.title == newItem.title &&
+            oldItem.author == newItem.author && oldItem.isCached == newItem.isCached &&
+            oldItem.progress == newItem.progress
     }
 }

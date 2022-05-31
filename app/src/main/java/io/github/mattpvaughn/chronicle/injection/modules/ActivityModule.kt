@@ -57,8 +57,4 @@ class ActivityModule(private val activity: AppCompatActivity) {
         }
         return conn
     }
-
-
 }
-
-

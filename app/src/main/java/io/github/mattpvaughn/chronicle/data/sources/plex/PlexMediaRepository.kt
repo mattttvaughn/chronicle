@@ -34,8 +34,6 @@ class PlexMediaRepository @Inject constructor(private val bookRepository: IBookR
                 requireNotNull(books.value)
                 return books.value!![bookIndex].toAlbumMediaMetadata()
             }
-
         }
     }
 }
-

@@ -88,9 +88,9 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
         }
     }
 
-    fun isActive(chapter: Chapter) = chapter.trackId == activeChapter.first
-            && chapter.discNumber == activeChapter.second
-            && chapter.index == activeChapter.third
+    fun isActive(chapter: Chapter) = chapter.trackId == activeChapter.first &&
+        chapter.discNumber == activeChapter.second &&
+        chapter.index == activeChapter.third
 
     fun updateCurrentChapter(trackId: Long, discNumber: Int, chapterIndex: Long) {
         activeChapter = Triple(trackId, discNumber, chapterIndex)
@@ -150,7 +150,6 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
         }
     }
 
-
     class SectionHeaderViewHolder private constructor(
         private val binding: ListItemDiscNumberSectionHeadingBinding
     ) : RecyclerView.ViewHolder(binding.root) {
@@ -195,9 +194,9 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
         ): Boolean {
             return when {
                 oldItem is ChapterItemModel && newItem is ChapterItemModel -> {
-                    oldItem.chapter.index == newItem.chapter.index
-                            && oldItem.chapter.title == newItem.chapter.title
-                            && oldItem.isActive == newItem.isActive
+                    oldItem.chapter.index == newItem.chapter.index &&
+                        oldItem.chapter.title == newItem.chapter.title &&
+                        oldItem.isActive == newItem.isActive
                 }
                 oldItem is SectionHeaderWrapper && newItem is SectionHeaderWrapper -> {
                     oldItem.section.text == newItem.section.text
@@ -211,4 +210,3 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
 interface TrackClickListener {
     fun onClick(chapter: Chapter)
 }
-

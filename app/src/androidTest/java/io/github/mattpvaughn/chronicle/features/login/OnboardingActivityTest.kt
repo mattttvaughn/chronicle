@@ -21,13 +21,12 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-
 class OnboardingActivityTest {
 
     @get:Rule
     var activityRule = ActivityTestRule(
         OnboardingActivity::class.java,
-        true,  // initialTouchMode
+        true, // initialTouchMode
         false
     )
 
@@ -66,5 +65,4 @@ class OnboardingActivityTest {
         // Ensure we navigate to MainActivity
         onView(withId(R.id.choose_server_title)).check(matches(ViewMatchers.isDisplayed()))
     }
-
 }

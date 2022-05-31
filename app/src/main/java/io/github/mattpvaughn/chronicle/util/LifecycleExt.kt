@@ -36,7 +36,6 @@ fun <X, Y> mapAsync(
     return result
 }
 
-
 /** A wrapper for data exposed via [LiveData] representing an event */
 open class Event<out T>(private val content: T) {
 
@@ -289,4 +288,3 @@ class CombinedLiveData<R>(
         }
     }
 }
-

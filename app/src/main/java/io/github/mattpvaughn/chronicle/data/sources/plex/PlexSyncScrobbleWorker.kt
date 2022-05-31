@@ -17,7 +17,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-
 class PlexSyncScrobbleWorker(
     context: Context,
     workerParameters: WorkerParameters

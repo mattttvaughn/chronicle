@@ -243,5 +243,4 @@ class SimpleProgressUpdater @Inject constructor(
     override fun cancel() {
         handler.removeCallbacks(updateProgressAction)
     }
-
 }

@@ -15,7 +15,6 @@ import io.github.mattpvaughn.chronicle.views.BottomSheetChooser
 import timber.log.Timber
 import javax.inject.Inject
 
-
 /**
  * A countdown timer which pauses playback at the end of countdown.
  *
@@ -59,18 +58,20 @@ class SimpleSleepTimer @Inject constructor(
     private var isActive: Boolean = false
     private val shakeToSnoozeDurationMs = 5 * 60 * 1000L
     private val shakeOccurredSoundDurationMs = 150
-    private val shakeDetector = ShakeDetector(ShakeDetector.Listener {
-        Timber.i("Shake detected. Extending")
-        if (prefsRepo.shakeToSnooze) {
-            extend(shakeToSnoozeDurationMs)
-            toneGenerator.startTone(ToneGenerator.TONE_CDMA_PIP, shakeOccurredSoundDurationMs)
-            showToast(
-                service,
-                BottomSheetChooser.FormattableString.from(R.string.sleep_timer_extended_message),
-                Toast.LENGTH_SHORT
-            )
+    private val shakeDetector = ShakeDetector(
+        ShakeDetector.Listener {
+            Timber.i("Shake detected. Extending")
+            if (prefsRepo.shakeToSnooze) {
+                extend(shakeToSnoozeDurationMs)
+                toneGenerator.startTone(ToneGenerator.TONE_CDMA_PIP, shakeOccurredSoundDurationMs)
+                showToast(
+                    service,
+                    BottomSheetChooser.FormattableString.from(R.string.sleep_timer_extended_message),
+                    Toast.LENGTH_SHORT
+                )
+            }
         }
-    })
+    )
 
     // TODO: handle changes to playback speed?
     override fun handleAction(action: SleepTimer.SleepTimerAction, durationMillis: Long) {
@@ -84,7 +85,6 @@ class SimpleSleepTimer @Inject constructor(
             }
         }
     }
-
 
     override fun cancel() {
         // no need to broadcast a cancel, the cancel has to come from the UI, and the UI for the
@@ -128,6 +128,4 @@ class SimpleSleepTimer @Inject constructor(
         Timber.i("Sleep timer extended by $extensionDurationMS milliseconds")
         sleepTimeRemaining += extensionDurationMS
     }
-
 }
-

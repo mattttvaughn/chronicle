@@ -65,7 +65,7 @@ data class Audiobook constructor(
             parentId = dir.parentRatingKey,
             genre = dir.plexGenres.joinToString(separator = ", "),
             summary = dir.summary,
-            year = dir.year.takeIf { it != 0} ?: dir.parentYear,
+            year = dir.year.takeIf { it != 0 } ?: dir.parentYear,
             addedAt = dir.addedAt,
             updatedAt = dir.updatedAt,
             lastViewedAt = dir.lastViewedAt,
@@ -165,7 +165,8 @@ fun Audiobook.toMediaItem(plexConfig: PlexConfig): MediaBrowserCompat.MediaItem 
     val extras = Bundle()
     extras.putBoolean(EXTRA_IS_DOWNLOADED, isCached)
     extras.putInt(
-        EXTRA_PLAY_COMPLETION_STATE, if (progress == 0L) {
+        EXTRA_PLAY_COMPLETION_STATE,
+        if (progress == 0L) {
             STATUS_NOT_PLAYED
         } else {
             STATUS_PARTIALLY_PLAYED
@@ -187,4 +188,3 @@ fun Audiobook.uniqueId(): Int {
 const val NO_AUDIOBOOK_FOUND_ID = -22321
 const val NO_AUDIOBOOK_FOUND_TITLE = "No audiobook found"
 val EMPTY_AUDIOBOOK = Audiobook(NO_AUDIOBOOK_FOUND_ID, NO_SOURCE_FOUND, NO_AUDIOBOOK_FOUND_TITLE)
-
