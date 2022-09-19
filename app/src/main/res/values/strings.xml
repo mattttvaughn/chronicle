@@ -173,7 +173,7 @@
     <string name="sleep_timer_duration_end_of_chapter">End of chapter</string>
     <string name="sleep_timer_append">+5 minutes</string>
     <string name="cancel">Cancel</string>
-    <string name="sleep_timer_extended_message">Sleep timer extended</string>
+    <string name="sleep_timer_extended_message">Chronicle: Sleep timer extended</string>
 
     <!-- Bottom chooser -->
     <string name="tap_to_close_opened_menu">Tap to close opened menu</string>
