@@ -63,18 +63,33 @@
             style="@style/TextAppearance.Body1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/keyline_x_offset"
+            android:layout_marginStart="@dimen/keyline_x_offset"
             android:layout_marginTop="@dimen/margin_normal"
-            android:layout_marginRight="@dimen/screen_horizontal_padding"
+            android:layout_marginEnd="@dimen/screen_horizontal_padding"
             android:layout_marginBottom="@dimen/margin_normal"
+            android:ellipsize="end"
             android:lines="1"
             android:text="@{chapter.title}"
             android:textColor="@{isActive ? @color/textActive : @color/textPrimary}"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/track_duration"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Track name but it's very long with a lot of text so it overflows" />
+
+        <TextView
+            android:id="@+id/track_duration"
+            style="@style/TextAppearance.Body2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/chapter_indent"
+            android:layout_marginEnd="@dimen/screen_horizontal_padding"
+            android:text="@{chapter.durationStr}"
+            android:textColor="@{isActive ? @color/textActive : @color/textPrimary}"
+            app:layout_constraintBottom_toBottomOf="@id/track_name"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/track_name"
+            tools:text="05:14" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
