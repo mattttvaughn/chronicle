@@ -58,9 +58,6 @@ android {
             arg("room.expandProjection", "true")
         }
     }
-    lintOptions {
-        abortOnError false
-    }
     kotlinOptions {
         freeCompilerArgs = ["-Xallow-result-return-type"]
         freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
@@ -78,6 +75,10 @@ android {
             buildConfigField "boolean", "FREE_AS_IN_BEER", "false"
         }
     }
+    lint {
+        abortOnError false
+    }
+    namespace 'io.github.mattpvaughn.chronicle'
 }
 
 dependencies {

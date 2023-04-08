@@ -67,7 +67,7 @@ class AudiobookDetailsViewModel(
         private val currentlyPlaying: CurrentlyPlaying
     ) : ViewModelProvider.Factory {
         lateinit var inputAudiobook: Audiobook
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             check(this::inputAudiobook.isInitialized) { "Input audiobook not provided!" }
             if (modelClass.isAssignableFrom(AudiobookDetailsViewModel::class.java)) {
                 return AudiobookDetailsViewModel(
