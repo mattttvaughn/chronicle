@@ -229,14 +229,14 @@ class LibraryFragment : Fragment() {
         val cacheItem = menu.findItem(R.id.download_all) as MenuItem
 
         searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
                 filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
                 cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
                 viewModel.setSearchActive(true)
                 return true
             }
 
-            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
                 filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                 cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                 viewModel.setSearchActive(false)

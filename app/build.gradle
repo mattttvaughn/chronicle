@@ -5,11 +5,11 @@ apply plugin: "kotlin-parcelize"
 apply plugin: "com.google.android.gms.oss-licenses-plugin"
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 33
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 21
-        targetSdkVersion 30
+        targetSdkVersion 33
         versionCode 24
         versionName "0.52.1"
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
@@ -35,11 +35,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8.toString()
+        jvmTarget = JavaVersion.VERSION_11.toString()
     }
     // Shared code b/w test and androidTest: mocks "n" stuff
     sourceSets {
@@ -60,9 +60,9 @@ android {
     }
     kotlinOptions {
         freeCompilerArgs = ["-Xallow-result-return-type"]
-        freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
-        freeCompilerArgs += ["-Xopt-in=kotlin.time.ExperimentalTime"]
-        freeCompilerArgs += ["-Xopt-in=kotlinx.coroutines.InternalCoroutinesApi"]
+        freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
+        freeCompilerArgs += ["-opt-in=kotlin.time.ExperimentalTime"]
+        freeCompilerArgs += ["-opt-in=kotlinx.coroutines.InternalCoroutinesApi"]
     }
     flavorDimensions "freeAsInBeer"
     productFlavors {
