@@ -29,7 +29,7 @@ class LoginViewModel(private val plexLoginRepo: IPlexLoginRepo) : ViewModel() {
 
     private var hasLaunched = false
 
-    val isLoading = Transformations.map(plexLoginRepo.loginEvent) { loginState ->
+    val isLoading = plexLoginRepo.loginEvent.map { loginState ->
         return@map loginState.peekContent() == IPlexLoginRepo.LoginState.AWAITING_LOGIN_RESULTS
     }
 

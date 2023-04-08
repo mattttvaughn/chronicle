@@ -2,25 +2,29 @@
 
 buildscript {
     ext {
-        kotlinVersion = '1.6.21'
-        coroutinesVersion = "1.3.8"
+        kotlinVersion = '1.8.10'
+        coroutinesVersion = "1.6.4"
         archLifecycleVersion = "1.1.1"
         gradleVersion = '7.4.2'
         supportlibVersion = '1.2.0'
-        materialLibVersion = '1.6.0-beta01' // todo: permanent visible slider label is available from 1.6 (currently in beta) → https://github.com/material-components/material-components-android/releases
+        //materialLibVersion = '1.6.0-beta01' // todo: permanent visible slider label is available from 1.6 (currently in beta) → https://github.com/material-components/material-components-android/releases
+        materialLibVersion = '1.9.0-beta01' // todo: permanent visible slider label is available from 1.6 (currently in beta) → https://github.com/material-components/material-components-android/releases
         retrofitVersion = "2.9.0"
-        moshiKotlinVersion = '1.13.0'
-        okhttpVersion = '4.9.1'
+        moshiKotlinVersion = '1.14.0'
+        okhttpVersion = '4.10.0'
         dataBindingCompilerVersion = gradleVersion // Always need to be the same.
         roomVersion = "2.5.1"
         frescoVersion = "2.4.0"
-        exoplayerVersion = "2.11.4"
+        //2.15.1 might be the highest, and yet it's still borked.
+        //2.11.4 was original version, it's heckin old.
+        exoplayerVersion = "2.15.1"
+        exoplayerExtensions = "2.14.0"
         workVersion = '2.5.0'
         junitVersion = '4.13.2'
         androidxTestRunnerVersion = '1.5.0' //TODO: this needs to be split up, because there's newer versions of the rules
         espressoVersion = '3.5.1'
         androidxAnnotationVersion = "1.2.0"
-        lifecycleVersion = "2.4.0"
+        lifecycleVersion = "2.6.1"
         ossLicenseActivityVersion = "17.0.0"
         androidXTestExtKotlinRunnerVersion = '1.1.5'
         androidXTestCoreVersion = '1.5.0'
@@ -28,13 +32,13 @@ buildscript {
         archTestingVersion = "2.2.0"
         hamcrestVersion = "1.3"
         mockKVersion = "1.10.0"
-        daggerVersion = '2.33'
-        localBroadcastManagerVersion = "1.0.0"
-        androidXCustomTabsVersion = "1.3.0"
+        daggerVersion = '2.45'
+        localBroadcastManagerVersion = "1.1.0"
+        androidXCustomTabsVersion = "1.5.0"
         swipeRefreshLayoutVersion = "1.1.0"
         billingVersion = '4.0.0'
         iapWrapperVersion = '1.2.2'
-        constraintLayoutVersion = '2.0.4'
+        constraintLayoutVersion = '2.1.4'
         kotlinResultVersion = '1.1.11'
         timberVersion = "4.7.1"
         seismicVersion = "1.0.2"
@@ -48,7 +52,7 @@ buildscript {
     dependencies {
         classpath "com.android.tools.build:gradle:$gradleVersion"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        classpath 'com.google.android.gms:oss-licenses-plugin:0.10.4'
+        classpath 'com.google.android.gms:oss-licenses-plugin:0.10.6'
         classpath "org.jlleitschuh.gradle:ktlint-gradle:10.3.0"
 
         // NOTE: Do not place your application dependencies here; they belong

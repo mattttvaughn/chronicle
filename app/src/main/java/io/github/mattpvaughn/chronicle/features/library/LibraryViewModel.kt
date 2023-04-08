@@ -172,7 +172,7 @@ class LibraryViewModel(
     val tracks: LiveData<List<MediaItemTrack>>
         get() = _tracks
 
-    private val cacheStatus = Transformations.map(tracks) {
+    private val cacheStatus = tracks.map {
         when {
             it.isEmpty() -> NOT_CACHED
             it.all { track -> track.cached } -> CACHED

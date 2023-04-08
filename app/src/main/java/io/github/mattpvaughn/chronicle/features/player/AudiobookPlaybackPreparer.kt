@@ -22,7 +22,7 @@ class AudiobookPlaybackPreparer @Inject constructor(
     private val mediaSessionCallback: MediaSessionCompat.Callback
 ) : MediaSessionConnector.PlaybackPreparer {
 
-    override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle) {
+    override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle?) {
         mediaSource.whenReady {
             if (playWhenReady) {
                 mediaSessionCallback.onPlayFromSearch(query, extras)
@@ -47,7 +47,7 @@ class AudiobookPlaybackPreparer @Inject constructor(
         ACTION_PREPARE_FROM_MEDIA_ID or ACTION_PLAY_FROM_MEDIA_ID or
             ACTION_PREPARE_FROM_SEARCH or ACTION_PLAY_FROM_SEARCH
 
-    override fun onPrepareFromMediaId(bookId: String, playWhenReady: Boolean, extras: Bundle) {
+    override fun onPrepareFromMediaId(bookId: String, playWhenReady: Boolean, extras: Bundle?) {
         mediaSource.whenReady {
             if (playWhenReady) {
                 mediaSessionCallback.onPlayFromMediaId(bookId, extras)
@@ -57,7 +57,7 @@ class AudiobookPlaybackPreparer @Inject constructor(
         }
     }
 
-    override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle) = Unit
+    override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle?) = Unit
 
     override fun onPrepare(playWhenReady: Boolean) = Unit
 }

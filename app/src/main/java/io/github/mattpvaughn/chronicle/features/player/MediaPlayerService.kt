@@ -42,8 +42,8 @@ import io.github.mattpvaughn.chronicle.util.PackageValidator
 import kotlinx.coroutines.*
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
-import kotlin.time.seconds
 
 /** The service responsible for media playback, notification */
 @ExperimentalCoroutinesApi
@@ -146,7 +146,7 @@ class MediaPlayerService :
          *
          * @see DefaultLoadControl.Builder.setBufferDurationsMs
          */
-        val EXOPLAYER_BACK_BUFFER_DURATION_MILLIS: Int = 120.seconds.toLongMilliseconds().toInt()
+        val EXOPLAYER_BACK_BUFFER_DURATION_MILLIS: Int = 120.seconds.inWholeMilliseconds.toInt()
 
         /**
          * Exoplayer min-buffer (the minimum millis of buffer which exo will attempt to keep in
@@ -154,14 +154,14 @@ class MediaPlayerService :
          *
          * @see DefaultLoadControl.Builder.setBufferDurationsMs
          */
-        val EXOPLAYER_MIN_BUFFER_DURATION_MILLIS: Int = 10.seconds.toLongMilliseconds().toInt()
+        val EXOPLAYER_MIN_BUFFER_DURATION_MILLIS: Int = 10.seconds.inWholeMilliseconds.toInt()
 
         /**
          * Exoplayer max-buffer (the maximum duration of buffer which Exoplayer will store in memory)
          *
          * @see DefaultLoadControl.Builder.setBufferDurationsMs
          */
-        val EXOPLAYER_MAX_BUFFER_DURATION_MILLIS: Int = 360.seconds.toLongMilliseconds().toInt()
+        val EXOPLAYER_MAX_BUFFER_DURATION_MILLIS: Int = 360.seconds.inWholeMilliseconds.toInt()
     }
 
     @Inject
@@ -329,7 +329,8 @@ class MediaPlayerService :
     private fun invalidatePlaybackParams() {
         Timber.i("Playback params: speed = ${prefsRepo.playbackSpeed}, skip silence = ${prefsRepo.skipSilence}")
         currentPlayer?.setPlaybackParameters(
-            PlaybackParameters(prefsRepo.playbackSpeed, 1.0f, prefsRepo.skipSilence)
+            // TODO: there doesn't seem to be a setting for skipping silence in here any more.
+            PlaybackParameters(prefsRepo.playbackSpeed, 1.0f) // , prefsRepo.skipSilence)
         )
     }
 
@@ -378,7 +379,7 @@ class MediaPlayerService :
                     this@MediaPlayerService,
                     KEYCODE_MEDIA_PLAY,
                     intent,
-                    0
+                    PendingIntent.FLAG_IMMUTABLE
                 )
             )
         }
@@ -575,7 +576,7 @@ class MediaPlayerService :
 
     private val playerEventListener = object : Player.EventListener {
 
-        override fun onPlayerError(error: ExoPlaybackException) {
+        override fun onPlayerError(error: PlaybackException) {
             Timber.e("Exoplayer playback error: $error")
             val errorIntent = Intent(ACTION_PLAYBACK_ERROR)
             errorIntent.putExtra(PLAYBACK_ERROR_MESSAGE, error.message)
@@ -586,7 +587,7 @@ class MediaPlayerService :
         override fun onPositionDiscontinuity(reason: Int) {
             super.onPositionDiscontinuity(reason)
             serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                if (reason == Player.DISCONTINUITY_REASON_PERIOD_TRANSITION) {
+                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
                     Timber.i("Playing next track")
                     // Update track progress
                     val trackId = mediaController.metadata.id

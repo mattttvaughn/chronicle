@@ -82,7 +82,7 @@ class ServiceModule(private val service: MediaPlayerService) {
                 service,
                 MainActivity.REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING,
                 sessionIntent,
-                0
+                PendingIntent.FLAG_IMMUTABLE
             )
         }
 

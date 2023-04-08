@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlin.time.minutes
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Responsible for updating playback progress of the current book/track to the local DB and to the
@@ -55,7 +55,7 @@ interface ProgressUpdater {
     fun cancel()
 
     companion object {
-        val BOOK_FINISHED_END_OFFSET_MILLIS = 2.minutes.toLongMilliseconds()
+        val BOOK_FINISHED_END_OFFSET_MILLIS = 2.minutes.inWholeMilliseconds
 
         /**
          * The frequency which the remote server is updated at: once for every [NETWORK_CALL_FREQUENCY]

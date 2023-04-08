@@ -1,5 +1,5 @@
 apply plugin: "com.android.application"
-apply plugin: "kotlin-android"
+apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "kotlin-kapt"
 apply plugin: "kotlin-parcelize"
 apply plugin: "com.google.android.gms.oss-licenses-plugin"
@@ -8,7 +8,7 @@ android {
     compileSdkVersion 33
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
-        minSdkVersion 21
+        minSdkVersion 33
         targetSdkVersion 33
         versionCode 24
         versionName "0.52.1"
@@ -81,6 +81,25 @@ android {
     namespace 'io.github.mattpvaughn.chronicle'
 }
 
+
+//Fuck with the kotlin dependencies
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'org.jetbrains.kotlin') {
+            details.useVersion kotlinVersion
+            details.because 'I need it to always be 1.8.10'
+        } else if (details.requested.group == 'org.jetbrains.kotlinx' && details.requested.name == 'kotlinx-metadata-jvm') {
+            details.useVersion "0.5.0"
+            details.because "I don't know why it's using an old version"
+        } else if (details.requested.group == 'com.squareup' && details.requested.name == "kotlinpoet") {
+            details.useVersion "1.13.0"
+            details.because "I'm trying to make it not explode"
+        }
+    }
+}
+
+
+
 dependencies {
     implementation fileTree(include: ["*.jar"], dir: "libs")
 
@@ -91,7 +110,7 @@ dependencies {
     implementation "com.google.android.material:material:$materialLibVersion"
     implementation "androidx.appcompat:appcompat:$supportlibVersion"
     implementation "androidx.fragment:fragment-ktx:$appCompatFragmentVersion"
-    implementation "androidx.recyclerview:recyclerview:1.2.0"
+    implementation "androidx.recyclerview:recyclerview:1.3.0"
     implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
 
     // AndroidX
@@ -151,7 +170,7 @@ dependencies {
 
 
         // Fresco - image loading
-    implementation 'com.facebook.fresco:fresco:2.4.0'
+    implementation 'com.facebook.fresco:fresco:2.6.0'
     implementation "com.facebook.fresco:imagepipeline-okhttp3:2.4.0"
 
     // LocalBroadcastManager
@@ -163,10 +182,10 @@ dependencies {
     implementation "com.google.android.exoplayer:extension-mediasession:$exoplayerVersion"
 
     // ExoPlayer extensions for FLAC and OPUS file types
-    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-opus:$exoplayerVersion") {
+    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-opus:$exoplayerExtensions") {
         transitive = false
     }
-    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-flac:$exoplayerVersion"){
+    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-flac:$exoplayerExtensions"){
         transitive = false
     }
 

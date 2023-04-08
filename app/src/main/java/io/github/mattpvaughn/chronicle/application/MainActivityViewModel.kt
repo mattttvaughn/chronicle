@@ -58,7 +58,7 @@ class MainActivityViewModel(
         EXPANDED
     }
 
-    val isLoggedIn = Transformations.map(loginRepo.loginEvent) {
+    val isLoggedIn = loginRepo.loginEvent.map {
         it.peekContent() == LOGGED_IN_FULLY
     }
 
@@ -72,7 +72,7 @@ class MainActivityViewModel(
         bookRepository.getAudiobookAsync(id) ?: EMPTY_AUDIOBOOK
     }
 
-    private var tracks = Transformations.switchMap(audiobookId) { id ->
+    private var tracks = audiobookId.switchMap { id ->
         if (id != NO_AUDIOBOOK_FOUND_ID) {
             trackRepository.getTracksForAudiobook(id)
         } else {
@@ -111,7 +111,7 @@ class MainActivityViewModel(
         }.getChapterAt(_tracks.getActiveTrack().id.toLong(), currentTrackProgress).title
     }
 
-    val isPlaying = Transformations.map(mediaServiceConnection.playbackState) {
+    val isPlaying = mediaServiceConnection.playbackState.map {
         it.isPlaying
     }
 
