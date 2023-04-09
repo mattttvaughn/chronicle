@@ -282,7 +282,7 @@ class MediaPlayerService :
     private fun updateAudioAttrs(exoPlayer: ExoPlayer) {
         exoPlayer.setAudioAttributes(
             AudioAttributes.Builder()
-                .setContentType(if (prefsRepo.pauseOnFocusLost) CONTENT_TYPE_SPEECH else CONTENT_TYPE_MUSIC)
+                .setContentType(if (prefsRepo.pauseOnFocusLost) AUDIO_CONTENT_TYPE_SPEECH else AUDIO_CONTENT_TYPE_MUSIC)
                 .setUsage(USAGE_MEDIA)
                 .build(),
             true
@@ -338,7 +338,8 @@ class MediaPlayerService :
         super.onTaskRemoved(rootIntent)
 
         // Ensures that players will not block being removed as a foreground service
-        exoPlayer.stop(true)
+        exoPlayer.stop()
+        exoPlayer.clearMediaItems()
     }
 
     override fun onDestroy() {
