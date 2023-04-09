@@ -10,8 +10,8 @@ android {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 33
         targetSdkVersion 33
-        versionCode 24
-        versionName "0.52.1"
+        versionCode 25
+        versionName '0.53.0'
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
