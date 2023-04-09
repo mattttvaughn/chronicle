@@ -8,7 +8,6 @@ import android.view.KeyEvent.KEYCODE_MEDIA_NEXT
 import android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS
 import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD
 import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD
-import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector.CustomActionProvider
 import io.github.mattpvaughn.chronicle.R
@@ -118,7 +117,6 @@ class SimpleCustomActionProvider(
 
     override fun onCustomAction(
         player: Player,
-        controlDispatcher: ControlDispatcher,
         action: String,
         extras: Bundle?
     ) {

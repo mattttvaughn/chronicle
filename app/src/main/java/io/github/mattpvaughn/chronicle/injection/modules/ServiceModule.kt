@@ -15,9 +15,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.google.android.exoplayer2.util.Util
 import dagger.Module
 import dagger.Provides
@@ -57,7 +56,7 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun simpleExoPlayer(): SimpleExoPlayer = SimpleExoPlayer.Builder(service).setLoadControl(
+    fun exoPlayer(): ExoPlayer = ExoPlayer.Builder(service).setLoadControl(
         // increase buffer size across the board as ExoPlayer defaults are set for video
         DefaultLoadControl.Builder().setBackBuffer(EXOPLAYER_BACK_BUFFER_DURATION_MILLIS, true)
             .setBufferDurationsMs(
@@ -69,9 +68,9 @@ class ServiceModule(private val service: MediaPlayerService) {
             .createDefaultLoadControl()
     ).build()
 
-    @Provides
-    @ServiceScope
-    fun exoPlayer(simpleExoPlayer: SimpleExoPlayer): ExoPlayer = simpleExoPlayer
+//    @Provides
+//    @ServiceScope
+//    fun exoPlayer(exoPlayer: ExoPlayer): ExoPlayer = exoPlayer
 
     @Provides
     @ServiceScope
@@ -133,22 +132,26 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun plexDataSourceFactory(plexPrefs: PlexPrefsRepo): DefaultHttpDataSourceFactory {
-        val dataSourceFactory = DefaultHttpDataSourceFactory(Util.getUserAgent(service, APP_NAME))
+    fun plexDataSourceFactory(plexPrefs: PlexPrefsRepo): DefaultHttpDataSource.Factory {
+        val dataSourceFactory = DefaultHttpDataSource.Factory()
+        dataSourceFactory.setUserAgent(Util.getUserAgent(service, APP_NAME))
 
-        val props = dataSourceFactory.defaultRequestProperties
-        props.set("X-Plex-Platform", "Android")
-        props.set("X-Plex-Provides", "player")
-        props.set("X-Plex_Client-Name", APP_NAME)
-        props.set("X-Plex-Client-Identifier", plexPrefs.uuid)
-        props.set("X-Plex-Version", BuildConfig.VERSION_NAME)
-        props.set("X-Plex-Product", APP_NAME)
-        props.set("X-Plex-Platform-Version", Build.VERSION.RELEASE)
-        props.set("X-Plex-Device", Build.MODEL)
-        props.set("X-Plex-Device-Name", Build.MODEL)
-        props.set(
-            "X-Plex-Token",
-            plexPrefs.server?.accessToken ?: plexPrefs.user?.authToken ?: plexPrefs.accountAuthToken
+        dataSourceFactory.setDefaultRequestProperties(
+            mapOf(
+                "X-Plex-Platform" to "Android",
+                "X-Plex-Provides" to "player",
+                "X-Plex_Client-Name" to APP_NAME,
+                "X-Plex-Client-Identifier" to plexPrefs.uuid,
+                "X-Plex-Version" to BuildConfig.VERSION_NAME,
+                "X-Plex-Product" to APP_NAME,
+                "X-Plex-Platform-Version" to Build.VERSION.RELEASE,
+                "X-Plex-Device" to Build.MODEL,
+                "X-Plex-Device-Name" to Build.MODEL,
+                "X-Plex-Token" to (
+                    plexPrefs.server?.accessToken ?: plexPrefs.user?.authToken
+                        ?: plexPrefs.accountAuthToken
+                    )
+            )
         )
 
         return dataSourceFactory

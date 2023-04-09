@@ -85,7 +85,7 @@ class MediaPlayerService :
     lateinit var queueNavigator: QueueNavigator
 
     @Inject
-    lateinit var exoPlayer: SimpleExoPlayer
+    lateinit var exoPlayer: ExoPlayer
 
     @Inject
     lateinit var currentlyPlaying: CurrentlyPlaying
@@ -190,7 +190,7 @@ class MediaPlayerService :
 
         Timber.i("Service created! $this")
 
-        updateAudioAttrs(simpleExoPlayer = exoPlayer)
+        updateAudioAttrs(exoPlayer = exoPlayer)
 
         prefsRepo.registerPrefsListener(prefsListener)
 
@@ -212,7 +212,7 @@ class MediaPlayerService :
         )
         mediaSessionConnector.setQueueNavigator(queueNavigator)
         mediaSessionConnector.setPlaybackPreparer(playbackPreparer)
-        mediaSessionConnector.setMediaButtonEventHandler { _, _, mediaButtonEvent ->
+        mediaSessionConnector.setMediaButtonEventHandler { _, mediaButtonEvent ->
             mediaSessionCallback.onMediaButtonEvent(mediaButtonEvent)
         }
 
@@ -279,8 +279,8 @@ class MediaPlayerService :
         }
     }
 
-    private fun updateAudioAttrs(simpleExoPlayer: SimpleExoPlayer) {
-        simpleExoPlayer.setAudioAttributes(
+    private fun updateAudioAttrs(exoPlayer: ExoPlayer) {
+        exoPlayer.setAudioAttributes(
             AudioAttributes.Builder()
                 .setContentType(if (prefsRepo.pauseOnFocusLost) CONTENT_TYPE_SPEECH else CONTENT_TYPE_MUSIC)
                 .setUsage(USAGE_MEDIA)
@@ -330,7 +330,7 @@ class MediaPlayerService :
         Timber.i("Playback params: speed = ${prefsRepo.playbackSpeed}, skip silence = ${prefsRepo.skipSilence}")
         currentPlayer?.setPlaybackParameters(
             // TODO: there doesn't seem to be a setting for skipping silence in here any more.
-            PlaybackParameters(prefsRepo.playbackSpeed, 1.0f) // , prefsRepo.skipSilence)
+            PlaybackParameters(prefsRepo.playbackSpeed, 1.0f) // :wq, prefsRepo.skipSilence)
         )
     }
 
