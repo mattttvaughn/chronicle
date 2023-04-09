@@ -206,7 +206,7 @@ class SimpleProgressUpdater @Inject constructor(
             .setConstraints(syncWorkerConstraints)
             .setBackoffCriteria(
                 BackoffPolicy.LINEAR,
-                OneTimeWorkRequest.DEFAULT_BACKOFF_DELAY_MILLIS,
+                WorkRequest.DEFAULT_BACKOFF_DELAY_MILLIS,
                 TimeUnit.MILLISECONDS
             )
             .build()
