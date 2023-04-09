@@ -269,10 +269,15 @@ inline val MediaMetadataCompat.fullDescription: MediaDescriptionCompat
  *
  * For convenience, place the [MediaDescriptionCompat] into the tag so it can be retrieved later.
  */
-fun MediaMetadataCompat.toMediaSource(dataSourceFactory: DataSource.Factory): ProgressiveMediaSource =
-    ProgressiveMediaSource.Factory(dataSourceFactory)
-        .setTag(fullDescription)
-        .createMediaSource(mediaUri)
+fun MediaMetadataCompat.toMediaSource(dataSourceFactory: DataSource.Factory): ProgressiveMediaSource {
+    return ProgressiveMediaSource.Factory(dataSourceFactory)
+        .createMediaSource(
+            com.google.android.exoplayer2.MediaItem.Builder()
+                .setTag(fullDescription)
+                .setUri(mediaUri)
+                .build()
+        )
+}
 
 fun MediaMetadataCompat.describe(): String {
     return "${this.title}, ${this.artist}, ${this.displayTitle}"

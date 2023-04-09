@@ -574,7 +574,7 @@ class MediaPlayerService :
         }
     }
 
-    private val playerEventListener = object : Player.EventListener {
+    private val playerEventListener = object : Player.Listener {
 
         override fun onPlayerError(error: PlaybackException) {
             Timber.e("Exoplayer playback error: $error")
@@ -584,8 +584,8 @@ class MediaPlayerService :
             super.onPlayerError(error)
         }
 
-        override fun onPositionDiscontinuity(reason: Int) {
-            super.onPositionDiscontinuity(reason)
+        override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+            super.onPositionDiscontinuity(oldPosition, newPosition, reason)
             serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
                 if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
                     Timber.i("Playing next track")
@@ -613,8 +613,8 @@ class MediaPlayerService :
             }
         }
 
-        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-            super.onPlayerStateChanged(playWhenReady, playbackState)
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            super.onPlaybackStateChanged(playbackState)
             if (playbackState != PlaybackStateCompat.STATE_ERROR) {
                 // clear errors if playback is proceeding correctly
                 mediaSessionConnector.setCustomErrorMessage(null)
