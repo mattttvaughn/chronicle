@@ -59,7 +59,8 @@ class CollectionsFragment : Fragment() {
     var adapter: CollectionsAdapter? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         Timber.i("Lib frag view create")
@@ -76,7 +77,8 @@ class CollectionsFragment : Fragment() {
                 override fun onClick(collection: Collection) {
                     openCollectionDetails(collection)
                 }
-            }).apply {
+            }
+        ).apply {
             stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
         }
 
@@ -190,12 +192,12 @@ class CollectionsFragment : Fragment() {
         val searchItem = menu.findItem(R.id.search) as MenuItem
 
         searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
                 viewModel.setSearchActive(true)
                 return true
             }
 
-            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
                 viewModel.setSearchActive(false)
                 return true
             }
@@ -235,7 +237,6 @@ class CollectionsFragment : Fragment() {
         }
         return super.onOptionsItemSelected(item)
     }
-
 
     interface CollectionClick {
         fun onClick(collection: Collection)

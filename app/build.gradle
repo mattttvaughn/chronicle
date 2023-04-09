@@ -8,10 +8,10 @@ android {
     compileSdkVersion 33
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
-        minSdkVersion 33
+        minSdkVersion 31
         targetSdkVersion 33
-        versionCode 25
-        versionName '0.53.0'
+        versionCode 26
+        versionName '0.54.0'
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {

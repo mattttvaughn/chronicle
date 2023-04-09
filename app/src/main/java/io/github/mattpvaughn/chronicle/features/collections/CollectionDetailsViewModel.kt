@@ -24,9 +24,8 @@ class CollectionDetailsViewModel(
     }
 
     private val _booksInCollection = MutableLiveData<List<Audiobook>>(emptyList())
-    val booksInCollection : LiveData<List<Audiobook>>
+    val booksInCollection: LiveData<List<Audiobook>>
         get() = _booksInCollection
-
 
     val title = collectionRepo.getCollection(collectionId)
 
@@ -52,7 +51,7 @@ class CollectionDetailsViewModel(
 
         var collectionId: Int? = null
 
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CollectionDetailsViewModel::class.java)) {
                 return CollectionDetailsViewModel(
                     collectionId!!,

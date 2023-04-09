@@ -23,7 +23,7 @@ data class Collection constructor(
     val sortType: SortType = SortType.RELEASE_DATE,
     val isCached: Boolean = false,
     val thumb: String = "",
-    val childIds : List<Long> = emptyList()
+    val childIds: List<Long> = emptyList()
 ) {
 
     companion object {
@@ -59,7 +59,6 @@ data class Collection constructor(
     }
 }
 
-
 class CollectionIdConverter {
 
     private val stringType = Types.newParameterizedType(List::class.java, String::class.java)
@@ -80,4 +79,3 @@ class CollectionIdConverter {
             ?: emptyList()
     }
 }
-

@@ -21,13 +21,13 @@ class CollectionsRepository @Inject constructor(
 ) {
 
     // TODO: handle collections sorting!
-    suspend fun getChildIds(collectionId: Int) : List<Long> {
+    suspend fun getChildIds(collectionId: Int): List<Long> {
         return collectionsDao.getCollectionAsync(collectionId).childIds
     }
 
-    fun getCollection(id: Int) : LiveData<Collection?> = collectionsDao.getCollection(id)
+    fun getCollection(id: Int): LiveData<Collection?> = collectionsDao.getCollection(id)
 
-    fun getAllCollections() : LiveData<List<Collection>> = collectionsDao.getAllRows()
+    fun getAllCollections(): LiveData<List<Collection>> = collectionsDao.getAllRows()
 
     fun hasCollections(): LiveData<Boolean> = collectionsDao
         .countCollections()
@@ -73,11 +73,9 @@ class CollectionsRepository @Inject constructor(
                 Timber.i("Failed to retrieve books: $t")
             }
         }
-
     }
 
     suspend fun clear() {
         collectionsDao.clear()
     }
-
 }

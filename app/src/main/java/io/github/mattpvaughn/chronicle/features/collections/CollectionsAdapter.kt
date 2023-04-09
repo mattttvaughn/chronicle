@@ -39,7 +39,6 @@ class CollectionsAdapter(
         else -> throw IllegalStateException("Unknown view style")
     }
 
-
     private var serverConnected: Boolean = false
 
     override fun getItemId(position: Int): Long {
@@ -162,9 +161,9 @@ class CollectionsDiffCallback : DiffUtil.ItemCallback<Collection>() {
     }
 
     /** Changes which require a redraw of the view */
-    override fun areContentsTheSame(oldItem:Collection, newItem:Collection): Boolean {
-        return oldItem.childCount == newItem.childCount
-                && oldItem.thumb == newItem.thumb
-                && oldItem.title == newItem.title
+    override fun areContentsTheSame(oldItem: Collection, newItem: Collection): Boolean {
+        return oldItem.childCount == newItem.childCount &&
+            oldItem.thumb == newItem.thumb &&
+            oldItem.title == newItem.title
     }
 }

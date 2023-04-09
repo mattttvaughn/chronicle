@@ -24,7 +24,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import timber.log.Timber
 import javax.inject.Inject
 
-
 @ExperimentalCoroutinesApi
 class CollectionDetailsFragment : Fragment() {
 
@@ -36,6 +35,7 @@ class CollectionDetailsFragment : Fragment() {
             newFrag.arguments = args
             return newFrag
         }
+
         const val TAG = "collection details tag"
         const val ARG_COLLECTION_ID = "collection_id"
     }
@@ -66,7 +66,8 @@ class CollectionDetailsFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         Timber.i("AudiobookDetailsFragment onCreateView()")
@@ -87,7 +88,8 @@ class CollectionDetailsFragment : Fragment() {
                 override fun onClick(audiobook: Audiobook) {
                     openAudiobookDetails(audiobook)
                 }
-            }).apply {
+            }
+        ).apply {
             stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
         }
 

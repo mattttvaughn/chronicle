@@ -60,5 +60,4 @@ class LibrarySyncRepository @Inject constructor(
             collectionsRepository.refreshCollectionsPaginated()
         }
     }
-
 }

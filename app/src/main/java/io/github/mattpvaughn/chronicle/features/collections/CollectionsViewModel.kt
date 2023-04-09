@@ -37,7 +37,7 @@ class CollectionsViewModel(
         private val sharedPreferences: SharedPreferences,
         private val bookRepository: BookRepository
     ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CollectionsViewModel::class.java)) {
                 return CollectionsViewModel(
                     prefsRepo,
@@ -103,13 +103,15 @@ class CollectionsViewModel(
         val desc = _isDescending ?: true
         val hidePlayed = _hidePlayed ?: false
 
-        val results = _collections.sortedWith(Comparator { coll1, coll2 ->
+        val results = _collections.sortedWith(
+            Comparator { coll1, coll2 ->
                 val descMultiplier = if (desc) 1 else -1
                 return@Comparator descMultiplier * when (key) {
                     SORT_KEY_TITLE -> coll1.title.compareTo(coll2.title)
                     else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
                 }
-            })
+            }
+        )
 
         // If nothing has changed, return prevBooks
         if (prevCollections.map { it.id } == results.map { it.id }) {
@@ -147,9 +149,11 @@ class CollectionsViewModel(
         if (query.isEmpty()) {
             _searchResults.postValue(emptyList())
         } else {
-            bookRepository.search(query).observeOnce(Observer {
-                _searchResults.postValue(it)
-            })
+            bookRepository.search(query).observeOnce(
+                Observer {
+                    _searchResults.postValue(it)
+                }
+            )
         }
     }
 
@@ -186,5 +190,4 @@ class CollectionsViewModel(
         Timber.i("toggleHidePlayedAudiobooks")
         prefsRepo.hidePlayedAudiobooks = !prefsRepo.hidePlayedAudiobooks
     }
-
 }
