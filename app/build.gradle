@@ -82,23 +82,6 @@ android {
 }
 
 
-//Fuck with the kotlin dependencies
-configurations.all {
-    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group == 'org.jetbrains.kotlin') {
-            details.useVersion kotlinVersion
-            details.because 'I need it to always be 1.8.10'
-        } else if (details.requested.group == 'org.jetbrains.kotlinx' && details.requested.name == 'kotlinx-metadata-jvm') {
-            details.useVersion "0.5.0"
-            details.because "I don't know why it's using an old version"
-        } else if (details.requested.group == 'com.squareup' && details.requested.name == "kotlinpoet") {
-            details.useVersion "1.13.0"
-            details.because "I'm trying to make it not explode"
-        }
-    }
-}
-
-
 
 dependencies {
     implementation fileTree(include: ["*.jar"], dir: "libs")
