@@ -4,6 +4,7 @@ import android.app.Service
 import android.hardware.SensorManager
 import android.media.ToneGenerator
 import android.os.Handler
+import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
 import android.widget.Toast
 import com.squareup.seismic.ShakeDetector
@@ -53,7 +54,8 @@ class SimpleSleepTimer @Inject constructor(
 
     private val sleepTimerUpdateFrequencyMs = 1000L
     private var sleepTimeRemaining = 0L
-    private val sleepTimerHandler = Handler()
+    // Fixed a deprecation error regarding Handler, should this be a main Looper?
+    private val sleepTimerHandler = Handler(Looper.myLooper()!!)
     private val updateSleepTimerAction = { start(false) }
     private var isActive: Boolean = false
     private val shakeToSnoozeDurationMs = 5 * 60 * 1000L

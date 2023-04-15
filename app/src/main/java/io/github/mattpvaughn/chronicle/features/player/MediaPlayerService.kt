@@ -252,7 +252,7 @@ class MediaPlayerService :
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent != null) {
                 val durationMillis = intent.getLongExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, 0L)
-                val action = intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION) as SleepTimerAction
+                val action = intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION, SleepTimerAction::class.java)!!
                 sleepTimer.handleAction(action, durationMillis)
             }
         }
