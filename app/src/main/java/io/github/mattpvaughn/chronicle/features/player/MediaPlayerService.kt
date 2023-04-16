@@ -3,6 +3,7 @@ package io.github.mattpvaughn.chronicle.features.player
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.*
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -252,8 +253,14 @@ class MediaPlayerService :
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent != null) {
                 val durationMillis = intent.getLongExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, 0L)
-                val action = intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION, SleepTimerAction::class.java)!!
-                sleepTimer.handleAction(action, durationMillis)
+                val action = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION, SleepTimerAction::class.java)
+                } else {
+                    intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION) as? SleepTimerAction
+                }
+                if (action != null) {
+                    sleepTimer.handleAction(action, durationMillis)
+                }
             }
         }
     }
@@ -328,10 +335,8 @@ class MediaPlayerService :
 
     private fun invalidatePlaybackParams() {
         Timber.i("Playback params: speed = ${prefsRepo.playbackSpeed}, skip silence = ${prefsRepo.skipSilence}")
-        currentPlayer?.setPlaybackParameters(
-            // TODO: there doesn't seem to be a setting for skipping silence in here any more.
-            PlaybackParameters(prefsRepo.playbackSpeed, 1.0f) // :wq, prefsRepo.skipSilence)
-        )
+        currentPlayer?.playbackParameters = PlaybackParameters(prefsRepo.playbackSpeed, 1.0f)
+        (currentPlayer as? ExoPlayer)?.skipSilenceEnabled = prefsRepo.skipSilence
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {

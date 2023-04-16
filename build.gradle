@@ -7,7 +7,6 @@ buildscript {
         archLifecycleVersion = "1.1.1"
         gradleVersion = '8.0.0'
         supportlibVersion = '1.6.1'
-        //materialLibVersion = '1.6.0-beta01' // todo: permanent visible slider label is available from 1.6 (currently in beta) → https://github.com/material-components/material-components-android/releases
         materialLibVersion = '1.9.0-beta01' // todo: permanent visible slider label is available from 1.6 (currently in beta) → https://github.com/material-components/material-components-android/releases
         retrofitVersion = "2.9.0"
         moshiKotlinVersion = '1.14.0'
@@ -41,7 +40,7 @@ buildscript {
         constraintLayoutVersion = '2.1.4'
         kotlinResultVersion = '1.1.11'
         timberVersion = "4.7.1"
-        seismicVersion = "1.0.2"
+        seismicVersion = "1.0.3"
         appCompatFragmentVersion = "1.5.6"
     }
     repositories {

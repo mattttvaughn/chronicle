@@ -65,12 +65,8 @@ class ServiceModule(private val service: MediaPlayerService) {
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
             )
-            .createDefaultLoadControl()
+            .build()
     ).build()
-
-//    @Provides
-//    @ServiceScope
-//    fun exoPlayer(exoPlayer: ExoPlayer): ExoPlayer = exoPlayer
 
     @Provides
     @ServiceScope

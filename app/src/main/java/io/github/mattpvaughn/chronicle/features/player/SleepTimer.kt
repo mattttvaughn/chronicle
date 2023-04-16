@@ -54,8 +54,7 @@ class SimpleSleepTimer @Inject constructor(
 
     private val sleepTimerUpdateFrequencyMs = 1000L
     private var sleepTimeRemaining = 0L
-    // Fixed a deprecation error regarding Handler, should this be a main Looper?
-    private val sleepTimerHandler = Handler(Looper.myLooper()!!)
+    private val sleepTimerHandler = Handler(Looper.getMainLooper())
     private val updateSleepTimerAction = { start(false) }
     private var isActive: Boolean = false
     private val shakeToSnoozeDurationMs = 5 * 60 * 1000L
@@ -106,7 +105,7 @@ class SimpleSleepTimer @Inject constructor(
             return
         }
         if (justStarting) {
-            shakeDetector.start(sensorManager)
+            shakeDetector.start(sensorManager, SensorManager.SENSOR_DELAY_GAME)
         }
         Timber.i("Sleep timer tick: $sleepTimeRemaining ms remaining")
         if (sleepTimeRemaining > 0L) {
