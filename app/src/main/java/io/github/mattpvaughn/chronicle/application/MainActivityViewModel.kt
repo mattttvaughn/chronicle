@@ -6,6 +6,7 @@ import android.support.v4.media.session.PlaybackStateCompat.STATE_NONE
 import android.support.v4.media.session.PlaybackStateCompat.STATE_STOPPED
 import androidx.lifecycle.*
 import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomSheetState.*
+import io.github.mattpvaughn.chronicle.data.local.CollectionsRepository
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.model.*
@@ -27,6 +28,7 @@ class MainActivityViewModel(
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val mediaServiceConnection: MediaServiceConnection,
+    collectionsRepository: CollectionsRepository
 ) : ViewModel(), MainActivity.CurrentlyPlayingInterface {
 
     @Suppress("UNCHECKED_CAST")
@@ -35,15 +37,17 @@ class MainActivityViewModel(
         private val trackRepository: ITrackRepository,
         private val bookRepository: IBookRepository,
         private val mediaServiceConnection: MediaServiceConnection,
+        private val collectionsRepository: CollectionsRepository
     ) : ViewModelProvider.Factory {
 
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MainActivityViewModel::class.java)) {
                 return MainActivityViewModel(
                     loginRepo,
                     trackRepository,
                     bookRepository,
-                    mediaServiceConnection
+                    mediaServiceConnection,
+                    collectionsRepository
                 ) as T
             } else {
                 throw IllegalArgumentException("Cannot instantiate $modelClass from MainActivityViewModel.Factory")
@@ -58,7 +62,7 @@ class MainActivityViewModel(
         EXPANDED
     }
 
-    val isLoggedIn = Transformations.map(loginRepo.loginEvent) {
+    val isLoggedIn = loginRepo.loginEvent.map {
         it.peekContent() == LOGGED_IN_FULLY
     }
 
@@ -72,7 +76,7 @@ class MainActivityViewModel(
         bookRepository.getAudiobookAsync(id) ?: EMPTY_AUDIOBOOK
     }
 
-    private var tracks = Transformations.switchMap(audiobookId) { id ->
+    private var tracks = audiobookId.switchMap { id ->
         if (id != NO_AUDIOBOOK_FOUND_ID) {
             trackRepository.getTracksForAudiobook(id)
         } else {
@@ -83,6 +87,8 @@ class MainActivityViewModel(
     private var _errorMessage = MutableLiveData<Event<String>>()
     val errorMessage: LiveData<Event<String>>
         get() = _errorMessage
+
+    val hasCollections = collectionsRepository.hasCollections()
 
     // Used to cache tracks.asChapterList when tracks changes
     private val tracksAsChaptersCache = mapAsync(tracks, viewModelScope) {
@@ -111,7 +117,7 @@ class MainActivityViewModel(
         }.getChapterAt(_tracks.getActiveTrack().id.toLong(), currentTrackProgress).title
     }
 
-    val isPlaying = Transformations.map(mediaServiceConnection.playbackState) {
+    val isPlaying = mediaServiceConnection.playbackState.map {
         it.isPlaying
     }
 

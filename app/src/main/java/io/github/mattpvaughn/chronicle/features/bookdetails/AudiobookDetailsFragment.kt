@@ -86,7 +86,7 @@ class AudiobookDetailsFragment : Fragment() {
             isCached = inputCached
         )
         viewModel =
-            ViewModelProvider(this, viewModelFactory).get(AudiobookDetailsViewModel::class.java)
+            ViewModelProvider(this, viewModelFactory)[AudiobookDetailsViewModel::class.java]
 
         binding.viewModel = viewModel
         binding.lifecycleOwner = viewLifecycleOwner

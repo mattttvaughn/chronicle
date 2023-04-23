@@ -48,7 +48,7 @@ class DownloadNotificationWorker(
         applicationContext,
         ACTION_CANCEL_ALL_DOWNLOADS_ID,
         cancelAllIntent,
-        0
+        PendingIntent.FLAG_IMMUTABLE
     )
     private val actionCancelAll = NotificationCompat.Action.Builder(
         R.drawable.fetch_notification_cancel,
@@ -411,7 +411,7 @@ class DownloadNotificationWorker(
             Intent(ACTION_CANCEL_BOOK_DOWNLOAD).apply {
                 putExtra(KEY_BOOK_ID, bookId)
             },
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val openBookPendingIntent = makeOpenBookPendingIntent(bookId)
@@ -441,7 +441,7 @@ class DownloadNotificationWorker(
             applicationContext,
             REQUEST_CODE_PREFIX_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID + bookId,
             intent,
-            0
+            PendingIntent.FLAG_IMMUTABLE
         )
     }
 

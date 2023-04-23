@@ -7,7 +7,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import dagger.Component
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaRepository
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaSource
@@ -34,7 +34,7 @@ interface ServiceComponent {
     fun mediaSessionConnector(): MediaSessionConnector
     fun serviceScope(): CoroutineScope
     fun serviceController(): ServiceController
-    fun plexDataSourceFactory(): DefaultHttpDataSourceFactory
+    fun plexDataSourceFactory(): DefaultHttpDataSource.Factory
     fun packageValidator(): PackageValidator
     fun foregroundServiceController(): ForegroundServiceController
     fun trackListManager(): TrackListStateManager

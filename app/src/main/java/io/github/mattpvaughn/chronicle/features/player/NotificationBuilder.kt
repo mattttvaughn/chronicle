@@ -122,7 +122,7 @@ class NotificationBuilder @Inject constructor(
                 ?: "io.github.mattpvaughn.chronicle.features.player.MediaPlayerService"
         )
         intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keycode))
-        return PendingIntent.getService(context, keycode, intent, 0)
+        return PendingIntent.getService(context, keycode, intent, PendingIntent.FLAG_IMMUTABLE)
     }
 
     private val stopPendingIntent = makePendingIntent(KEYCODE_MEDIA_STOP)
@@ -140,7 +140,7 @@ class NotificationBuilder @Inject constructor(
             context,
             REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING,
             intent,
-            0
+            PendingIntent.FLAG_IMMUTABLE
         )
     }
 

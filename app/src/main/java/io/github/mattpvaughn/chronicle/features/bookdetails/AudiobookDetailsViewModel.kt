@@ -67,7 +67,7 @@ class AudiobookDetailsViewModel(
         private val currentlyPlaying: CurrentlyPlaying
     ) : ViewModelProvider.Factory {
         lateinit var inputAudiobook: Audiobook
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             check(this::inputAudiobook.isInitialized) { "Input audiobook not provided!" }
             if (modelClass.isAssignableFrom(AudiobookDetailsViewModel::class.java)) {
                 return AudiobookDetailsViewModel(
@@ -129,7 +129,7 @@ class AudiobookDetailsViewModel(
         }
     }
 
-    val cacheIconTint = Transformations.map(cacheStatus) { status ->
+    val cacheIconTint = cacheStatus.map { status ->
         return@map when (status) {
             CACHING -> R.color.icon // Doesn't matter, we show a spinner over it
             NOT_CACHED -> R.color.icon
@@ -138,7 +138,7 @@ class AudiobookDetailsViewModel(
         }
     }
 
-    val cacheIconDrawable: LiveData<Int> = Transformations.map(cacheStatus) { status ->
+    val cacheIconDrawable: LiveData<Int> = cacheStatus.map { status ->
         return@map when (status) {
             CACHING -> R.drawable.ic_cloud_download_white // Doesn't matter, we show a spinner over it
             NOT_CACHED -> R.drawable.ic_cloud_download_white
@@ -166,7 +166,7 @@ class AudiobookDetailsViewModel(
             return@DoubleLiveData isBookActive ?: false && currState?.isPlaying ?: false
         }
 
-    val progressString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->
+    val progressString = tracks.map { tracks: List<MediaItemTrack> ->
         if (tracks.isEmpty()) {
             return@map "0:00/0:00"
         }
@@ -175,7 +175,7 @@ class AudiobookDetailsViewModel(
         return@map "$progressStr/$durationStr"
     }
 
-    val progressPercentageString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->
+    val progressPercentageString = tracks.map { tracks: List<MediaItemTrack> ->
         return@map "${tracks.getProgressPercentage()}%"
     }
 
@@ -194,7 +194,7 @@ class AudiobookDetailsViewModel(
     val summaryLinesShown: LiveData<Int>
         get() = _summaryLinesShown
 
-    val isAudioLoading = Transformations.map(mediaServiceConnection.playbackState) { state ->
+    val isAudioLoading = mediaServiceConnection.playbackState.map { state ->
         if (state.state == PlaybackStateCompat.STATE_ERROR) {
             Timber.i("Playback state: ${state.stateName}, (${state.errorMessage})")
         } else {
@@ -203,15 +203,15 @@ class AudiobookDetailsViewModel(
         state.state == STATE_BUFFERING || state.state == STATE_CONNECTING
     }
 
-    val showSummary = Transformations.map(audiobook) { book ->
+    val showSummary = audiobook.map { book ->
         book?.summary?.isNotEmpty() ?: false
     }
 
-    val isExpanded = Transformations.map(summaryLinesShown) { lines ->
+    val isExpanded = summaryLinesShown.map { lines ->
         return@map lines == lineCountSummaryMaximized
     }
 
-    val serverConnection = Transformations.map(plexConfig.connectionState) { it }
+    val serverConnection = plexConfig.connectionState.map { it }
 
     fun onToggleSummaryView() {
         _summaryLinesShown.value =

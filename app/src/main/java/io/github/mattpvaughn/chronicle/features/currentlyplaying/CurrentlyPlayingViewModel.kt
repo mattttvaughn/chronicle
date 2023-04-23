@@ -68,7 +68,7 @@ class CurrentlyPlayingViewModel(
         private val currentlyPlaying: CurrentlyPlaying,
         private val sharedPrefs: SharedPreferences,
     ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
                 return CurrentlyPlayingViewModel(
                     bookRepository,
@@ -92,7 +92,7 @@ class CurrentlyPlayingViewModel(
 
     private var audiobookId = MutableLiveData(EMPTY_AUDIOBOOK.id)
 
-    val audiobook: LiveData<Audiobook?> = Transformations.switchMap(audiobookId) { id ->
+    val audiobook: LiveData<Audiobook?> = audiobookId.switchMap { id ->
         if (id == EMPTY_AUDIOBOOK.id) {
             emptyAudiobook
         } else {
@@ -104,7 +104,7 @@ class CurrentlyPlayingViewModel(
     private val emptyTrackList = MutableLiveData<List<MediaItemTrack>>(emptyList())
 
     // TODO: expose combined track/chapter bits in ViewModel as "windowSomething" instead of in xml
-    val tracks: LiveData<List<MediaItemTrack>> = Transformations.switchMap(audiobookId) { id ->
+    val tracks: LiveData<List<MediaItemTrack>> = audiobookId.switchMap { id ->
         if (id == EMPTY_AUDIOBOOK.id) {
             emptyTrackList
         } else {
@@ -138,7 +138,7 @@ class CurrentlyPlayingViewModel(
         return@map it.coerceIn(PLAYBACK_SPEED_MIN, PLAYBACK_SPEED_MAX)
     }
 
-    val playbackSpeedString = Transformations.map(speed) { speed ->
+    val playbackSpeedString = speed.map { speed ->
         return@map String.format("%.2f", speed) + "x"
     }
 
@@ -147,7 +147,7 @@ class CurrentlyPlayingViewModel(
         get() = _showModalBottomSheetSpeedChooser
 
     val activeTrackId: LiveData<Int> =
-        Transformations.map(mediaServiceConnection.nowPlaying) { metadata ->
+        mediaServiceConnection.nowPlaying.map { metadata ->
             metadata.takeIf { !it.id.isNullOrEmpty() }?.id?.toInt() ?: TRACK_NOT_FOUND
         }
 
@@ -160,7 +160,7 @@ class CurrentlyPlayingViewModel(
         track.progress - chapter.startTimeOffset
     }.asLiveData(viewModelScope.coroutineContext)
 
-    val chapterProgressString = Transformations.map(chapterProgress) { progress ->
+    val chapterProgressString = chapterProgress.map { progress ->
         return@map DateUtils.formatElapsedTime(
             StringBuilder(),
             progress / 1000
@@ -176,11 +176,11 @@ class CurrentlyPlayingViewModel(
         .map { it.progress }
         .asLiveData(viewModelScope.coroutineContext)
 
-    val chapterDuration = Transformations.map(currentChapter) {
+    val chapterDuration = currentChapter.map {
         return@map it.endTimeOffset - it.startTimeOffset
     }
 
-    val chapterDurationString = Transformations.map(chapterDuration) { duration ->
+    val chapterDurationString = chapterDuration.map { duration ->
         return@map DateUtils.formatElapsedTime(
             StringBuilder(),
             duration / 1000
@@ -195,27 +195,27 @@ class CurrentlyPlayingViewModel(
 
     private var sleepTimerTimeRemaining = MutableLiveData(0L)
 
-    val sleepTimerTimeRemainingString = Transformations.map(sleepTimerTimeRemaining) {
+    val sleepTimerTimeRemainingString = sleepTimerTimeRemaining.map {
         return@map DateUtils.formatElapsedTime(StringBuilder(), it / 1000)
     }
 
     val isPlaying: LiveData<Boolean> =
-        Transformations.map(mediaServiceConnection.playbackState) { state ->
+        mediaServiceConnection.playbackState.map { state ->
             return@map state.isPlaying
         }
 
-    val trackProgress = Transformations.map(currentTrack) { track ->
+    val trackProgress = currentTrack.map { track ->
         return@map DateUtils.formatElapsedTime(
             StringBuilder(),
             track.progress / 1000
         )
     }
 
-    val trackDuration = Transformations.map(currentTrack) { track ->
+    val trackDuration = currentTrack.map { track ->
         return@map DateUtils.formatElapsedTime(StringBuilder(), track.duration / 1000)
     }
 
-    val progressString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->
+    val progressString = tracks.map { tracks: List<MediaItemTrack> ->
         if (tracks.isEmpty()) {
             return@map "0:00/0:00"
         }
@@ -224,7 +224,7 @@ class CurrentlyPlayingViewModel(
         return@map "$progressStr/$durationStr"
     }
 
-    val progressPercentageString = Transformations.map(tracks) { tracks: List<MediaItemTrack> ->
+    val progressPercentageString = tracks.map { tracks: List<MediaItemTrack> ->
         return@map "${tracks.getProgressPercentage()}%"
     }
 

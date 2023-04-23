@@ -1,7 +1,7 @@
 package io.github.mattpvaughn.chronicle.data.sources.local
 
 import com.github.michaelbull.result.Result
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.upstream.DefaultDataSource
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource
@@ -17,7 +17,7 @@ class LocalMediaSource : MediaSource {
 
     // TODO: acquire the permissions needed somehow
 
-    override val dataSourceFactory: DefaultDataSourceFactory
+    override val dataSourceFactory: DefaultDataSource.Factory
         get() = TODO("Not yet implemented")
 
     override suspend fun fetchAudiobooks(): Result<List<Audiobook>, Throwable> {

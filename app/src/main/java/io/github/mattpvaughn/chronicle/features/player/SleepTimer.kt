@@ -4,6 +4,7 @@ import android.app.Service
 import android.hardware.SensorManager
 import android.media.ToneGenerator
 import android.os.Handler
+import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
 import android.widget.Toast
 import com.squareup.seismic.ShakeDetector
@@ -53,7 +54,7 @@ class SimpleSleepTimer @Inject constructor(
 
     private val sleepTimerUpdateFrequencyMs = 1000L
     private var sleepTimeRemaining = 0L
-    private val sleepTimerHandler = Handler()
+    private val sleepTimerHandler = Handler(Looper.getMainLooper())
     private val updateSleepTimerAction = { start(false) }
     private var isActive: Boolean = false
     private val shakeToSnoozeDurationMs = 5 * 60 * 1000L
@@ -104,7 +105,7 @@ class SimpleSleepTimer @Inject constructor(
             return
         }
         if (justStarting) {
-            shakeDetector.start(sensorManager)
+            shakeDetector.start(sensorManager, SensorManager.SENSOR_DELAY_GAME)
         }
         Timber.i("Sleep timer tick: $sleepTimeRemaining ms remaining")
         if (sleepTimeRemaining > 0L) {

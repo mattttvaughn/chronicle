@@ -22,7 +22,6 @@ import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
-import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DataSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
@@ -270,10 +269,15 @@ inline val MediaMetadataCompat.fullDescription: MediaDescriptionCompat
  *
  * For convenience, place the [MediaDescriptionCompat] into the tag so it can be retrieved later.
  */
-fun MediaMetadataCompat.toMediaSource(dataSourceFactory: DataSource.Factory): ProgressiveMediaSource =
-    ProgressiveMediaSource.Factory(dataSourceFactory)
-        .setTag(fullDescription)
-        .createMediaSource(mediaUri)
+fun MediaMetadataCompat.toMediaSource(dataSourceFactory: DataSource.Factory): ProgressiveMediaSource {
+    return ProgressiveMediaSource.Factory(dataSourceFactory)
+        .createMediaSource(
+            com.google.android.exoplayer2.MediaItem.Builder()
+                .setTag(fullDescription)
+                .setUri(mediaUri)
+                .build()
+        )
+}
 
 fun MediaMetadataCompat.describe(): String {
     return "${this.title}, ${this.artist}, ${this.displayTitle}"

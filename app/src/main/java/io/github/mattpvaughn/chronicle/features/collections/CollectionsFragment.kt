@@ -1,4 +1,4 @@
-package io.github.mattpvaughn.chronicle.features.library
+package io.github.mattpvaughn.chronicle.features.collections
 
 import android.content.Context
 import android.os.Bundle
@@ -7,18 +7,12 @@ import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
-import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
-import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.MainActivity
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
@@ -27,10 +21,12 @@ import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_DETAILS_LIST
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo.Companion.VIEW_STYLE_TEXT_LIST
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
+import io.github.mattpvaughn.chronicle.data.model.Collection
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig
-import io.github.mattpvaughn.chronicle.databinding.FragmentLibraryBinding
+import io.github.mattpvaughn.chronicle.databinding.FragmentCollectionsBinding
+import io.github.mattpvaughn.chronicle.features.library.AudiobookSearchAdapter
+import io.github.mattpvaughn.chronicle.features.library.LibraryFragment
 import io.github.mattpvaughn.chronicle.navigation.Navigator
-import io.github.mattpvaughn.chronicle.views.checkRadioButtonWithTag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,17 +34,17 @@ import timber.log.Timber
 import javax.inject.Inject
 
 /** TODO: refactor search to reuse code from Library + Home fragments */
-class LibraryFragment : Fragment() {
+class CollectionsFragment : Fragment() {
 
     companion object {
-        fun newInstance() = LibraryFragment()
+        fun newInstance() = CollectionsFragment()
     }
 
     @Inject
-    lateinit var viewModelFactory: LibraryViewModel.Factory
+    lateinit var viewModelFactory: CollectionsViewModel.Factory
 
-    private val viewModel: LibraryViewModel by lazy {
-        ViewModelProvider(this, viewModelFactory).get(LibraryViewModel::class.java)
+    private val viewModel: CollectionsViewModel by lazy {
+        ViewModelProvider(this, viewModelFactory).get(CollectionsViewModel::class.java)
     }
 
     @Inject
@@ -60,42 +56,44 @@ class LibraryFragment : Fragment() {
     @Inject
     lateinit var plexConfig: PlexConfig
 
-    var adapter: AudiobookAdapter? = null
+    var adapter: CollectionsAdapter? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         Timber.i("Lib frag view create")
-        val binding = FragmentLibraryBinding.inflate(inflater, container, false)
+        val binding = FragmentCollectionsBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
         binding.plexConfig = plexConfig
 
-        adapter = AudiobookAdapter(
+        adapter = CollectionsAdapter(
             prefsRepo.libraryBookViewStyle,
             true,
             prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
-            object : AudiobookClick {
-                override fun onClick(audiobook: Audiobook) {
-                    openAudiobookDetails(audiobook)
+            object : CollectionClick {
+                override fun onClick(collection: Collection) {
+                    openCollectionDetails(collection)
                 }
             }
         ).apply {
             stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
         }
 
-        binding.libraryGrid.adapter = adapter
+        binding.collectionsGrid.adapter = adapter
 
-        viewModel.books.observe(viewLifecycleOwner) { books ->
+        viewModel.collections.observe(viewLifecycleOwner) { collections ->
             // Adapter is always non-null between view creation and view destruction
-            checkNotNull(adapter) { "Adapter must not be null while view exists" }
+            if (adapter == null) {
+                return@observe
+            }
 
             // If there are no previous books, submit normally
             if (adapter!!.currentList.isNullOrEmpty()) {
                 Timber.i("Updating book list: no previous books")
-                adapter!!.submitList(books)
+                adapter!!.submitList(collections)
                 return@observe
             }
 
@@ -110,13 +108,13 @@ class LibraryFragment : Fragment() {
             lifecycleScope.launch {
                 val isNewList = withContext(Dispatchers.IO) {
                     val currentList = adapter?.currentList ?: return@withContext true
-                    if (books.size != currentList.size) {
+                    if (collections.size != currentList.size) {
                         Timber.i("Updating: different size!")
                         return@withContext true
                     }
                     // compare lists by id, faster than doing a full .equals() comparison
-                    for (index in books.indices) {
-                        if (books[index].id != currentList[index].id) {
+                    for (index in collections.indices) {
+                        if (collections[index].id != currentList[index].id) {
                             Timber.i("Updating: different ids!")
                             return@withContext true
                         }
@@ -127,7 +125,7 @@ class LibraryFragment : Fragment() {
                     // submit an empty list to force a scroll-to-top, then when it is done, submit
                     // the real list
                     Timber.i("Updating book list: scroll to top")
-                    adapter!!.submitList(null) { adapter?.submitList(books) }
+                    adapter!!.submitList(null) { adapter?.submitList(collections) }
                 }
             }
         }
@@ -143,14 +141,14 @@ class LibraryFragment : Fragment() {
                 VIEW_STYLE_DETAILS_LIST, VIEW_STYLE_TEXT_LIST -> false
                 else -> throw IllegalStateException("Unknown view style")
             }
-            binding.libraryGrid.layoutManager = if (isGrid) {
+            binding.collectionsGrid.layoutManager = if (isGrid) {
                 GridLayoutManager(requireContext(), 3)
             } else {
                 LinearLayoutManager(requireContext())
             }
             adapter!!.viewStyle = style
         }
-        binding.searchResultsList.adapter = AudiobookSearchAdapter(object : AudiobookClick {
+        binding.searchResultsList.adapter = AudiobookSearchAdapter(object : LibraryFragment.AudiobookClick {
             override fun onClick(audiobook: Audiobook) {
                 openAudiobookDetails(audiobook)
             }
@@ -164,52 +162,19 @@ class LibraryFragment : Fragment() {
             binding.swipeToRefresh.isRefreshing = it
         }
 
-        binding.sortByOptions.checkRadioButtonWithTag(prefsRepo.bookSortKey)
-        binding.sortByOptions.setOnCheckedChangeListener { group: ChipGroup, checkedId ->
-            val key = group.findViewById<Chip>(checkedId).tag as String
-            prefsRepo.bookSortKey = key
-        }
-
-        binding.viewStyles.checkRadioButtonWithTag(prefsRepo.libraryBookViewStyle)
-        binding.viewStyles.setOnCheckedChangeListener { group: ChipGroup, checkedId ->
-            val key = group.findViewById<Chip>(checkedId).tag as String
-            prefsRepo.libraryBookViewStyle = key
-        }
-
         viewModel.messageForUser.observe(viewLifecycleOwner) {
             if (!it.hasBeenHandled) {
                 Toast.makeText(context, it.getContentIfNotHandled(), LENGTH_SHORT).show()
             }
         }
 
-        val behavior = (binding.filterView.layoutParams) as CoordinatorLayout.LayoutParams
-        (behavior.behavior as BottomSheetBehavior).addBottomSheetCallback(object :
-                BottomSheetBehavior.BottomSheetCallback() {
-                override fun onSlide(bottomSheet: View, slideOffset: Float) {}
-                override fun onStateChanged(bottomSheet: View, newState: Int) {
-                    // ignore in-between states
-                    if (newState == STATE_EXPANDED || newState == STATE_HIDDEN) {
-                        viewModel.setFilterMenuVisible(newState == STATE_EXPANDED)
-                    }
-                }
-            })
-
-        viewModel.isFilterShown.observe(viewLifecycleOwner) { isFilterShown ->
-            Timber.i("Showing filter view: $isFilterShown")
-            val filterBottomSheetState = if (isFilterShown) {
-                STATE_EXPANDED
-            } else {
-                STATE_HIDDEN
-            }
-
-            val params = binding.filterView.layoutParams as CoordinatorLayout.LayoutParams
-            val bottomSheetBehavior = params.behavior as BottomSheetBehavior
-            bottomSheetBehavior.state = filterBottomSheetState
-        }
-
         (activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
 
         return binding.root
+    }
+
+    private fun openCollectionDetails(collection: Collection) {
+        navigator.showCollectionDetails(collection.id)
     }
 
     private fun openAudiobookDetails(audiobook: Audiobook) {
@@ -222,23 +187,17 @@ class LibraryFragment : Fragment() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.library_menu, menu)
+        inflater.inflate(R.menu.collections_menu, menu)
         val searchView = menu.findItem(R.id.search).actionView as SearchView
         val searchItem = menu.findItem(R.id.search) as MenuItem
-        val filterItem = menu.findItem(R.id.menu_filter) as MenuItem
-        val cacheItem = menu.findItem(R.id.download_all) as MenuItem
 
         searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
-                cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
                 viewModel.setSearchActive(true)
                 return true
             }
 
             override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-                cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                 viewModel.setSearchActive(false)
                 return true
             }
@@ -272,10 +231,6 @@ class LibraryFragment : Fragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.menu_filter -> viewModel.setFilterMenuVisible(
-                viewModel.isFilterShown.value?.not() ?: false
-            )
-            R.id.download_all -> viewModel.promptDownloadAll()
             R.id.search -> {
             } // handled by listeners in onCreateView
             else -> throw NoWhenBranchMatchedException("Unknown menu item selected!")
@@ -283,7 +238,7 @@ class LibraryFragment : Fragment() {
         return super.onOptionsItemSelected(item)
     }
 
-    interface AudiobookClick {
-        fun onClick(audiobook: Audiobook)
+    interface CollectionClick {
+        fun onClick(collection: Collection)
     }
 }

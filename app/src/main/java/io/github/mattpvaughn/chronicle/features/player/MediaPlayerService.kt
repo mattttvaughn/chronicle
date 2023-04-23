@@ -3,6 +3,7 @@ package io.github.mattpvaughn.chronicle.features.player
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.*
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -42,8 +43,8 @@ import io.github.mattpvaughn.chronicle.util.PackageValidator
 import kotlinx.coroutines.*
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
-import kotlin.time.seconds
 
 /** The service responsible for media playback, notification */
 @ExperimentalCoroutinesApi
@@ -85,7 +86,7 @@ class MediaPlayerService :
     lateinit var queueNavigator: QueueNavigator
 
     @Inject
-    lateinit var exoPlayer: SimpleExoPlayer
+    lateinit var exoPlayer: ExoPlayer
 
     @Inject
     lateinit var currentlyPlaying: CurrentlyPlaying
@@ -146,7 +147,7 @@ class MediaPlayerService :
          *
          * @see DefaultLoadControl.Builder.setBufferDurationsMs
          */
-        val EXOPLAYER_BACK_BUFFER_DURATION_MILLIS: Int = 120.seconds.toLongMilliseconds().toInt()
+        val EXOPLAYER_BACK_BUFFER_DURATION_MILLIS: Int = 120.seconds.inWholeMilliseconds.toInt()
 
         /**
          * Exoplayer min-buffer (the minimum millis of buffer which exo will attempt to keep in
@@ -154,14 +155,14 @@ class MediaPlayerService :
          *
          * @see DefaultLoadControl.Builder.setBufferDurationsMs
          */
-        val EXOPLAYER_MIN_BUFFER_DURATION_MILLIS: Int = 10.seconds.toLongMilliseconds().toInt()
+        val EXOPLAYER_MIN_BUFFER_DURATION_MILLIS: Int = 10.seconds.inWholeMilliseconds.toInt()
 
         /**
          * Exoplayer max-buffer (the maximum duration of buffer which Exoplayer will store in memory)
          *
          * @see DefaultLoadControl.Builder.setBufferDurationsMs
          */
-        val EXOPLAYER_MAX_BUFFER_DURATION_MILLIS: Int = 360.seconds.toLongMilliseconds().toInt()
+        val EXOPLAYER_MAX_BUFFER_DURATION_MILLIS: Int = 360.seconds.inWholeMilliseconds.toInt()
     }
 
     @Inject
@@ -190,7 +191,7 @@ class MediaPlayerService :
 
         Timber.i("Service created! $this")
 
-        updateAudioAttrs(simpleExoPlayer = exoPlayer)
+        updateAudioAttrs(exoPlayer = exoPlayer)
 
         prefsRepo.registerPrefsListener(prefsListener)
 
@@ -212,7 +213,7 @@ class MediaPlayerService :
         )
         mediaSessionConnector.setQueueNavigator(queueNavigator)
         mediaSessionConnector.setPlaybackPreparer(playbackPreparer)
-        mediaSessionConnector.setMediaButtonEventHandler { _, _, mediaButtonEvent ->
+        mediaSessionConnector.setMediaButtonEventHandler { _, mediaButtonEvent ->
             mediaSessionCallback.onMediaButtonEvent(mediaButtonEvent)
         }
 
@@ -252,8 +253,14 @@ class MediaPlayerService :
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent != null) {
                 val durationMillis = intent.getLongExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, 0L)
-                val action = intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION) as SleepTimerAction
-                sleepTimer.handleAction(action, durationMillis)
+                val action = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION, SleepTimerAction::class.java)
+                } else {
+                    intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION) as? SleepTimerAction
+                }
+                if (action != null) {
+                    sleepTimer.handleAction(action, durationMillis)
+                }
             }
         }
     }
@@ -279,10 +286,10 @@ class MediaPlayerService :
         }
     }
 
-    private fun updateAudioAttrs(simpleExoPlayer: SimpleExoPlayer) {
-        simpleExoPlayer.setAudioAttributes(
+    private fun updateAudioAttrs(exoPlayer: ExoPlayer) {
+        exoPlayer.setAudioAttributes(
             AudioAttributes.Builder()
-                .setContentType(if (prefsRepo.pauseOnFocusLost) CONTENT_TYPE_SPEECH else CONTENT_TYPE_MUSIC)
+                .setContentType(if (prefsRepo.pauseOnFocusLost) AUDIO_CONTENT_TYPE_SPEECH else AUDIO_CONTENT_TYPE_MUSIC)
                 .setUsage(USAGE_MEDIA)
                 .build(),
             true
@@ -328,16 +335,16 @@ class MediaPlayerService :
 
     private fun invalidatePlaybackParams() {
         Timber.i("Playback params: speed = ${prefsRepo.playbackSpeed}, skip silence = ${prefsRepo.skipSilence}")
-        currentPlayer?.setPlaybackParameters(
-            PlaybackParameters(prefsRepo.playbackSpeed, 1.0f, prefsRepo.skipSilence)
-        )
+        currentPlayer?.playbackParameters = PlaybackParameters(prefsRepo.playbackSpeed, 1.0f)
+        (currentPlayer as? ExoPlayer)?.skipSilenceEnabled = prefsRepo.skipSilence
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
 
         // Ensures that players will not block being removed as a foreground service
-        exoPlayer.stop(true)
+        exoPlayer.stop()
+        exoPlayer.clearMediaItems()
     }
 
     override fun onDestroy() {
@@ -378,7 +385,7 @@ class MediaPlayerService :
                     this@MediaPlayerService,
                     KEYCODE_MEDIA_PLAY,
                     intent,
-                    0
+                    PendingIntent.FLAG_IMMUTABLE
                 )
             )
         }
@@ -573,9 +580,9 @@ class MediaPlayerService :
         }
     }
 
-    private val playerEventListener = object : Player.EventListener {
+    private val playerEventListener = object : Player.Listener {
 
-        override fun onPlayerError(error: ExoPlaybackException) {
+        override fun onPlayerError(error: PlaybackException) {
             Timber.e("Exoplayer playback error: $error")
             val errorIntent = Intent(ACTION_PLAYBACK_ERROR)
             errorIntent.putExtra(PLAYBACK_ERROR_MESSAGE, error.message)
@@ -583,10 +590,10 @@ class MediaPlayerService :
             super.onPlayerError(error)
         }
 
-        override fun onPositionDiscontinuity(reason: Int) {
-            super.onPositionDiscontinuity(reason)
+        override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+            super.onPositionDiscontinuity(oldPosition, newPosition, reason)
             serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                if (reason == Player.DISCONTINUITY_REASON_PERIOD_TRANSITION) {
+                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
                     Timber.i("Playing next track")
                     // Update track progress
                     val trackId = mediaController.metadata.id
@@ -612,8 +619,8 @@ class MediaPlayerService :
             }
         }
 
-        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-            super.onPlayerStateChanged(playWhenReady, playbackState)
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            super.onPlaybackStateChanged(playbackState)
             if (playbackState != PlaybackStateCompat.STATE_ERROR) {
                 // clear errors if playback is proceeding correctly
                 mediaSessionConnector.setCustomErrorMessage(null)

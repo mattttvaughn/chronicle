@@ -113,12 +113,12 @@ class HomeFragment : Fragment() {
         val searchItem = menu.findItem(R.id.search) as MenuItem
 
         searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
                 viewModel.setSearchActive(true)
                 return true
             }
 
-            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
                 viewModel.setSearchActive(false)
                 return true
             }

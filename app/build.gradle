@@ -1,17 +1,17 @@
 apply plugin: "com.android.application"
-apply plugin: "kotlin-android"
+apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "kotlin-kapt"
 apply plugin: "kotlin-parcelize"
 apply plugin: "com.google.android.gms.oss-licenses-plugin"
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 33
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
-        minSdkVersion 21
-        targetSdkVersion 30
-        versionCode 24
-        versionName "0.52.1"
+        minSdkVersion 31
+        targetSdkVersion 33
+        versionCode 26
+        versionName '0.54.0'
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
     }
     buildTypes {
@@ -35,11 +35,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
     // Shared code b/w test and androidTest: mocks "n" stuff
     sourceSets {
@@ -58,14 +58,11 @@ android {
             arg("room.expandProjection", "true")
         }
     }
-    lintOptions {
-        abortOnError false
-    }
     kotlinOptions {
         freeCompilerArgs = ["-Xallow-result-return-type"]
-        freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
-        freeCompilerArgs += ["-Xopt-in=kotlin.time.ExperimentalTime"]
-        freeCompilerArgs += ["-Xopt-in=kotlinx.coroutines.InternalCoroutinesApi"]
+        freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
+        freeCompilerArgs += ["-opt-in=kotlin.time.ExperimentalTime"]
+        freeCompilerArgs += ["-opt-in=kotlinx.coroutines.InternalCoroutinesApi"]
     }
     flavorDimensions "freeAsInBeer"
     productFlavors {
@@ -78,7 +75,13 @@ android {
             buildConfigField "boolean", "FREE_AS_IN_BEER", "false"
         }
     }
+    lint {
+        abortOnError false
+    }
+    namespace 'io.github.mattpvaughn.chronicle'
 }
+
+
 
 dependencies {
     implementation fileTree(include: ["*.jar"], dir: "libs")
@@ -90,7 +93,7 @@ dependencies {
     implementation "com.google.android.material:material:$materialLibVersion"
     implementation "androidx.appcompat:appcompat:$supportlibVersion"
     implementation "androidx.fragment:fragment-ktx:$appCompatFragmentVersion"
-    implementation "androidx.recyclerview:recyclerview:1.2.0"
+    implementation "androidx.recyclerview:recyclerview:1.3.0"
     implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
 
     // AndroidX
@@ -150,7 +153,7 @@ dependencies {
 
 
         // Fresco - image loading
-    implementation 'com.facebook.fresco:fresco:2.4.0'
+    implementation 'com.facebook.fresco:fresco:2.6.0'
     implementation "com.facebook.fresco:imagepipeline-okhttp3:2.4.0"
 
     // LocalBroadcastManager
@@ -162,10 +165,10 @@ dependencies {
     implementation "com.google.android.exoplayer:extension-mediasession:$exoplayerVersion"
 
     // ExoPlayer extensions for FLAC and OPUS file types
-    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-opus:$exoplayerVersion") {
+    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-opus:$exoplayerExtensions") {
         transitive = false
     }
-    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-flac:$exoplayerVersion"){
+    implementation("com.github.PaulWoitaschek.ExoPlayer-Extensions:extension-flac:$exoplayerExtensions"){
         transitive = false
     }
 

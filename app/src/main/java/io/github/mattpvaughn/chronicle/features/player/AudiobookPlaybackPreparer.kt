@@ -6,7 +6,6 @@ import android.os.ResultReceiver
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
-import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
@@ -22,7 +21,7 @@ class AudiobookPlaybackPreparer @Inject constructor(
     private val mediaSessionCallback: MediaSessionCompat.Callback
 ) : MediaSessionConnector.PlaybackPreparer {
 
-    override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle) {
+    override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle?) {
         mediaSource.whenReady {
             if (playWhenReady) {
                 mediaSessionCallback.onPlayFromSearch(query, extras)
@@ -34,7 +33,6 @@ class AudiobookPlaybackPreparer @Inject constructor(
 
     override fun onCommand(
         player: Player,
-        controlDispatcher: ControlDispatcher,
         command: String,
         extras: Bundle?,
         cb: ResultReceiver?
@@ -47,7 +45,7 @@ class AudiobookPlaybackPreparer @Inject constructor(
         ACTION_PREPARE_FROM_MEDIA_ID or ACTION_PLAY_FROM_MEDIA_ID or
             ACTION_PREPARE_FROM_SEARCH or ACTION_PLAY_FROM_SEARCH
 
-    override fun onPrepareFromMediaId(bookId: String, playWhenReady: Boolean, extras: Bundle) {
+    override fun onPrepareFromMediaId(bookId: String, playWhenReady: Boolean, extras: Bundle?) {
         mediaSource.whenReady {
             if (playWhenReady) {
                 mediaSessionCallback.onPlayFromMediaId(bookId, extras)
@@ -57,7 +55,7 @@ class AudiobookPlaybackPreparer @Inject constructor(
         }
     }
 
-    override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle) = Unit
+    override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle?) = Unit
 
     override fun onPrepare(playWhenReady: Boolean) = Unit
 }

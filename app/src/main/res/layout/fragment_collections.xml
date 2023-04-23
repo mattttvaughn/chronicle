@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="io.github.mattpvaughn.chronicle.features.collections.CollectionsViewModel" />
+
+        <variable
+            name="plexConfig"
+            type="io.github.mattpvaughn.chronicle.data.sources.plex.PlexConfig" />
+
+        <import type="android.view.View" />
+
+        <import type="io.github.mattpvaughn.chronicle.data.model.Collection" />
+
+        <import type="io.github.mattpvaughn.chronicle.data.sources.plex.model.MediaTypes" />
+
+        <import type="androidx.recyclerview.widget.GridLayoutManager" />
+
+        <import type="androidx.recyclerview.widget.LinearLayoutManager" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimaryDark"
+        android:orientation="vertical"
+        tools:context=".features.library.LibraryFragment">
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/toolbar_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:theme="@style/ToolbarTheme"
+                app:collapseIcon="@drawable/ic_search_white"
+                app:menu="@menu/collections_menu"
+                app:popupTheme="@style/ThemeOverlay.AppCompat.Dark"
+                app:title="@string/tab_collections" />
+
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
+            android:id="@+id/library_coordinator"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="@dimen/margin_normal"
+                android:elevation="1dp"
+                android:orientation="vertical"
+                android:visibility="@{viewModel.collections.isEmpty() ? View.VISIBLE : View.GONE}">
+
+                <TextView
+                    style="@style/TextAppearance.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/margin_normal"
+                    android:text="@string/no_downloaded_books_found"
+                    android:textAlignment="center"
+                    tools:visibility="gone" />
+
+                <Button
+                    style="@style/Widget.MaterialComponents.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:onClick="@{() -> viewModel.disableOfflineMode()}"
+                    android:text="@string/disable_offline_mode" />
+            </LinearLayout>
+
+            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                android:id="@+id/swipe_to_refresh"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="@{viewModel.collections.isEmpty ? View.GONE : View.VISIBLE}">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/collections_grid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="@dimen/margin_small"
+                    android:paddingRight="@dimen/margin_small"
+                    tools:listitem="@layout/grid_item_audiobook" />
+
+            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+            <TextView
+                android:id="@+id/no_books_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawablePadding="@dimen/spacing_micro"
+                android:text="@string/no_books_found"
+                android:visibility="@{viewModel.collections.isEmpty ? View.VISIBLE : View.GONE}"
+                app:drawableTopCompat="@drawable/ic_error_outline_white" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/search_results_list"
+                    searchBookList="@{viewModel.searchResults}"
+                    serverConnectedSearch="@{plexConfig.isConnected()}"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/colorPrimaryDark"
+                    android:elevation="8dp"
+                    android:visibility="@{viewModel.isSearchActive() ? View.VISIBLE: View.GONE}"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    tools:itemCount="9"
+                    tools:listitem="@layout/list_item_search_result_audiobook" />
+
+                <TextView
+                    style="@style/TextAppearance.Body1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/margin_normal"
+                    android:elevation="8dp"
+                    android:text="@string/no_books_found"
+                    android:visibility="@{viewModel.searchResults.isEmpty() &amp;&amp; viewModel.isSearchActive() &amp;&amp; !viewModel.isQueryEmpty() ? View.VISIBLE : View.GONE}" />
+            </LinearLayout>
+
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
+    </LinearLayout>
+</layout>

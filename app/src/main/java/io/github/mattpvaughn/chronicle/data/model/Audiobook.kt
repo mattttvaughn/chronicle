@@ -14,8 +14,8 @@ import io.github.mattpvaughn.chronicle.data.sources.SourceManager
 import io.github.mattpvaughn.chronicle.data.sources.plex.*
 import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
 import io.github.mattpvaughn.chronicle.features.player.*
-import kotlin.time.minutes
-import kotlin.time.seconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @TypeConverters(ChapterListConverter::class)
 @Entity
@@ -178,7 +178,7 @@ fun Audiobook.toMediaItem(plexConfig: PlexConfig): MediaBrowserCompat.MediaItem 
 }
 
 fun Audiobook.isCompleted(): Boolean {
-    return progress < 10.seconds.inMilliseconds || progress > (duration - 2.minutes.inMilliseconds)
+    return progress < 10.seconds.inWholeMilliseconds || progress > (duration - 2.minutes.inWholeMilliseconds)
 }
 
 fun Audiobook.uniqueId(): Int {
