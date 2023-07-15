@@ -395,12 +395,14 @@ class AudiobookMediaSessionCallback @Inject constructor(
     private fun resumePlayFromEmpty(playWhenReady: Boolean) {
         val connectedObserver = object : Observer<Boolean> {
             override fun onChanged(isConnected: Boolean) {
-                // Don't try starting playback until we've connected to a server
+                /* If you've gotten through checks in previous methods, playback should be fine
+
+                // Don't try starting playback until we've connected to a server\
                 if (!isConnected) {
                     return
                 }
-
                 // Only run these resume methods once after reconnecting
+                 */
                 plexConfig.isConnected.removeObserver(this)
 
                 serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
