@@ -107,7 +107,7 @@
                             android:contentDescription="@string/download"
                             android:onClick="@{(view) -> viewModel.onCacheButtonClick()}"
                             android:src="@{viewModel.cacheIconDrawable}"
-                            android:visibility="@{(viewModel.cacheStatus == CacheStatus.NOT_CACHED &amp;&amp; viewModel.serverConnection == ConnectionState.CONNECTION_FAILED) || viewModel.cacheStatus == CacheStatus.CACHING ? View.INVISIBLE : View.VISIBLE}"
+                            android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHED || viewModel.serverConnection == ConnectionState.CONNECTED ? View.VISIBLE : View.INVISIBLE}"
                             app:tint="@{viewModel.cacheIconTint}" />
 
                     </FrameLayout>
@@ -160,7 +160,7 @@
                             android:focusable="true"
                             android:onClick="@{() -> viewModel.pausePlayButtonClicked()}"
                             android:src="@{ viewModel.isBookInViewPlaying() ? @drawable/ic_pause_button_large_colored : @drawable/ic_play_button_large_colored}"
-                            android:visibility="@{(viewModel.cacheStatus == CacheStatus.NOT_CACHED &amp;&amp; viewModel.serverConnection == ConnectionState.CONNECTION_FAILED) || viewModel.isAudioLoading() ? View.GONE : View.VISIBLE}"
+                            android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHED || viewModel.serverConnection == ConnectionState.CONNECTED ? View.VISIBLE : View.GONE}"
                             tools:src="@drawable/ic_pause_button_large_colored" />
 
                         <ProgressBar
@@ -253,7 +253,7 @@
                             android:padding="@dimen/spacing_normal"
                             android:text="@string/failed_to_connect_to_server"
                             android:textAlignment="center"
-                            android:visibility="@{viewModel.cacheStatus == CacheStatus.NOT_CACHED &amp;&amp; viewModel.serverConnection == ConnectionState.CONNECTION_FAILED ? View.VISIBLE : View.GONE}" />
+                            android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHED || viewModel.serverConnection == ConnectionState.CONNECTED ? View.GONE : View.VISIBLE}" />
 
                     </FrameLayout>
 

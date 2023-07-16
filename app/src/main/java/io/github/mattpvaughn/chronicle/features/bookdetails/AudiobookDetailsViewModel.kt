@@ -70,6 +70,8 @@ class AudiobookDetailsViewModel(
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             check(this::inputAudiobook.isInitialized) { "Input audiobook not provided!" }
             if (modelClass.isAssignableFrom(AudiobookDetailsViewModel::class.java)) {
+                // Check server connection every time book details opens
+                plexConfig.connectToServer(plexMediaService)
                 return AudiobookDetailsViewModel(
                     bookRepository,
                     trackRepository,
