@@ -99,6 +99,7 @@
                             android:onClick="@{(view) -> viewModel.onCacheButtonClick()}"
                             android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHING ? View.VISIBLE : View.GONE}" />
 
+                        <!-- Hide download/delete if book isn't cached AND server isn't connected -->
                         <ImageView
                             android:id="@+id/download"
                             android:layout_width="@dimen/list_icon_size"
@@ -106,7 +107,7 @@
                             android:contentDescription="@string/download"
                             android:onClick="@{(view) -> viewModel.onCacheButtonClick()}"
                             android:src="@{viewModel.cacheIconDrawable}"
-                            android:visibility="@{viewModel.cacheStatus == CacheStatus.CACHING ? View.INVISIBLE : View.VISIBLE}"
+                            android:visibility="@{(viewModel.cacheStatus == CacheStatus.NOT_CACHED &amp;&amp; viewModel.serverConnection == ConnectionState.CONNECTION_FAILED) || viewModel.cacheStatus == CacheStatus.CACHING ? View.INVISIBLE : View.VISIBLE}"
                             app:tint="@{viewModel.cacheIconTint}" />
 
                     </FrameLayout>
@@ -148,6 +149,7 @@
                         app:layout_constraintRight_toLeftOf="@id/right_gutter"
                         app:layout_constraintTop_toBottomOf="@id/progress">
 
+                        <!-- Hide play/pause if book isn't cached AND server isn't connected -->
                         <ImageView
                             android:id="@+id/details_pause_play"
                             android:layout_width="match_parent"
@@ -158,7 +160,7 @@
                             android:focusable="true"
                             android:onClick="@{() -> viewModel.pausePlayButtonClicked()}"
                             android:src="@{ viewModel.isBookInViewPlaying() ? @drawable/ic_pause_button_large_colored : @drawable/ic_play_button_large_colored}"
-                            android:visibility="@{viewModel.isAudioLoading() ? View.GONE : View.VISIBLE}"
+                            android:visibility="@{(viewModel.cacheStatus == CacheStatus.NOT_CACHED &amp;&amp; viewModel.serverConnection == ConnectionState.CONNECTION_FAILED) || viewModel.isAudioLoading() ? View.GONE : View.VISIBLE}"
                             tools:src="@drawable/ic_pause_button_large_colored" />
 
                         <ProgressBar
@@ -230,14 +232,16 @@
                         android:layout_height="wrap_content"
                         android:elevation="1dp">
 
+                        <!-- Only check server connection status if book isn't cached -->
                         <com.google.android.material.progressindicator.LinearProgressIndicator
                             android:id="@+id/connecting_to_server_indicator"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:indeterminate="true"
-                            android:visibility="@{viewModel.serverConnection == ConnectionState.CONNECTING ? View.VISIBLE: View.GONE}"
+                            android:visibility="@{viewModel.cacheStatus == CacheStatus.NOT_CACHED &amp;&amp; viewModel.serverConnection == ConnectionState.CONNECTING ? View.VISIBLE: View.GONE}"
                             app:indicatorColor="@color/colorAccent" />
 
+                        <!-- Only check server connection status if book isn't cached -->
                         <androidx.appcompat.widget.AppCompatTextView
                             style="@style/TextAppearance.Body1"
                             android:layout_width="match_parent"
@@ -249,7 +253,7 @@
                             android:padding="@dimen/spacing_normal"
                             android:text="@string/failed_to_connect_to_server"
                             android:textAlignment="center"
-                            android:visibility="@{viewModel.serverConnection == ConnectionState.CONNECTION_FAILED ? View.VISIBLE : View.GONE}" />
+                            android:visibility="@{viewModel.cacheStatus == CacheStatus.NOT_CACHED &amp;&amp; viewModel.serverConnection == ConnectionState.CONNECTION_FAILED ? View.VISIBLE : View.GONE}" />
 
                     </FrameLayout>
 
