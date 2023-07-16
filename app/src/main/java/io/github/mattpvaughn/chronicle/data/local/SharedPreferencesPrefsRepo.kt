@@ -194,7 +194,7 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
     private val defaultOfflineMode = false
     override var offlineMode: Boolean
         get() = sharedPreferences.getBoolean(KEY_OFFLINE_MODE, defaultOfflineMode)
-        set(value) = sharedPreferences.edit().putBoolean(KEY_OFFLINE_MODE, value).apply()
+        set(value) = sharedPreferences.edit().putBoolean(KEY_OFFLINE_MODE, false).apply()
 
     private val defaultLastRefreshTimeStamp = System.currentTimeMillis()
     override var lastRefreshTimeStamp: Long
@@ -314,7 +314,7 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
             KEY_DEBUG_DISABLE_PROGRESS,
             debugDisableLocalProgressTracking
         )
-        set(value) = sharedPreferences.edit().putBoolean(KEY_DEBUG_DISABLE_PROGRESS, value).apply()
+        set(value) = sharedPreferences.edit().putBoolean(KEY_DEBUG_DISABLE_PROGRESS, false).apply()
 
     override fun setBoolean(key: String, value: Boolean) {
         sharedPreferences.edit().putBoolean(key, value).apply()

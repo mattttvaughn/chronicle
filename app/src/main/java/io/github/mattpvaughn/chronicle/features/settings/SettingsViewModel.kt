@@ -371,12 +371,14 @@ class SettingsViewModel(
                         )
                     }
                 }),
+            /* Hide offline mode setting, is will always be false
             PreferenceModel(
                 PreferenceType.BOOLEAN,
                 FormattableString.from(R.string.settings_offline_mode_title),
                 PrefsRepo.KEY_OFFLINE_MODE,
                 defaultValue = prefsRepo.offlineMode
             ),
+            */
             PreferenceModel(
                 PreferenceType.TITLE,
                 FormattableString.from(R.string.settings_category_playback)
@@ -696,13 +698,17 @@ class SettingsViewModel(
                                     }
                                 }
                             }
-                        }),
+                        })
+                    /* Remove disable local progress tracking
+                    ,
                     PreferenceModel(
                         PreferenceType.BOOLEAN,
                         FormattableString.from(string = "Disable local progress tracking"),
                         PrefsRepo.KEY_DEBUG_DISABLE_PROGRESS,
                         defaultValue = false
                     )
+
+                     */
                 )
             )
         }
