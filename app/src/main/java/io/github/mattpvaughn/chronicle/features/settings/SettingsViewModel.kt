@@ -712,7 +712,7 @@ class SettingsViewModel(
                 )
             )
         }
-
+        /* Don't tie auto rewind to android auto, and hide this as allow auto should always be true
         if (FEATURE_FLAG_IS_AUTO_ENABLED) {
             val autoRewindPref = list.find { it.key == PrefsRepo.KEY_AUTO_REWIND_ENABLED }
             if (autoRewindPref != null) {
@@ -730,7 +730,7 @@ class SettingsViewModel(
                     )
                 }
             }
-        }
+        }*/
 
         return list
     }

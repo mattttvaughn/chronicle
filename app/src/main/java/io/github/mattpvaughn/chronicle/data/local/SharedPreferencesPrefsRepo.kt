@@ -242,9 +242,10 @@ class SharedPreferencesPrefsRepo @Inject constructor(private val sharedPreferenc
         set(value) = sharedPreferences.edit().putBoolean(KEY_PAUSE_ON_FOCUS_LOST, value).apply()
 
     private val defaultAllowAuto = true
+    //allowAuto should always be true to avoid a bug where it gets hidden
     override var allowAuto: Boolean
         get() = sharedPreferences.getBoolean(KEY_ALLOW_AUTO, defaultAllowAuto)
-        set(value) = sharedPreferences.edit().putBoolean(KEY_ALLOW_AUTO, value).apply()
+        set(value) = sharedPreferences.edit().putBoolean(KEY_ALLOW_AUTO, true).apply()
 
     private val defaultIsPremium = false
     override val isPremium: Boolean

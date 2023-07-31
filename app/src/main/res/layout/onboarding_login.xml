@@ -37,6 +37,7 @@
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/oauth_login" />
 
+
         <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/enable_auto"
             android:layout_width="wrap_content"
@@ -48,5 +49,6 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/oauth_login" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

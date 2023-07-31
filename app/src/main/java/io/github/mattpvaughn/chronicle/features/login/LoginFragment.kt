@@ -60,8 +60,8 @@ class LoginFragment : Fragment() {
 
         val binding = OnboardingLoginBinding.inflate(inflater, container, false)
 
-        binding.enableAuto.visibility =
-            if (FEATURE_FLAG_IS_AUTO_ENABLED) View.VISIBLE else View.GONE
+        //Hide this as allow auto will always be true
+        binding.enableAuto.visibility = View.GONE
 
         loginViewModel.isLoading.observe(viewLifecycleOwner, Observer { isLoading ->
             if (isLoading) {
