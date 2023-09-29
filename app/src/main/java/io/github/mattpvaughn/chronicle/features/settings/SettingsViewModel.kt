@@ -191,8 +191,8 @@ class SettingsViewModel(
                     override fun onClick() {
                         showOptionsMenu(
                             options = listOf(
-                                FormattableString.from(R.string.settings_book_cover_type_rect),
-                                FormattableString.from(R.string.settings_book_cover_type_square)
+                                FormattableString.from(R.string.settings_book_cover_type_square),
+                                FormattableString.from(R.string.settings_book_cover_type_rect)
                             ),
                             title = FormattableString.from(R.string.settings_book_cover_type_label),
                             listener = object : BottomChooserItemListener() {
