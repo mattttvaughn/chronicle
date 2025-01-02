@@ -40,7 +40,7 @@ data class MediaItemTrack(
     val progress: Long = 0L,
     val lastViewedAt: Long = 0L,
     val updatedAt: Long = 0L,
-    val size: Long = 0L
+    val size: Long = 0L,
 ) : Comparable<MediaItemTrack> {
     companion object {
         fun from(metadata: MediaMetadataCompat): MediaItemTrack {
@@ -55,7 +55,7 @@ data class MediaItemTrack(
                 album = metadata.album ?: "",
                 artist = metadata.artist ?: "",
                 genre = metadata.genre ?: "",
-                artwork = metadata.artUri.toString()
+                artwork = metadata.artUri.toString(),
             )
         }
 
@@ -63,6 +63,7 @@ data class MediaItemTrack(
 
         /** The pattern representing a downloaded track on the file system */
         val cachedFilePattern = Regex("\\d*\\..+")
+
         fun getTrackIdFromFileName(fileName: String): Int {
             return fileName.substringBefore('.').toInt()
         }
@@ -77,7 +78,7 @@ data class MediaItemTrack(
         fun merge(
             network: MediaItemTrack,
             local: MediaItemTrack,
-            forceUseNetwork: Boolean = false
+            forceUseNetwork: Boolean = false,
         ) = if (forceUseNetwork || network.lastViewedAt > local.lastViewedAt) {
             Timber.i("Integrating network track: $network")
             network.copy(cached = local.cached)
@@ -85,7 +86,7 @@ data class MediaItemTrack(
             network.copy(
                 cached = local.cached,
                 lastViewedAt = local.lastViewedAt,
-                progress = local.progress
+                progress = local.progress,
             )
         }
 
@@ -105,7 +106,7 @@ data class MediaItemTrack(
                 album = networkTrack.parentTitle,
                 lastViewedAt = networkTrack.lastViewedAt,
                 updatedAt = networkTrack.updatedAt,
-                size = networkTrack.media[0].part[0].size
+                size = networkTrack.media[0].part[0].size,
             )
         }
 
@@ -251,7 +252,7 @@ fun MediaItemTrack.asChapter(startOffset: Long): Chapter {
         startTimeOffset = startOffset,
         endTimeOffset = duration,
         downloaded = cached,
-        trackId = id.toLong()
+        trackId = id.toLong(),
     )
 }
 

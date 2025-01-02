@@ -13,9 +13,8 @@ class CollectionDetailsViewModel(
     private val bookRepo: BookRepository,
     private val collectionRepo: CollectionsRepository,
     prefsRepo: PrefsRepo,
-    sharedPreferences: SharedPreferences
+    sharedPreferences: SharedPreferences,
 ) : ViewModel() {
-
     private suspend fun getBooksInCollection(): List<Audiobook> {
         val childIds = collectionRepo.getChildIds(collectionId)
         return childIds.mapNotNull {
@@ -35,34 +34,36 @@ class CollectionDetailsViewModel(
         }
     }
 
-    val viewStyle = StringPreferenceLiveData(
-        PrefsRepo.KEY_LIBRARY_VIEW_STYLE,
-        prefsRepo.libraryBookViewStyle,
-        sharedPreferences
-    )
+    val viewStyle =
+        StringPreferenceLiveData(
+            PrefsRepo.KEY_LIBRARY_VIEW_STYLE,
+            prefsRepo.libraryBookViewStyle,
+            sharedPreferences,
+        )
 
     @Suppress("UNCHECKED_CAST")
-    class Factory @Inject constructor(
-        private val bookRepo: BookRepository,
-        private val prefsRepo: PrefsRepo,
-        private val sharedPreferences: SharedPreferences,
-        private val collectionRepo: CollectionsRepository,
-    ) : ViewModelProvider.Factory {
+    class Factory
+        @Inject
+        constructor(
+            private val bookRepo: BookRepository,
+            private val prefsRepo: PrefsRepo,
+            private val sharedPreferences: SharedPreferences,
+            private val collectionRepo: CollectionsRepository,
+        ) : ViewModelProvider.Factory {
+            var collectionId: Int? = null
 
-        var collectionId: Int? = null
-
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(CollectionDetailsViewModel::class.java)) {
-                return CollectionDetailsViewModel(
-                    collectionId!!,
-                    bookRepo,
-                    collectionRepo,
-                    prefsRepo,
-                    sharedPreferences
-                ) as T
-            } else {
-                throw IllegalArgumentException("Incorrect class type provided")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(CollectionDetailsViewModel::class.java)) {
+                    return CollectionDetailsViewModel(
+                        collectionId!!,
+                        bookRepo,
+                        collectionRepo,
+                        prefsRepo,
+                        sharedPreferences,
+                    ) as T
+                } else {
+                    throw IllegalArgumentException("Incorrect class type provided")
+                }
             }
         }
-    }
 }

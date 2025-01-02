@@ -39,7 +39,6 @@ import javax.inject.Inject
 
 /** TODO: refactor search to reuse code from Library + Home fragments */
 class LibraryFragment : Fragment() {
-
     companion object {
         fun newInstance() = LibraryFragment()
     }
@@ -65,7 +64,7 @@ class LibraryFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         Timber.i("Lib frag view create")
         val binding = FragmentLibraryBinding.inflate(inflater, container, false)
@@ -73,18 +72,19 @@ class LibraryFragment : Fragment() {
         binding.viewModel = viewModel
         binding.plexConfig = plexConfig
 
-        adapter = AudiobookAdapter(
-            prefsRepo.libraryBookViewStyle,
-            true,
-            prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
-            object : AudiobookClick {
-                override fun onClick(audiobook: Audiobook) {
-                    openAudiobookDetails(audiobook)
-                }
+        adapter =
+            AudiobookAdapter(
+                prefsRepo.libraryBookViewStyle,
+                true,
+                prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
+                object : AudiobookClick {
+                    override fun onClick(audiobook: Audiobook) {
+                        openAudiobookDetails(audiobook)
+                    }
+                },
+            ).apply {
+                stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
             }
-        ).apply {
-            stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
-        }
 
         binding.libraryGrid.adapter = adapter
 
@@ -108,21 +108,22 @@ class LibraryFragment : Fragment() {
             //
             // This operation is worst case O(n), which is bad for users with huge libraries
             lifecycleScope.launch {
-                val isNewList = withContext(Dispatchers.IO) {
-                    val currentList = adapter?.currentList ?: return@withContext true
-                    if (books.size != currentList.size) {
-                        Timber.i("Updating: different size!")
-                        return@withContext true
-                    }
-                    // compare lists by id, faster than doing a full .equals() comparison
-                    for (index in books.indices) {
-                        if (books[index].id != currentList[index].id) {
-                            Timber.i("Updating: different ids!")
+                val isNewList =
+                    withContext(Dispatchers.IO) {
+                        val currentList = adapter?.currentList ?: return@withContext true
+                        if (books.size != currentList.size) {
+                            Timber.i("Updating: different size!")
                             return@withContext true
                         }
+                        // compare lists by id, faster than doing a full .equals() comparison
+                        for (index in books.indices) {
+                            if (books[index].id != currentList[index].id) {
+                                Timber.i("Updating: different ids!")
+                                return@withContext true
+                            }
+                        }
+                        return@withContext false
                     }
-                    return@withContext false
-                }
                 if (isNewList) {
                     // submit an empty list to force a scroll-to-top, then when it is done, submit
                     // the real list
@@ -138,23 +139,28 @@ class LibraryFragment : Fragment() {
 
         viewModel.viewStyle.observe(viewLifecycleOwner) { style ->
             Timber.i("View style is: $style")
-            val isGrid = when (style) {
-                VIEW_STYLE_COVER_GRID -> true
-                VIEW_STYLE_DETAILS_LIST, VIEW_STYLE_TEXT_LIST -> false
-                else -> throw IllegalStateException("Unknown view style")
-            }
-            binding.libraryGrid.layoutManager = if (isGrid) {
-                GridLayoutManager(requireContext(), 3)
-            } else {
-                LinearLayoutManager(requireContext())
-            }
+            val isGrid =
+                when (style) {
+                    VIEW_STYLE_COVER_GRID -> true
+                    VIEW_STYLE_DETAILS_LIST, VIEW_STYLE_TEXT_LIST -> false
+                    else -> throw IllegalStateException("Unknown view style")
+                }
+            binding.libraryGrid.layoutManager =
+                if (isGrid) {
+                    GridLayoutManager(requireContext(), 3)
+                } else {
+                    LinearLayoutManager(requireContext())
+                }
             adapter!!.viewStyle = style
         }
-        binding.searchResultsList.adapter = AudiobookSearchAdapter(object : AudiobookClick {
-            override fun onClick(audiobook: Audiobook) {
-                openAudiobookDetails(audiobook)
-            }
-        })
+        binding.searchResultsList.adapter =
+            AudiobookSearchAdapter(
+                object : AudiobookClick {
+                    override fun onClick(audiobook: Audiobook) {
+                        openAudiobookDetails(audiobook)
+                    }
+                },
+            )
 
         binding.swipeToRefresh.setOnRefreshListener {
             viewModel.refreshData()
@@ -183,24 +189,34 @@ class LibraryFragment : Fragment() {
         }
 
         val behavior = (binding.filterView.layoutParams) as CoordinatorLayout.LayoutParams
-        (behavior.behavior as BottomSheetBehavior).addBottomSheetCallback(object :
+        (behavior.behavior as BottomSheetBehavior).addBottomSheetCallback(
+            object :
                 BottomSheetBehavior.BottomSheetCallback() {
-                override fun onSlide(bottomSheet: View, slideOffset: Float) {}
-                override fun onStateChanged(bottomSheet: View, newState: Int) {
+                override fun onSlide(
+                    bottomSheet: View,
+                    slideOffset: Float,
+                ) {}
+
+                override fun onStateChanged(
+                    bottomSheet: View,
+                    newState: Int,
+                ) {
                     // ignore in-between states
                     if (newState == STATE_EXPANDED || newState == STATE_HIDDEN) {
                         viewModel.setFilterMenuVisible(newState == STATE_EXPANDED)
                     }
                 }
-            })
+            },
+        )
 
         viewModel.isFilterShown.observe(viewLifecycleOwner) { isFilterShown ->
             Timber.i("Showing filter view: $isFilterShown")
-            val filterBottomSheetState = if (isFilterShown) {
-                STATE_EXPANDED
-            } else {
-                STATE_HIDDEN
-            }
+            val filterBottomSheetState =
+                if (isFilterShown) {
+                    STATE_EXPANDED
+                } else {
+                    STATE_HIDDEN
+                }
 
             val params = binding.filterView.layoutParams as CoordinatorLayout.LayoutParams
             val bottomSheetBehavior = params.behavior as BottomSheetBehavior
@@ -221,42 +237,49 @@ class LibraryFragment : Fragment() {
         setHasOptionsMenu(true)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateOptionsMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         inflater.inflate(R.menu.library_menu, menu)
         val searchView = menu.findItem(R.id.search).actionView as SearchView
         val searchItem = menu.findItem(R.id.search) as MenuItem
         val filterItem = menu.findItem(R.id.menu_filter) as MenuItem
         val cacheItem = menu.findItem(R.id.download_all) as MenuItem
 
-        searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
-                cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
-                viewModel.setSearchActive(true)
-                return true
-            }
-
-            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-                cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-                viewModel.setSearchActive(false)
-                return true
-            }
-        })
-
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                // Do nothing
-                return true
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                if (newText != null) {
-                    viewModel.search(newText)
+        searchItem.setOnActionExpandListener(
+            object : MenuItem.OnActionExpandListener {
+                override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                    filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+                    cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+                    viewModel.setSearchActive(true)
+                    return true
                 }
-                return true
-            }
-        })
+
+                override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+                    filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                    cacheItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                    viewModel.setSearchActive(false)
+                    return true
+                }
+            },
+        )
+
+        searchView.setOnQueryTextListener(
+            object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    // Do nothing
+                    return true
+                }
+
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    if (newText != null) {
+                        viewModel.search(newText)
+                    }
+                    return true
+                }
+            },
+        )
     }
 
     override fun onAttach(context: Context) {
@@ -272,9 +295,10 @@ class LibraryFragment : Fragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.menu_filter -> viewModel.setFilterMenuVisible(
-                viewModel.isFilterShown.value?.not() ?: false
-            )
+            R.id.menu_filter ->
+                viewModel.setFilterMenuVisible(
+                    viewModel.isFilterShown.value?.not() ?: false,
+                )
             R.id.download_all -> viewModel.promptDownloadAll()
             R.id.search -> {
             } // handled by listeners in onCreateView

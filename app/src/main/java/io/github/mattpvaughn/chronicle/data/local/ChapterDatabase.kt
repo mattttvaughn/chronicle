@@ -8,14 +8,16 @@ import io.github.mattpvaughn.chronicle.data.model.Chapter
 private const val CHAPTER_DATABASE_NAME = "chapter_db"
 
 private lateinit var INSTANCE: ChapterDatabase
+
 fun getChapterDatabase(context: Context): ChapterDatabase {
     synchronized(ChapterDatabase::class.java) {
         if (!::INSTANCE.isInitialized) {
-            INSTANCE = Room.databaseBuilder(
-                context.applicationContext,
-                ChapterDatabase::class.java,
-                CHAPTER_DATABASE_NAME
-            ).addMigrations().build()
+            INSTANCE =
+                Room.databaseBuilder(
+                    context.applicationContext,
+                    ChapterDatabase::class.java,
+                    CHAPTER_DATABASE_NAME,
+                ).addMigrations().build()
         }
     }
     return INSTANCE
@@ -47,7 +49,10 @@ interface ChapterDao {
     fun update(chapter: Chapter)
 
     @Query("UPDATE Chapter SET downloaded = :cached WHERE id = :chapterId")
-    fun updateCachedStatus(chapterId: Int, cached: Boolean)
+    fun updateCachedStatus(
+        chapterId: Int,
+        cached: Boolean,
+    )
 
     @Query("DELETE FROM Chapter WHERE id IN (:chaptersToRemove)")
     fun removeAll(chaptersToRemove: List<Long>): Int

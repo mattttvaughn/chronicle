@@ -26,31 +26,34 @@ class CollectionsViewModel(
     private val librarySyncRepository: LibrarySyncRepository,
     collectionsRepository: CollectionsRepository,
     sharedPreferences: SharedPreferences,
-    private val bookRepository: BookRepository
+    private val bookRepository: BookRepository,
 ) : ViewModel() {
-
     @Suppress("UNCHECKED_CAST")
-    class Factory @Inject constructor(
-        private val prefsRepo: PrefsRepo,
-        private val collectionsRepository: CollectionsRepository,
-        private val librarySyncRepository: LibrarySyncRepository,
-        private val sharedPreferences: SharedPreferences,
-        private val bookRepository: BookRepository
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(CollectionsViewModel::class.java)) {
-                return CollectionsViewModel(
-                    prefsRepo,
-                    librarySyncRepository,
-                    collectionsRepository,
-                    sharedPreferences,
-                    bookRepository
-                ) as T
-            } else {
-                throw IllegalArgumentException("Cannot instantiate $modelClass from LibraryViewModel.Factory")
+    class Factory
+        @Inject
+        constructor(
+            private val prefsRepo: PrefsRepo,
+            private val collectionsRepository: CollectionsRepository,
+            private val librarySyncRepository: LibrarySyncRepository,
+            private val sharedPreferences: SharedPreferences,
+            private val bookRepository: BookRepository,
+        ) : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(CollectionsViewModel::class.java)) {
+                    return CollectionsViewModel(
+                        prefsRepo,
+                        librarySyncRepository,
+                        collectionsRepository,
+                        sharedPreferences,
+                        bookRepository,
+                    ) as T
+                } else {
+                    throw IllegalArgumentException(
+                        "Cannot instantiate $modelClass from LibraryViewModel.Factory",
+                    )
+                }
             }
         }
-    }
 
     val isRefreshing = librarySyncRepository.isRefreshing
 
@@ -58,70 +61,77 @@ class CollectionsViewModel(
     val isSearchActive: LiveData<Boolean>
         get() = _isSearchActive
 
-    val viewStyle = StringPreferenceLiveData(
-        KEY_LIBRARY_VIEW_STYLE,
-        prefsRepo.libraryBookViewStyle,
-        sharedPreferences
-    )
+    val viewStyle =
+        StringPreferenceLiveData(
+            KEY_LIBRARY_VIEW_STYLE,
+            prefsRepo.libraryBookViewStyle,
+            sharedPreferences,
+        )
 
-    val isSortDescending = BooleanPreferenceLiveData(
-        KEY_IS_LIBRARY_SORT_DESCENDING,
-        true,
-        sharedPreferences
-    )
+    val isSortDescending =
+        BooleanPreferenceLiveData(
+            KEY_IS_LIBRARY_SORT_DESCENDING,
+            true,
+            sharedPreferences,
+        )
 
-    val arePlayedAudiobooksHidden = BooleanPreferenceLiveData(
-        KEY_HIDE_PLAYED_AUDIOBOOKS,
-        false,
-        sharedPreferences
-    )
+    val arePlayedAudiobooksHidden =
+        BooleanPreferenceLiveData(
+            KEY_HIDE_PLAYED_AUDIOBOOKS,
+            false,
+            sharedPreferences,
+        )
 
-    private val sortKey = StringPreferenceLiveData(
-        KEY_BOOK_SORT_BY,
-        SORT_KEY_TITLE,
-        sharedPreferences
-    )
+    private val sortKey =
+        StringPreferenceLiveData(
+            KEY_BOOK_SORT_BY,
+            SORT_KEY_TITLE,
+            sharedPreferences,
+        )
 
     private var prevCollections = emptyList<Collection>()
 
     private val allCollections = collectionsRepository.getAllCollections()
-    val collections = QuadLiveDataAsync(
-        viewModelScope,
-        allCollections,
-        isSortDescending,
-        sortKey,
-        arePlayedAudiobooksHidden,
-    ) { _collections, _isDescending, _sortKey, _hidePlayed ->
-        if (_collections.isNullOrEmpty()) {
-            return@QuadLiveDataAsync emptyList<Collection>()
-        }
-
-        // TODO: Currently only support sort by title!
-        val key = SORT_KEY_TITLE
-
-        // Use defaults if provided null values
-        val desc = _isDescending ?: true
-        val hidePlayed = _hidePlayed ?: false
-
-        val results = _collections.sortedWith(
-            Comparator { coll1, coll2 ->
-                val descMultiplier = if (desc) 1 else -1
-                return@Comparator descMultiplier * when (key) {
-                    SORT_KEY_TITLE -> coll1.title.compareTo(coll2.title)
-                    else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
-                }
+    val collections =
+        QuadLiveDataAsync(
+            viewModelScope,
+            allCollections,
+            isSortDescending,
+            sortKey,
+            arePlayedAudiobooksHidden,
+        ) { _collections, _isDescending, _sortKey, _hidePlayed ->
+            if (_collections.isNullOrEmpty()) {
+                return@QuadLiveDataAsync emptyList<Collection>()
             }
-        )
 
-        // If nothing has changed, return prevBooks
-        if (prevCollections.map { it.id } == results.map { it.id }) {
-            return@QuadLiveDataAsync prevCollections
+            // TODO: Currently only support sort by title!
+            val key = SORT_KEY_TITLE
+
+            // Use defaults if provided null values
+            val desc = _isDescending ?: true
+            val hidePlayed = _hidePlayed ?: false
+
+            val results =
+                _collections.sortedWith(
+                    Comparator { coll1, coll2 ->
+                        val descMultiplier = if (desc) 1 else -1
+                        return@Comparator descMultiplier *
+                            when (key) {
+                                SORT_KEY_TITLE -> coll1.title.compareTo(coll2.title)
+                                else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
+                            }
+                    },
+                )
+
+            // If nothing has changed, return prevBooks
+            if (prevCollections.map { it.id } == results.map { it.id }) {
+                return@QuadLiveDataAsync prevCollections
+            }
+
+            prevCollections = results
+
+            return@QuadLiveDataAsync results
         }
-
-        prevCollections = results
-
-        return@QuadLiveDataAsync results
-    }
 
     private var _messageForUser = MutableLiveData<Event<String>>()
     val messageForUser: LiveData<Event<String>>
@@ -152,30 +162,32 @@ class CollectionsViewModel(
             bookRepository.search(query).observeOnce(
                 Observer {
                     _searchResults.postValue(it)
-                }
+                },
             )
         }
     }
 
-    private val serverConnectionObserver = Observer<Boolean> { isConnectedToServer ->
-        if (isConnectedToServer) {
-            viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-                val millisSinceLastRefresh =
-                    System.currentTimeMillis() - prefsRepo.lastRefreshTimeStamp
-                val minutesSinceLastRefresh = millisSinceLastRefresh / 1000 / 60
-                val bookCount = bookRepository.getBookCount()
-                val shouldRefresh =
-                    minutesSinceLastRefresh > prefsRepo.refreshRateMinutes || bookCount == 0
-                Timber.i(
-                    """$minutesSinceLastRefresh minutes since last libraryrefresh,
-                    |${prefsRepo.refreshRateMinutes} needed""".trimMargin()
-                )
-                if (shouldRefresh) {
-                    refreshData()
+    private val serverConnectionObserver =
+        Observer<Boolean> { isConnectedToServer ->
+            if (isConnectedToServer) {
+                viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+                    val millisSinceLastRefresh =
+                        System.currentTimeMillis() - prefsRepo.lastRefreshTimeStamp
+                    val minutesSinceLastRefresh = millisSinceLastRefresh / 1000 / 60
+                    val bookCount = bookRepository.getBookCount()
+                    val shouldRefresh =
+                        minutesSinceLastRefresh > prefsRepo.refreshRateMinutes || bookCount == 0
+                    Timber.i(
+                        """$minutesSinceLastRefresh minutes since last libraryrefresh,
+                    |${prefsRepo.refreshRateMinutes} needed
+                        """.trimMargin(),
+                    )
+                    if (shouldRefresh) {
+                        refreshData()
+                    }
                 }
             }
         }
-    }
 
     fun disableOfflineMode() {
         prefsRepo.offlineMode = false

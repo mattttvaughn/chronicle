@@ -19,16 +19,16 @@ import timber.log.Timber
 
 class PlexSyncScrobbleWorker(
     context: Context,
-    workerParameters: WorkerParameters
+    workerParameters: WorkerParameters,
 ) : Worker(context, workerParameters) {
-
-    val library = SharedPreferencesPlexPrefsRepo(
-        context.getSharedPreferences(
-            APP_NAME,
-            MODE_PRIVATE
-        ),
-        Injector.get().moshi()
-    ).library
+    val library =
+        SharedPreferencesPlexPrefsRepo(
+            context.getSharedPreferences(
+                APP_NAME,
+                MODE_PRIVATE,
+            ),
+            Injector.get().moshi(),
+        ).library
     val trackRepository = Injector.get().trackRepo()
     val bookRepository = Injector.get().bookRepo()
     val plexConfig = Injector.get().plexConfig()
@@ -71,7 +71,7 @@ class PlexSyncScrobbleWorker(
                         // automatically mark as finished
                         duration = track.duration * 2,
                         playState = playbackState,
-                        hasMde = 1
+                        hasMde = 1,
                     )
                     Timber.i("Synced progress for ${book?.title}")
                 } catch (t: Throwable) {
@@ -136,7 +136,7 @@ class PlexSyncScrobbleWorker(
                 TRACK_ID_ARG to trackId,
                 TRACK_POSITION_ARG to trackProgress,
                 TRACK_STATE_ARG to playbackState,
-                BOOK_PROGRESS to bookProgress
+                BOOK_PROGRESS to bookProgress,
             )
         }
     }

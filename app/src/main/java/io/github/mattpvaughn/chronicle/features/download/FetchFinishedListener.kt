@@ -5,7 +5,6 @@ import com.tonyodev.fetch2.Download
 import com.tonyodev.fetch2.Error
 
 abstract class FetchFinishedListener : AbstractFetchListener() {
-
     abstract fun onFinished(download: Download)
 
     override fun onRemoved(download: Download) {
@@ -23,7 +22,11 @@ abstract class FetchFinishedListener : AbstractFetchListener() {
         super.onCancelled(download)
     }
 
-    override fun onError(download: Download, error: Error, throwable: Throwable?) {
+    override fun onError(
+        download: Download,
+        error: Error,
+        throwable: Throwable?,
+    ) {
         onFinished(download)
         super.onError(download, error, throwable)
     }

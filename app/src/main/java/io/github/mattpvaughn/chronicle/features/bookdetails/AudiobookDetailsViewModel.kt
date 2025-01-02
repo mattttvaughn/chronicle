@@ -51,55 +51,58 @@ class AudiobookDetailsViewModel(
     private val plexConfig: PlexConfig,
     private val prefsRepo: PrefsRepo,
     private val plexMediaService: PlexMediaService,
-    currentlyPlaying: CurrentlyPlaying
+    currentlyPlaying: CurrentlyPlaying,
 ) : ViewModel() {
-
     @Suppress("UNCHECKED_CAST")
-    class Factory @Inject constructor(
-        private val bookRepository: IBookRepository,
-        private val trackRepository: ITrackRepository,
-        private val cachedFileManager: ICachedFileManager,
-        private val mediaServiceConnection: MediaServiceConnection,
-        private val progressUpdater: ProgressUpdater,
-        private val plexConfig: PlexConfig,
-        private val prefsRepo: PrefsRepo,
-        private val plexMediaService: PlexMediaService,
-        private val currentlyPlaying: CurrentlyPlaying
-    ) : ViewModelProvider.Factory {
-        lateinit var inputAudiobook: Audiobook
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            check(this::inputAudiobook.isInitialized) { "Input audiobook not provided!" }
-            if (modelClass.isAssignableFrom(AudiobookDetailsViewModel::class.java)) {
-                return AudiobookDetailsViewModel(
-                    bookRepository,
-                    trackRepository,
-                    cachedFileManager,
-                    inputAudiobook,
-                    mediaServiceConnection,
-                    progressUpdater,
-                    plexConfig,
-                    prefsRepo,
-                    plexMediaService,
-                    currentlyPlaying
-                ) as T
-            } else {
-                throw IllegalStateException("Wrong class provided to ${this.javaClass.name}")
+    class Factory
+        @Inject
+        constructor(
+            private val bookRepository: IBookRepository,
+            private val trackRepository: ITrackRepository,
+            private val cachedFileManager: ICachedFileManager,
+            private val mediaServiceConnection: MediaServiceConnection,
+            private val progressUpdater: ProgressUpdater,
+            private val plexConfig: PlexConfig,
+            private val prefsRepo: PrefsRepo,
+            private val plexMediaService: PlexMediaService,
+            private val currentlyPlaying: CurrentlyPlaying,
+        ) : ViewModelProvider.Factory {
+            lateinit var inputAudiobook: Audiobook
+
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                check(this::inputAudiobook.isInitialized) { "Input audiobook not provided!" }
+                if (modelClass.isAssignableFrom(AudiobookDetailsViewModel::class.java)) {
+                    return AudiobookDetailsViewModel(
+                        bookRepository,
+                        trackRepository,
+                        cachedFileManager,
+                        inputAudiobook,
+                        mediaServiceConnection,
+                        progressUpdater,
+                        plexConfig,
+                        prefsRepo,
+                        plexMediaService,
+                        currentlyPlaying,
+                    ) as T
+                } else {
+                    throw IllegalStateException("Wrong class provided to ${this.javaClass.name}")
+                }
             }
         }
-    }
 
     val audiobook: LiveData<Audiobook?> = bookRepository.getAudiobook(inputAudiobook.id)
     val tracks = trackRepository.getTracksForAudiobook(inputAudiobook.id)
 
     // Used to cache tracks.asChapterList when tracks changes
-    private val tracksAsChaptersCache: LiveData<List<Chapter>> = mapAsync(tracks, viewModelScope) {
-        it.asChapterList()
-    }
+    private val tracksAsChaptersCache: LiveData<List<Chapter>> =
+        mapAsync(tracks, viewModelScope) {
+            it.asChapterList()
+        }
 
     val chapters: DoubleLiveData<Audiobook?, List<Chapter>, List<Chapter>> =
         DoubleLiveData(
             audiobook,
-            tracksAsChaptersCache
+            tracksAsChaptersCache,
         ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
             Timber.i("Chapter data updated! ")
             if (_audiobook?.chapters?.isNotEmpty() == true) {
@@ -117,67 +120,81 @@ class AudiobookDetailsViewModel(
      * Cache status of the current audiobook. Reflects the cache status of [tracks] if they've
      * been loaded, otherwise default to [_manualCacheStatus].
      */
-    val cacheStatus = DoubleLiveData(
-        cachedFileManager.activeBookDownloads,
-        audiobook
-    ) { activeDownloadIDs: Set<Int>?, _audiobook: Audiobook? ->
-        Timber.i("Active downloads: $activeDownloadIDs")
-        return@DoubleLiveData when {
-            _audiobook?.isCached == true -> CACHED
-            inputAudiobook.id in (activeDownloadIDs ?: emptySet()) -> CACHING
-            else -> NOT_CACHED
+    val cacheStatus =
+        DoubleLiveData(
+            cachedFileManager.activeBookDownloads,
+            audiobook,
+        ) { activeDownloadIDs: Set<Int>?, _audiobook: Audiobook? ->
+            Timber.i("Active downloads: $activeDownloadIDs")
+            return@DoubleLiveData when {
+                _audiobook?.isCached == true -> CACHED
+                inputAudiobook.id in (activeDownloadIDs ?: emptySet()) -> CACHING
+                else -> NOT_CACHED
+            }
         }
-    }
 
-    val cacheIconTint = cacheStatus.map { status ->
-        return@map when (status) {
-            CACHING -> R.color.icon // Doesn't matter, we show a spinner over it
-            NOT_CACHED -> R.color.icon
-            CACHED -> R.color.iconActive
-            null -> R.color.icon
+    val cacheIconTint =
+        cacheStatus.map { status ->
+            return@map when (status) {
+                CACHING -> R.color.icon // Doesn't matter, we show a spinner over it
+                NOT_CACHED -> R.color.icon
+                CACHED -> R.color.iconActive
+                null -> R.color.icon
+            }
         }
-    }
 
-    val cacheIconDrawable: LiveData<Int> = cacheStatus.map { status ->
-        return@map when (status) {
-            CACHING -> R.drawable.ic_cloud_download_white // Doesn't matter, we show a spinner over it
-            NOT_CACHED -> R.drawable.ic_cloud_download_white
-            CACHED -> R.drawable.ic_cloud_done_white
+    val cacheIconDrawable: LiveData<Int> =
+        cacheStatus.map { status ->
+            return@map when (status) {
+                CACHING -> R.drawable.ic_cloud_download_white // Doesn't matter, we show a spinner over it
+                NOT_CACHED -> R.drawable.ic_cloud_download_white
+                CACHED -> R.drawable.ic_cloud_done_white
+            }
         }
-    }
 
     private val activeBook = currentlyPlaying.book.asLiveData(viewModelScope.coroutineContext)
 
     /** Whether the book in the current view is also the same on in the [MediaController] */
-    private val isBookInViewActive = DoubleLiveData<Audiobook, Audiobook?, Boolean>(
-        activeBook,
-        audiobook
-    ) { activeBook, currentBook ->
-        return@DoubleLiveData activeBook?.id == currentBook?.id &&
-            activeBook?.id != null
-    }
+    private val isBookInViewActive =
+        DoubleLiveData<Audiobook, Audiobook?, Boolean>(
+            activeBook,
+            audiobook,
+        ) { activeBook, currentBook ->
+            return@DoubleLiveData activeBook?.id == currentBook?.id &&
+                activeBook?.id != null
+        }
 
     /** Whether the book in the current view is playing */
     val isBookInViewPlaying =
         DoubleLiveData<Boolean, PlaybackStateCompat, Boolean>(
             isBookInViewActive,
-            mediaServiceConnection.playbackState
+            mediaServiceConnection.playbackState,
         ) { isBookActive, currState ->
             return@DoubleLiveData isBookActive ?: false && currState?.isPlaying ?: false
         }
 
-    val progressString = tracks.map { tracks: List<MediaItemTrack> ->
-        if (tracks.isEmpty()) {
-            return@map "0:00/0:00"
+    val progressString =
+        tracks.map { tracks: List<MediaItemTrack> ->
+            if (tracks.isEmpty()) {
+                return@map "0:00/0:00"
+            }
+            val progressStr =
+                DateUtils.formatElapsedTime(
+                    StringBuilder(),
+                    tracks.getProgress() / 1000L,
+                )
+            val durationStr =
+                DateUtils.formatElapsedTime(
+                    StringBuilder(),
+                    tracks.getDuration() / 1000L,
+                )
+            return@map "$progressStr/$durationStr"
         }
-        val progressStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getProgress() / 1000L)
-        val durationStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getDuration() / 1000L)
-        return@map "$progressStr/$durationStr"
-    }
 
-    val progressPercentageString = tracks.map { tracks: List<MediaItemTrack> ->
-        return@map "${tracks.getProgressPercentage()}%"
-    }
+    val progressPercentageString =
+        tracks.map { tracks: List<MediaItemTrack> ->
+            return@map "${tracks.getProgressPercentage()}%"
+        }
 
     private var _isLoadingTracks = MutableLiveData(false)
     val isLoadingTracks: LiveData<Boolean>
@@ -194,22 +211,25 @@ class AudiobookDetailsViewModel(
     val summaryLinesShown: LiveData<Int>
         get() = _summaryLinesShown
 
-    val isAudioLoading = mediaServiceConnection.playbackState.map { state ->
-        if (state.state == PlaybackStateCompat.STATE_ERROR) {
-            Timber.i("Playback state: ${state.stateName}, (${state.errorMessage})")
-        } else {
-            Timber.i("Playback state: ${state.stateName}")
+    val isAudioLoading =
+        mediaServiceConnection.playbackState.map { state ->
+            if (state.state == PlaybackStateCompat.STATE_ERROR) {
+                Timber.i("Playback state: ${state.stateName}, (${state.errorMessage})")
+            } else {
+                Timber.i("Playback state: ${state.stateName}")
+            }
+            state.state == STATE_BUFFERING || state.state == STATE_CONNECTING
         }
-        state.state == STATE_BUFFERING || state.state == STATE_CONNECTING
-    }
 
-    val showSummary = audiobook.map { book ->
-        book?.summary?.isNotEmpty() ?: false
-    }
+    val showSummary =
+        audiobook.map { book ->
+            book?.summary?.isNotEmpty() ?: false
+        }
 
-    val isExpanded = summaryLinesShown.map { lines ->
-        return@map lines == lineCountSummaryMaximized
-    }
+    val isExpanded =
+        summaryLinesShown.map { lines ->
+            return@map lines == lineCountSummaryMaximized
+        }
 
     val serverConnection = plexConfig.connectionState.map { it }
 
@@ -225,47 +245,53 @@ class AudiobookDetailsViewModel(
         }
     }
 
-    private val networkObserver = Observer<Boolean> { isConnected ->
-        if (isConnected) {
-            loadBookDetails(inputAudiobook.id)
-        }
-    }
-
-    private val cachedChapter = DoubleLiveData(
-        chapters,
-        tracks
-    ) { _chapters: List<Chapter>?, _tracks: List<MediaItemTrack>? ->
-        Timber.i("Cached chapters: $_chapters")
-        Timber.i("Cached progress: ${_tracks?.getProgress()}")
-
-        if (_tracks != null && _chapters != null) {
-            var offsetRemaining = _tracks.getProgress()
-            var currChapter: Chapter? = null
-            for (chapter in _chapters) {
-                if (offsetRemaining < chapter.endTimeOffset) {
-                    currChapter = chapter
-                    break
-                }
-                offsetRemaining -= (chapter.endTimeOffset - chapter.startTimeOffset)
+    private val networkObserver =
+        Observer<Boolean> { isConnected ->
+            if (isConnected) {
+                loadBookDetails(inputAudiobook.id)
             }
-            currChapter ?: EMPTY_CHAPTER
-        } else {
-            EMPTY_CHAPTER
         }
-    }.asFlow()
 
-    val activeChapter = currentlyPlaying.chapter.combine(cachedChapter) { activeChapter: Chapter, cachedChapter: Chapter ->
-        Timber.i("Cached: $cachedChapter, active: $activeChapter")
-        if (activeChapter != EMPTY_CHAPTER && activeChapter.trackId == cachedChapter.trackId) {
-            activeChapter
-        } else {
-            cachedChapter
+    private val cachedChapter =
+        DoubleLiveData(
+            chapters,
+            tracks,
+        ) { _chapters: List<Chapter>?, _tracks: List<MediaItemTrack>? ->
+            Timber.i("Cached chapters: $_chapters")
+            Timber.i("Cached progress: ${_tracks?.getProgress()}")
+
+            if (_tracks != null && _chapters != null) {
+                var offsetRemaining = _tracks.getProgress()
+                var currChapter: Chapter? = null
+                for (chapter in _chapters) {
+                    if (offsetRemaining < chapter.endTimeOffset) {
+                        currChapter = chapter
+                        break
+                    }
+                    offsetRemaining -= (chapter.endTimeOffset - chapter.startTimeOffset)
+                }
+                currChapter ?: EMPTY_CHAPTER
+            } else {
+                EMPTY_CHAPTER
+            }
+        }.asFlow()
+
+    val activeChapter =
+        currentlyPlaying.chapter.combine(
+            cachedChapter,
+        ) { activeChapter: Chapter, cachedChapter: Chapter ->
+            Timber.i("Cached: $cachedChapter, active: $activeChapter")
+            if (activeChapter != EMPTY_CHAPTER && activeChapter.trackId == cachedChapter.trackId) {
+                activeChapter
+            } else {
+                cachedChapter
+            }
+        }.asLiveData(viewModelScope.coroutineContext)
+
+    val isWatchedIcon: LiveData<Int> =
+        audiobook.map {
+            if (it?.viewCount != 0L) R.drawable.ic_visibility_off else R.drawable.ic_visibility
         }
-    }.asLiveData(viewModelScope.coroutineContext)
-
-    val isWatchedIcon: LiveData<Int> = audiobook.map {
-        if (it?.viewCount != 0L) R.drawable.ic_visibility_off else R.drawable.ic_visibility
-    }
 
     init {
         plexConfig.isConnected.observeForever(networkObserver)
@@ -324,7 +350,9 @@ class AudiobookDetailsViewModel(
                 Timber.i("Cancelling download: ${inputAudiobook.id}")
                 cachedFileManager.cancelGroup(inputAudiobook.id)
             }
-            else -> throw NoWhenBranchMatchedException("Unknown cache status. Don't know how to proceed")
+            else -> throw NoWhenBranchMatchedException(
+                "Unknown cache status. Don't know how to proceed",
+            )
         }
     }
 
@@ -336,17 +364,18 @@ class AudiobookDetailsViewModel(
         showOptionsMenu(
             title = FormattableString.from(R.string.delete_cache_files_prompt),
             options = listOf(FormattableString.yes, FormattableString.no),
-            listener = object : BottomChooserItemListener() {
-                override fun onItemClicked(formattableString: FormattableString) {
-                    when (formattableString) {
-                        FormattableString.yes -> uncacheFiles()
-                        FormattableString.no -> { /* Do nothing */
+            listener =
+                object : BottomChooserItemListener() {
+                    override fun onItemClicked(formattableString: FormattableString) {
+                        when (formattableString) {
+                            FormattableString.yes -> uncacheFiles()
+                            FormattableString.no -> { // Do nothing
+                            }
+                            else -> throw NoWhenBranchMatchedException("Unknown option selected!")
                         }
-                        else -> throw NoWhenBranchMatchedException("Unknown option selected!")
+                        hideBottomSheet()
                     }
-                    hideBottomSheet()
-                }
-            }
+                },
         )
     }
 
@@ -367,7 +396,7 @@ class AudiobookDetailsViewModel(
                 bookId = inputAudiobook.id.toString(),
                 trackId = ACTIVE_TRACK,
                 startTimeOffset = USE_SAVED_TRACK_PROGRESS,
-                forcePlayFromMediaId = false
+                forcePlayFromMediaId = false,
             )
         }
         if (mediaServiceConnection.isConnected.value != true) {
@@ -395,7 +424,7 @@ class AudiobookDetailsViewModel(
         bookId: String,
         startTimeOffset: Long = USE_SAVED_TRACK_PROGRESS,
         trackId: Long = ACTIVE_TRACK,
-        forcePlayFromMediaId: Boolean = false
+        forcePlayFromMediaId: Boolean = false,
     ) {
         if (mediaServiceConnection.isConnected.value != true) {
             Timber.e("MediaServiceConnection not connected")
@@ -405,12 +434,13 @@ class AudiobookDetailsViewModel(
 
         val transportControls = mediaServiceConnection.transportControls ?: return
 
-        val extras = Bundle().apply {
-            putLong(KEY_START_TIME_TRACK_OFFSET, startTimeOffset)
-            putLong(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
-        }
+        val extras =
+            Bundle().apply {
+                putLong(KEY_START_TIME_TRACK_OFFSET, startTimeOffset)
+                putLong(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
+            }
         Timber.i(
-            "is this book playing? ${isBookInViewPlaying.value}, this this book active? ${isBookInViewActive.value}"
+            "is this book playing? ${isBookInViewPlaying.value}, this this book active? ${isBookInViewActive.value}",
         )
         when {
             forcePlayFromMediaId -> transportControls.playFromMediaId(bookId, extras)
@@ -426,14 +456,15 @@ class AudiobookDetailsViewModel(
      */
     private fun updateProgressIfChangingBook() {
         val currentlyPlayingTrackId = mediaServiceConnection.nowPlaying.value?.id
-        val isChangingBooks = if (currentlyPlayingTrackId.isNullOrEmpty()) {
-            false
-        } else {
-            Timber.i("Currently playing is $currentlyPlayingTrackId")
-            tracks.value?.let { trackList ->
-                trackList.any { it.id == currentlyPlayingTrackId.toInt() }
-            } ?: false
-        }
+        val isChangingBooks =
+            if (currentlyPlayingTrackId.isNullOrEmpty()) {
+                false
+            } else {
+                Timber.i("Currently playing is $currentlyPlayingTrackId")
+                tracks.value?.let { trackList ->
+                    trackList.any { it.id == currentlyPlayingTrackId.toInt() }
+                } ?: false
+            }
 
         if (isChangingBooks) {
             if (!currentlyPlayingTrackId.isNullOrEmpty()) {
@@ -442,7 +473,7 @@ class AudiobookDetailsViewModel(
                         currentlyPlayingTrackId.toInt(),
                         PLEX_STATE_STOPPED,
                         state.currentPlayBackPosition,
-                        true
+                        true,
                     )
                 }
             }
@@ -453,22 +484,26 @@ class AudiobookDetailsViewModel(
     fun jumpToChapter(
         offset: Long = 0,
         trackId: Long = TRACK_NOT_FOUND.toLong(),
-        hasUserConfirmation: Boolean = false
+        hasUserConfirmation: Boolean = false,
     ) {
         if (!hasUserConfirmation) {
             showOptionsMenu(
-                title = FormattableString.from(R.string.warning_jump_to_chapter_will_clear_progress),
+                title =
+                    FormattableString.from(
+                        R.string.warning_jump_to_chapter_will_clear_progress,
+                    ),
                 options = listOf(FormattableString.yes, FormattableString.no),
-                listener = object : BottomChooserItemListener() {
-                    override fun onItemClicked(formattableString: FormattableString) {
-                        when (formattableString) {
-                            FormattableString.yes -> jumpToChapter(offset, trackId, true)
-                            FormattableString.no -> Unit
-                            else -> throw NoWhenBranchMatchedException()
+                listener =
+                    object : BottomChooserItemListener() {
+                        override fun onItemClicked(formattableString: FormattableString) {
+                            when (formattableString) {
+                                FormattableString.yes -> jumpToChapter(offset, trackId, true)
+                                FormattableString.no -> Unit
+                                else -> throw NoWhenBranchMatchedException()
+                            }
+                            hideBottomSheet()
                         }
-                        hideBottomSheet()
-                    }
-                }
+                    },
             )
             return
         }
@@ -488,22 +523,22 @@ class AudiobookDetailsViewModel(
     private fun hideBottomSheet() {
         Timber.i("Hiding bottom sheet?")
         _bottomChooserState.postValue(
-            _bottomChooserState.value?.copy(shouldShow = false) ?: EMPTY_BOTTOM_CHOOSER
+            _bottomChooserState.value?.copy(shouldShow = false) ?: EMPTY_BOTTOM_CHOOSER,
         )
     }
 
     private fun showOptionsMenu(
         title: FormattableString,
         options: List<FormattableString>,
-        listener: BottomChooserListener
+        listener: BottomChooserListener,
     ) {
         _bottomChooserState.postValue(
             BottomChooserState(
                 title = title,
                 options = options,
                 listener = listener,
-                shouldShow = true
-            )
+                shouldShow = true,
+            ),
         )
     }
 
@@ -513,30 +548,31 @@ class AudiobookDetailsViewModel(
     }
 
     fun toggleWatched() {
-
         val notPlayedYet = (audiobook.value?.viewCount ?: 0) == 0L
 
-        val prompt = if (notPlayedYet) {
-            R.string.prompt_mark_as_played
-        } else {
-            R.string.prompt_mark_as_unplayed
-        }
+        val prompt =
+            if (notPlayedYet) {
+                R.string.prompt_mark_as_played
+            } else {
+                R.string.prompt_mark_as_unplayed
+            }
 
         showOptionsMenu(
             title = FormattableString.from(prompt),
             options = listOf(FormattableString.yes, FormattableString.no),
-            listener = object : BottomChooserItemListener() {
-                override fun onItemClicked(formattableString: FormattableString) {
-                    if (formattableString == FormattableString.yes) {
-                        if (notPlayedYet) {
-                            setAudiobookWatched()
-                        } else {
-                            setAudiobookUnwatched()
+            listener =
+                object : BottomChooserItemListener() {
+                    override fun onItemClicked(formattableString: FormattableString) {
+                        if (formattableString == FormattableString.yes) {
+                            if (notPlayedYet) {
+                                setAudiobookWatched()
+                            } else {
+                                setAudiobookUnwatched()
+                            }
                         }
+                        hideBottomSheet()
                     }
-                    hideBottomSheet()
-                }
-            }
+                },
         )
     }
 
@@ -548,10 +584,12 @@ class AudiobookDetailsViewModel(
             trackRepository.markTracksInBookAsWatched(inputAudiobook.id)
             bookRepository.setWatched(inputAudiobook.id)
         }
-        val toast = Toast.makeText(
-            Injector.get().applicationContext(), R.string.marked_as_played,
-            Toast.LENGTH_LONG
-        )
+        val toast =
+            Toast.makeText(
+                Injector.get().applicationContext(),
+                R.string.marked_as_played,
+                Toast.LENGTH_LONG,
+            )
         toast.setGravity(Gravity.BOTTOM, 0, 200)
         toast.show()
     }
@@ -561,10 +599,12 @@ class AudiobookDetailsViewModel(
         viewModelScope.launch {
             bookRepository.setUnwatched(inputAudiobook.id)
         }
-        val toast = Toast.makeText(
-            Injector.get().applicationContext(), R.string.marked_as_unplayed,
-            Toast.LENGTH_LONG
-        )
+        val toast =
+            Toast.makeText(
+                Injector.get().applicationContext(),
+                R.string.marked_as_unplayed,
+                Toast.LENGTH_LONG,
+            )
         toast.setGravity(Gravity.BOTTOM, 0, 200)
         toast.show()
     }
@@ -579,14 +619,15 @@ class AudiobookDetailsViewModel(
                 showOptionsMenu(
                     title = FormattableString.from(R.string.prompt_force_sync),
                     options = listOf(FormattableString.yes, FormattableString.no),
-                    listener = object : BottomChooserItemListener() {
-                        override fun onItemClicked(formattableString: FormattableString) {
-                            if (formattableString == FormattableString.yes) {
-                                forceSyncBook(hasUserConfirmation = true)
+                    listener =
+                        object : BottomChooserItemListener() {
+                            override fun onItemClicked(formattableString: FormattableString) {
+                                if (formattableString == FormattableString.yes) {
+                                    forceSyncBook(hasUserConfirmation = true)
+                                }
+                                hideBottomSheet()
                             }
-                            hideBottomSheet()
-                        }
-                    }
+                        },
                 )
                 return@launch
             } else {

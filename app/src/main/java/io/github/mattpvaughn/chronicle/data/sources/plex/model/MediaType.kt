@@ -1,7 +1,6 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex.model
 
 class MediaType(val id: Long, val typeString: String, val title: String) {
-
     companion object {
         val PERSON = MediaType(7, "person", "Person")
 

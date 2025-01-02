@@ -8,14 +8,16 @@ import io.github.mattpvaughn.chronicle.data.model.Collection
 private const val COLLECTIONS_DATABASE_NAME = "collections_db"
 
 private lateinit var INSTANCE: CollectionsDatabase
+
 fun getCollectionsDatabase(context: Context): CollectionsDatabase {
     synchronized(CollectionsDatabase::class.java) {
         if (!::INSTANCE.isInitialized) {
-            INSTANCE = Room.databaseBuilder(
-                context.applicationContext,
-                CollectionsDatabase::class.java,
-                COLLECTIONS_DATABASE_NAME
-            ).addMigrations().build()
+            INSTANCE =
+                Room.databaseBuilder(
+                    context.applicationContext,
+                    CollectionsDatabase::class.java,
+                    COLLECTIONS_DATABASE_NAME,
+                ).addMigrations().build()
         }
     }
     return INSTANCE

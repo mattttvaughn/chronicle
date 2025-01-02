@@ -15,33 +15,37 @@ import javax.inject.Inject
  *
  * From UAMP, copyright by Google: https://github.com/android/uamp/
  */
-class BecomingNoisyReceiver @Inject constructor(
-    private val context: Context,
-    sessionToken: MediaSessionCompat.Token
-) : BroadcastReceiver() {
+class BecomingNoisyReceiver
+    @Inject
+    constructor(
+        private val context: Context,
+        sessionToken: MediaSessionCompat.Token,
+    ) : BroadcastReceiver() {
+        private val noisyIntentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        private val controller = MediaControllerCompat(context, sessionToken)
 
-    private val noisyIntentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-    private val controller = MediaControllerCompat(context, sessionToken)
+        private var registered = false
 
-    private var registered = false
+        fun register() {
+            if (!registered) {
+                context.registerReceiver(this, noisyIntentFilter)
+                registered = true
+            }
+        }
 
-    fun register() {
-        if (!registered) {
-            context.registerReceiver(this, noisyIntentFilter)
-            registered = true
+        fun unregister() {
+            if (registered) {
+                context.unregisterReceiver(this)
+                registered = false
+            }
+        }
+
+        override fun onReceive(
+            context: Context,
+            intent: Intent,
+        ) {
+            if (intent.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
+                controller.transportControls.pause()
+            }
         }
     }
-
-    fun unregister() {
-        if (registered) {
-            context.unregisterReceiver(this)
-            registered = false
-        }
-    }
-
-    override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
-            controller.transportControls.pause()
-        }
-    }
-}

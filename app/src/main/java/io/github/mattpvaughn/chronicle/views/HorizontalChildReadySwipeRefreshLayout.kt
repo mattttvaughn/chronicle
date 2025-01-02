@@ -10,7 +10,6 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import kotlin.math.abs
 
 class HorizontalChildReadySwipeRefreshLayout : SwipeRefreshLayout {
-
     private var touchSlop: Int = 0
     private var prevX: Float = 0F
     private var declined: Boolean = false

@@ -21,19 +21,15 @@ The best Android Audiobook Player for Plex. Stream or download audiobooks hosted
 <img src="https://raw.githubusercontent.com/mattttvaughn/chronicle/develop/images/currentlyplaying.png" alt="Player" height="200">
 </p>
 
-
-#### Useful Links
+### Useful Links
 
  - [Plex Audiobook Guide](https://github.com/seanap/Plex-Audiobook-Guide)
  - [Chronicle subreddit](https://www.reddit.com/r/ChronicleApp/)
 
-
-
-
-
 ### Developer Notes
 
 #### Ktlint
+
 Ktlint is a linting tool that is based on the [kotlin style guide](https://developer.android.com/kotlin/style-guide). It will validate and make sure that your code adheres to that style guide.
 
 The [ktlint gradle plugin](https://github.com/jlleitschuh/ktlint-gradle) adds the ktlintCheck and ktlintFormat tasks to gradle.
@@ -46,6 +42,7 @@ Ktlint check and format can be run on the code base by running the following com
 ./gradlew ktlintFormat
 ```
 
-##### Git hook
+#### Git hook
+
 A git hook has also been added. This basically runs the ktlintCheck every time a user tries to commit. If it finds violations it prompts the user to run ktlintFormat and fix any inconsistencies with the style guide. The purpose of this is to make sure that everyone is adhering to the style guide and writing clean code.
 

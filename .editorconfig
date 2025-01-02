@@ -1,0 +1,5 @@
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_property-naming = disabled
+ktlint_standard_max-line-length = disabled

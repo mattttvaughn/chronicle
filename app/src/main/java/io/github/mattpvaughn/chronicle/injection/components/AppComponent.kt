@@ -25,29 +25,53 @@ import javax.inject.Singleton
 @Component(modules = [AppModule::class])
 interface AppComponent {
     fun applicationContext(): Context
+
     fun internalFilesDir(): File
+
     fun externalDeviceDirs(): List<File>
+
     fun sharedPrefs(): SharedPreferences
+
     fun trackDao(): TrackDao
+
     fun bookDao(): BookDao
+
     fun collectionsDao(): CollectionsDao
+
     fun moshi(): Moshi
+
     fun plexLoginRepo(): IPlexLoginRepo
+
     fun plexPrefs(): PlexPrefsRepo
+
     fun prefsRepo(): PrefsRepo
+
     fun trackRepo(): ITrackRepository
+
     fun librarySyncRepo(): LibrarySyncRepository
+
     fun collectionsRepo(): CollectionsRepository
+
     fun bookRepo(): IBookRepository
+
     fun bookRepos(): BookRepository
+
     fun workManager(): WorkManager
+
     fun unhandledExceptionHandler(): CoroutineExceptionHandler
+
     fun plexConfig(): PlexConfig
+
     fun plexLoginService(): PlexLoginService
+
     fun plexMediaService(): PlexMediaService
+
     fun cachedFileManager(): ICachedFileManager
+
     fun currentlyPlaying(): CurrentlyPlaying
+
     fun fetch(): Fetch
+
     fun frescoConfig(): ImagePipelineConfig
 
     //    fun plexMediaSource(): PlexMediaSource
@@ -55,8 +79,12 @@ interface AppComponent {
 
     // Inject
     fun inject(chronicleApplication: ChronicleApplication)
+
     fun inject(loginFragment: LoginFragment)
+
     fun inject(chooseLibraryFragment: ChooseLibraryFragment)
+
     fun inject(chooseUserFragment: ChooseUserFragment)
+
     fun inject(chooseServerActivity: ChooseServerFragment)
 }

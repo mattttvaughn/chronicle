@@ -19,14 +19,14 @@ data class Chapter constructor(
     val endTimeOffset: Long = 0L,
     val downloaded: Boolean = false,
     val trackId: Long = TRACK_NOT_FOUND.toLong(),
-    val bookId: Long = NO_AUDIOBOOK_FOUND_ID.toLong()
+    val bookId: Long = NO_AUDIOBOOK_FOUND_ID.toLong(),
 ) : Comparable<Chapter> {
-
     val durationStr: String
-        get() = DateUtils.formatElapsedTime(
-            StringBuilder(),
-            (endTimeOffset - startTimeOffset) / 1000
-        )
+        get() =
+            DateUtils.formatElapsedTime(
+                StringBuilder(),
+                (endTimeOffset - startTimeOffset) / 1000,
+            )
 
     /** A string representing the index but padded to [length] characters with zeroes */
     fun paddedIndex(length: Int): String {
@@ -48,7 +48,10 @@ val EMPTY_CHAPTER = Chapter("")
  * Returns the chapter which contains the [timeStamp] (the playback progress of the track containing
  * this chapter), or [EMPTY_TRACK] if there is no chapter
  */
-fun List<Chapter>.getChapterAt(trackId: Long, timeStamp: Long): Chapter {
+fun List<Chapter>.getChapterAt(
+    trackId: Long,
+    timeStamp: Long,
+): Chapter {
     for (chapter in this) {
         if (chapter.trackId == trackId && timeStamp in chapter.startTimeOffset..chapter.endTimeOffset) {
             return chapter
@@ -58,7 +61,6 @@ fun List<Chapter>.getChapterAt(trackId: Long, timeStamp: Long): Chapter {
 }
 
 class ChapterListConverter {
-
     @TypeConverter
     fun toChapterList(s: String): List<Chapter> {
         if (s.isEmpty()) {
@@ -79,7 +81,7 @@ class ChapterListConverter {
                 discNumber = discNumber,
                 downloaded = downloaded,
                 trackId = trackId,
-                bookId = bookId
+                bookId = bookId,
             )
         }
     }
@@ -87,6 +89,8 @@ class ChapterListConverter {
     // A little yikes but funny
     @TypeConverter
     fun toString(chapters: List<Chapter>): String {
-        return chapters.joinToString("®") { "${it.title}©${it.id}©${it.index}©${it.startTimeOffset}©${it.endTimeOffset}©${it.discNumber}©${it.downloaded}©${it.trackId}©${it.bookId}" }
+        return chapters.joinToString("®") {
+            "${it.title}©${it.id}©${it.index}©${it.startTimeOffset}©${it.endTimeOffset}©${it.discNumber}©${it.downloaded}©${it.trackId}©${it.bookId}"
+        }
     }
 }

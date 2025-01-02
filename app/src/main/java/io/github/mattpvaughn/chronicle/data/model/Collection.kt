@@ -23,18 +23,18 @@ data class Collection constructor(
     val sortType: SortType = SortType.RELEASE_DATE,
     val isCached: Boolean = false,
     val thumb: String = "",
-    val childIds: List<Long> = emptyList()
+    val childIds: List<Long> = emptyList(),
 ) {
-
     companion object {
-        fun from(dir: PlexDirectory) = Collection(
-            id = dir.ratingKey.toInt(),
-            source = PlexMediaSource.MEDIA_SOURCE_ID_PLEX,
-            title = dir.title,
-            childCount = dir.childCount,
-            sortType = SortType.fromPlexCode(dir.collectionSort.toInt()),
-            thumb = dir.thumb
-        )
+        fun from(dir: PlexDirectory) =
+            Collection(
+                id = dir.ratingKey.toInt(),
+                source = PlexMediaSource.MEDIA_SOURCE_ID_PLEX,
+                title = dir.title,
+                childCount = dir.childCount,
+                sortType = SortType.fromPlexCode(dir.collectionSort.toInt()),
+                thumb = dir.thumb,
+            )
 
         val PLEX_COLLECTION_SORT_TYPE_RELEASE_DATE = 0
         val PLEX_COLLECTION_SORT_TYPE_ALPHABETICAL = 1
@@ -44,7 +44,8 @@ data class Collection constructor(
     enum class SortType() {
         RELEASE_DATE,
         ALPHABETICAL,
-        CUSTOM;
+        CUSTOM,
+        ;
 
         companion object {
             fun fromPlexCode(plexCode: Int?): SortType {
@@ -60,7 +61,6 @@ data class Collection constructor(
 }
 
 class CollectionIdConverter {
-
     private val stringType = Types.newParameterizedType(List::class.java, String::class.java)
     private val stringsAdapter = Injector.get().moshi().adapter<List<String>>(stringType)
 

@@ -26,7 +26,6 @@ import javax.inject.Inject
 
 @ExperimentalCoroutinesApi
 class CollectionDetailsFragment : Fragment() {
-
     companion object {
         fun newInstance(collectionId: Int): CollectionDetailsFragment {
             val newFrag = CollectionDetailsFragment()
@@ -68,7 +67,7 @@ class CollectionDetailsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         Timber.i("AudiobookDetailsFragment onCreateView()")
 
@@ -77,34 +76,38 @@ class CollectionDetailsFragment : Fragment() {
         val inputId = requireArguments().getInt(ARG_COLLECTION_ID)
 
         viewModelFactory.collectionId = inputId
-        viewModel = ViewModelProvider(this, viewModelFactory)
-            .get(CollectionDetailsViewModel::class.java)
+        viewModel =
+            ViewModelProvider(this, viewModelFactory)
+                .get(CollectionDetailsViewModel::class.java)
 
-        adapter = AudiobookAdapter(
-            prefsRepo.libraryBookViewStyle,
-            true,
-            prefsRepo.bookCoverStyle == PrefsRepo.BOOK_COVER_STYLE_SQUARE,
-            object : LibraryFragment.AudiobookClick {
-                override fun onClick(audiobook: Audiobook) {
-                    openAudiobookDetails(audiobook)
-                }
+        adapter =
+            AudiobookAdapter(
+                prefsRepo.libraryBookViewStyle,
+                true,
+                prefsRepo.bookCoverStyle == PrefsRepo.BOOK_COVER_STYLE_SQUARE,
+                object : LibraryFragment.AudiobookClick {
+                    override fun onClick(audiobook: Audiobook) {
+                        openAudiobookDetails(audiobook)
+                    }
+                },
+            ).apply {
+                stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             }
-        ).apply {
-            stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
-        }
 
         viewModel.viewStyle.observe(viewLifecycleOwner) { style ->
             Timber.i("View style is: $style")
-            val isGrid = when (style) {
-                PrefsRepo.VIEW_STYLE_COVER_GRID -> true
-                PrefsRepo.VIEW_STYLE_DETAILS_LIST, PrefsRepo.VIEW_STYLE_TEXT_LIST -> false
-                else -> throw IllegalStateException("Unknown view style")
-            }
-            binding.collectionsGrid.layoutManager = if (isGrid) {
-                GridLayoutManager(requireContext(), 3)
-            } else {
-                LinearLayoutManager(requireContext())
-            }
+            val isGrid =
+                when (style) {
+                    PrefsRepo.VIEW_STYLE_COVER_GRID -> true
+                    PrefsRepo.VIEW_STYLE_DETAILS_LIST, PrefsRepo.VIEW_STYLE_TEXT_LIST -> false
+                    else -> throw IllegalStateException("Unknown view style")
+                }
+            binding.collectionsGrid.layoutManager =
+                if (isGrid) {
+                    GridLayoutManager(requireContext(), 3)
+                } else {
+                    LinearLayoutManager(requireContext())
+                }
             adapter!!.viewStyle = style
         }
 

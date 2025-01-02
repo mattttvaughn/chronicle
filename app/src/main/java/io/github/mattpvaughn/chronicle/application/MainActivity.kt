@@ -46,7 +46,6 @@ import javax.inject.Inject
 
 @ActivityScope
 class MainActivity : AppCompatActivity() {
-
     @Inject
     lateinit var localBroadcastManager: LocalBroadcastManager
 
@@ -87,10 +86,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Timber.i("MainActivity onCreate()")
-        activityComponent = DaggerActivityComponent.builder()
-            .appComponent((application as ChronicleApplication).appComponent)
-            .activityModule(ActivityModule(this))
-            .build()
+        activityComponent =
+            DaggerActivityComponent.builder()
+                .appComponent((application as ChronicleApplication).appComponent)
+                .activityModule(ActivityModule(this))
+                .build()
         activityComponent!!.inject(this)
 
         super.onCreate(savedInstanceState)
@@ -172,26 +172,27 @@ class MainActivity : AppCompatActivity() {
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(
             R.id.currently_playing_fragment_container,
-            CurrentlyPlayingFragment.newInstance()
+            CurrentlyPlayingFragment.newInstance(),
         )
         transaction.commit()
         val handle = findViewById<View>(R.id.currently_playing_handle)
-        val gd = GestureDetector(
-            this,
-            object : GestureDetector.SimpleOnGestureListener() {
-                override fun onScroll(
-                    e1: MotionEvent,
-                    e2: MotionEvent,
-                    distanceX: Float,
-                    distanceY: Float
-                ): Boolean {
-                    if (distanceY > distanceX) {
-                        viewModel.onCurrentlyPlayingHandleDragged()
+        val gd =
+            GestureDetector(
+                this,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onScroll(
+                        e1: MotionEvent,
+                        e2: MotionEvent,
+                        distanceX: Float,
+                        distanceY: Float,
+                    ): Boolean {
+                        if (distanceY > distanceX) {
+                            viewModel.onCurrentlyPlayingHandleDragged()
+                        }
+                        return super.onScroll(e1, e2, distanceX, distanceY)
                     }
-                    return super.onScroll(e1, e2, distanceX, distanceY)
-                }
-            }
-        )
+                },
+            )
         handle.setOnTouchListener { v, event ->
             gd.onTouchEvent(event)
             v.onTouchEvent(event)
@@ -224,16 +225,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleNotificationIntent(intent: Intent?) {
-        val openCurrentlyPlaying = intent?.extras?.getBoolean(
-            FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, false
-        ) == true
+        val openCurrentlyPlaying =
+            intent?.extras?.getBoolean(
+                FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, false,
+            ) == true
         if (openCurrentlyPlaying) {
             viewModel.maximizeCurrentlyPlaying()
         }
 
-        val openAudiobookWithId = intent?.extras?.getInt(
-            FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID, NO_AUDIOBOOK_FOUND_ID
-        ) ?: NO_AUDIOBOOK_FOUND_ID
+        val openAudiobookWithId =
+            intent?.extras?.getInt(
+                FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID, NO_AUDIOBOOK_FOUND_ID,
+            ) ?: NO_AUDIOBOOK_FOUND_ID
         if (openAudiobookWithId != NO_AUDIOBOOK_FOUND_ID) {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
@@ -246,24 +249,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val onPlaybackError = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                ACTION_PLAYBACK_ERROR -> {
-                    val errorMessage = intent.getStringExtra(PLAYBACK_ERROR_MESSAGE)
-                        ?: getString(R.string.playback_error_unknown)
-                    val userMessage = when {
-                        errorMessage.contains("404") -> getString(R.string.playback_error_404)
-                        errorMessage.contains("503") -> getString(R.string.playback_error_503)
-                        errorMessage.contains("401") -> getString(R.string.playback_error_401)
-                        else -> errorMessage
+    private val onPlaybackError =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) {
+                when (intent.action) {
+                    ACTION_PLAYBACK_ERROR -> {
+                        val errorMessage =
+                            intent.getStringExtra(PLAYBACK_ERROR_MESSAGE)
+                                ?: getString(R.string.playback_error_unknown)
+                        val userMessage =
+                            when {
+                                errorMessage.contains(
+                                    "404",
+                                ) -> getString(R.string.playback_error_404)
+                                errorMessage.contains(
+                                    "503",
+                                ) -> getString(R.string.playback_error_503)
+                                errorMessage.contains(
+                                    "401",
+                                ) -> getString(R.string.playback_error_401)
+                                else -> errorMessage
+                            }
+                        viewModel.showUserMessage(userMessage)
                     }
-                    viewModel.showUserMessage(userMessage)
+                    else -> throw NoWhenBranchMatchedException(
+                        getString(R.string.playback_error_unknown),
+                    )
                 }
-                else -> throw NoWhenBranchMatchedException(getString(R.string.playback_error_unknown))
             }
         }
-    }
 
     companion object {
         const val FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING = "OPEN_ACTIVITY_TO_AUDIOBOOK"

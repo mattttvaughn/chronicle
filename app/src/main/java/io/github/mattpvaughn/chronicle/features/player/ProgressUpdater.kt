@@ -45,7 +45,7 @@ interface ProgressUpdater {
         trackId: Int,
         playbackState: String,
         progress: Long,
-        forceNetworkUpdate: Boolean
+        forceNetworkUpdate: Boolean,
     )
 
     /** Update progress without providing any parameters */
@@ -65,182 +65,185 @@ interface ProgressUpdater {
     }
 }
 
-class SimpleProgressUpdater @Inject constructor(
-    private val serviceScope: CoroutineScope,
-    private val trackRepository: ITrackRepository,
-    private val bookRepository: IBookRepository,
-    private val workManager: WorkManager,
-    private val prefsRepo: PrefsRepo,
-    private val currentlyPlaying: CurrentlyPlaying
-) : ProgressUpdater {
+class SimpleProgressUpdater
+    @Inject
+    constructor(
+        private val serviceScope: CoroutineScope,
+        private val trackRepository: ITrackRepository,
+        private val bookRepository: IBookRepository,
+        private val workManager: WorkManager,
+        private val prefsRepo: PrefsRepo,
+        private val currentlyPlaying: CurrentlyPlaying,
+    ) : ProgressUpdater {
+        var mediaController: MediaControllerCompat? = null
 
-    var mediaController: MediaControllerCompat? = null
+        var mediaSessionConnector: MediaSessionConnector? = null
 
-    var mediaSessionConnector: MediaSessionConnector? = null
+        var player: Player? = null
 
-    var player: Player? = null
+        /** Frequency of progress updates */
+        private val updateProgressFrequencyMs = 1000L
 
-    /** Frequency of progress updates */
-    private val updateProgressFrequencyMs = 1000L
+        /** Tracks the number of times [updateLocalProgress] has been called this session */
+        private var tickCounter = 0L
 
-    /** Tracks the number of times [updateLocalProgress] has been called this session */
-    private var tickCounter = 0L
+        private val handler = Handler()
+        private val updateProgressAction = { startRegularProgressUpdates() }
 
-    private val handler = Handler()
-    private val updateProgressAction = { startRegularProgressUpdates() }
+        /**
+         * Updates the current track/audiobook progress in the local db and remote server.
+         *
+         * If we are within 2 minutes of the end of the book and playback stops, mark the book as
+         * "finished" by updating the first track to progress=0 and setting it as the most recently viewed
+         */
+        override fun startRegularProgressUpdates() {
+            requireNotNull(mediaController).let { controller ->
+                if (controller.playbackState?.isPlaying != false) {
+                    serviceScope.launch(context = serviceScope.coroutineContext + Dispatchers.IO) {
+                        updateProgress(
+                            controller.metadata?.id?.toInt() ?: TRACK_NOT_FOUND,
+                            MediaPlayerService.PLEX_STATE_PLAYING,
+                            controller.playbackState?.currentPlayBackPosition ?: 0L,
+                            false,
+                        )
+                    }
+                }
+            }
+            handler.postDelayed(updateProgressAction, updateProgressFrequencyMs)
+        }
 
-    /**
-     * Updates the current track/audiobook progress in the local db and remote server.
-     *
-     * If we are within 2 minutes of the end of the book and playback stops, mark the book as
-     * "finished" by updating the first track to progress=0 and setting it as the most recently viewed
-     */
-    override fun startRegularProgressUpdates() {
-        requireNotNull(mediaController).let { controller ->
-            if (controller.playbackState?.isPlaying != false) {
-                serviceScope.launch(context = serviceScope.coroutineContext + Dispatchers.IO) {
-                    updateProgress(
-                        controller.metadata?.id?.toInt() ?: TRACK_NOT_FOUND,
-                        MediaPlayerService.PLEX_STATE_PLAYING,
-                        controller.playbackState?.currentPlayBackPosition ?: 0L,
-                        false
+        override fun updateProgressWithoutParameters() {
+            val controller = mediaController ?: return
+            val playbackState =
+                when (controller.playbackState.state) {
+                    PlaybackStateCompat.STATE_PLAYING -> MediaPlayerService.PLEX_STATE_PLAYING
+                    PlaybackStateCompat.STATE_PAUSED -> MediaPlayerService.PLEX_STATE_PAUSED
+                    PlaybackStateCompat.STATE_STOPPED -> MediaPlayerService.PLEX_STATE_PAUSED
+                    else -> ""
+                }
+            val currentTrack = controller.metadata.id?.toInt() ?: return
+            val currentTrackProgress = controller.playbackState.currentPlayBackPosition
+            updateProgress(
+                currentTrack,
+                playbackState,
+                currentTrackProgress,
+                false,
+            )
+        }
+
+        override fun updateProgress(
+            trackId: Int,
+            playbackState: String,
+            trackProgress: Long,
+            forceNetworkUpdate: Boolean,
+        ) {
+            Timber.i("Updating progress")
+            if (trackId == TRACK_NOT_FOUND) {
+                return
+            }
+            val currentTime = System.currentTimeMillis()
+            serviceScope.launch(context = serviceScope.coroutineContext + Dispatchers.IO) {
+                val bookId: Int = trackRepository.getBookIdForTrack(trackId)
+                val track: MediaItemTrack = trackRepository.getTrackAsync(trackId) ?: EMPTY_TRACK
+
+                // No reason to update if the track or book doesn't exist in the DB
+                if (trackId == TRACK_NOT_FOUND || bookId == NO_AUDIOBOOK_FOUND_ID) {
+                    return@launch
+                }
+
+                val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
+                val book = bookRepository.getAudiobookAsync(bookId)
+                val bookProgress = tracks.getTrackStartTime(track) + trackProgress
+                val bookDuration = tracks.getDuration()
+
+                currentlyPlaying.update(
+                    book = book ?: EMPTY_AUDIOBOOK,
+                    track = tracks.getActiveTrack(),
+                    tracks = tracks,
+                )
+
+                // Update local DB
+                if (!prefsRepo.debugOnlyDisableLocalProgressTracking) {
+                    updateLocalProgress(
+                        bookId = bookId,
+                        currentTime = currentTime,
+                        trackProgress = trackProgress,
+                        trackId = trackId,
+                        bookProgress = bookProgress,
+                        tracks = tracks,
+                        bookDuration = bookDuration,
+                    )
+                }
+
+                // Update server once every [networkCallFrequency] calls, or when manual updates
+                // have been specifically requested
+                if (forceNetworkUpdate || tickCounter % NETWORK_CALL_FREQUENCY == 0L) {
+                    updateNetworkProgress(
+                        trackId,
+                        playbackState,
+                        trackProgress,
+                        bookProgress,
                     )
                 }
             }
         }
-        handler.postDelayed(updateProgressAction, updateProgressFrequencyMs)
-    }
 
-    override fun updateProgressWithoutParameters() {
-        val controller = mediaController ?: return
-        val playbackState = when (controller.playbackState.state) {
-            PlaybackStateCompat.STATE_PLAYING -> MediaPlayerService.PLEX_STATE_PLAYING
-            PlaybackStateCompat.STATE_PAUSED -> MediaPlayerService.PLEX_STATE_PAUSED
-            PlaybackStateCompat.STATE_STOPPED -> MediaPlayerService.PLEX_STATE_PAUSED
-            else -> ""
-        }
-        val currentTrack = controller.metadata.id?.toInt() ?: return
-        val currentTrackProgress = controller.playbackState.currentPlayBackPosition
-        updateProgress(
-            currentTrack,
-            playbackState,
-            currentTrackProgress,
-            false
-        )
-    }
-
-    override fun updateProgress(
-        trackId: Int,
-        playbackState: String,
-        trackProgress: Long,
-        forceNetworkUpdate: Boolean
-    ) {
-        Timber.i("Updating progress")
-        if (trackId == TRACK_NOT_FOUND) {
-            return
-        }
-        val currentTime = System.currentTimeMillis()
-        serviceScope.launch(context = serviceScope.coroutineContext + Dispatchers.IO) {
-
-            val bookId: Int = trackRepository.getBookIdForTrack(trackId)
-            val track: MediaItemTrack = trackRepository.getTrackAsync(trackId) ?: EMPTY_TRACK
-
-            // No reason to update if the track or book doesn't exist in the DB
-            if (trackId == TRACK_NOT_FOUND || bookId == NO_AUDIOBOOK_FOUND_ID) {
-                return@launch
-            }
-
-            val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
-            val book = bookRepository.getAudiobookAsync(bookId)
-            val bookProgress = tracks.getTrackStartTime(track) + trackProgress
-            val bookDuration = tracks.getDuration()
-
-            currentlyPlaying.update(
-                book = book ?: EMPTY_AUDIOBOOK,
-                track = tracks.getActiveTrack(),
-                tracks = tracks,
-            )
-
-            // Update local DB
-            if (!prefsRepo.debugOnlyDisableLocalProgressTracking) {
-                updateLocalProgress(
-                    bookId = bookId,
-                    currentTime = currentTime,
-                    trackProgress = trackProgress,
+        private fun updateNetworkProgress(
+            trackId: Int,
+            playbackState: String,
+            trackProgress: Long,
+            bookProgress: Long,
+        ) {
+            val syncWorkerConstraints =
+                Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+            val inputData =
+                PlexSyncScrobbleWorker.makeWorkerData(
                     trackId = trackId,
+                    playbackState = playbackState,
+                    trackProgress = trackProgress,
                     bookProgress = bookProgress,
-                    tracks = tracks,
-                    bookDuration = bookDuration,
                 )
-            }
+            val worker =
+                OneTimeWorkRequestBuilder<PlexSyncScrobbleWorker>()
+                    .setInputData(inputData)
+                    .setConstraints(syncWorkerConstraints)
+                    .setBackoffCriteria(
+                        BackoffPolicy.LINEAR,
+                        WorkRequest.DEFAULT_BACKOFF_DELAY_MILLIS,
+                        TimeUnit.MILLISECONDS,
+                    )
+                    .build()
 
-            // Update server once every [networkCallFrequency] calls, or when manual updates
-            // have been specifically requested
-            if (forceNetworkUpdate || tickCounter % NETWORK_CALL_FREQUENCY == 0L) {
-                updateNetworkProgress(
-                    trackId,
-                    playbackState,
-                    trackProgress,
-                    bookProgress
-                )
-            }
+            workManager
+                .beginUniqueWork(trackId.toString(), ExistingWorkPolicy.REPLACE, worker)
+                .enqueue()
         }
-    }
 
-    private fun updateNetworkProgress(
-        trackId: Int,
-        playbackState: String,
-        trackProgress: Long,
-        bookProgress: Long
-    ) {
-        val syncWorkerConstraints =
-            Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-        val inputData = PlexSyncScrobbleWorker.makeWorkerData(
-            trackId = trackId,
-            playbackState = playbackState,
-            trackProgress = trackProgress,
-            bookProgress = bookProgress
-        )
-        val worker = OneTimeWorkRequestBuilder<PlexSyncScrobbleWorker>()
-            .setInputData(inputData)
-            .setConstraints(syncWorkerConstraints)
-            .setBackoffCriteria(
-                BackoffPolicy.LINEAR,
-                WorkRequest.DEFAULT_BACKOFF_DELAY_MILLIS,
-                TimeUnit.MILLISECONDS
+        private suspend fun updateLocalProgress(
+            bookId: Int,
+            currentTime: Long,
+            trackProgress: Long,
+            trackId: Int,
+            bookProgress: Long,
+            tracks: List<MediaItemTrack>,
+            bookDuration: Long,
+        ) {
+            tickCounter++
+            bookRepository.updateProgress(bookId, currentTime, trackProgress)
+            trackRepository.updateTrackProgress(trackProgress, trackId, currentTime)
+            bookRepository.updateTrackData(
+                bookId,
+                bookProgress,
+                tracks.getDuration(),
+                tracks.size,
             )
-            .build()
+            if (bookDuration - bookProgress <= BOOK_FINISHED_END_OFFSET_MILLIS) {
+                Timber.i("Marking $bookId as finished")
+                bookRepository.setWatched(bookId)
+            }
+        }
 
-        workManager
-            .beginUniqueWork(trackId.toString(), ExistingWorkPolicy.REPLACE, worker)
-            .enqueue()
-    }
-
-    private suspend fun updateLocalProgress(
-        bookId: Int,
-        currentTime: Long,
-        trackProgress: Long,
-        trackId: Int,
-        bookProgress: Long,
-        tracks: List<MediaItemTrack>,
-        bookDuration: Long
-    ) {
-        tickCounter++
-        bookRepository.updateProgress(bookId, currentTime, trackProgress)
-        trackRepository.updateTrackProgress(trackProgress, trackId, currentTime)
-        bookRepository.updateTrackData(
-            bookId,
-            bookProgress,
-            tracks.getDuration(),
-            tracks.size
-        )
-        if (bookDuration - bookProgress <= BOOK_FINISHED_END_OFFSET_MILLIS) {
-            Timber.i("Marking $bookId as finished")
-            bookRepository.setWatched(bookId)
+        override fun cancel() {
+            handler.removeCallbacks(updateProgressAction)
         }
     }
-
-    override fun cancel() {
-        handler.removeCallbacks(updateProgressAction)
-    }
-}

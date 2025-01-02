@@ -17,29 +17,30 @@ class AudiobookAdapter(
     initialViewStyle: String,
     private val isVertical: Boolean,
     private val isSquare: Boolean,
-    private val audiobookClick: LibraryFragment.AudiobookClick
+    private val audiobookClick: LibraryFragment.AudiobookClick,
 ) : ListAdapter<Audiobook, RecyclerView.ViewHolder>(AudiobookDiffCallback()) {
-
     private val COVER_GRID = 1
     private val TEXT_ONLY = 2
     private val DETAILS = 3
     var viewStyle: String = initialViewStyle
         set(value) {
-            viewStyleInt = when (value) {
-                VIEW_STYLE_COVER_GRID -> COVER_GRID
-                VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
-                VIEW_STYLE_DETAILS_LIST -> DETAILS
-                else -> throw IllegalStateException("Unknown view style")
-            }
+            viewStyleInt =
+                when (value) {
+                    VIEW_STYLE_COVER_GRID -> COVER_GRID
+                    VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
+                    VIEW_STYLE_DETAILS_LIST -> DETAILS
+                    else -> throw IllegalStateException("Unknown view style")
+                }
             notifyDataSetChanged()
             field = value
         }
-    private var viewStyleInt: Int = when (initialViewStyle) {
-        VIEW_STYLE_COVER_GRID -> COVER_GRID
-        VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
-        VIEW_STYLE_DETAILS_LIST -> DETAILS
-        else -> throw IllegalStateException("Unknown view style")
-    }
+    private var viewStyleInt: Int =
+        when (initialViewStyle) {
+            VIEW_STYLE_COVER_GRID -> COVER_GRID
+            VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
+            VIEW_STYLE_DETAILS_LIST -> DETAILS
+            else -> throw IllegalStateException("Unknown view style")
+        }
 
     private var serverConnected: Boolean = false
 
@@ -51,7 +52,10 @@ class AudiobookAdapter(
         return viewStyleInt
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): RecyclerView.ViewHolder {
         return when (viewType) {
             COVER_GRID -> ViewHolder.from(parent, isVertical, isSquare)
             TEXT_ONLY -> TextOnlyViewHolder.from(parent)
@@ -60,7 +64,10 @@ class AudiobookAdapter(
         }
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+    ) {
         when (holder) {
             is ViewHolder -> {
                 holder.bind(getItem(position), audiobookClick, serverConnected)
@@ -83,12 +90,12 @@ class AudiobookAdapter(
     class ViewHolder(
         val binding: GridItemAudiobookBinding,
         private val isVertical: Boolean,
-        private val isSquare: Boolean
+        private val isSquare: Boolean,
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(
             audiobook: Audiobook,
             audiobookClick: LibraryFragment.AudiobookClick,
-            serverConnected: Boolean
+            serverConnected: Boolean,
         ) {
             binding.isSquare = isSquare
             binding.audiobook = audiobook
@@ -102,7 +109,7 @@ class AudiobookAdapter(
             fun from(
                 viewGroup: ViewGroup,
                 isVertical: Boolean,
-                isSquare: Boolean
+                isSquare: Boolean,
             ): ViewHolder {
                 val inflater = LayoutInflater.from(viewGroup.context)
                 val binding = GridItemAudiobookBinding.inflate(inflater, viewGroup, false)
@@ -113,7 +120,10 @@ class AudiobookAdapter(
 
     class TextOnlyViewHolder(val binding: ListItemAudiobookTextOnlyBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun bind(audiobook: Audiobook, audiobookClick: LibraryFragment.AudiobookClick) {
+        fun bind(
+            audiobook: Audiobook,
+            audiobookClick: LibraryFragment.AudiobookClick,
+        ) {
             binding.audiobook = audiobook
             binding.audiobookClick = audiobookClick
             binding.executePendingBindings()
@@ -132,13 +142,13 @@ class AudiobookAdapter(
 
 class DetailsStyleViewHolder(
     val binding: ListItemAudiobookWithDetailsBinding,
-    val isSquare: Boolean
+    val isSquare: Boolean,
 ) : RecyclerView.ViewHolder(binding.root) {
     fun bind(
         audiobook: Audiobook,
         audiobookClick: LibraryFragment.AudiobookClick,
         serverConnected: Boolean,
-        isSquare: Boolean
+        isSquare: Boolean,
     ) {
         binding.isSquare = isSquare
         binding.audiobook = audiobook
@@ -148,7 +158,10 @@ class DetailsStyleViewHolder(
     }
 
     companion object {
-        fun from(viewGroup: ViewGroup, isSquare: Boolean): DetailsStyleViewHolder {
+        fun from(
+            viewGroup: ViewGroup,
+            isSquare: Boolean,
+        ): DetailsStyleViewHolder {
             val inflater = LayoutInflater.from(viewGroup.context)
             val binding =
                 ListItemAudiobookWithDetailsBinding.inflate(inflater, viewGroup, false)
@@ -158,12 +171,18 @@ class DetailsStyleViewHolder(
 }
 
 class AudiobookDiffCallback : DiffUtil.ItemCallback<Audiobook>() {
-    override fun areItemsTheSame(oldItem: Audiobook, newItem: Audiobook): Boolean {
+    override fun areItemsTheSame(
+        oldItem: Audiobook,
+        newItem: Audiobook,
+    ): Boolean {
         return oldItem.id == newItem.id
     }
 
     /** Changes which require a redraw of the view */
-    override fun areContentsTheSame(oldItem: Audiobook, newItem: Audiobook): Boolean {
+    override fun areContentsTheSame(
+        oldItem: Audiobook,
+        newItem: Audiobook,
+    ): Boolean {
         return oldItem.thumb == newItem.thumb && oldItem.title == newItem.title &&
             oldItem.author == newItem.author && oldItem.isCached == newItem.isCached &&
             oldItem.progress == newItem.progress

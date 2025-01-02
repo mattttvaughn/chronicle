@@ -8,7 +8,6 @@ import io.github.mattpvaughn.chronicle.data.sources.MediaSource
 
 /** A [MediaSource] wrapping files on the local filesystem */
 class LocalMediaSource : MediaSource {
-
     override val id: Long = MEDIA_SOURCE_ID_LOCAL
 
     companion object {

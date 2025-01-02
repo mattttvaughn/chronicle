@@ -53,26 +53,26 @@ data class Audiobook constructor(
     /** Chapter metadata corresponding to m4b chapter metadata in the m4b files */
     val chapters: List<Chapter> = emptyList(),
 ) {
-
     companion object {
-        fun from(dir: PlexDirectory) = Audiobook(
-            id = dir.ratingKey.toInt(),
-            source = PlexMediaSource.MEDIA_SOURCE_ID_PLEX,
-            title = dir.title,
-            titleSort = dir.titleSort.takeIf { it.isNotEmpty() } ?: dir.title,
-            author = dir.parentTitle,
-            thumb = dir.thumb,
-            parentId = dir.parentRatingKey,
-            genre = dir.plexGenres.joinToString(separator = ", "),
-            summary = dir.summary,
-            year = dir.year.takeIf { it != 0 } ?: dir.parentYear,
-            addedAt = dir.addedAt,
-            updatedAt = dir.updatedAt,
-            lastViewedAt = dir.lastViewedAt,
-            viewedLeafCount = dir.viewedLeafCount,
-            leafCount = dir.leafCount,
-            viewCount = dir.viewCount,
-        )
+        fun from(dir: PlexDirectory) =
+            Audiobook(
+                id = dir.ratingKey.toInt(),
+                source = PlexMediaSource.MEDIA_SOURCE_ID_PLEX,
+                title = dir.title,
+                titleSort = dir.titleSort.takeIf { it.isNotEmpty() } ?: dir.title,
+                author = dir.parentTitle,
+                thumb = dir.thumb,
+                parentId = dir.parentRatingKey,
+                genre = dir.plexGenres.joinToString(separator = ", "),
+                summary = dir.summary,
+                year = dir.year.takeIf { it != 0 } ?: dir.parentYear,
+                addedAt = dir.addedAt,
+                updatedAt = dir.updatedAt,
+                lastViewedAt = dir.lastViewedAt,
+                viewedLeafCount = dir.viewedLeafCount,
+                leafCount = dir.leafCount,
+                viewCount = dir.viewCount,
+            )
 
         /**
          * Merges updated local fields with a network copy of the book. Respects network metadata
@@ -88,7 +88,11 @@ data class Audiobook constructor(
          * [source], and [isCached] because they are explicitly local values, they do not even exist
          * on the server.
          */
-        fun merge(network: Audiobook, local: Audiobook, forceNetwork: Boolean = false): Audiobook {
+        fun merge(
+            network: Audiobook,
+            local: Audiobook,
+            forceNetwork: Boolean = false,
+        ): Audiobook {
             return if (network.lastViewedAt > local.lastViewedAt || forceNetwork) {
                 network.copy(
                     duration = local.duration,
@@ -123,19 +127,20 @@ data class Audiobook constructor(
         const val SORT_KEY_DATE_PLAYED = "date_played"
         const val SORT_KEY_PLAYS = "plays"
 
-        val SORT_KEYS = listOf(
-            SORT_KEY_TITLE,
-            SORT_KEY_AUTHOR,
-            SORT_KEY_GENRE,
-            SORT_KEY_RELEASE_DATE,
-            SORT_KEY_YEAR,
-            SORT_KEY_RATING,
-            SORT_KEY_CRITIC_RATING,
-            SORT_KEY_DATE_ADDED,
-            SORT_KEY_DATE_PLAYED,
-            SORT_KEY_PLAYS,
-            SORT_KEY_DURATION
-        )
+        val SORT_KEYS =
+            listOf(
+                SORT_KEY_TITLE,
+                SORT_KEY_AUTHOR,
+                SORT_KEY_GENRE,
+                SORT_KEY_RELEASE_DATE,
+                SORT_KEY_YEAR,
+                SORT_KEY_RATING,
+                SORT_KEY_CRITIC_RATING,
+                SORT_KEY_DATE_ADDED,
+                SORT_KEY_DATE_PLAYED,
+                SORT_KEY_PLAYS,
+                SORT_KEY_DURATION,
+            )
     }
 }
 
@@ -170,7 +175,7 @@ fun Audiobook.toMediaItem(plexConfig: PlexConfig): MediaBrowserCompat.MediaItem 
             STATUS_NOT_PLAYED
         } else {
             STATUS_PARTIALLY_PLAYED
-        }
+        },
     )
     mediaDescription.setExtras(extras)
 

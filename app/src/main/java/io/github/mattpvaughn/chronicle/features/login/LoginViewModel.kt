@@ -11,17 +11,18 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class LoginViewModel(private val plexLoginRepo: IPlexLoginRepo) : ViewModel() {
-
-    class Factory @Inject constructor(private val plexLoginRepo: IPlexLoginRepo) :
+    class Factory
+        @Inject
+        constructor(private val plexLoginRepo: IPlexLoginRepo) :
         ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-                return LoginViewModel(plexLoginRepo) as T
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
+                    return LoginViewModel(plexLoginRepo) as T
+                }
+                throw IllegalArgumentException("Unknown ViewHolder class")
             }
-            throw IllegalArgumentException("Unknown ViewHolder class")
         }
-    }
 
     private var _authEvent = MutableLiveData<Event<OAuthResponse?>>()
     val authEvent: LiveData<Event<OAuthResponse?>>
@@ -29,9 +30,10 @@ class LoginViewModel(private val plexLoginRepo: IPlexLoginRepo) : ViewModel() {
 
     private var hasLaunched = false
 
-    val isLoading = plexLoginRepo.loginEvent.map { loginState ->
-        return@map loginState.peekContent() == IPlexLoginRepo.LoginState.AWAITING_LOGIN_RESULTS
-    }
+    val isLoading =
+        plexLoginRepo.loginEvent.map { loginState ->
+            return@map loginState.peekContent() == IPlexLoginRepo.LoginState.AWAITING_LOGIN_RESULTS
+        }
 
     fun loginWithOAuth() {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
@@ -40,7 +42,10 @@ class LoginViewModel(private val plexLoginRepo: IPlexLoginRepo) : ViewModel() {
         }
     }
 
-    fun makeOAuthLoginUrl(id: String, code: String): Uri {
+    fun makeOAuthLoginUrl(
+        id: String,
+        code: String,
+    ): Uri {
         return plexLoginRepo.makeOAuthUrl(id, code)
     }
 

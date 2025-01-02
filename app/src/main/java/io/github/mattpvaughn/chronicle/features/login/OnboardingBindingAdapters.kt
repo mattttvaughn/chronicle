@@ -14,7 +14,7 @@ import timber.log.Timber
 @BindingAdapter("loadingStatus")
 fun bindLoadingStatus(
     recyclerView: RecyclerView,
-    loadingStatus: LoadingStatus?
+    loadingStatus: LoadingStatus?,
 ) {
     Timber.i("Loading status: $loadingStatus")
     when (loadingStatus) {
@@ -26,7 +26,10 @@ fun bindLoadingStatus(
 }
 
 @BindingAdapter("loadingStatus")
-fun bindLoadingStatus(errorView: TextView, loadingStatus: LoadingStatus?) {
+fun bindLoadingStatus(
+    errorView: TextView,
+    loadingStatus: LoadingStatus?,
+) {
     when (loadingStatus) {
         LoadingStatus.ERROR -> errorView.visibility = View.VISIBLE
         LoadingStatus.DONE -> errorView.visibility = View.GONE
@@ -38,7 +41,7 @@ fun bindLoadingStatus(errorView: TextView, loadingStatus: LoadingStatus?) {
 @BindingAdapter("loadingStatus")
 fun bindLoadingStatus(
     progressBar: ProgressBar,
-    loadingStatus: LoadingStatus?
+    loadingStatus: LoadingStatus?,
 ) {
     when (loadingStatus) {
         LoadingStatus.ERROR -> progressBar.visibility = View.GONE
@@ -49,19 +52,28 @@ fun bindLoadingStatus(
 }
 
 @BindingAdapter("listData")
-fun bindServerData(recyclerView: RecyclerView, data: List<ServerModel>) {
+fun bindServerData(
+    recyclerView: RecyclerView,
+    data: List<ServerModel>,
+) {
     val adapter = recyclerView.adapter as ServerListAdapter
     adapter.submitList(data)
 }
 
 @BindingAdapter("users")
-fun bindUsers(recyclerView: RecyclerView, data: List<PlexUser>) {
+fun bindUsers(
+    recyclerView: RecyclerView,
+    data: List<PlexUser>,
+) {
     val adapter = recyclerView.adapter as UserListAdapter
     adapter.submitList(data)
 }
 
 @BindingAdapter("listData")
-fun bindLibraryData(recyclerView: RecyclerView, data: List<PlexLibrary>) {
+fun bindLibraryData(
+    recyclerView: RecyclerView,
+    data: List<PlexLibrary>,
+) {
     val adapter = recyclerView.adapter as LibraryListAdapter
     adapter.submitList(data)
 }

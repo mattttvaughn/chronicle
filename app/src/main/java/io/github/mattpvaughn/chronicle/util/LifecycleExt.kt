@@ -6,7 +6,7 @@ import kotlinx.coroutines.*
 
 inline fun <T> LiveData<Event<T>>.observeEvent(
     owner: LifecycleOwner,
-    crossinline onEventUnhandledContent: (T) -> Unit
+    crossinline onEventUnhandledContent: (T) -> Unit,
 ) {
     observe(owner) { it.getContentIfNotHandled()?.let(onEventUnhandledContent) }
 }
@@ -24,7 +24,7 @@ fun <X, Y> mapAsync(
     source: LiveData<X>,
     scope: CoroutineScope,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    mapFunction: suspend (X) -> Y
+    mapFunction: suspend (X) -> Y,
 ): LiveData<Y> {
     val result = MediatorLiveData<Y>()
     result.addSource(source) { x ->
@@ -38,7 +38,6 @@ fun <X, Y> mapAsync(
 
 /** A wrapper for data exposed via [LiveData] representing an event */
 open class Event<out T>(private val content: T) {
-
     var hasBeenHandled = false
         private set // Allow external read but not write
 
@@ -60,9 +59,8 @@ open class Event<out T>(private val content: T) {
 class DoubleLiveData<T, K, S>(
     source1: LiveData<T>,
     source2: LiveData<K>,
-    private val combine: (data1: T?, data2: K?) -> S
+    private val combine: (data1: T?, data2: K?) -> S,
 ) : MediatorLiveData<S>() {
-
     private var data1: T? = null
     private var data2: K? = null
 
@@ -77,7 +75,10 @@ class DoubleLiveData<T, K, S>(
         }
     }
 
-    override fun <T : Any?> addSource(source: LiveData<T>, onChanged: Observer<in T>) {
+    override fun <T : Any?> addSource(
+        source: LiveData<T>,
+        onChanged: Observer<in T>,
+    ) {
         throw UnsupportedOperationException()
     }
 
@@ -91,9 +92,8 @@ class TripleLiveData<T, K, S, R>(
     source1: LiveData<T>,
     source2: LiveData<K>,
     source3: LiveData<S>,
-    private val combine: (data1: T?, data2: K?, data3: S?) -> R
+    private val combine: (data1: T?, data2: K?, data3: S?) -> R,
 ) : MediatorLiveData<R>() {
-
     private var data1: T? = null
     private var data2: K? = null
     private var data3: S? = null
@@ -113,11 +113,12 @@ class TripleLiveData<T, K, S, R>(
         }
     }
 
-    override fun <T : Any?> addSource(source: LiveData<T>, onChanged: Observer<in T>): Unit =
-        throw UnsupportedOperationException()
+    override fun <T : Any?> addSource(
+        source: LiveData<T>,
+        onChanged: Observer<in T>,
+    ): Unit = throw UnsupportedOperationException()
 
-    override fun <T : Any?> removeSource(toRemote: LiveData<T>): Unit =
-        throw UnsupportedOperationException()
+    override fun <T : Any?> removeSource(toRemote: LiveData<T>): Unit = throw UnsupportedOperationException()
 }
 
 /** A [MediatorLiveData] implementation with typed in-place declaration on four [LiveData] */
@@ -126,9 +127,8 @@ class QuadLiveData<T, K, S, Q, R>(
     source2: LiveData<K>,
     source3: LiveData<S>,
     source4: LiveData<Q>,
-    private val combine: (data1: T?, data2: K?, data3: S?, data4: Q?) -> R
+    private val combine: (data1: T?, data2: K?, data3: S?, data4: Q?) -> R,
 ) : MediatorLiveData<R>() {
-
     private var data1: T? = null
     private var data2: K? = null
     private var data3: S? = null
@@ -153,11 +153,12 @@ class QuadLiveData<T, K, S, Q, R>(
         }
     }
 
-    override fun <T : Any?> addSource(source: LiveData<T>, onChanged: Observer<in T>): Unit =
-        throw UnsupportedOperationException()
+    override fun <T : Any?> addSource(
+        source: LiveData<T>,
+        onChanged: Observer<in T>,
+    ): Unit = throw UnsupportedOperationException()
 
-    override fun <T : Any?> removeSource(toRemote: LiveData<T>): Unit =
-        throw UnsupportedOperationException()
+    override fun <T : Any?> removeSource(toRemote: LiveData<T>): Unit = throw UnsupportedOperationException()
 }
 
 /**
@@ -170,9 +171,8 @@ class QuadLiveDataAsync<T, K, S, Q, R>(
     source2: LiveData<K>,
     source3: LiveData<S>,
     source4: LiveData<Q>,
-    private val combine: suspend (data1: T?, data2: K?, data3: S?, data4: Q?) -> R
+    private val combine: suspend (data1: T?, data2: K?, data3: S?, data4: Q?) -> R,
 ) : MediatorLiveData<R>() {
-
     private var data1: T? = null
     private var data2: K? = null
     private var data3: S? = null
@@ -203,11 +203,12 @@ class QuadLiveDataAsync<T, K, S, Q, R>(
         }
     }
 
-    override fun <T : Any?> addSource(source: LiveData<T>, onChanged: Observer<in T>): Unit =
-        throw UnsupportedOperationException()
+    override fun <T : Any?> addSource(
+        source: LiveData<T>,
+        onChanged: Observer<in T>,
+    ): Unit = throw UnsupportedOperationException()
 
-    override fun <T : Any?> removeSource(toRemote: LiveData<T>): Unit =
-        throw UnsupportedOperationException()
+    override fun <T : Any?> removeSource(toRemote: LiveData<T>): Unit = throw UnsupportedOperationException()
 }
 
 /**
@@ -221,9 +222,8 @@ class QuintLiveDataAsync<T, K, S, Q, P, R>(
     source3: LiveData<S>,
     source4: LiveData<Q>,
     source5: LiveData<P>,
-    private val combine: suspend (data1: T?, data2: K?, data3: S?, data4: Q?, data5: P?) -> R
+    private val combine: suspend (data1: T?, data2: K?, data3: S?, data4: Q?, data5: P?) -> R,
 ) : MediatorLiveData<R>() {
-
     private var data1: T? = null
     private var data2: K? = null
     private var data3: S? = null
@@ -259,11 +259,12 @@ class QuintLiveDataAsync<T, K, S, Q, P, R>(
         }
     }
 
-    override fun <T : Any?> addSource(source: LiveData<T>, onChanged: Observer<in T>): Unit =
-        throw UnsupportedOperationException()
+    override fun <T : Any?> addSource(
+        source: LiveData<T>,
+        onChanged: Observer<in T>,
+    ): Unit = throw UnsupportedOperationException()
 
-    override fun <T : Any?> removeSource(toRemote: LiveData<T>): Unit =
-        throw UnsupportedOperationException()
+    override fun <T : Any?> removeSource(toRemote: LiveData<T>): Unit = throw UnsupportedOperationException()
 }
 
 /**
@@ -274,9 +275,8 @@ class QuintLiveDataAsync<T, K, S, Q, P, R>(
  */
 class CombinedLiveData<R>(
     vararg liveData: LiveData<*>,
-    private val combine: (data: List<Any?>) -> R
+    private val combine: (data: List<Any?>) -> R,
 ) : MediatorLiveData<R>() {
-
     private val data: MutableList<Any?> = MutableList(liveData.size) { null }
 
     init {

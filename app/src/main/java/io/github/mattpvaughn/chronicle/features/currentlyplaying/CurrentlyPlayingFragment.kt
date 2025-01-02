@@ -30,7 +30,6 @@ import javax.inject.Inject
 /** Responsible for playback controls and displaying the currently playing media */
 @ExperimentalCoroutinesApi
 class CurrentlyPlayingFragment : Fragment() {
-
     private lateinit var currentlyPlayingInterface: MainActivity.CurrentlyPlayingInterface
 
     @Inject
@@ -59,7 +58,8 @@ class CurrentlyPlayingFragment : Fragment() {
     override fun onStart() {
         super.onStart()
         localBroadcastManager.registerReceiver(
-            viewModel.onUpdateSleepTimer, IntentFilter(SleepTimer.ACTION_SLEEP_TIMER_CHANGE)
+            viewModel.onUpdateSleepTimer,
+            IntentFilter(SleepTimer.ACTION_SLEEP_TIMER_CHANGE),
         )
     }
 
@@ -71,9 +71,8 @@ class CurrentlyPlayingFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
-
         // Activity and context are non-null on view creation. This informs lint about that
         val binding = FragmentCurrentlyPlayingBinding.inflate(inflater, container, false)
 
@@ -85,36 +84,43 @@ class CurrentlyPlayingFragment : Fragment() {
         binding.plexConfig = plexConfig
         binding.lifecycleOwner = viewLifecycleOwner
 
-        val adapter = ChapterListAdapter(object : TrackClickListener {
-            override fun onClick(chapter: Chapter) {
-                viewModel.jumpToChapter(chapter.startTimeOffset, chapter.trackId.toInt())
-            }
-        })
+        val adapter =
+            ChapterListAdapter(
+                object : TrackClickListener {
+                    override fun onClick(chapter: Chapter) {
+                        viewModel.jumpToChapter(chapter.startTimeOffset, chapter.trackId.toInt())
+                    }
+                },
+            )
 
-        binding.chapterProgressSeekbar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
-            override fun onStartTrackingTouch(slider: Slider) {
-                viewModel.isSliding = true
-            }
+        binding.chapterProgressSeekbar.addOnSliderTouchListener(
+            object : Slider.OnSliderTouchListener {
+                override fun onStartTrackingTouch(slider: Slider) {
+                    viewModel.isSliding = true
+                }
 
-            override fun onStopTrackingTouch(slider: Slider) {
-                viewModel.isSliding = false
-                viewModel.seekTo(slider.value.toDouble() / slider.valueTo)
-            }
-        })
+                override fun onStopTrackingTouch(slider: Slider) {
+                    viewModel.isSliding = false
+                    viewModel.seekTo(slider.value.toDouble() / slider.valueTo)
+                }
+            },
+        )
 
         binding.chapterProgressSeekbar.setLabelFormatter { value: Float ->
             DateUtils.formatElapsedTime(
                 StringBuilder(),
-                value.toLong() / 1000
+                value.toLong() / 1000,
             )
         }
 
         viewModel.activeChapter.observe(viewLifecycleOwner) { chapter ->
-            Timber.i("Updating current chapter: (${chapter.trackId}, ${chapter.discNumber}, ${chapter.index})")
+            Timber.i(
+                "Updating current chapter: (${chapter.trackId}, ${chapter.discNumber}, ${chapter.index})",
+            )
             adapter.updateCurrentChapter(
                 trackId = chapter.trackId,
                 discNumber = chapter.discNumber,
-                chapterIndex = chapter.index
+                chapterIndex = chapter.index,
             )
         }
 
@@ -128,7 +134,7 @@ class CurrentlyPlayingFragment : Fragment() {
             if (!eventShowChooser.hasBeenHandled) {
                 ModalBottomSheetSpeedChooser().show(
                     childFragmentManager,
-                    ModalBottomSheetSpeedChooser.TAG
+                    ModalBottomSheetSpeedChooser.TAG,
                 )
                 eventShowChooser.getContentIfNotHandled()
             }

@@ -38,9 +38,14 @@ class TrackListStateManager {
      * Update [currentTrackIndex] to [activeTrackIndex] and [currentTrackProgress] to
      * [offsetFromTrackStart]
      */
-    fun updatePosition(activeTrackIndex: Int, offsetFromTrackStart: Long) {
+    fun updatePosition(
+        activeTrackIndex: Int,
+        offsetFromTrackStart: Long,
+    ) {
         if (activeTrackIndex >= trackList.size) {
-            throw IndexOutOfBoundsException("Cannot set current track index = $activeTrackIndex if tracklist.size == ${trackList.size}")
+            throw IndexOutOfBoundsException(
+                "Cannot set current track index = $activeTrackIndex if tracklist.size == ${trackList.size}",
+            )
         }
         currentTrackIndex = activeTrackIndex
         currentTrackProgress = offsetFromTrackStart

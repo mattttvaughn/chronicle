@@ -10,24 +10,36 @@ import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 
 @BindingAdapter("bookList")
-fun bindRecyclerView(recyclerView: RecyclerView, data: List<Audiobook>?) {
+fun bindRecyclerView(
+    recyclerView: RecyclerView,
+    data: List<Audiobook>?,
+) {
     val adapter = recyclerView.adapter as AudiobookAdapter
     adapter.submitList(data)
 }
 
 @BindingAdapter("serverConnected")
-fun bindRecyclerView(recyclerView: RecyclerView, serverConnected: Boolean) {
+fun bindRecyclerView(
+    recyclerView: RecyclerView,
+    serverConnected: Boolean,
+) {
     val adapter = recyclerView.adapter as AudiobookAdapter
     adapter.setServerConnected(serverConnected)
 }
 
 @BindingAdapter("overrideWidth")
-fun overrideWidth(view: View, width: Float) {
+fun overrideWidth(
+    view: View,
+    width: Float,
+) {
     view.layoutParams.width = if (width > 0) width.toInt() else MATCH_PARENT
 }
 
 @BindingAdapter("isSquare")
-fun setSquareAspectRatio(constraintLayout: ConstraintLayout, isSquare: Boolean) {
+fun setSquareAspectRatio(
+    constraintLayout: ConstraintLayout,
+    isSquare: Boolean,
+) {
     GLOBAL_CONSTRAINT.clone(constraintLayout)
     if (isSquare) {
         GLOBAL_CONSTRAINT.setDimensionRatio(R.id.thumb_container, "1:1")

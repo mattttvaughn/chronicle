@@ -43,7 +43,7 @@ data class PlexDirectory(
     @Json(name = "Collection")
     val collections: List<CollectionWrapper>? = null,
     val childCount: Long = 0L,
-    val collectionSort: String = PLEX_COLLECTION_SORT_TYPE_RELEASE_DATE.toString()
+    val collectionSort: String = PLEX_COLLECTION_SORT_TYPE_RELEASE_DATE.toString(),
 )
 
 @JsonClass(generateAdapter = true)
@@ -52,8 +52,9 @@ data class CollectionWrapper(val tag: String? = null)
 fun PlexDirectory.asLibrary(): PlexLibrary {
     return PlexLibrary(
         name = title,
-        type = MediaType.TYPES.find { mediaType -> mediaType.typeString == this.type }
-            ?: MediaType.ARTIST,
-        id = key
+        type =
+            MediaType.TYPES.find { mediaType -> mediaType.typeString == this.type }
+                ?: MediaType.ARTIST,
+        id = key,
     )
 }

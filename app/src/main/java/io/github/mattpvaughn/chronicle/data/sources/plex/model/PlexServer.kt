@@ -13,7 +13,8 @@ data class PlexServer(
     val connections: List<Connection> = emptyList(),
     val clientIdentifier: String = "",
     val accessToken: String? = "",
-    val owned: Boolean = true // assume owned server as this is probably more common
+    // assume owned server as this is probably more common
+    val owned: Boolean = true,
 )
 
 @JsonClass(generateAdapter = true)

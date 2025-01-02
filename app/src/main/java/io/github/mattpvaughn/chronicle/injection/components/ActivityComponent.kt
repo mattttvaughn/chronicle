@@ -25,22 +25,36 @@ import io.github.mattpvaughn.chronicle.views.ModalBottomSheetSpeedChooser
 @Component(dependencies = [AppComponent::class], modules = [ActivityModule::class])
 interface ActivityComponent {
     fun navigator(): Navigator
+
     fun progressUpdater(): ProgressUpdater
+
     fun localBroadcastManager(): LocalBroadcastManager
+
     fun mediaServiceConnection(): MediaServiceConnection
 
     fun mainActivityViewModelFactory(): MainActivityViewModel.Factory
+
     fun currentPlayingViewModelFactory(): CurrentlyPlayingViewModel.Factory
+
     fun audiobookDetailsViewModelFactory(): AudiobookDetailsViewModel.Factory
+
     fun settingsViewModelFactory(): SettingsViewModel.Factory
 
     fun inject(activity: MainActivity)
+
     fun inject(libraryFragment: LibraryFragment)
+
     fun inject(detailsFragment: AudiobookDetailsFragment)
+
     fun inject(homeFragment: HomeFragment)
+
     fun inject(settingsFragment: SettingsFragment)
+
     fun inject(collectionsFragment: CollectionsFragment)
+
     fun inject(collectionDetailsFragment: CollectionDetailsFragment)
+
     fun inject(currentlyPlayingFragment: CurrentlyPlayingFragment)
+
     fun inject(modalBottomSheetSpeedChooser: ModalBottomSheetSpeedChooser)
 }

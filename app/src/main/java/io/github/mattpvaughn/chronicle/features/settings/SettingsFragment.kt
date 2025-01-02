@@ -29,7 +29,6 @@ import io.github.mattpvaughn.chronicle.views.getString
 import javax.inject.Inject
 
 class SettingsFragment : Fragment() {
-
     @Inject
     lateinit var viewModelFactory: SettingsViewModel.Factory
 
@@ -76,9 +75,8 @@ class SettingsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
-
         val binding = FragmentSettingsBinding.inflate(inflater, container, false)
         val viewModel = ViewModelProvider(this, viewModelFactory).get(SettingsViewModel::class.java)
 
@@ -90,10 +88,14 @@ class SettingsFragment : Fragment() {
             Observer { message ->
                 if (!message.hasBeenHandled) {
                     val formattableString = message.getContentIfNotHandled()
-                    Toast.makeText(context, resources.getString(formattableString), Toast.LENGTH_SHORT)
+                    Toast.makeText(
+                        context,
+                        resources.getString(formattableString),
+                        Toast.LENGTH_SHORT,
+                    )
                         .show()
                 }
-            }
+            },
         )
 
         viewModel.upgradeToPremium.observeEvent(viewLifecycleOwner) {
@@ -104,9 +106,11 @@ class SettingsFragment : Fragment() {
             viewLifecycleOwner,
             Observer {
                 if (!it.hasBeenHandled) {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.getContentIfNotHandled())))
+                    startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(it.getContentIfNotHandled())),
+                    )
                 }
-            }
+            },
         )
 
         viewModel.showLicenseActivity.observe(
@@ -116,7 +120,7 @@ class SettingsFragment : Fragment() {
                     startActivity(Intent(context, OssLicensesMenuActivity::class.java))
                     viewModel.setShowLicenseActivity(false)
                 }
-            }
+            },
         )
 
         return binding.root

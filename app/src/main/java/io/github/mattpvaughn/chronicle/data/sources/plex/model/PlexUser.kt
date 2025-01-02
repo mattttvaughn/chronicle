@@ -13,11 +13,14 @@ data class PlexUser(
     val title: String = "",
     val username: String? = "",
     val thumb: String = "",
-    val hasPassword: Boolean = true, // PIN REQUIRED IF TRUE
+    // PIN REQUIRED IF TRUE
+    val hasPassword: Boolean = true,
     val admin: Boolean = false,
     val guest: Boolean = false,
-    val authToken: String? = ""
+    val authToken: String? = "",
 ) : Parcelable
 
 @JsonClass(generateAdapter = true)
-data class UsersResponse(@Json(name = "users") val users: List<PlexUser>)
+data class UsersResponse(
+    @Json(name = "users") val users: List<PlexUser>,
+)

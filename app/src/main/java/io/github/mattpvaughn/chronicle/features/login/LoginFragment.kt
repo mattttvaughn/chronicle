@@ -23,7 +23,6 @@ import timber.log.Timber
 import javax.inject.Inject
 
 class LoginFragment : Fragment() {
-
     companion object {
         @JvmStatic
         fun newInstance() = LoginFragment()
@@ -49,13 +48,13 @@ class LoginFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
-
-        loginViewModel = ViewModelProvider(
-            this,
-            viewModelFactory
-        ).get(LoginViewModel::class.java)
+        loginViewModel =
+            ViewModelProvider(
+                this,
+                viewModelFactory,
+            ).get(LoginViewModel::class.java)
 
         val binding = OnboardingLoginBinding.inflate(inflater, container, false)
 
@@ -70,7 +69,7 @@ class LoginFragment : Fragment() {
                 } else {
                     binding.loading.visibility = View.GONE
                 }
-            }
+            },
         )
 
         binding.oauthLogin.setOnClickListener {
@@ -89,7 +88,10 @@ class LoginFragment : Fragment() {
                 val oAuthPin = authRequestEvent.getContentIfNotHandled()
                 if (oAuthPin != null) {
                     val backButton =
-                        resources.getDrawable(R.drawable.ic_arrow_back_white, requireActivity().theme)
+                        resources.getDrawable(
+                            R.drawable.ic_arrow_back_white,
+                            requireActivity().theme,
+                        )
                             .apply { setTint(Color.BLACK) }
                     val backButtonBitmap: Bitmap? =
                         if (backButton is BitmapDrawable) backButton.bitmap else null
@@ -98,10 +100,13 @@ class LoginFragment : Fragment() {
                         CustomTabsIntent.Builder()
                             .setToolbarColor(
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                    resources.getColor(R.color.colorPrimary, requireActivity().theme)
+                                    resources.getColor(
+                                        R.color.colorPrimary,
+                                        requireActivity().theme,
+                                    )
                                 } else {
                                     resources.getColor(R.color.colorPrimary)
-                                }
+                                },
                             )
                             .setShowTitle(true)
 
@@ -112,12 +117,16 @@ class LoginFragment : Fragment() {
                     val customTabsIntent = customTabsIntentBuilder.build()
 
                     // make login url
-                    val url = loginViewModel.makeOAuthLoginUrl(oAuthPin.clientIdentifier, oAuthPin.code)
+                    val url =
+                        loginViewModel.makeOAuthLoginUrl(
+                            oAuthPin.clientIdentifier,
+                            oAuthPin.code,
+                        )
 
                     loginViewModel.setLaunched(true)
                     customTabsIntent.launchUrl(requireContext(), url)
                 }
-            }
+            },
         )
 
         return binding.root

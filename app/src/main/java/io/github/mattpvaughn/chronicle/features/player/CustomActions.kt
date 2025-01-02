@@ -24,14 +24,24 @@ fun makeCustomActionProviders(
     trackListStateManager: TrackListStateManager,
     prefsRepo: PrefsRepo,
     currentlyPlaying: CurrentlyPlaying,
-    progressUpdater: ProgressUpdater
+    progressUpdater: ProgressUpdater,
 ): Array<CustomActionProvider> {
     return arrayOf(
-        SimpleCustomActionProvider(makeSkipBackward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
-            player.seekRelative(trackListStateManager, prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1)
+        SimpleCustomActionProvider(
+            makeSkipBackward(prefsRepo),
+        ) { player: Player, _: String, _: Bundle? ->
+            player.seekRelative(
+                trackListStateManager,
+                prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1,
+            )
         },
-        SimpleCustomActionProvider(makeSkipForward(prefsRepo)) { player: Player, _: String, _: Bundle? ->
-            player.seekRelative(trackListStateManager, prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND)
+        SimpleCustomActionProvider(
+            makeSkipForward(prefsRepo),
+        ) { player: Player, _: String, _: Bundle? ->
+            player.seekRelative(
+                trackListStateManager,
+                prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND,
+            )
         },
         SimpleCustomActionProvider(SKIP_TO_NEXT) { player: Player, _: String, _: Bundle? ->
             player.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
@@ -46,58 +56,58 @@ fun makeCustomActionProviders(
 const val SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS = 30L
 
 const val SKIP_TO_NEXT_STRING = "Skip to next"
-val SKIP_TO_NEXT: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
-    SKIP_TO_NEXT_STRING,
-    SKIP_TO_NEXT_STRING,
-    R.drawable.ic_skip_next_white
-).build()
+val SKIP_TO_NEXT: PlaybackStateCompat.CustomAction =
+    PlaybackStateCompat.CustomAction.Builder(
+        SKIP_TO_NEXT_STRING,
+        SKIP_TO_NEXT_STRING,
+        R.drawable.ic_skip_next_white,
+    ).build()
 
 const val SKIP_TO_PREVIOUS_STRING = "Skip to previous"
-val SKIP_TO_PREVIOUS: PlaybackStateCompat.CustomAction = PlaybackStateCompat.CustomAction.Builder(
-    SKIP_TO_PREVIOUS_STRING,
-    SKIP_TO_PREVIOUS_STRING,
-    R.drawable.ic_skip_previous_white
-).build()
+val SKIP_TO_PREVIOUS: PlaybackStateCompat.CustomAction =
+    PlaybackStateCompat.CustomAction.Builder(
+        SKIP_TO_PREVIOUS_STRING,
+        SKIP_TO_PREVIOUS_STRING,
+        R.drawable.ic_skip_previous_white,
+    ).build()
 
 const val SKIP_FORWARDS_STRING = "Skip forwards"
 
-fun makeSkipForward(
-    prefsRepo: PrefsRepo
-): PlaybackStateCompat.CustomAction {
-    val drawable: Int = when (prefsRepo.jumpForwardSeconds) {
-        10L -> R.drawable.ic_forward_10_white
-        15L -> R.drawable.ic_forward_15_white
-        20L -> R.drawable.ic_forward_20_white
-        30L -> R.drawable.ic_forward_30_white
-        60L -> R.drawable.ic_forward_60_white
-        90L -> R.drawable.ic_forward_90_white
-        else -> R.drawable.ic_forward_30_white
-    }
+fun makeSkipForward(prefsRepo: PrefsRepo): PlaybackStateCompat.CustomAction {
+    val drawable: Int =
+        when (prefsRepo.jumpForwardSeconds) {
+            10L -> R.drawable.ic_forward_10_white
+            15L -> R.drawable.ic_forward_15_white
+            20L -> R.drawable.ic_forward_20_white
+            30L -> R.drawable.ic_forward_30_white
+            60L -> R.drawable.ic_forward_60_white
+            90L -> R.drawable.ic_forward_90_white
+            else -> R.drawable.ic_forward_30_white
+        }
     return PlaybackStateCompat.CustomAction.Builder(
         SKIP_FORWARDS_STRING,
         SKIP_FORWARDS_STRING,
-        drawable
+        drawable,
     ).build()
 }
 
 const val SKIP_BACKWARDS_STRING = "Skip backwards"
 
-fun makeSkipBackward(
-    prefsRepo: PrefsRepo
-): PlaybackStateCompat.CustomAction {
-    val drawable: Int = when (prefsRepo.jumpBackwardSeconds) {
-        10L -> R.drawable.ic_replay_10_white
-        15L -> R.drawable.ic_replay_15_white
-        20L -> R.drawable.ic_replay_20_white
-        30L -> R.drawable.ic_replay_30_white
-        60L -> R.drawable.ic_replay_60_white
-        90L -> R.drawable.ic_replay_90_white
-        else -> R.drawable.ic_replay_10_white
-    }
+fun makeSkipBackward(prefsRepo: PrefsRepo): PlaybackStateCompat.CustomAction {
+    val drawable: Int =
+        when (prefsRepo.jumpBackwardSeconds) {
+            10L -> R.drawable.ic_replay_10_white
+            15L -> R.drawable.ic_replay_15_white
+            20L -> R.drawable.ic_replay_20_white
+            30L -> R.drawable.ic_replay_30_white
+            60L -> R.drawable.ic_replay_60_white
+            90L -> R.drawable.ic_replay_90_white
+            else -> R.drawable.ic_replay_10_white
+        }
     return PlaybackStateCompat.CustomAction.Builder(
         SKIP_BACKWARDS_STRING,
         SKIP_BACKWARDS_STRING,
-        drawable
+        drawable,
     ).build()
 }
 
@@ -108,7 +118,7 @@ val mediaSkipToPreviousCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_PREV
 
 class SimpleCustomActionProvider(
     private val customAction: PlaybackStateCompat.CustomAction,
-    private val action: (player: Player, action: String, extras: Bundle?) -> Unit
+    private val action: (player: Player, action: String, extras: Bundle?) -> Unit,
 ) : CustomActionProvider {
     /** A simple custom action returns itself no matter what the playback state */
     override fun getCustomAction(player: Player): PlaybackStateCompat.CustomAction {
@@ -118,7 +128,7 @@ class SimpleCustomActionProvider(
     override fun onCustomAction(
         player: Player,
         action: String,
-        extras: Bundle?
+        extras: Bundle?,
     ) {
         action(player, action, extras)
     }

@@ -15,29 +15,30 @@ class CollectionsAdapter(
     initialViewStyle: String,
     private val isVertical: Boolean,
     private val isSquare: Boolean,
-    private val collectionClick: CollectionsFragment.CollectionClick
+    private val collectionClick: CollectionsFragment.CollectionClick,
 ) : ListAdapter<Collection, RecyclerView.ViewHolder>(CollectionsDiffCallback()) {
-
     private val COVER_GRID = 1
     private val TEXT_ONLY = 2
     private val DETAILS = 3
     var viewStyle: String = initialViewStyle
         set(value) {
-            viewStyleInt = when (value) {
-                VIEW_STYLE_COVER_GRID -> COVER_GRID
-                VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
-                VIEW_STYLE_DETAILS_LIST -> DETAILS
-                else -> throw IllegalStateException("Unknown view style")
-            }
+            viewStyleInt =
+                when (value) {
+                    VIEW_STYLE_COVER_GRID -> COVER_GRID
+                    VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
+                    VIEW_STYLE_DETAILS_LIST -> DETAILS
+                    else -> throw IllegalStateException("Unknown view style")
+                }
             notifyDataSetChanged()
             field = value
         }
-    private var viewStyleInt: Int = when (initialViewStyle) {
-        VIEW_STYLE_COVER_GRID -> COVER_GRID
-        VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
-        VIEW_STYLE_DETAILS_LIST -> DETAILS
-        else -> throw IllegalStateException("Unknown view style")
-    }
+    private var viewStyleInt: Int =
+        when (initialViewStyle) {
+            VIEW_STYLE_COVER_GRID -> COVER_GRID
+            VIEW_STYLE_TEXT_LIST -> TEXT_ONLY
+            VIEW_STYLE_DETAILS_LIST -> DETAILS
+            else -> throw IllegalStateException("Unknown view style")
+        }
 
     private var serverConnected: Boolean = false
 
@@ -49,7 +50,10 @@ class CollectionsAdapter(
         return viewStyleInt
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): RecyclerView.ViewHolder {
         return when (viewType) {
             COVER_GRID -> ViewHolder.from(parent, isVertical, isSquare)
             TEXT_ONLY -> TextOnlyViewHolder.from(parent)
@@ -58,7 +62,10 @@ class CollectionsAdapter(
         }
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+    ) {
         when (holder) {
             is ViewHolder -> {
                 holder.bind(getItem(position), collectionClick, serverConnected)
@@ -81,12 +88,12 @@ class CollectionsAdapter(
     class ViewHolder(
         val binding: GridItemCollectionBinding,
         private val isVertical: Boolean,
-        private val isSquare: Boolean
+        private val isSquare: Boolean,
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(
             collection: Collection,
             collectionClick: CollectionsFragment.CollectionClick,
-            serverConnected: Boolean
+            serverConnected: Boolean,
         ) {
             binding.isSquare = isSquare
             binding.collection = collection
@@ -100,7 +107,7 @@ class CollectionsAdapter(
             fun from(
                 viewGroup: ViewGroup,
                 isVertical: Boolean,
-                isSquare: Boolean
+                isSquare: Boolean,
             ): ViewHolder {
                 val inflater = LayoutInflater.from(viewGroup.context)
                 val binding = GridItemCollectionBinding.inflate(inflater, viewGroup, false)
@@ -111,7 +118,10 @@ class CollectionsAdapter(
 
     class TextOnlyViewHolder(val binding: ListItemCollectionTextOnlyBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun bind(collection: Collection, collectionClick: CollectionsFragment.CollectionClick) {
+        fun bind(
+            collection: Collection,
+            collectionClick: CollectionsFragment.CollectionClick,
+        ) {
             binding.collection = collection
             binding.collectionClick = collectionClick
             binding.executePendingBindings()
@@ -130,13 +140,13 @@ class CollectionsAdapter(
 
 class DetailsStyleViewHolder(
     val binding: ListItemCollectionWithDetailsBinding,
-    val isSquare: Boolean
+    val isSquare: Boolean,
 ) : RecyclerView.ViewHolder(binding.root) {
     fun bind(
         collection: Collection,
         collectionClick: CollectionsFragment.CollectionClick,
         serverConnected: Boolean,
-        isSquare: Boolean
+        isSquare: Boolean,
     ) {
         binding.isSquare = isSquare
         binding.collection = collection
@@ -146,7 +156,10 @@ class DetailsStyleViewHolder(
     }
 
     companion object {
-        fun from(viewGroup: ViewGroup, isSquare: Boolean): DetailsStyleViewHolder {
+        fun from(
+            viewGroup: ViewGroup,
+            isSquare: Boolean,
+        ): DetailsStyleViewHolder {
             val inflater = LayoutInflater.from(viewGroup.context)
             val binding =
                 ListItemCollectionWithDetailsBinding.inflate(inflater, viewGroup, false)
@@ -156,12 +169,18 @@ class DetailsStyleViewHolder(
 }
 
 class CollectionsDiffCallback : DiffUtil.ItemCallback<Collection>() {
-    override fun areItemsTheSame(oldItem: Collection, newItem: Collection): Boolean {
+    override fun areItemsTheSame(
+        oldItem: Collection,
+        newItem: Collection,
+    ): Boolean {
         return oldItem.id == newItem.id
     }
 
     /** Changes which require a redraw of the view */
-    override fun areContentsTheSame(oldItem: Collection, newItem: Collection): Boolean {
+    override fun areContentsTheSame(
+        oldItem: Collection,
+        newItem: Collection,
+    ): Boolean {
         return oldItem.childCount == newItem.childCount &&
             oldItem.thumb == newItem.thumb &&
             oldItem.title == newItem.title

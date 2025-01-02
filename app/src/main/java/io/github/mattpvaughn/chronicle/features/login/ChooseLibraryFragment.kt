@@ -20,7 +20,6 @@ import timber.log.Timber
 import javax.inject.Inject
 
 class ChooseLibraryFragment : Fragment() {
-
     companion object {
         @JvmStatic
         fun newInstance() = ChooseLibraryFragment()
@@ -47,7 +46,7 @@ class ChooseLibraryFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         ((activity as Activity).application as ChronicleApplication).appComponent.inject(this)
         super.onCreate(savedInstanceState)
@@ -55,10 +54,11 @@ class ChooseLibraryFragment : Fragment() {
         val binding = OnboardingPlexChooseLibraryBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
 
-        viewModel = ViewModelProvider(
-            viewModelStore,
-            viewModelFactory
-        ).get(ChooseLibraryViewModel::class.java)
+        viewModel =
+            ViewModelProvider(
+                viewModelStore,
+                viewModelFactory,
+            ).get(ChooseLibraryViewModel::class.java)
 
         binding.chooseLibraryViewModel = viewModel
 
@@ -67,7 +67,7 @@ class ChooseLibraryFragment : Fragment() {
                 LibraryClickListener { library ->
                     Timber.i("Library name: $library")
                     plexLoginRepo.chooseLibrary(library)
-                }
+                },
             )
 
         binding.libraryList.adapter = libraryAdapter
@@ -76,9 +76,13 @@ class ChooseLibraryFragment : Fragment() {
             viewLifecycleOwner,
             Observer { message: Event<String> ->
                 if (!message.hasBeenHandled) {
-                    Toast.makeText(context, message.getContentIfNotHandled(), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        message.getContentIfNotHandled(),
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 }
-            }
+            },
         )
 
         viewModel.libraries.observe(
@@ -87,7 +91,7 @@ class ChooseLibraryFragment : Fragment() {
                 libraries?.apply {
                     libraryAdapter.submitList(this)
                 }
-            }
+            },
         )
 
         return binding.root

@@ -62,7 +62,10 @@ class UITestAppModule(private val context: Context) {
     @Provides
     @Singleton
     fun externalDeviceDirs(): List<File> =
-        ContextCompat.getExternalFilesDirs(context, null).toList()
+        ContextCompat.getExternalFilesDirs(
+            context,
+            null,
+        ).toList()
 
     @Provides
     @Singleton
@@ -73,7 +76,7 @@ class UITestAppModule(private val context: Context) {
     fun provideMediaServiceConnection(): MediaServiceConnection {
         return MediaServiceConnection(
             context,
-            ComponentName(context, MediaPlayerService::class.java)
+            ComponentName(context, MediaPlayerService::class.java),
         )
     }
 

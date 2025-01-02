@@ -28,43 +28,46 @@ class MainActivityViewModel(
     private val trackRepository: ITrackRepository,
     private val bookRepository: IBookRepository,
     private val mediaServiceConnection: MediaServiceConnection,
-    collectionsRepository: CollectionsRepository
+    collectionsRepository: CollectionsRepository,
 ) : ViewModel(), MainActivity.CurrentlyPlayingInterface {
-
     @Suppress("UNCHECKED_CAST")
-    class Factory @Inject constructor(
-        private val loginRepo: IPlexLoginRepo,
-        private val trackRepository: ITrackRepository,
-        private val bookRepository: IBookRepository,
-        private val mediaServiceConnection: MediaServiceConnection,
-        private val collectionsRepository: CollectionsRepository
-    ) : ViewModelProvider.Factory {
-
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(MainActivityViewModel::class.java)) {
-                return MainActivityViewModel(
-                    loginRepo,
-                    trackRepository,
-                    bookRepository,
-                    mediaServiceConnection,
-                    collectionsRepository
-                ) as T
-            } else {
-                throw IllegalArgumentException("Cannot instantiate $modelClass from MainActivityViewModel.Factory")
+    class Factory
+        @Inject
+        constructor(
+            private val loginRepo: IPlexLoginRepo,
+            private val trackRepository: ITrackRepository,
+            private val bookRepository: IBookRepository,
+            private val mediaServiceConnection: MediaServiceConnection,
+            private val collectionsRepository: CollectionsRepository,
+        ) : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(MainActivityViewModel::class.java)) {
+                    return MainActivityViewModel(
+                        loginRepo,
+                        trackRepository,
+                        bookRepository,
+                        mediaServiceConnection,
+                        collectionsRepository,
+                    ) as T
+                } else {
+                    throw IllegalArgumentException(
+                        "Cannot instantiate $modelClass from MainActivityViewModel.Factory",
+                    )
+                }
             }
         }
-    }
 
     /** The status of the bottom sheet which contains "currently playing" info */
     enum class BottomSheetState {
         COLLAPSED,
         HIDDEN,
-        EXPANDED
+        EXPANDED,
     }
 
-    val isLoggedIn = loginRepo.loginEvent.map {
-        it.peekContent() == LOGGED_IN_FULLY
-    }
+    val isLoggedIn =
+        loginRepo.loginEvent.map {
+            it.peekContent() == LOGGED_IN_FULLY
+        }
 
     private var _currentlyPlayingLayoutState = MutableLiveData(HIDDEN)
     val currentlyPlayingLayoutState: LiveData<BottomSheetState>
@@ -72,17 +75,19 @@ class MainActivityViewModel(
 
     private var audiobookId = MutableLiveData(NO_AUDIOBOOK_FOUND_ID)
 
-    val audiobook = mapAsync(audiobookId, viewModelScope) { id ->
-        bookRepository.getAudiobookAsync(id) ?: EMPTY_AUDIOBOOK
-    }
-
-    private var tracks = audiobookId.switchMap { id ->
-        if (id != NO_AUDIOBOOK_FOUND_ID) {
-            trackRepository.getTracksForAudiobook(id)
-        } else {
-            MutableLiveData(emptyList())
+    val audiobook =
+        mapAsync(audiobookId, viewModelScope) { id ->
+            bookRepository.getAudiobookAsync(id) ?: EMPTY_AUDIOBOOK
         }
-    }
+
+    private var tracks =
+        audiobookId.switchMap { id ->
+            if (id != NO_AUDIOBOOK_FOUND_ID) {
+                trackRepository.getTracksForAudiobook(id)
+            } else {
+                MutableLiveData(emptyList())
+            }
+        }
 
     private var _errorMessage = MutableLiveData<Event<String>>()
     val errorMessage: LiveData<Event<String>>
@@ -91,57 +96,64 @@ class MainActivityViewModel(
     val hasCollections = collectionsRepository.hasCollections()
 
     // Used to cache tracks.asChapterList when tracks changes
-    private val tracksAsChaptersCache = mapAsync(tracks, viewModelScope) {
-        it.asChapterList()
-    }
-
-    val chapters: DoubleLiveData<Audiobook, List<Chapter>, List<Chapter>> = DoubleLiveData(
-        audiobook, tracksAsChaptersCache
-    ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
-        if (_audiobook?.chapters?.isNotEmpty() == true) {
-            // We would really prefer this because it doesn't have to be computed
-            _audiobook.chapters
-        } else {
-            _tracksAsChapters ?: emptyList()
+    private val tracksAsChaptersCache =
+        mapAsync(tracks, viewModelScope) {
+            it.asChapterList()
         }
-    }
 
-    val currentChapterTitle = DoubleLiveData(tracks, chapters) { _tracks, _chapters ->
-        if (_chapters.isNullOrEmpty() || _tracks.isNullOrEmpty()) {
-            return@DoubleLiveData "No track playing"
-        }
-        val activeTrack = _tracks.getActiveTrack()
-        val currentTrackProgress: Long = activeTrack.progress
-        return@DoubleLiveData _chapters.filter {
-            it.trackId.toInt() == activeTrack.id
-        }.getChapterAt(_tracks.getActiveTrack().id.toLong(), currentTrackProgress).title
-    }
-
-    val isPlaying = mediaServiceConnection.playbackState.map {
-        it.isPlaying
-    }
-
-    private val metadataObserver = Observer<MediaMetadataCompat> { metadata ->
-        metadata.id?.let { trackId ->
-            if (trackId.isNotEmpty()) {
-                viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-                    setAudiobook(trackId.toInt())
-                }
-            }
-        } ?: _currentlyPlayingLayoutState.postValue(HIDDEN)
-    }
-
-    private val playbackObserver = Observer<PlaybackStateCompat> { state ->
-        Timber.i("Observing playback: $state")
-        when (state.state) {
-            STATE_STOPPED, STATE_NONE -> setBottomSheetState(HIDDEN)
-            else -> {
-                if (currentlyPlayingLayoutState.value == HIDDEN) {
-                    setBottomSheetState(COLLAPSED)
-                }
+    val chapters: DoubleLiveData<Audiobook, List<Chapter>, List<Chapter>> =
+        DoubleLiveData(
+            audiobook,
+            tracksAsChaptersCache,
+        ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
+            if (_audiobook?.chapters?.isNotEmpty() == true) {
+                // We would really prefer this because it doesn't have to be computed
+                _audiobook.chapters
+            } else {
+                _tracksAsChapters ?: emptyList()
             }
         }
-    }
+
+    val currentChapterTitle =
+        DoubleLiveData(tracks, chapters) { _tracks, _chapters ->
+            if (_chapters.isNullOrEmpty() || _tracks.isNullOrEmpty()) {
+                return@DoubleLiveData "No track playing"
+            }
+            val activeTrack = _tracks.getActiveTrack()
+            val currentTrackProgress: Long = activeTrack.progress
+            return@DoubleLiveData _chapters.filter {
+                it.trackId.toInt() == activeTrack.id
+            }.getChapterAt(_tracks.getActiveTrack().id.toLong(), currentTrackProgress).title
+        }
+
+    val isPlaying =
+        mediaServiceConnection.playbackState.map {
+            it.isPlaying
+        }
+
+    private val metadataObserver =
+        Observer<MediaMetadataCompat> { metadata ->
+            metadata.id?.let { trackId ->
+                if (trackId.isNotEmpty()) {
+                    viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+                        setAudiobook(trackId.toInt())
+                    }
+                }
+            } ?: _currentlyPlayingLayoutState.postValue(HIDDEN)
+        }
+
+    private val playbackObserver =
+        Observer<PlaybackStateCompat> { state ->
+            Timber.i("Observing playback: $state")
+            when (state.state) {
+                STATE_STOPPED, STATE_NONE -> setBottomSheetState(HIDDEN)
+                else -> {
+                    if (currentlyPlayingLayoutState.value == HIDDEN) {
+                        setBottomSheetState(COLLAPSED)
+                    }
+                }
+            }
+        }
 
     init {
         mediaServiceConnection.nowPlaying.observeForever(metadataObserver)

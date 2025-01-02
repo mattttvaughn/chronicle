@@ -29,7 +29,6 @@ import org.junit.Test
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class AudiobookDetailsViewModelTest {
-
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 

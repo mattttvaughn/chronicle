@@ -80,7 +80,7 @@ open class ChronicleApplication : Application() {
 //                    .detectNetwork() // or .detectAll() for all detectable problems
                     .penaltyLog()
                     .penaltyDeath()
-                    .build()
+                    .build(),
             )
             StrictMode.setVmPolicy(
                 VmPolicy.Builder()
@@ -89,7 +89,7 @@ open class ChronicleApplication : Application() {
                     .detectActivityLeaks()
                     .penaltyLog()
                     .penaltyDeath()
-                    .build()
+                    .build(),
             )
         }
         if (BuildConfig.DEBUG) {
@@ -137,7 +137,8 @@ open class ChronicleApplication : Application() {
         val connectivityManager =
             getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            connectivityManager.registerDefaultNetworkCallback(object :
+            connectivityManager.registerDefaultNetworkCallback(
+                object :
                     ConnectivityManager.NetworkCallback() {
                     override fun onAvailable(network: Network) {
                         connectToServer()
@@ -154,7 +155,8 @@ open class ChronicleApplication : Application() {
                         }
                         super.onLost(network)
                     }
-                })
+                },
+            )
         } else {
             // network listener for sdk 24 and below
             registerReceiver(
@@ -162,29 +164,31 @@ open class ChronicleApplication : Application() {
                 IntentFilter().apply {
                     @Suppress("DEPRECATION")
                     addAction(ConnectivityManager.CONNECTIVITY_ACTION)
-                }
+                },
             )
         }
         val server = plexPrefs.server
         if (server != null) {
             plexConfig.setPotentialConnections(server.connections)
             applicationScope.launch(unhandledExceptionHandler) {
-                val retrievedConnections: List<Connection> = withTimeoutOrNull(4000L) {
-                    try {
-                        plexLoginService.resources()
-                            .filter { it.provides.contains("server") }
-                            .map { it.asServer() }
-                            .filter { it.serverId == server.serverId }
-                            .flatMap { it.connections }
-                    } catch (e: Exception) {
-                        Timber.e("Failed to retrieve new connections: $e")
-                        emptyList()
-                    }
-                } ?: emptyList()
+                val retrievedConnections: List<Connection> =
+                    withTimeoutOrNull(4000L) {
+                        try {
+                            plexLoginService.resources()
+                                .filter { it.provides.contains("server") }
+                                .map { it.asServer() }
+                                .filter { it.serverId == server.serverId }
+                                .flatMap { it.connections }
+                        } catch (e: Exception) {
+                            Timber.e("Failed to retrieve new connections: $e")
+                            emptyList()
+                        }
+                    } ?: emptyList()
                 Timber.i("Updated new connections: $retrievedConnections")
-                plexPrefs.server = server.copy(
-                    connections = server.connections + retrievedConnections
-                )
+                plexPrefs.server =
+                    server.copy(
+                        connections = server.connections + retrievedConnections,
+                    )
                 Timber.i("Retrieved new connections: $retrievedConnections")
                 try {
                     Timber.i("Connection to server!")
@@ -197,16 +201,20 @@ open class ChronicleApplication : Application() {
     }
 
     @InternalCoroutinesApi
-    private val networkStateListener = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            applicationScope.launch {
-                if (context != null && intent != null) {
-                    plexConfig.connectionHasBeenLost()
-                    connectToServer()
+    private val networkStateListener =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?,
+            ) {
+                applicationScope.launch {
+                    if (context != null && intent != null) {
+                        plexConfig.connectionHasBeenLost()
+                        connectToServer()
+                    }
                 }
             }
         }
-    }
 
     // Connect to the first connection which can establish a connection
     @InternalCoroutinesApi

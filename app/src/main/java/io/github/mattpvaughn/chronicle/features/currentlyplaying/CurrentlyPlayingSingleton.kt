@@ -18,7 +18,12 @@ interface CurrentlyPlaying {
     val chapter: StateFlow<Chapter>
 
     fun setOnChapterChangeListener(listener: OnChapterChangeListener)
-    fun update(track: MediaItemTrack, book: Audiobook, tracks: List<MediaItemTrack>)
+
+    fun update(
+        track: MediaItemTrack,
+        book: Audiobook,
+        tracks: List<MediaItemTrack>,
+    )
 }
 
 interface OnChapterChangeListener {
@@ -45,17 +50,22 @@ class CurrentlyPlayingSingleton : CurrentlyPlaying {
         this.listener = listener
     }
 
-    override fun update(track: MediaItemTrack, book: Audiobook, tracks: List<MediaItemTrack>) {
+    override fun update(
+        track: MediaItemTrack,
+        book: Audiobook,
+        tracks: List<MediaItemTrack>,
+    ) {
         this.book.value = book
         this.track.value = track
 
         this.tracks = tracks
 
-        this.chapters = if (book.chapters.isNotEmpty()) {
-            book.chapters
-        } else {
-            tracks.asChapterList()
-        }
+        this.chapters =
+            if (book.chapters.isNotEmpty()) {
+                book.chapters
+            } else {
+                tracks.asChapterList()
+            }
 
         if (tracks.isNotEmpty() && chapters.isNotEmpty()) {
             val chapter = chapters.getChapterAt(track.id.toLong(), track.progress)
@@ -69,6 +79,8 @@ class CurrentlyPlayingSingleton : CurrentlyPlaying {
     }
 
     private fun printDebug() {
-        Timber.i("Currently Playing: track=${track.value.title}, index=${track.value.index}/${tracks.size}")
+        Timber.i(
+            "Currently Playing: track=${track.value.title}, index=${track.value.index}/${tracks.size}",
+        )
     }
 }

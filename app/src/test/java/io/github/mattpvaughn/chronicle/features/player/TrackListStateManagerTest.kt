@@ -7,12 +7,12 @@ import org.junit.Before
 import org.junit.Test
 
 class TrackListStateManagerTest {
-
-    val exampleTrackList = listOf(
-        MediaItemTrack(1, progress = 0, duration = 50, lastViewedAt = 1),
-        MediaItemTrack(2, progress = 25, duration = 50, lastViewedAt = 3),
-        MediaItemTrack(3, progress = 0, duration = 50, lastViewedAt = 0)
-    )
+    val exampleTrackList =
+        listOf(
+            MediaItemTrack(1, progress = 0, duration = 50, lastViewedAt = 1),
+            MediaItemTrack(2, progress = 25, duration = 50, lastViewedAt = 3),
+            MediaItemTrack(3, progress = 0, duration = 50, lastViewedAt = 0),
+        )
 
     val manager = TrackListStateManager()
 
@@ -32,7 +32,7 @@ class TrackListStateManagerTest {
         // assert track index correct
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((1), (25L)))
+            `is`(Pair((1), (25L))),
         )
     }
 
@@ -42,14 +42,14 @@ class TrackListStateManagerTest {
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((1), (25L)))
+            `is`(Pair((1), (25L))),
         )
 
         manager.seekByRelative(20)
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((1), (45L)))
+            `is`(Pair((1), (45L))),
         )
     }
 
@@ -59,14 +59,14 @@ class TrackListStateManagerTest {
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((1), (25L)))
+            `is`(Pair((1), (25L))),
         )
 
         manager.seekByRelative(40)
 
         assertThat(
             Pair(manager.currentTrackProgress, manager.currentTrackIndex),
-            `is`(Pair(15L, 2))
+            `is`(Pair(15L, 2)),
         )
     }
 
@@ -76,14 +76,14 @@ class TrackListStateManagerTest {
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((1), (25L)))
+            `is`(Pair((1), (25L))),
         )
 
         manager.seekByRelative(1000)
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((2), (50L)))
+            `is`(Pair((2), (50L))),
         )
     }
 
@@ -93,14 +93,14 @@ class TrackListStateManagerTest {
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((2), (50L)))
+            `is`(Pair((2), (50L))),
         )
 
         manager.seekByRelative(1000)
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((2), (50L)))
+            `is`(Pair((2), (50L))),
         )
     }
 
@@ -110,14 +110,14 @@ class TrackListStateManagerTest {
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((1), (25L)))
+            `is`(Pair((1), (25L))),
         )
 
         manager.seekByRelative(-15)
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair(1, 10L))
+            `is`(Pair(1, 10L)),
         )
     }
 
@@ -127,14 +127,14 @@ class TrackListStateManagerTest {
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((1), (25L)))
+            `is`(Pair((1), (25L))),
         )
 
         manager.seekByRelative(-40)
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((0), (35L)))
+            `is`(Pair((0), (35L))),
         )
     }
 
@@ -144,14 +144,14 @@ class TrackListStateManagerTest {
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((0), (0L)))
+            `is`(Pair((0), (0L))),
         )
 
         manager.seekByRelative(-20)
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((0), (0L)))
+            `is`(Pair((0), (0L))),
         )
     }
 
@@ -161,14 +161,14 @@ class TrackListStateManagerTest {
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((1), (25L)))
+            `is`(Pair((1), (25L))),
         )
 
         manager.seekByRelative(-1000)
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((0), (0L)))
+            `is`(Pair((0), (0L))),
         )
     }
 
@@ -178,7 +178,7 @@ class TrackListStateManagerTest {
 
         assertThat(
             Pair(manager.currentTrackIndex, manager.currentTrackProgress),
-            `is`(Pair((1), (25L)))
+            `is`(Pair((1), (25L))),
         )
     }
 }

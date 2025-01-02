@@ -26,7 +26,6 @@ import androidx.annotation.IntDef
  * this is a convient interface to have on sources.
  */
 interface MediaSource : Iterable<MediaMetadataCompat> {
-
     /**
      * Begins loading the data for this music source.
      */
@@ -46,7 +45,7 @@ interface MediaSource : Iterable<MediaMetadataCompat> {
     STATE_CREATED,
     STATE_INITIALIZING,
     STATE_INITIALIZED,
-    STATE_ERROR
+    STATE_ERROR,
 )
 @Retention(AnnotationRetention.SOURCE)
 annotation class State

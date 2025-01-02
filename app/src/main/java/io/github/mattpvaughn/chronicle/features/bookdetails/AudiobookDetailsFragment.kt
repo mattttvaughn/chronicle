@@ -28,9 +28,9 @@ import javax.inject.Inject
 
 @ExperimentalCoroutinesApi
 class AudiobookDetailsFragment : Fragment() {
-
     companion object {
         fun newInstance() = AudiobookDetailsFragment()
+
         const val TAG = "details tag"
         const val ARG_AUDIOBOOK_ID = "audiobook_id"
         const val ARG_AUDIOBOOK_TITLE = "ARG_AUDIOBOOK_TITLE"
@@ -69,7 +69,7 @@ class AudiobookDetailsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         Timber.i("AudiobookDetailsFragment onCreateView()")
 
@@ -79,12 +79,13 @@ class AudiobookDetailsFragment : Fragment() {
         val bookTitle = requireArguments().getString(ARG_AUDIOBOOK_TITLE) ?: ""
         val inputCached = requireArguments().getBoolean(ARG_IS_AUDIOBOOK_CACHED)
 
-        viewModelFactory.inputAudiobook = Audiobook(
-            id = inputId,
-            title = bookTitle,
-            source = MediaSource.NO_SOURCE_FOUND,
-            isCached = inputCached
-        )
+        viewModelFactory.inputAudiobook =
+            Audiobook(
+                id = inputId,
+                title = bookTitle,
+                source = MediaSource.NO_SOURCE_FOUND,
+                isCached = inputCached,
+            )
         viewModel =
             ViewModelProvider(this, viewModelFactory)[AudiobookDetailsViewModel::class.java]
 
@@ -92,12 +93,18 @@ class AudiobookDetailsFragment : Fragment() {
         binding.lifecycleOwner = viewLifecycleOwner
         binding.plexConfig = plexConfig
 
-        val adapter = ChapterListAdapter(object : TrackClickListener {
-            override fun onClick(chapter: Chapter) {
-                Timber.i("Starting chapter with name: ${chapter.title}")
-                viewModel.jumpToChapter(offset = chapter.startTimeOffset, trackId = chapter.trackId)
-            }
-        })
+        val adapter =
+            ChapterListAdapter(
+                object : TrackClickListener {
+                    override fun onClick(chapter: Chapter) {
+                        Timber.i("Starting chapter with name: ${chapter.title}")
+                        viewModel.jumpToChapter(
+                            offset = chapter.startTimeOffset,
+                            trackId = chapter.trackId,
+                        )
+                    }
+                },
+            )
         binding.tracks.adapter = adapter
 
         // TODO casting
@@ -148,11 +155,13 @@ class AudiobookDetailsFragment : Fragment() {
         }
 
         viewModel.activeChapter.observe(viewLifecycleOwner) { chapter ->
-            Timber.i("Updating current chapter: (${chapter.trackId}, ${chapter.discNumber}, ${chapter.index})")
+            Timber.i(
+                "Updating current chapter: (${chapter.trackId}, ${chapter.discNumber}, ${chapter.index})",
+            )
             adapter.updateCurrentChapter(
                 trackId = chapter.trackId,
                 discNumber = chapter.discNumber,
-                chapterIndex = chapter.index
+                chapterIndex = chapter.index,
             )
         }
 
@@ -177,7 +186,10 @@ class AudiobookDetailsFragment : Fragment() {
         setHasOptionsMenu(true)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateOptionsMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         inflater.inflate(R.menu.audiobook_details_menu, menu)
     }
 }

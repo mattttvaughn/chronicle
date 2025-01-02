@@ -3,7 +3,7 @@
 ## How to contribute code to the project
 
  - Comment on the corresponding issue that you are working on it- so we
-   don't get multiple developers working on the same thing.
+   don't get multiple developers working on the same thing
  - Follow the instructions at [How to Contribute to a GitHub
    Project](https://gist.github.com/MarcDiethelm/7303312) for instructions
    on how to make changes and then open a pull request

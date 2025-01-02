@@ -14,7 +14,10 @@ import io.github.mattpvaughn.chronicle.application.MainActivityViewModel.BottomS
 import timber.log.Timber
 
 @BindingAdapter("bottomSheetState")
-fun setBottomSheetState(parent: ConstraintLayout, state: MainActivityViewModel.BottomSheetState) {
+fun setBottomSheetState(
+    parent: ConstraintLayout,
+    state: MainActivityViewModel.BottomSheetState,
+) {
     Timber.i("Bottom sheet state is $state")
     val constraints = ConstraintSet()
     constraints.clone(parent)
@@ -40,7 +43,7 @@ private fun collapseConstraint(constraintSet: ConstraintSet) {
         R.id.currently_playing_container,
         TOP,
         R.id.currently_playing_collapsed_top,
-        BOTTOM
+        BOTTOM,
     )
     constraintSet.connect(R.id.currently_playing_container, BOTTOM, R.id.bottom_nav, TOP)
 }

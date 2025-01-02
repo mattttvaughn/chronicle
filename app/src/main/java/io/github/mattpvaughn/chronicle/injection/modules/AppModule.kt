@@ -78,7 +78,10 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun provideCollectionsDao(): CollectionsDao = getCollectionsDatabase(app.applicationContext).collectionsDao
+    fun provideCollectionsDao(): CollectionsDao =
+        getCollectionsDatabase(
+            app.applicationContext,
+        ).collectionsDao
 
     @Provides
     @Singleton
@@ -87,7 +90,10 @@ class AppModule(private val app: Application) {
     @Provides
     @Singleton
     fun provideExternalDeviceDirs(): List<File> =
-        ContextCompat.getExternalFilesDirs(app.applicationContext, null).toList()
+        ContextCompat.getExternalFilesDirs(
+            app.applicationContext,
+            null,
+        ).toList()
 
     @Provides
     @Singleton
@@ -101,7 +107,7 @@ class AppModule(private val app: Application) {
     @Singleton
     fun fetchConfig(
         appContext: Context,
-        @Named(OKHTTP_CLIENT_MEDIA) okHttpClient: OkHttpClient
+        @Named(OKHTTP_CLIENT_MEDIA) okHttpClient: OkHttpClient,
     ): FetchConfiguration =
         FetchConfiguration.Builder(appContext)
             .setDownloadConcurrentLimit(3)
@@ -131,34 +137,38 @@ class AppModule(private val app: Application) {
     @Named(OKHTTP_CLIENT_MEDIA)
     fun mediaOkHttpClient(
         plexConfig: PlexConfig,
-        loggingInterceptor: HttpLoggingInterceptor
-    ): OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .protocols(listOf(Protocol.HTTP_1_1, Protocol.QUIC))
-        .addInterceptor(plexConfig.plexMediaInterceptor)
-        .addInterceptor(loggingInterceptor)
-        .build()
+        loggingInterceptor: HttpLoggingInterceptor,
+    ): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .protocols(listOf(Protocol.HTTP_1_1, Protocol.QUIC))
+            .addInterceptor(plexConfig.plexMediaInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .build()
 
     @Provides
     @Singleton
     @Named(OKHTTP_CLIENT_LOGIN)
     fun loginOkHttpClient(
         plexConfig: PlexConfig,
-        loggingInterceptor: HttpLoggingInterceptor
-    ): OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .addInterceptor(plexConfig.plexLoginInterceptor)
-        .addInterceptor(loggingInterceptor)
-        .build()
+        loggingInterceptor: HttpLoggingInterceptor,
+    ): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .addInterceptor(plexConfig.plexLoginInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .build()
 
     @Provides
     @Named(OKHTTP_CLIENT_MEDIA)
     @Singleton
-    fun mediaRetrofit(@Named(OKHTTP_CLIENT_MEDIA) okHttpClient: OkHttpClient): Retrofit =
+    fun mediaRetrofit(
+        @Named(OKHTTP_CLIENT_MEDIA) okHttpClient: OkHttpClient,
+    ): Retrofit =
         Retrofit.Builder()
             .addConverterFactory(MoshiConverterFactory.create())
             .client(okHttpClient)
@@ -168,7 +178,9 @@ class AppModule(private val app: Application) {
     @Provides
     @Named(OKHTTP_CLIENT_LOGIN)
     @Singleton
-    fun loginRetrofit(@Named(OKHTTP_CLIENT_LOGIN) okHttpClient: OkHttpClient): Retrofit =
+    fun loginRetrofit(
+        @Named(OKHTTP_CLIENT_LOGIN) okHttpClient: OkHttpClient,
+    ): Retrofit =
         Retrofit.Builder()
             .addConverterFactory(MoshiConverterFactory.create())
             .client(okHttpClient)
@@ -181,19 +193,22 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun plexMediaService(@Named(OKHTTP_CLIENT_MEDIA) mediaRetrofit: Retrofit): PlexMediaService =
-        mediaRetrofit.create(PlexMediaService::class.java)
+    fun plexMediaService(
+        @Named(OKHTTP_CLIENT_MEDIA) mediaRetrofit: Retrofit,
+    ): PlexMediaService = mediaRetrofit.create(PlexMediaService::class.java)
 
     @Provides
     @Singleton
-    fun plexLoginService(@Named(OKHTTP_CLIENT_LOGIN) loginRetrofit: Retrofit): PlexLoginService =
-        loginRetrofit.create(PlexLoginService::class.java)
+    fun plexLoginService(
+        @Named(OKHTTP_CLIENT_LOGIN) loginRetrofit: Retrofit,
+    ): PlexLoginService = loginRetrofit.create(PlexLoginService::class.java)
 
     @Provides
     @Singleton
-    fun exceptionHandler(): CoroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
-        Timber.e("Caught unhandled exception! $e")
-    }
+    fun exceptionHandler(): CoroutineExceptionHandler =
+        CoroutineExceptionHandler { _, e ->
+            Timber.e("Caught unhandled exception! $e")
+        }
 
     @Provides
     @Singleton
@@ -210,56 +225,60 @@ class AppModule(private val app: Application) {
         okHttpClient: OkHttpClient,
     ) = OkHttpImagePipelineConfigFactory
         .newBuilder(app, okHttpClient)
-        .setCacheKeyFactory(object : DefaultCacheKeyFactory() {
-            override fun getEncodedCacheKey(
-                request: ImageRequest?,
-                sourceUri: Uri?,
-                callerContext: Any?
-            ) = UrlQueryCacheKey(sourceUri)
+        .setCacheKeyFactory(
+            object : DefaultCacheKeyFactory() {
+                override fun getEncodedCacheKey(
+                    request: ImageRequest?,
+                    sourceUri: Uri?,
+                    callerContext: Any?,
+                ) = UrlQueryCacheKey(sourceUri)
 
-            override fun getEncodedCacheKey(
-                request: ImageRequest?,
-                callerContext: Any?
-            ) = UrlQueryCacheKey(request?.sourceUri)
+                override fun getEncodedCacheKey(
+                    request: ImageRequest?,
+                    callerContext: Any?,
+                ) = UrlQueryCacheKey(request?.sourceUri)
 
-            override fun getBitmapCacheKey(
-                request: ImageRequest?,
-                callerContext: Any?
-            ) = UrlQueryCacheKey(request?.sourceUri)
+                override fun getBitmapCacheKey(
+                    request: ImageRequest?,
+                    callerContext: Any?,
+                ) = UrlQueryCacheKey(request?.sourceUri)
 
-            override fun getPostprocessedBitmapCacheKey(
-                request: ImageRequest?,
-                callerContext: Any?
-            ) = UrlQueryCacheKey(request?.sourceUri)
+                override fun getPostprocessedBitmapCacheKey(
+                    request: ImageRequest?,
+                    callerContext: Any?,
+                ) = UrlQueryCacheKey(request?.sourceUri)
 
-            override fun getCacheKeySourceUri(sourceUri: Uri?): Uri {
-                return sourceUri?.query?.toUri() ?: "".toUri()
-            }
-        })
+                override fun getCacheKeySourceUri(sourceUri: Uri?): Uri {
+                    return sourceUri?.query?.toUri() ?: "".toUri()
+                }
+            },
+        )
         .setRequestListeners(
             if (BuildConfig.DEBUG) {
-                Collections.singleton(object : BaseRequestListener() {
-                    override fun onRequestSuccess(
-                        request: ImageRequest?,
-                        requestId: String?,
-                        isPrefetch: Boolean
-                    ) {
-                        Timber.i("Image load success: $request")
-                        super.onRequestSuccess(request, requestId, isPrefetch)
-                    }
+                Collections.singleton(
+                    object : BaseRequestListener() {
+                        override fun onRequestSuccess(
+                            request: ImageRequest?,
+                            requestId: String?,
+                            isPrefetch: Boolean,
+                        ) {
+                            Timber.i("Image load success: $request")
+                            super.onRequestSuccess(request, requestId, isPrefetch)
+                        }
 
-                    override fun onRequestFailure(
-                        request: ImageRequest?,
-                        requestId: String?,
-                        throwable: Throwable?,
-                        isPrefetch: Boolean
-                    ) {
-                        Timber.i("Image load failure: $request, $throwable")
-                        super.onRequestFailure(request, requestId, throwable, isPrefetch)
-                    }
-                }).toSet()
+                        override fun onRequestFailure(
+                            request: ImageRequest?,
+                            requestId: String?,
+                            throwable: Throwable?,
+                            isPrefetch: Boolean,
+                        ) {
+                            Timber.i("Image load failure: $request, $throwable")
+                            super.onRequestFailure(request, requestId, throwable, isPrefetch)
+                        }
+                    },
+                ).toSet()
             } else {
                 emptySet()
-            }
+            },
         ).build()
 }

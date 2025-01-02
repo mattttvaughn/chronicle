@@ -21,29 +21,32 @@ class HomeViewModel(
     private val plexConfig: PlexConfig,
     private val bookRepository: IBookRepository,
     private val librarySyncRepository: LibrarySyncRepository,
-    private val prefsRepo: PrefsRepo
+    private val prefsRepo: PrefsRepo,
 ) : ViewModel() {
-
     @Suppress("UNCHECKED_CAST")
-    class Factory @Inject constructor(
-        private val plexConfig: PlexConfig,
-        private val bookRepository: IBookRepository,
-        private val librarySyncRepository: LibrarySyncRepository,
-        private val prefsRepo: PrefsRepo,
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-                return HomeViewModel(
-                    plexConfig,
-                    bookRepository,
-                    librarySyncRepository,
-                    prefsRepo
-                ) as T
-            } else {
-                throw IllegalArgumentException("Cannot instantiate $modelClass from HomeViewModel.Factory")
+    class Factory
+        @Inject
+        constructor(
+            private val plexConfig: PlexConfig,
+            private val bookRepository: IBookRepository,
+            private val librarySyncRepository: LibrarySyncRepository,
+            private val prefsRepo: PrefsRepo,
+        ) : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
+                    return HomeViewModel(
+                        plexConfig,
+                        bookRepository,
+                        librarySyncRepository,
+                        prefsRepo,
+                    ) as T
+                } else {
+                    throw IllegalArgumentException(
+                        "Cannot instantiate $modelClass from HomeViewModel.Factory",
+                    )
+                }
             }
         }
-    }
 
     private var _offlineMode = MutableLiveData(prefsRepo.offlineMode)
     val offlineMode: LiveData<Boolean>
@@ -89,27 +92,30 @@ class HomeViewModel(
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             when (key) {
                 PrefsRepo.KEY_OFFLINE_MODE -> _offlineMode.postValue(prefsRepo.offlineMode)
-                else -> { /* Do nothing */
+                else -> { // Do nothing
                 }
             }
         }
 
-    private val serverConnectionObserver = Observer<Boolean> { isConnectedToServer ->
-        if (isConnectedToServer) {
-            viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-                val millisSinceLastRefresh =
-                    System.currentTimeMillis() - prefsRepo.lastRefreshTimeStamp
-                val minutesSinceLastRefresh = millisSinceLastRefresh / 1000 / 60
-                val bookCount = bookRepository.getBookCount()
-                val shouldRefresh =
-                    minutesSinceLastRefresh > prefsRepo.refreshRateMinutes || bookCount == 0
-                Timber.i("$minutesSinceLastRefresh minutes since last libraryrefresh,${prefsRepo.refreshRateMinutes} needed")
-                if (shouldRefresh) {
-                    refreshData()
+    private val serverConnectionObserver =
+        Observer<Boolean> { isConnectedToServer ->
+            if (isConnectedToServer) {
+                viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+                    val millisSinceLastRefresh =
+                        System.currentTimeMillis() - prefsRepo.lastRefreshTimeStamp
+                    val minutesSinceLastRefresh = millisSinceLastRefresh / 1000 / 60
+                    val bookCount = bookRepository.getBookCount()
+                    val shouldRefresh =
+                        minutesSinceLastRefresh > prefsRepo.refreshRateMinutes || bookCount == 0
+                    Timber.i(
+                        "$minutesSinceLastRefresh minutes since last libraryrefresh,${prefsRepo.refreshRateMinutes} needed",
+                    )
+                    if (shouldRefresh) {
+                        refreshData()
+                    }
                 }
             }
         }
-    }
 
     init {
         Timber.i("HomeViewModel init")

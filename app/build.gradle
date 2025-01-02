@@ -5,11 +5,11 @@ apply plugin: "kotlin-parcelize"
 apply plugin: "com.google.android.gms.oss-licenses-plugin"
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 34
     defaultConfig {
         applicationId "io.github.mattpvaughn.chronicle"
         minSdkVersion 31
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 26
         versionName '0.54.0'
         testInstrumentationRunner "io.github.mattpvaughn.chronicle.application.ChronicleTestRunner"
@@ -28,6 +28,7 @@ android {
     }
     buildFeatures {
         dataBinding = true
+        buildConfig = true
     }
     configurations {
         all {
@@ -37,9 +38,6 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
     // Shared code b/w test and androidTest: mocks "n" stuff
     sourceSets {
@@ -59,6 +57,8 @@ android {
         }
     }
     kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+
         freeCompilerArgs = ["-Xallow-result-return-type"]
         freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
         freeCompilerArgs += ["-opt-in=kotlin.time.ExperimentalTime"]
@@ -93,7 +93,7 @@ dependencies {
     implementation "com.google.android.material:material:$materialLibVersion"
     implementation "androidx.appcompat:appcompat:$supportlibVersion"
     implementation "androidx.fragment:fragment-ktx:$appCompatFragmentVersion"
-    implementation "androidx.recyclerview:recyclerview:1.3.0"
+    implementation "androidx.recyclerview:recyclerview:1.3.2"
     implementation "androidx.constraintlayout:constraintlayout:$constraintLayoutVersion"
 
     // AndroidX
@@ -125,7 +125,7 @@ dependencies {
     implementation "com.jakewharton.timber:timber:$timberVersion"
 
     // Fetch download manager
-    implementation "androidx.tonyodev.fetch2:xfetch2:3.1.6"
+    implementation "com.github.tonyofrancis.Fetch:fetch2:3.3.0"
 
     // Room DB manager
     implementation "androidx.room:room-runtime:$roomVersion"
@@ -153,8 +153,9 @@ dependencies {
 
 
         // Fresco - image loading
-    implementation 'com.facebook.fresco:fresco:2.6.0'
-    implementation "com.facebook.fresco:imagepipeline-okhttp3:2.4.0"
+    implementation 'com.facebook.fresco:fresco:3.5.0'
+    implementation "com.facebook.fresco:imagepipeline-okhttp3:3.5.0"
+    implementation 'com.facebook.infer.annotation:infer-annotation:0.18.0'
 
     // LocalBroadcastManager
     implementation "androidx.localbroadcastmanager:localbroadcastmanager:$localBroadcastManagerVersion"
@@ -175,7 +176,7 @@ dependencies {
     // WorkManager helps coordinate background syncing of local data w.r.t. network conditions
     implementation "androidx.work:work-runtime-ktx:$workVersion"
 
-    // Android team"s license displaying library- creates an activity showing all dependencies
+    // Android team's license displaying library- creates an activity showing all dependencies
     // by pulling from maven
     implementation "com.google.android.gms:play-services-oss-licenses:$ossLicenseActivityVersion"
 

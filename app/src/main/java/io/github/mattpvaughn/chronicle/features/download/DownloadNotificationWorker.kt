@@ -36,7 +36,6 @@ class DownloadNotificationWorker(
     context: Context,
     parameters: WorkerParameters,
 ) : CoroutineWorker(context, parameters) {
-
     private val fetch: Fetch = Injector.get().fetch()
     private val notificationManager = NotificationManagerCompat.from(applicationContext)
     private val bookRepository = Injector.get().bookRepo()
@@ -44,17 +43,19 @@ class DownloadNotificationWorker(
     private val cancelAllDesc =
         applicationContext.getString(R.string.download_notification_cancel_all)
     private val cancelAllIntent = Intent(ACTION_CANCEL_ALL_DOWNLOADS)
-    private val cancelAllPendingIntent = PendingIntent.getBroadcast(
-        applicationContext,
-        ACTION_CANCEL_ALL_DOWNLOADS_ID,
-        cancelAllIntent,
-        PendingIntent.FLAG_IMMUTABLE
-    )
-    private val actionCancelAll = NotificationCompat.Action.Builder(
-        R.drawable.fetch_notification_cancel,
-        cancelAllDesc,
-        cancelAllPendingIntent
-    ).build()
+    private val cancelAllPendingIntent =
+        PendingIntent.getBroadcast(
+            applicationContext,
+            ACTION_CANCEL_ALL_DOWNLOADS_ID,
+            cancelAllIntent,
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+    private val actionCancelAll =
+        NotificationCompat.Action.Builder(
+            R.drawable.fetch_notification_cancel,
+            cancelAllDesc,
+            cancelAllPendingIntent,
+        ).build()
 
     private val activeDownloadStatuses =
         listOf(Status.QUEUED, Status.DOWNLOADING, Status.NONE, Status.ADDED)
@@ -63,50 +64,53 @@ class DownloadNotificationWorker(
     private val maxWaitToStartDurationMs = 10_000L
 
     /** Adds a download for all tracks in book with [Audiobook.id] == [bookId] */
-    override suspend fun doWork() = withContext(Dispatchers.IO) {
-        createNotificationChannelAsNeeded()
+    override suspend fun doWork() =
+        withContext(Dispatchers.IO) {
+            createNotificationChannelAsNeeded()
 
-        var hasActiveDownloads = false
-        val startedTimeStamp = System.currentTimeMillis()
-        // Wait for at least [maxWaitToStartDurationMs] to ensure downloads have started
-        while (hasActiveDownloads || System.currentTimeMillis() - startedTimeStamp < maxWaitToStartDurationMs) {
-            fetch.getDownloads { allDownloads ->
-                val activeBooks = allDownloads.groupBy { it.group }
-                    .filter { (_, trackDownloads) ->
-                        trackDownloads.any { it.status in activeDownloadStatuses }
-                    }
-                hasActiveDownloads = activeBooks.isNotEmpty()
-                updateNotifications(activeBooks)
+            var hasActiveDownloads = false
+            val startedTimeStamp = System.currentTimeMillis()
+            // Wait for at least [maxWaitToStartDurationMs] to ensure downloads have started
+            while (hasActiveDownloads || System.currentTimeMillis() - startedTimeStamp < maxWaitToStartDurationMs) {
+                fetch.getDownloads { allDownloads ->
+                    val activeBooks =
+                        allDownloads.groupBy { it.group }
+                            .filter { (_, trackDownloads) ->
+                                trackDownloads.any { it.status in activeDownloadStatuses }
+                            }
+                    hasActiveDownloads = activeBooks.isNotEmpty()
+                    updateNotifications(activeBooks)
+                }
+                delay(refreshNotifFrequencyMS)
             }
-            delay(refreshNotifFrequencyMS)
-        }
 
-        notificationManager.cancelAll()
+            notificationManager.cancelAll()
 
-        val workerContext = coroutineContext
+            val workerContext = coroutineContext
 
-        fetch.getDownloads { downloads ->
-            CoroutineScope(workerContext).launch {
-                withContext(Dispatchers.IO) {
-                    // Mark successful downloads as cached
-                    val successfulGroupIds = downloads.groupBy { it.group }
-                        .filter { group ->
-                            group.value.all { it.status == Status.COMPLETED }
+            fetch.getDownloads { downloads ->
+                CoroutineScope(workerContext).launch {
+                    withContext(Dispatchers.IO) {
+                        // Mark successful downloads as cached
+                        val successfulGroupIds =
+                            downloads.groupBy { it.group }
+                                .filter { group ->
+                                    group.value.all { it.status == Status.COMPLETED }
+                                }
+                                .map { it.key }
+                        successfulGroupIds.forEach { groupId ->
+                            Timber.i("Book download success for ($groupId)")
+                            bookRepository.updateCachedStatus(groupId, true)
                         }
-                        .map { it.key }
-                    successfulGroupIds.forEach { groupId ->
-                        Timber.i("Book download success for ($groupId)")
-                        bookRepository.updateCachedStatus(groupId, true)
-                    }
 
-                    // Show notifications for finished/failed downloads, then remove them from Fetch
-                    showDownloadsCompleteNotification(downloads)
+                        // Show notifications for finished/failed downloads, then remove them from Fetch
+                        showDownloadsCompleteNotification(downloads)
+                    }
                 }
             }
-        }
 
-        return@withContext Result.success()
-    }
+            return@withContext Result.success()
+        }
 
     /**
      * Show notifications for completed/failed downloads, allowing the user to retry failed
@@ -115,31 +119,35 @@ class DownloadNotificationWorker(
     private fun showDownloadsCompleteNotification(downloads: List<Download>) {
         val bookDownloads = downloads.groupBy { it.group }
         Timber.i("Downloads: $bookDownloads")
-        val bookStatuses = bookDownloads.map { bookDownload ->
-            // Don't show a notification for a cancelled download, users don't need to be
-            // informed that they cancelled a download
-            val statuses = bookDownload.value.filter {
-                it.status != Status.CANCELLED
-            }.map { it.status }
-            val bookName = bookDownload.value.firstOrNull()?.tag ?: ""
-            val bookId = bookDownload.key
-            DownloadResult(
-                bookName = bookName,
-                bookId = bookId,
-                status = when {
-                    Status.FAILED in statuses -> Status.FAILED
-                    Status.COMPLETED in statuses -> Status.COMPLETED
-                    else -> Status.NONE
-                },
-                errors = bookDownload.value.filter { it.error != Error.NONE }.map {
-                    it.error.name
-                }.distinct()
-            )
-        }.filter {
-            it.bookName.isNotEmpty() &&
-                it.bookId != NO_AUDIOBOOK_FOUND_ID &&
-                (it.status in listOf(Status.FAILED, Status.COMPLETED))
-        }
+        val bookStatuses =
+            bookDownloads.map { bookDownload ->
+                // Don't show a notification for a cancelled download, users don't need to be
+                // informed that they cancelled a download
+                val statuses =
+                    bookDownload.value.filter {
+                        it.status != Status.CANCELLED
+                    }.map { it.status }
+                val bookName = bookDownload.value.firstOrNull()?.tag ?: ""
+                val bookId = bookDownload.key
+                DownloadResult(
+                    bookName = bookName,
+                    bookId = bookId,
+                    status =
+                        when {
+                            Status.FAILED in statuses -> Status.FAILED
+                            Status.COMPLETED in statuses -> Status.COMPLETED
+                            else -> Status.NONE
+                        },
+                    errors =
+                        bookDownload.value.filter { it.error != Error.NONE }.map {
+                            it.error.name
+                        }.distinct(),
+                )
+            }.filter {
+                it.bookName.isNotEmpty() &&
+                    it.bookId != NO_AUDIOBOOK_FOUND_ID &&
+                    (it.status in listOf(Status.FAILED, Status.COMPLETED))
+            }
 
         if (bookStatuses.isNotEmpty()) {
             val showInGroup = bookStatuses.size > 1
@@ -167,17 +175,18 @@ class DownloadNotificationWorker(
         val bookName: String,
         val bookId: Int,
         val status: Status,
-        val errors: List<String>
+        val errors: List<String>,
     )
 
     /** Creates a notification channel if required by the given version of Android SDK */
     private fun createNotificationChannelAsNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationChannel = NotificationChannel(
-                DOWNLOAD_CHANNEL,
-                applicationContext.getString(R.string.download_notification_title),
-                NotificationManager.IMPORTANCE_LOW
-            )
+            val notificationChannel =
+                NotificationChannel(
+                    DOWNLOAD_CHANNEL,
+                    applicationContext.getString(R.string.download_notification_title),
+                    NotificationManager.IMPORTANCE_LOW,
+                )
             notificationChannel.description =
                 applicationContext.getString(R.string.download_channel_description)
 
@@ -197,53 +206,62 @@ class DownloadNotificationWorker(
         // For one download, show name + status
         val res = applicationContext.resources
         val downloadFailed = bookStatuses.any { it.status == Status.FAILED }
-        val finishedTitle = if (downloadFailed) {
-            res.getString(R.string.download_failed_notification_title)
-        } else {
-            res.getString(R.string.download_successful_notification_title)
-        }
-
-        val finishedContent = when {
-            bookStatuses.all { it.status == Status.FAILED } -> res.getQuantityString(
-                R.plurals.downloads_failed_summary,
-                failCount
-            )
-            bookStatuses.all { it.status == Status.COMPLETED } -> res.getQuantityString(
-                R.plurals.downloads_complete_summary,
-                successCount
-            )
-            else -> {
-                applicationContext.getString(
-                    R.string.downloads_completed_summary_mixed,
-                    bookStatuses.count { it.status == Status.COMPLETED },
-                    bookStatuses.count { it.status == Status.FAILED }
-                )
+        val finishedTitle =
+            if (downloadFailed) {
+                res.getString(R.string.download_failed_notification_title)
+            } else {
+                res.getString(R.string.download_successful_notification_title)
             }
-        }
 
-        val downloadSummaries = bookStatuses.map { (bookTitle, _, status) ->
-            when (status) {
-                Status.COMPLETED -> applicationContext.getString(
-                    R.string.download_successful_notification_content,
-                    bookTitle.take(30)
-                )
-                Status.FAILED -> applicationContext.getString(
-                    R.string.download_failed_notification_content,
-                    bookTitle.take(30)
-                )
-                else -> return null
+        val finishedContent =
+            when {
+                bookStatuses.all { it.status == Status.FAILED } ->
+                    res.getQuantityString(
+                        R.plurals.downloads_failed_summary,
+                        failCount,
+                    )
+                bookStatuses.all { it.status == Status.COMPLETED } ->
+                    res.getQuantityString(
+                        R.plurals.downloads_complete_summary,
+                        successCount,
+                    )
+                else -> {
+                    applicationContext.getString(
+                        R.string.downloads_completed_summary_mixed,
+                        bookStatuses.count { it.status == Status.COMPLETED },
+                        bookStatuses.count { it.status == Status.FAILED },
+                    )
+                }
             }
-        }
 
-        val finishedDownloadList = NotificationCompat.InboxStyle()
-            .setBigContentTitle(finishedTitle)
+        val downloadSummaries =
+            bookStatuses.map { (bookTitle, _, status) ->
+                when (status) {
+                    Status.COMPLETED ->
+                        applicationContext.getString(
+                            R.string.download_successful_notification_content,
+                            bookTitle.take(30),
+                        )
+                    Status.FAILED ->
+                        applicationContext.getString(
+                            R.string.download_failed_notification_content,
+                            bookTitle.take(30),
+                        )
+                    else -> return null
+                }
+            }
+
+        val finishedDownloadList =
+            NotificationCompat.InboxStyle()
+                .setBigContentTitle(finishedTitle)
         downloadSummaries.forEach { line -> finishedDownloadList.addLine(line) }
 
-        val resultIcon = if (downloadFailed) {
-            R.drawable.ic_cloud_download_failed
-        } else {
-            R.drawable.ic_cloud_done_white
-        }
+        val resultIcon =
+            if (downloadFailed) {
+                R.drawable.ic_cloud_download_failed
+            } else {
+                R.drawable.ic_cloud_done_white
+            }
 
         return NotificationCompat.Builder(applicationContext, DOWNLOAD_CHANNEL)
             .setContentTitle(finishedTitle)
@@ -263,38 +281,42 @@ class DownloadNotificationWorker(
      */
     private fun makeFinishedNotification(
         downloadResult: DownloadResult,
-        showInGroup: Boolean
+        showInGroup: Boolean,
     ): Notification? {
         val status = downloadResult.status
         val bookName = downloadResult.bookName
 
-        val title = applicationContext.getString(
-            when (status) {
-                Status.FAILED -> R.string.download_failed_notification_content
-                Status.COMPLETED -> R.string.download_successful_notification_content
-                else -> return null
-            },
-            bookName
-        )
+        val title =
+            applicationContext.getString(
+                when (status) {
+                    Status.FAILED -> R.string.download_failed_notification_content
+                    Status.COMPLETED -> R.string.download_successful_notification_content
+                    else -> return null
+                },
+                bookName,
+            )
 
-        val content = if (downloadResult.errors.isEmpty()) {
-            null
-        } else {
-            downloadResult.errors.joinToString { it }
-        }
-        val icon = when (status) {
-            Status.FAILED -> R.drawable.ic_cloud_download_failed
-            Status.COMPLETED -> R.drawable.ic_cloud_done_white
-            else -> return null
-        }
+        val content =
+            if (downloadResult.errors.isEmpty()) {
+                null
+            } else {
+                downloadResult.errors.joinToString { it }
+            }
+        val icon =
+            when (status) {
+                Status.FAILED -> R.drawable.ic_cloud_download_failed
+                Status.COMPLETED -> R.drawable.ic_cloud_done_white
+                else -> return null
+            }
 
         val openBookPendingIntent = makeOpenBookPendingIntent(downloadResult.bookId)
-        val builder = NotificationCompat.Builder(applicationContext, DOWNLOAD_CHANNEL)
-            .setContentTitle(title)
-            .setContentIntent(openBookPendingIntent)
-            .setContentText(content)
-            .setSmallIcon(icon)
-            .setGroup(if (showInGroup) DOWNLOADS_FINISHED_NOTIF_GROUP else null)
+        val builder =
+            NotificationCompat.Builder(applicationContext, DOWNLOAD_CHANNEL)
+                .setContentTitle(title)
+                .setContentIntent(openBookPendingIntent)
+                .setContentText(content)
+                .setSmallIcon(icon)
+                .setGroup(if (showInGroup) DOWNLOADS_FINISHED_NOTIF_GROUP else null)
 
         return builder.build()
     }
@@ -304,34 +326,38 @@ class DownloadNotificationWorker(
             return
         }
 
-        val bookNotifications = bookDownloadGroups.mapNotNull { (bookId, trackDownloads) ->
-            val bookTitle = trackDownloads.firstOrNull()?.tag ?: return@mapNotNull null
-            val avgCompletion = trackDownloads.sumBy {
-                min(100, max(0, it.progress))
-            } / (trackDownloads.size)
+        val bookNotifications =
+            bookDownloadGroups.mapNotNull { (bookId, trackDownloads) ->
+                val bookTitle = trackDownloads.firstOrNull()?.tag ?: return@mapNotNull null
+                val avgCompletion =
+                    trackDownloads.sumBy {
+                        min(100, max(0, it.progress))
+                    } / (trackDownloads.size)
 
-            bookId to createDownloadNotificationForBook(
-                bookId = bookId,
-                bookTitle = bookTitle,
-                avgCompletion = avgCompletion,
-                showInGroup = bookDownloadGroups.size > 1
-            )
-        }
+                bookId to
+                    createDownloadNotificationForBook(
+                        bookId = bookId,
+                        bookTitle = bookTitle,
+                        avgCompletion = avgCompletion,
+                        showInGroup = bookDownloadGroups.size > 1,
+                    )
+            }
         val summaryNotification = makeActiveDownloadsSummary(bookDownloadGroups)
         showDownloadNotifications(bookNotifications, summaryNotification)
     }
 
     private fun showDownloadNotifications(
         downloadNotifications: List<Pair<Int, Notification>>,
-        summaryNotification: Notification
+        summaryNotification: Notification,
     ) {
         val size = downloadNotifications.size
         when {
             size == 0 -> notificationManager.cancelAll()
-            size == 1 -> showNotificationForeground(
-                downloadNotifications[0].second,
-                DOWNLOAD_NOTIF_SUMMARY_ID
-            )
+            size == 1 ->
+                showNotificationForeground(
+                    downloadNotifications[0].second,
+                    DOWNLOAD_NOTIF_SUMMARY_ID,
+                )
             size >= 2 -> {
                 showNotificationForeground(summaryNotification, DOWNLOAD_NOTIF_SUMMARY_ID)
                 downloadNotifications.forEach { (bookId, notification) ->
@@ -342,41 +368,47 @@ class DownloadNotificationWorker(
     }
 
     /** Adds additional metadata about foreground service type if available */
-    private fun showNotificationForeground(notification: Notification, notificationId: Int) {
+    private fun showNotificationForeground(
+        notification: Notification,
+        notificationId: Int,
+    ) {
         setForegroundAsync(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 ForegroundInfo(notificationId, notification, FOREGROUND_SERVICE_TYPE_DATA_SYNC)
             } else {
                 ForegroundInfo(notificationId, notification)
-            }
+            },
         )
     }
 
     private fun makeActiveDownloadsSummary(bookGroups: Map<Int, List<Download>>): Notification {
         // Show up to 5 downloads on legacy devices
-        val downloadsToShow = bookGroups.toList().sortedBy { (_, b) ->
-            b.firstOrNull()?.created ?: System.currentTimeMillis()
-        }.take(5).mapNotNull { (_, downloads) ->
-            val bookName = downloads.getOrNull(0)?.tag
-            val progress = min(max(downloads.sumBy { it.progress } / (downloads.size), 0), 100)
-            if (downloads.isNotEmpty() && bookName != null) {
-                applicationContext.getString(
-                    R.string.download_starting,
-                    bookName.take(30),
-                    progress.toString()
-                )
-            } else {
-                null
+        val downloadsToShow =
+            bookGroups.toList().sortedBy { (_, b) ->
+                b.firstOrNull()?.created ?: System.currentTimeMillis()
+            }.take(5).mapNotNull { (_, downloads) ->
+                val bookName = downloads.getOrNull(0)?.tag
+                val progress = min(max(downloads.sumBy { it.progress } / (downloads.size), 0), 100)
+                if (downloads.isNotEmpty() && bookName != null) {
+                    applicationContext.getString(
+                        R.string.download_starting,
+                        bookName.take(30),
+                        progress.toString(),
+                    )
+                } else {
+                    null
+                }
             }
-        }
-        val downloadSummary = applicationContext.resources.getQuantityString(
-            R.plurals.download_books_summary,
-            bookGroups.size,
-            bookGroups.size
-        )
+        val downloadSummary =
+            applicationContext.resources.getQuantityString(
+                R.plurals.download_books_summary,
+                bookGroups.size,
+                bookGroups.size,
+            )
         // build summary info into InboxStyle template
-        val downloadsList = NotificationCompat.InboxStyle()
-            .setBigContentTitle(downloadSummary)
+        val downloadsList =
+            NotificationCompat.InboxStyle()
+                .setBigContentTitle(downloadSummary)
         downloadsToShow.forEach { line -> downloadsList.addLine(line) }
 
         return NotificationCompat.Builder(applicationContext, DOWNLOAD_CHANNEL)
@@ -396,23 +428,24 @@ class DownloadNotificationWorker(
         bookId: Int,
         bookTitle: String,
         avgCompletion: Int,
-        showInGroup: Boolean
+        showInGroup: Boolean,
     ): Notification {
+        val notificationTitle =
+            applicationContext.getString(
+                R.string.download_starting,
+                bookTitle,
+                avgCompletion.toString(),
+            )
 
-        val notificationTitle = applicationContext.getString(
-            R.string.download_starting,
-            bookTitle,
-            avgCompletion.toString()
-        )
-
-        val cancelPendingIntent = PendingIntent.getBroadcast(
-            applicationContext,
-            ACTION_CANCEL_BOOK_DOWNLOAD_ID + bookId,
-            Intent(ACTION_CANCEL_BOOK_DOWNLOAD).apply {
-                putExtra(KEY_BOOK_ID, bookId)
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val cancelPendingIntent =
+            PendingIntent.getBroadcast(
+                applicationContext,
+                ACTION_CANCEL_BOOK_DOWNLOAD_ID + bookId,
+                Intent(ACTION_CANCEL_BOOK_DOWNLOAD).apply {
+                    putExtra(KEY_BOOK_ID, bookId)
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
 
         val openBookPendingIntent = makeOpenBookPendingIntent(bookId)
 
@@ -430,10 +463,11 @@ class DownloadNotificationWorker(
 
     private fun makeOpenBookPendingIntent(bookId: Int): PendingIntent? {
         val intent = Intent()
-        val activity = applicationContext.packageManager.getPackageInfo(
-            applicationContext.packageName,
-            PackageManager.GET_ACTIVITIES
-        ).activities.find { it.name.contains("MainActivity") }
+        val activity =
+            applicationContext.packageManager.getPackageInfo(
+                applicationContext.packageName,
+                PackageManager.GET_ACTIVITIES,
+            ).activities.find { it.name.contains("MainActivity") }
         intent.setPackage(applicationContext.packageName)
         intent.putExtra(FLAG_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID, bookId)
         intent.component = ComponentName(applicationContext.packageName, activity?.name ?: "")
@@ -441,7 +475,7 @@ class DownloadNotificationWorker(
             applicationContext,
             REQUEST_CODE_PREFIX_OPEN_ACTIVITY_TO_AUDIOBOOK_WITH_ID + bookId,
             intent,
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
@@ -470,17 +504,19 @@ class DownloadNotificationWorker(
 
         /** Start [DownloadNotificationWorker] if it is not already running */
         fun start() {
-            val syncWorkerConstraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-            val worker = OneTimeWorkRequestBuilder<DownloadNotificationWorker>()
-                .setConstraints(syncWorkerConstraints)
-                .build()
+            val syncWorkerConstraints =
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            val worker =
+                OneTimeWorkRequestBuilder<DownloadNotificationWorker>()
+                    .setConstraints(syncWorkerConstraints)
+                    .build()
 
             Injector.get().workManager().beginUniqueWork(
                 DOWNLOAD_WORKER_ID,
                 ExistingWorkPolicy.KEEP,
-                worker
+                worker,
             ).enqueue()
         }
     }

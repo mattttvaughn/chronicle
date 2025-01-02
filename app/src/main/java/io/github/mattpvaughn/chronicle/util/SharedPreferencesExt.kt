@@ -7,7 +7,7 @@ import androidx.lifecycle.LiveData
 class BooleanPreferenceLiveData(
     private val key: String,
     private val defaultValue: Boolean,
-    private val sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences,
 ) : LiveData<Boolean>() {
     private val prefListener =
         SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
@@ -32,7 +32,7 @@ class BooleanPreferenceLiveData(
 class StringPreferenceLiveData(
     private val key: String,
     private val defaultValue: String,
-    private val sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences,
 ) : LiveData<String>() {
     private val prefListener =
         SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
@@ -57,7 +57,7 @@ class StringPreferenceLiveData(
 class FloatPreferenceLiveData(
     private val key: String,
     private val defaultValue: Float,
-    private val sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences,
 ) : LiveData<Float>() {
     private val prefListener =
         SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->

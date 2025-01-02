@@ -15,13 +15,13 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.CONTENT_STYLE_SUPPORTED
 fun makeBrowsable(
     title: String,
     @DrawableRes iconRes: Int,
-    desc: String = ""
+    desc: String = "",
 ): MediaItem {
     val mediaDescription = MediaDescriptionCompat.Builder()
     mediaDescription.setTitle(title)
     mediaDescription.setSubtitle(desc)
     mediaDescription.setIconUri(
-        Uri.parse("android.resource://${BuildConfig.APPLICATION_ID}/$iconRes")
+        Uri.parse("android.resource://${BuildConfig.APPLICATION_ID}/$iconRes"),
     )
     mediaDescription.setMediaId(title)
     val extras = Bundle()

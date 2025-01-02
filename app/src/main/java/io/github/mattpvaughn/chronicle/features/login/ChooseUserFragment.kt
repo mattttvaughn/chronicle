@@ -22,7 +22,6 @@ import javax.inject.Inject
 
 /** Handles the picking of user profiles. */
 class ChooseUserFragment : Fragment() {
-
     companion object {
         @JvmStatic
         fun newInstance() = ChooseUserFragment()
@@ -44,25 +43,37 @@ class ChooseUserFragment : Fragment() {
 
     private var binding: OnboardingPlexChooseUserBinding? = null
 
-    private val pinListener = object : TextWatcher {
-        override fun afterTextChanged(s: Editable?) {}
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+    private val pinListener =
+        object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {}
 
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            if (s != null && this@ChooseUserFragment::viewModel.isInitialized) {
-                viewModel.setPinData(s)
-                // Automatically submit on 4 digits entered
-                if (s.length >= 4) {
-                    viewModel.submitPin()
+            override fun beforeTextChanged(
+                s: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int,
+            ) {}
+
+            override fun onTextChanged(
+                s: CharSequence?,
+                start: Int,
+                before: Int,
+                count: Int,
+            ) {
+                if (s != null && this@ChooseUserFragment::viewModel.isInitialized) {
+                    viewModel.setPinData(s)
+                    // Automatically submit on 4 digits entered
+                    if (s.length >= 4) {
+                        viewModel.submitPin()
+                    }
                 }
             }
         }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         ((activity as Activity).application as ChronicleApplication)
             .appComponent
@@ -72,16 +83,18 @@ class ChooseUserFragment : Fragment() {
         val tempBinding = OnboardingPlexChooseUserBinding.inflate(inflater, container, false)
         tempBinding.lifecycleOwner = viewLifecycleOwner
 
-        viewModel = ViewModelProvider(
-            viewModelStore,
-            viewModelFactory
-        ).get(ChooseUserViewModel::class.java)
+        viewModel =
+            ViewModelProvider(
+                viewModelStore,
+                viewModelFactory,
+            ).get(ChooseUserViewModel::class.java)
 
-        userListAdapter = UserListAdapter(
-            UserClickListener { user ->
-                viewModel.pickUser(user)
-            }
-        )
+        userListAdapter =
+            UserListAdapter(
+                UserClickListener { user ->
+                    viewModel.pickUser(user)
+                },
+            )
         tempBinding.userList.adapter = userListAdapter
 
         tempBinding.pinEdittext.addTextChangedListener(pinListener)
@@ -107,13 +120,13 @@ class ChooseUserFragment : Fragment() {
         viewModel.pinErrorMessage.observe(
             viewLifecycleOwner,
             Observer
-            {
-                if (!it.isNullOrEmpty()) {
-                    tempBinding.pinEdittext.error = it
-                } else {
-                    tempBinding.pinEdittext.error = null
-                }
-            }
+                {
+                    if (!it.isNullOrEmpty()) {
+                        tempBinding.pinEdittext.error = it
+                    } else {
+                        tempBinding.pinEdittext.error = null
+                    }
+                },
         )
 
         tempBinding.viewModel = viewModel

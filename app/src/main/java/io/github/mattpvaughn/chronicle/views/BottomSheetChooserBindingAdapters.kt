@@ -11,7 +11,7 @@ import io.github.mattpvaughn.chronicle.views.BottomSheetChooser.FormattableStrin
 @BindingAdapter("bottomChooserState")
 fun setBottomChooserState(
     bottomSheetChooser: BottomSheetChooser,
-    state: BottomChooserState
+    state: BottomChooserState,
 ) {
     bottomSheetChooser.setTitle(state.title)
     bottomSheetChooser.setOptionsSelectedListener(state.listener)
@@ -27,12 +27,18 @@ fun setBottomChooserState(
 }
 
 @BindingAdapter("android:text")
-fun setFormattableText(textView: TextView, formattableString: FormattableString) {
+fun setFormattableText(
+    textView: TextView,
+    formattableString: FormattableString,
+) {
     textView.text = formattableString.format(textView.context.resources)
 }
 
 @BindingAdapter("options")
-fun setOptions(recyclerView: RecyclerView, options: List<FormattableString>) {
+fun setOptions(
+    recyclerView: RecyclerView,
+    options: List<FormattableString>,
+) {
     val adapter = recyclerView.adapter as BottomSheetChooser.OptionsListAdapter
     adapter.submitList(options)
 }
@@ -40,7 +46,7 @@ fun setOptions(recyclerView: RecyclerView, options: List<FormattableString>) {
 @BindingAdapter("listener")
 fun setOptionsListener(
     recyclerView: RecyclerView,
-    listener: BottomSheetChooser.BottomChooserListener
+    listener: BottomSheetChooser.BottomChooserListener,
 ) {
     val adapter = recyclerView.adapter as BottomSheetChooser.OptionsListAdapter
     adapter.setListener(listener)

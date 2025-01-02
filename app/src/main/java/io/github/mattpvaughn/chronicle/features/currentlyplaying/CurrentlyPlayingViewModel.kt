@@ -54,37 +54,38 @@ class CurrentlyPlayingViewModel(
     private val prefsRepo: PrefsRepo,
     private val plexConfig: PlexConfig,
     private val currentlyPlaying: CurrentlyPlaying,
-    sharedPrefs: SharedPreferences
+    sharedPrefs: SharedPreferences,
 ) : ViewModel() {
-
     @Suppress("UNCHECKED_CAST")
-    class Factory @Inject constructor(
-        private val bookRepository: IBookRepository,
-        private val trackRepository: ITrackRepository,
-        private val localBroadcastManager: LocalBroadcastManager,
-        private val mediaServiceConnection: MediaServiceConnection,
-        private val prefsRepo: PrefsRepo,
-        private val plexConfig: PlexConfig,
-        private val currentlyPlaying: CurrentlyPlaying,
-        private val sharedPrefs: SharedPreferences,
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
-                return CurrentlyPlayingViewModel(
-                    bookRepository,
-                    trackRepository,
-                    localBroadcastManager,
-                    mediaServiceConnection,
-                    prefsRepo,
-                    plexConfig,
-                    currentlyPlaying,
-                    sharedPrefs
-                ) as T
-            } else {
-                throw IllegalArgumentException("Incorrect class type provided")
+    class Factory
+        @Inject
+        constructor(
+            private val bookRepository: IBookRepository,
+            private val trackRepository: ITrackRepository,
+            private val localBroadcastManager: LocalBroadcastManager,
+            private val mediaServiceConnection: MediaServiceConnection,
+            private val prefsRepo: PrefsRepo,
+            private val plexConfig: PlexConfig,
+            private val currentlyPlaying: CurrentlyPlaying,
+            private val sharedPrefs: SharedPreferences,
+        ) : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(CurrentlyPlayingViewModel::class.java)) {
+                    return CurrentlyPlayingViewModel(
+                        bookRepository,
+                        trackRepository,
+                        localBroadcastManager,
+                        mediaServiceConnection,
+                        prefsRepo,
+                        plexConfig,
+                        currentlyPlaying,
+                        sharedPrefs,
+                    ) as T
+                } else {
+                    throw IllegalArgumentException("Incorrect class type provided")
+                }
             }
         }
-    }
 
     private var _showUserMessage = MutableLiveData<Event<String>>()
     val showUserMessage: LiveData<Event<String>>
@@ -92,34 +93,38 @@ class CurrentlyPlayingViewModel(
 
     private var audiobookId = MutableLiveData(EMPTY_AUDIOBOOK.id)
 
-    val audiobook: LiveData<Audiobook?> = audiobookId.switchMap { id ->
-        if (id == EMPTY_AUDIOBOOK.id) {
-            emptyAudiobook
-        } else {
-            bookRepository.getAudiobook(id)
+    val audiobook: LiveData<Audiobook?> =
+        audiobookId.switchMap { id ->
+            if (id == EMPTY_AUDIOBOOK.id) {
+                emptyAudiobook
+            } else {
+                bookRepository.getAudiobook(id)
+            }
         }
-    }
 
     private val emptyAudiobook = MutableLiveData(EMPTY_AUDIOBOOK)
     private val emptyTrackList = MutableLiveData<List<MediaItemTrack>>(emptyList())
 
     // TODO: expose combined track/chapter bits in ViewModel as "windowSomething" instead of in xml
-    val tracks: LiveData<List<MediaItemTrack>> = audiobookId.switchMap { id ->
-        if (id == EMPTY_AUDIOBOOK.id) {
-            emptyTrackList
-        } else {
-            trackRepository.getTracksForAudiobook(id)
+    val tracks: LiveData<List<MediaItemTrack>> =
+        audiobookId.switchMap { id ->
+            if (id == EMPTY_AUDIOBOOK.id) {
+                emptyTrackList
+            } else {
+                trackRepository.getTracksForAudiobook(id)
+            }
         }
-    }
 
     // Used to cache tracks.asChapterList when tracks changes
-    private val tracksAsChaptersCache: LiveData<List<Chapter>> = mapAsync(tracks, viewModelScope) {
-        it.asChapterList()
-    }
+    private val tracksAsChaptersCache: LiveData<List<Chapter>> =
+        mapAsync(tracks, viewModelScope) {
+            it.asChapterList()
+        }
 
     val chapters: DoubleLiveData<Audiobook?, List<Chapter>, List<Chapter>> =
         DoubleLiveData(
-            audiobook, tracksAsChaptersCache
+            audiobook,
+            tracksAsChaptersCache,
         ) { _audiobook: Audiobook?, _tracksAsChapters: List<Chapter>? ->
             if (_audiobook?.chapters?.isNotEmpty() == true) {
                 // We would really prefer this because it doesn't have to be computed
@@ -129,18 +134,20 @@ class CurrentlyPlayingViewModel(
             }
         }
 
-    val speed = FloatPreferenceLiveData(
-        PrefsRepo.KEY_PLAYBACK_SPEED,
-        PLAYBACK_SPEED_DEFAULT,
-        sharedPrefs
-    ).map {
-        Timber.i("Speed: %.2f", it)
-        return@map it.coerceIn(PLAYBACK_SPEED_MIN, PLAYBACK_SPEED_MAX)
-    }
+    val speed =
+        FloatPreferenceLiveData(
+            PrefsRepo.KEY_PLAYBACK_SPEED,
+            PLAYBACK_SPEED_DEFAULT,
+            sharedPrefs,
+        ).map {
+            Timber.i("Speed: %.2f", it)
+            return@map it.coerceIn(PLAYBACK_SPEED_MIN, PLAYBACK_SPEED_MAX)
+        }
 
-    val playbackSpeedString = speed.map { speed ->
-        return@map String.format("%.2f", speed) + "x"
-    }
+    val playbackSpeedString =
+        speed.map { speed ->
+            return@map String.format("%.2f", speed) + "x"
+        }
 
     private var _showModalBottomSheetSpeedChooser = MutableLiveData<Event<Unit>>()
     val showModalBottomSheetSpeedChooser: LiveData<Event<Unit>>
@@ -156,36 +163,46 @@ class CurrentlyPlayingViewModel(
 
     val currentChapter = currentlyPlaying.chapter.asLiveData(viewModelScope.coroutineContext)
 
-    val chapterProgress = currentlyPlaying.chapter.combine(currentlyPlaying.track) { chapter: Chapter, track: MediaItemTrack ->
-        track.progress - chapter.startTimeOffset
-    }.asLiveData(viewModelScope.coroutineContext)
+    val chapterProgress =
+        currentlyPlaying.chapter.combine(
+            currentlyPlaying.track,
+        ) { chapter: Chapter, track: MediaItemTrack ->
+            track.progress - chapter.startTimeOffset
+        }.asLiveData(viewModelScope.coroutineContext)
 
-    val chapterProgressString = chapterProgress.map { progress ->
-        return@map DateUtils.formatElapsedTime(
-            StringBuilder(),
-            progress / 1000
-        )
-    }
+    val chapterProgressString =
+        chapterProgress.map { progress ->
+            return@map DateUtils.formatElapsedTime(
+                StringBuilder(),
+                progress / 1000,
+            )
+        }
 
-    val chapterProgressForSlider = currentlyPlaying.chapter.combine(currentlyPlaying.track) { chapter: Chapter, track: MediaItemTrack ->
-        track.progress - chapter.startTimeOffset
-    }.filter { !isSliding }.asLiveData(viewModelScope.coroutineContext)
+    val chapterProgressForSlider =
+        currentlyPlaying.chapter.combine(
+            currentlyPlaying.track,
+        ) { chapter: Chapter, track: MediaItemTrack ->
+            track.progress - chapter.startTimeOffset
+        }.filter { !isSliding }.asLiveData(viewModelScope.coroutineContext)
 
-    val trackProgressForSlider = currentlyPlaying.track
-        .filter { !isSliding }
-        .map { it.progress }
-        .asLiveData(viewModelScope.coroutineContext)
+    val trackProgressForSlider =
+        currentlyPlaying.track
+            .filter { !isSliding }
+            .map { it.progress }
+            .asLiveData(viewModelScope.coroutineContext)
 
-    val chapterDuration = currentChapter.map {
-        return@map it.endTimeOffset - it.startTimeOffset
-    }
+    val chapterDuration =
+        currentChapter.map {
+            return@map it.endTimeOffset - it.startTimeOffset
+        }
 
-    val chapterDurationString = chapterDuration.map { duration ->
-        return@map DateUtils.formatElapsedTime(
-            StringBuilder(),
-            duration / 1000
-        )
-    }
+    val chapterDurationString =
+        chapterDuration.map { duration ->
+            return@map DateUtils.formatElapsedTime(
+                StringBuilder(),
+                duration / 1000,
+            )
+        }
 
     var isSliding = false
 
@@ -195,70 +212,87 @@ class CurrentlyPlayingViewModel(
 
     private var sleepTimerTimeRemaining = MutableLiveData(0L)
 
-    val sleepTimerTimeRemainingString = sleepTimerTimeRemaining.map {
-        return@map DateUtils.formatElapsedTime(StringBuilder(), it / 1000)
-    }
+    val sleepTimerTimeRemainingString =
+        sleepTimerTimeRemaining.map {
+            return@map DateUtils.formatElapsedTime(StringBuilder(), it / 1000)
+        }
 
     val isPlaying: LiveData<Boolean> =
         mediaServiceConnection.playbackState.map { state ->
             return@map state.isPlaying
         }
 
-    val trackProgress = currentTrack.map { track ->
-        return@map DateUtils.formatElapsedTime(
-            StringBuilder(),
-            track.progress / 1000
-        )
-    }
-
-    val trackDuration = currentTrack.map { track ->
-        return@map DateUtils.formatElapsedTime(StringBuilder(), track.duration / 1000)
-    }
-
-    val progressString = tracks.map { tracks: List<MediaItemTrack> ->
-        if (tracks.isEmpty()) {
-            return@map "0:00/0:00"
+    val trackProgress =
+        currentTrack.map { track ->
+            return@map DateUtils.formatElapsedTime(
+                StringBuilder(),
+                track.progress / 1000,
+            )
         }
-        val progressStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getProgress() / 1000L)
-        val durationStr = DateUtils.formatElapsedTime(StringBuilder(), tracks.getDuration() / 1000L)
-        return@map "$progressStr/$durationStr"
-    }
 
-    val progressPercentageString = tracks.map { tracks: List<MediaItemTrack> ->
-        return@map "${tracks.getProgressPercentage()}%"
-    }
+    val trackDuration =
+        currentTrack.map { track ->
+            return@map DateUtils.formatElapsedTime(StringBuilder(), track.duration / 1000)
+        }
 
-    private val cachedChapter = DoubleLiveData(
-        chapters,
-        tracks
-    ) { _chapters: List<Chapter>?, _tracks: List<MediaItemTrack>? ->
-        Timber.i("Cached chapters: $_chapters")
-        Timber.i("Cached progress: ${_tracks?.getProgress()}")
-
-        if (_tracks != null && _chapters != null) {
-            var offsetRemaining = _tracks.getProgress()
-            var currChapter: Chapter? = null
-            for (chapter in _chapters) {
-                if (offsetRemaining < chapter.endTimeOffset) {
-                    currChapter = chapter
-                    break
-                }
-                offsetRemaining -= (chapter.endTimeOffset - chapter.startTimeOffset)
+    val progressString =
+        tracks.map { tracks: List<MediaItemTrack> ->
+            if (tracks.isEmpty()) {
+                return@map "0:00/0:00"
             }
-            currChapter ?: EMPTY_CHAPTER
-        } else {
-            EMPTY_CHAPTER
+            val progressStr =
+                DateUtils.formatElapsedTime(
+                    StringBuilder(),
+                    tracks.getProgress() / 1000L,
+                )
+            val durationStr =
+                DateUtils.formatElapsedTime(
+                    StringBuilder(),
+                    tracks.getDuration() / 1000L,
+                )
+            return@map "$progressStr/$durationStr"
         }
-    }.asFlow()
 
-    val activeChapter = currentlyPlaying.chapter.combine(cachedChapter) { activeChapter: Chapter, cachedChapter: Chapter ->
-        Timber.i("Cached: $cachedChapter, active: $activeChapter")
-        if (activeChapter != EMPTY_CHAPTER && activeChapter.trackId == cachedChapter.trackId) {
-            activeChapter
-        } else {
-            cachedChapter
+    val progressPercentageString =
+        tracks.map { tracks: List<MediaItemTrack> ->
+            return@map "${tracks.getProgressPercentage()}%"
         }
-    }.asLiveData(viewModelScope.coroutineContext)
+
+    private val cachedChapter =
+        DoubleLiveData(
+            chapters,
+            tracks,
+        ) { _chapters: List<Chapter>?, _tracks: List<MediaItemTrack>? ->
+            Timber.i("Cached chapters: $_chapters")
+            Timber.i("Cached progress: ${_tracks?.getProgress()}")
+
+            if (_tracks != null && _chapters != null) {
+                var offsetRemaining = _tracks.getProgress()
+                var currChapter: Chapter? = null
+                for (chapter in _chapters) {
+                    if (offsetRemaining < chapter.endTimeOffset) {
+                        currChapter = chapter
+                        break
+                    }
+                    offsetRemaining -= (chapter.endTimeOffset - chapter.startTimeOffset)
+                }
+                currChapter ?: EMPTY_CHAPTER
+            } else {
+                EMPTY_CHAPTER
+            }
+        }.asFlow()
+
+    val activeChapter =
+        currentlyPlaying.chapter.combine(
+            cachedChapter,
+        ) { activeChapter: Chapter, cachedChapter: Chapter ->
+            Timber.i("Cached: $cachedChapter, active: $activeChapter")
+            if (activeChapter != EMPTY_CHAPTER && activeChapter.trackId == cachedChapter.trackId) {
+                activeChapter
+            } else {
+                cachedChapter
+            }
+        }.asLiveData(viewModelScope.coroutineContext)
 
     private var _isLoadingTracks = MutableLiveData(false)
     val isLoadingTracks: LiveData<Boolean>
@@ -280,26 +314,29 @@ class CurrentlyPlayingViewModel(
     val jumpBackwardsIcon: LiveData<Int>
         get() = _jumpBackwardsIcon
 
-    private val prefsChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        when (key) {
-            PrefsRepo.KEY_JUMP_FORWARD_SECONDS -> _jumpForwardsIcon.value = makeJumpForwardsIcon()
-            PrefsRepo.KEY_JUMP_BACKWARD_SECONDS -> _jumpBackwardsIcon.value = makeJumpBackwardsIcon()
-        }
-    }
-
-    private val networkObserver = Observer<Boolean> { isConnected ->
-        if (isConnected) {
-            audiobookId.value?.let {
-                refreshTracks(it)
+    private val prefsChangeListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            when (key) {
+                PrefsRepo.KEY_JUMP_FORWARD_SECONDS -> _jumpForwardsIcon.value = makeJumpForwardsIcon()
+                PrefsRepo.KEY_JUMP_BACKWARD_SECONDS -> _jumpBackwardsIcon.value = makeJumpBackwardsIcon()
             }
         }
-    }
 
-    private val playbackObserver = Observer<MediaMetadataCompat> { metadata ->
-        if (metadata.id?.isEmpty() == false) {
-            setAudiobook(metadata.id!!.toInt())
+    private val networkObserver =
+        Observer<Boolean> { isConnected ->
+            if (isConnected) {
+                audiobookId.value?.let {
+                    refreshTracks(it)
+                }
+            }
         }
-    }
+
+    private val playbackObserver =
+        Observer<MediaMetadataCompat> { metadata ->
+            if (metadata.id?.isEmpty() == false) {
+                setAudiobook(metadata.id!!.toInt())
+            }
+        }
 
     private fun setAudiobook(trackId: Int) {
         val previousAudiobookId = audiobook.value?.id ?: NO_AUDIOBOOK_FOUND_ID
@@ -336,7 +373,7 @@ class CurrentlyPlayingViewModel(
                         bookId,
                         tracks.value.getProgress(),
                         tracks.value.getDuration(),
-                        tracks.value.size
+                        tracks.value.size,
                     )
                     audiobook.value?.let {
                         bookRepository.syncAudiobook(it, tracks.value)
@@ -354,14 +391,16 @@ class CurrentlyPlayingViewModel(
         if (mediaServiceConnection.isConnected.value == true) {
             if (audiobook.value == null) {
                 Timber.e("Tried to play null audiobook!")
-                _showUserMessage.postEvent("Audiobook is null. Try restarting the app and trying again")
+                _showUserMessage.postEvent(
+                    "Audiobook is null. Try restarting the app and trying again",
+                )
                 return
             }
             pausePlay(
                 bookId = audiobook.value!!.id.toString(),
                 trackId = ACTIVE_TRACK,
                 startTimeOffset = ACTIVE_TRACK,
-                forcePlay = false
+                forcePlay = false,
             )
         }
     }
@@ -370,14 +409,15 @@ class CurrentlyPlayingViewModel(
         bookId: String,
         startTimeOffset: Long = USE_SAVED_TRACK_PROGRESS,
         forcePlay: Boolean = false,
-        trackId: Long = ACTIVE_TRACK
+        trackId: Long = ACTIVE_TRACK,
     ) {
         val transportControls = mediaServiceConnection.transportControls
 
-        val extras = Bundle().apply {
-            putLong(KEY_START_TIME_TRACK_OFFSET, startTimeOffset)
-            putLong(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
-        }
+        val extras =
+            Bundle().apply {
+                putLong(KEY_START_TIME_TRACK_OFFSET, startTimeOffset)
+                putLong(KEY_SEEK_TO_TRACK_WITH_ID, trackId)
+            }
         if (transportControls != null) {
             mediaServiceConnection.playbackState.value?.let { playbackState ->
                 when {
@@ -399,7 +439,10 @@ class CurrentlyPlayingViewModel(
         skipToChapter(SKIP_TO_PREVIOUS, forward = false)
     }
 
-    private fun skipToChapter(action: PlaybackStateCompat.CustomAction, forward: Boolean) {
+    private fun skipToChapter(
+        action: PlaybackStateCompat.CustomAction,
+        forward: Boolean,
+    ) {
         val transportControls = mediaServiceConnection.transportControls
         mediaServiceConnection.let { connection ->
             if (connection.nowPlaying.value != NOTHING_PLAYING) {
@@ -407,18 +450,27 @@ class CurrentlyPlayingViewModel(
                 Timber.i("Seeking!")
                 transportControls?.sendCustomAction(action, null)
             } else {
-                val currentChapterIndex = currentlyPlaying.book.value.chapters.indexOf(currentlyPlaying.chapter.value)
+                val currentChapterIndex =
+                    currentlyPlaying.book.value.chapters.indexOf(
+                        currentlyPlaying.chapter.value,
+                    )
                 var skipToChapterIndex: Int
                 if (forward) {
                     skipToChapterIndex = currentChapterIndex + 1
                     if (skipToChapterIndex < currentlyPlaying.book.value.chapters.size) {
                         val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex]
-                        jumpToChapter(skipToChapter.startTimeOffset, currentlyPlaying.track.value.id, hasUserConfirmation = true)
-                    } else {
-                        val toast = Toast.makeText(
-                            Injector.get().applicationContext(), R.string.skip_forwards_reached_last_chapter,
-                            Toast.LENGTH_LONG
+                        jumpToChapter(
+                            skipToChapter.startTimeOffset,
+                            currentlyPlaying.track.value.id,
+                            hasUserConfirmation = true,
                         )
+                    } else {
+                        val toast =
+                            Toast.makeText(
+                                Injector.get().applicationContext(),
+                                R.string.skip_forwards_reached_last_chapter,
+                                Toast.LENGTH_LONG,
+                            )
                         toast.setGravity(Gravity.BOTTOM, 0, 200)
                         toast.show()
                     }
@@ -426,7 +478,11 @@ class CurrentlyPlayingViewModel(
                     skipToChapterIndex = currentChapterIndex - 1
                     if (skipToChapterIndex < 0) skipToChapterIndex = 0
                     val skipToChapter = currentlyPlaying.book.value.chapters[skipToChapterIndex]
-                    jumpToChapter(skipToChapter.startTimeOffset, currentlyPlaying.track.value.id, hasUserConfirmation = true)
+                    jumpToChapter(
+                        skipToChapter.startTimeOffset,
+                        currentlyPlaying.track.value.id,
+                        hasUserConfirmation = true,
+                    )
                 }
             }
         }
@@ -461,10 +517,16 @@ class CurrentlyPlayingViewModel(
     }
 
     fun skipBackwards() {
-        seekRelative(makeSkipBackward(prefsRepo), prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1)
+        seekRelative(
+            makeSkipBackward(prefsRepo),
+            prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1,
+        )
     }
 
-    private fun seekRelative(action: PlaybackStateCompat.CustomAction, offset: Long) {
+    private fun seekRelative(
+        action: PlaybackStateCompat.CustomAction,
+        offset: Long,
+    ) {
         val transportControls = mediaServiceConnection.transportControls
         mediaServiceConnection.let { connection ->
             if (connection.nowPlaying.value != NOTHING_PLAYING) {
@@ -488,7 +550,7 @@ class CurrentlyPlayingViewModel(
                         trackRepository.updateTrackProgress(
                             manager.currentBookPosition,
                             updatedTrack.id,
-                            System.currentTimeMillis()
+                            System.currentTimeMillis(),
                         )
                     }
                 }
@@ -500,22 +562,31 @@ class CurrentlyPlayingViewModel(
     fun jumpToChapter(
         startTimeOffset: Long = 0,
         trackId: Int = TRACK_NOT_FOUND,
-        hasUserConfirmation: Boolean = false
+        hasUserConfirmation: Boolean = false,
     ) {
         if (!hasUserConfirmation) {
             showOptionsMenu(
-                title = FormattableString.from(R.string.warning_jump_to_chapter_will_clear_progress),
+                title =
+                    FormattableString.from(
+                        R.string.warning_jump_to_chapter_will_clear_progress,
+                    ),
                 options = listOf(FormattableString.yes, FormattableString.no),
-                listener = object : BottomChooserItemListener() {
-                    override fun onItemClicked(formattableString: FormattableString) {
-                        when (formattableString) {
-                            FormattableString.yes -> jumpToChapter(startTimeOffset, trackId, true)
-                            FormattableString.no -> Unit
-                            else -> throw NoWhenBranchMatchedException()
+                listener =
+                    object : BottomChooserItemListener() {
+                        override fun onItemClicked(formattableString: FormattableString) {
+                            when (formattableString) {
+                                FormattableString.yes ->
+                                    jumpToChapter(
+                                        startTimeOffset,
+                                        trackId,
+                                        true,
+                                    )
+                                FormattableString.no -> Unit
+                                else -> throw NoWhenBranchMatchedException()
+                            }
+                            hideOptionsMenu()
                         }
-                        hideOptionsMenu()
-                    }
-                }
+                    },
             )
             return
         }
@@ -526,7 +597,7 @@ class CurrentlyPlayingViewModel(
                     book.id.toString(),
                     startTimeOffset = startTimeOffset,
                     trackId = trackId.toLong(),
-                    forcePlay = true
+                    forcePlay = true,
                 )
             }
         }
@@ -538,106 +609,116 @@ class CurrentlyPlayingViewModel(
     }
 
     fun showSleepTimerOptions() {
-        val title = if (isSleepTimerActive.value != true) {
-            FormattableString.from(R.string.sleep_timer)
-        } else {
-            FormattableString.ResourceString(
-                R.string.sleep_timer_active_title,
-                placeHolderStrings = listOf(sleepTimerTimeRemainingString.value ?: "<Error>")
-            )
-        }
-        val options = if (isSleepTimerActive.value == true) {
-            listOf(
-                FormattableString.from(R.string.sleep_timer_append),
-                FormattableString.from(R.string.sleep_timer_duration_end_of_chapter),
-                FormattableString.from(R.string.cancel)
-            )
-        } else {
-            listOf(
-                FormattableString.from(R.string.sleep_timer_duration_5_minutes),
-                FormattableString.from(R.string.sleep_timer_duration_15_minutes),
-                FormattableString.from(R.string.sleep_timer_duration_30_minutes),
-                FormattableString.from(R.string.sleep_timer_duration_40_minutes),
-                FormattableString.from(R.string.sleep_timer_duration_60_minutes),
-                FormattableString.from(R.string.sleep_timer_duration_90_minutes),
-                FormattableString.from(R.string.sleep_timer_duration_120_minutes),
-                FormattableString.from(R.string.sleep_timer_duration_end_of_chapter)
-            )
-        }
-        val listener = object : BottomChooserListener {
-            override fun onItemClicked(formattableString: FormattableString) {
-                check(formattableString is FormattableString.ResourceString)
-
-                val actionPair: Pair<SleepTimerAction, Long> = when (formattableString.stringRes) {
-                    R.string.sleep_timer_duration_5_minutes -> {
-                        val duration = 5 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        BEGIN to duration
-                    }
-                    R.string.sleep_timer_duration_15_minutes -> {
-                        val duration = 15 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        BEGIN to duration
-                    }
-                    R.string.sleep_timer_duration_30_minutes -> {
-                        val duration = 30 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        BEGIN to duration
-                    }
-                    R.string.sleep_timer_duration_40_minutes -> {
-                        val duration = 40 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        BEGIN to duration
-                    }
-                    R.string.sleep_timer_duration_60_minutes -> {
-                        val duration = 60 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        BEGIN to duration
-                    }
-                    R.string.sleep_timer_duration_90_minutes -> {
-                        val duration = 90 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        BEGIN to duration
-                    }
-                    R.string.sleep_timer_duration_120_minutes -> {
-                        val duration = 120 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        BEGIN to duration
-                    }
-                    R.string.sleep_timer_duration_end_of_chapter -> {
-                        val duration = (
-                            ((chapterDuration.value ?: 0L) - (
-                                chapterProgress.value
-                                    ?: 0L
-                                )) / prefsRepo.playbackSpeed
-                            ).toLong()
-                        BEGIN to duration
-                    }
-                    R.string.sleep_timer_append -> {
-                        val additionalTime = 5 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-                        EXTEND to additionalTime
-                    }
-                    R.string.cancel -> {
-                        setSleepTimerTitle(FormattableString.from(R.string.sleep_timer))
-                        CANCEL to 0L
-                    }
-                    else -> throw NoWhenBranchMatchedException("Unknown duration picked for sleep timer")
-                }
-                hideSleepTimerChooser()
-                val sleepTimerIntent = Intent(SleepTimer.ACTION_SLEEP_TIMER_CHANGE).apply {
-                    putExtra(ARG_SLEEP_TIMER_ACTION, actionPair.first)
-                    putExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, actionPair.second)
-                }
-                localBroadcastManager.sendBroadcast(sleepTimerIntent)
+        val title =
+            if (isSleepTimerActive.value != true) {
+                FormattableString.from(R.string.sleep_timer)
+            } else {
+                FormattableString.ResourceString(
+                    R.string.sleep_timer_active_title,
+                    placeHolderStrings = listOf(sleepTimerTimeRemainingString.value ?: "<Error>"),
+                )
             }
+        val options =
+            if (isSleepTimerActive.value == true) {
+                listOf(
+                    FormattableString.from(R.string.sleep_timer_append),
+                    FormattableString.from(R.string.sleep_timer_duration_end_of_chapter),
+                    FormattableString.from(R.string.cancel),
+                )
+            } else {
+                listOf(
+                    FormattableString.from(R.string.sleep_timer_duration_5_minutes),
+                    FormattableString.from(R.string.sleep_timer_duration_15_minutes),
+                    FormattableString.from(R.string.sleep_timer_duration_30_minutes),
+                    FormattableString.from(R.string.sleep_timer_duration_40_minutes),
+                    FormattableString.from(R.string.sleep_timer_duration_60_minutes),
+                    FormattableString.from(R.string.sleep_timer_duration_90_minutes),
+                    FormattableString.from(R.string.sleep_timer_duration_120_minutes),
+                    FormattableString.from(R.string.sleep_timer_duration_end_of_chapter),
+                )
+            }
+        val listener =
+            object : BottomChooserListener {
+                override fun onItemClicked(formattableString: FormattableString) {
+                    check(formattableString is FormattableString.ResourceString)
 
-            override fun onChooserClosed(wasBackgroundClicked: Boolean) {
-                if (wasBackgroundClicked) {
+                    val actionPair: Pair<SleepTimerAction, Long> =
+                        when (formattableString.stringRes) {
+                            R.string.sleep_timer_duration_5_minutes -> {
+                                val duration = 5 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                                BEGIN to duration
+                            }
+                            R.string.sleep_timer_duration_15_minutes -> {
+                                val duration = 15 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                                BEGIN to duration
+                            }
+                            R.string.sleep_timer_duration_30_minutes -> {
+                                val duration = 30 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                                BEGIN to duration
+                            }
+                            R.string.sleep_timer_duration_40_minutes -> {
+                                val duration = 40 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                                BEGIN to duration
+                            }
+                            R.string.sleep_timer_duration_60_minutes -> {
+                                val duration = 60 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                                BEGIN to duration
+                            }
+                            R.string.sleep_timer_duration_90_minutes -> {
+                                val duration = 90 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                                BEGIN to duration
+                            }
+                            R.string.sleep_timer_duration_120_minutes -> {
+                                val duration = 120 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                                BEGIN to duration
+                            }
+                            R.string.sleep_timer_duration_end_of_chapter -> {
+                                val duration =
+                                    (
+                                        (
+                                            (chapterDuration.value ?: 0L) - (
+                                                chapterProgress.value
+                                                    ?: 0L
+                                            )
+                                        ) / prefsRepo.playbackSpeed
+                                    ).toLong()
+                                BEGIN to duration
+                            }
+                            R.string.sleep_timer_append -> {
+                                val additionalTime = 5 * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
+                                EXTEND to additionalTime
+                            }
+                            R.string.cancel -> {
+                                setSleepTimerTitle(FormattableString.from(R.string.sleep_timer))
+                                CANCEL to 0L
+                            }
+                            else -> throw NoWhenBranchMatchedException(
+                                "Unknown duration picked for sleep timer",
+                            )
+                        }
                     hideSleepTimerChooser()
+                    val sleepTimerIntent =
+                        Intent(SleepTimer.ACTION_SLEEP_TIMER_CHANGE).apply {
+                            putExtra(ARG_SLEEP_TIMER_ACTION, actionPair.first)
+                            putExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, actionPair.second)
+                        }
+                    localBroadcastManager.sendBroadcast(sleepTimerIntent)
+                }
+
+                override fun onChooserClosed(wasBackgroundClicked: Boolean) {
+                    if (wasBackgroundClicked) {
+                        hideSleepTimerChooser()
+                    }
                 }
             }
-        }
 
         _sleepTimerChooserState.postValue(
             BottomChooserState(
                 title = title,
                 options = options,
                 listener = listener,
-                shouldShow = true
-            )
+                shouldShow = true,
+            ),
         )
     }
 
@@ -651,57 +732,64 @@ class CurrentlyPlayingViewModel(
 
     private fun hideSleepTimerChooser() {
         _sleepTimerChooserState.postValue(
-            _sleepTimerChooserState.value?.copy(shouldShow = false) ?: EMPTY_BOTTOM_CHOOSER
+            _sleepTimerChooserState.value?.copy(shouldShow = false) ?: EMPTY_BOTTOM_CHOOSER,
         )
     }
 
     private fun hideOptionsMenu() {
         _bottomChooserState.postValue(
-            _bottomChooserState.value?.copy(shouldShow = false) ?: EMPTY_BOTTOM_CHOOSER
+            _bottomChooserState.value?.copy(shouldShow = false) ?: EMPTY_BOTTOM_CHOOSER,
         )
     }
 
     private fun showOptionsMenu(
         title: FormattableString,
         options: List<FormattableString>,
-        listener: BottomChooserListener
+        listener: BottomChooserListener,
     ) {
         _bottomChooserState.postValue(
             BottomChooserState(
                 title = title,
                 options = options,
                 listener = listener,
-                shouldShow = true
-            )
+                shouldShow = true,
+            ),
         )
     }
 
-    val onUpdateSleepTimer = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent == null || !intent.hasExtra(ARG_SLEEP_TIMER_DURATION_MILLIS)) {
-                return
-            }
-            val timeLeftMillis = intent.getLongExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, 0L)
-            val shouldSleepSleepTimerBeActive = timeLeftMillis > 0L
-            _isSleepTimerActive.postValue(shouldSleepSleepTimerBeActive)
-            sleepTimerTimeRemaining.value = timeLeftMillis
+    val onUpdateSleepTimer =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?,
+            ) {
+                if (intent == null || !intent.hasExtra(ARG_SLEEP_TIMER_DURATION_MILLIS)) {
+                    return
+                }
+                val timeLeftMillis = intent.getLongExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, 0L)
+                val shouldSleepSleepTimerBeActive = timeLeftMillis > 0L
+                _isSleepTimerActive.postValue(shouldSleepSleepTimerBeActive)
+                sleepTimerTimeRemaining.value = timeLeftMillis
 
-            if (shouldSleepSleepTimerBeActive) {
-                setSleepTimerTitle(
-                    FormattableString.ResourceString(
-                        stringRes = R.string.sleep_timer_active_title,
-                        placeHolderStrings = listOf(sleepTimerTimeRemainingString.value ?: "<Error>")
+                if (shouldSleepSleepTimerBeActive) {
+                    setSleepTimerTitle(
+                        FormattableString.ResourceString(
+                            stringRes = R.string.sleep_timer_active_title,
+                            placeHolderStrings =
+                                listOf(
+                                    sleepTimerTimeRemainingString.value ?: "<Error>",
+                                ),
+                        ),
                     )
-                )
-            } else {
-                setSleepTimerTitle(FormattableString.from(R.string.sleep_timer))
+                } else {
+                    setSleepTimerTitle(FormattableString.from(R.string.sleep_timer))
+                }
             }
         }
-    }
 
     private fun setSleepTimerTitle(formattableString: FormattableString) {
         _sleepTimerChooserState.postValue(
-            _sleepTimerChooserState.value?.copy(title = formattableString) ?: EMPTY_BOTTOM_CHOOSER
+            _sleepTimerChooserState.value?.copy(title = formattableString) ?: EMPTY_BOTTOM_CHOOSER,
         )
     }
 
@@ -717,9 +805,10 @@ class CurrentlyPlayingViewModel(
         if (currentChapter.value == EMPTY_CHAPTER) {
             // Seeking by track length
             currentTrack.value?.let { curr ->
-                val extras = Bundle().apply {
-                    putLong(KEY_SEEK_TO_TRACK_WITH_ID, curr.id.toLong())
-                }
+                val extras =
+                    Bundle().apply {
+                        putLong(KEY_SEEK_TO_TRACK_WITH_ID, curr.id.toLong())
+                    }
                 mediaServiceConnection.transportControls?.playFromMediaId(id, extras)
             }
         } else {

@@ -14,9 +14,12 @@ suspend fun DataSource<CloseableReference<CloseableImage>>.getImage() =
         subscribe(
             object : BaseBitmapDataSubscriber() {
                 override fun onNewResultImpl(bitmap: Bitmap?) = cont.resume(bitmap)
+
                 override fun onFailureImpl(dataSource: DataSource<CloseableReference<CloseableImage>>) =
-                    cont.resume(null)
+                    cont.resume(
+                        null,
+                    )
             },
-            UiThreadImmediateExecutorService.getInstance()
+            UiThreadImmediateExecutorService.getInstance(),
         )
     }

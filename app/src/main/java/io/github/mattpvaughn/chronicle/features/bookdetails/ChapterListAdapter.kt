@@ -16,9 +16,8 @@ import timber.log.Timber
 
 class ChapterListAdapter(val clickListener: TrackClickListener) :
     ListAdapter<ChapterListAdapter.ChapterListModel, RecyclerView.ViewHolder>(
-        ChapterItemDiffCallback()
+        ChapterItemDiffCallback(),
     ) {
-
     /** Wrapper around [Chapter] and a section header */
     sealed class ChapterListModel {
         companion object {
@@ -37,6 +36,7 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
 
     private var activeChapter = Triple(-1L, -1, -1L)
     private var chapters = emptyList<Chapter>()
+
     fun submitChapters(chapters: List<Chapter>?) {
         if (chapters != null) {
             this.chapters = chapters
@@ -50,10 +50,11 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
                 SectionHeaderWrapper(
                     SectionHeaderModel(
                         BottomSheetChooser.FormattableString.ResourceString(
-                            R.string.disc_number, listOf("1")
-                        )
-                    )
-                )
+                            R.string.disc_number,
+                            listOf("1"),
+                        ),
+                    ),
+                ),
             )
             listWithSections.add(ChapterItemModel(chapters.first(), isActive(chapters.first())))
             chapters.fold(chapters.first()) { prev, curr ->
@@ -68,10 +69,10 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
                             SectionHeaderModel(
                                 BottomSheetChooser.FormattableString.ResourceString(
                                     R.string.disc_number,
-                                    listOf(curr.discNumber.toString())
-                                )
-                            )
-                        )
+                                    listOf(curr.discNumber.toString()),
+                                ),
+                            ),
+                        ),
                     )
                 }
                 listWithSections.add(ChapterItemModel(curr, isActive(curr)))
@@ -88,11 +89,16 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
         }
     }
 
-    fun isActive(chapter: Chapter) = chapter.trackId == activeChapter.first &&
-        chapter.discNumber == activeChapter.second &&
-        chapter.index == activeChapter.third
+    fun isActive(chapter: Chapter) =
+        chapter.trackId == activeChapter.first &&
+            chapter.discNumber == activeChapter.second &&
+            chapter.index == activeChapter.third
 
-    fun updateCurrentChapter(trackId: Long, discNumber: Int, chapterIndex: Long) {
+    fun updateCurrentChapter(
+        trackId: Long,
+        discNumber: Int,
+        chapterIndex: Long,
+    ) {
         activeChapter = Triple(trackId, discNumber, chapterIndex)
         Timber.i("Updating current chapter: ($trackId, $discNumber, $chapterIndex), $chapters")
         submitChapters(chapters)
@@ -102,7 +108,10 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
         throw IllegalAccessException("Clients must use ChapterListAdapter.submitChapters()")
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): RecyclerView.ViewHolder {
         return when (viewType) {
             ChapterListModel.CHAPTER_TYPE -> ChapterViewHolder.from(parent, clickListener)
             ChapterListModel.SECTION_HEADER_TYPE -> SectionHeaderViewHolder.from(parent)
@@ -118,13 +127,17 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
         }
     }
 
-    override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        viewHolder: RecyclerView.ViewHolder,
+        position: Int,
+    ) {
         val item = getItem(position)
         when (viewHolder) {
-            is ChapterViewHolder -> viewHolder.bind(
-                (item as ChapterItemModel).chapter,
-                item.isActive
-            )
+            is ChapterViewHolder ->
+                viewHolder.bind(
+                    (item as ChapterItemModel).chapter,
+                    item.isActive,
+                )
             is SectionHeaderViewHolder -> viewHolder.bind((item as SectionHeaderWrapper).section)
             else -> throw NoWhenBranchMatchedException()
         }
@@ -132,9 +145,12 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
 
     class ChapterViewHolder private constructor(
         private val binding: ListItemAudiobookTrackBinding,
-        private val clickListener: TrackClickListener
+        private val clickListener: TrackClickListener,
     ) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(chapter: Chapter, isActive: Boolean) {
+        fun bind(
+            chapter: Chapter,
+            isActive: Boolean,
+        ) {
             binding.chapter = chapter
             binding.isActive = isActive
             binding.clickListener = clickListener
@@ -142,7 +158,10 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
         }
 
         companion object {
-            fun from(parent: ViewGroup, clickListener: TrackClickListener): ChapterViewHolder {
+            fun from(
+                parent: ViewGroup,
+                clickListener: TrackClickListener,
+            ): ChapterViewHolder {
                 val layoutInflater = LayoutInflater.from(parent.context)
                 val binding = ListItemAudiobookTrackBinding.inflate(layoutInflater, parent, false)
                 return ChapterViewHolder(binding, clickListener)
@@ -151,7 +170,7 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
     }
 
     class SectionHeaderViewHolder private constructor(
-        private val binding: ListItemDiscNumberSectionHeadingBinding
+        private val binding: ListItemDiscNumberSectionHeadingBinding,
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(heading: SectionHeaderModel) {
             binding.sectionHeader = heading
@@ -171,7 +190,7 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
     private class ChapterItemDiffCallback : DiffUtil.ItemCallback<ChapterListModel>() {
         override fun areItemsTheSame(
             oldItem: ChapterListModel,
-            newItem: ChapterListModel
+            newItem: ChapterListModel,
         ): Boolean {
             return when {
                 oldItem is ChapterItemModel && newItem is ChapterItemModel -> {
@@ -190,7 +209,7 @@ class ChapterListAdapter(val clickListener: TrackClickListener) :
          */
         override fun areContentsTheSame(
             oldItem: ChapterListModel,
-            newItem: ChapterListModel
+            newItem: ChapterListModel,
         ): Boolean {
             return when {
                 oldItem is ChapterItemModel && newItem is ChapterItemModel -> {

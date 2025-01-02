@@ -42,33 +42,36 @@ class LibraryViewModel(
     private val prefsRepo: PrefsRepo,
     private val cachedFileManager: ICachedFileManager,
     private val librarySyncRepository: LibrarySyncRepository,
-    sharedPreferences: SharedPreferences
+    sharedPreferences: SharedPreferences,
 ) : ViewModel() {
-
     @Suppress("UNCHECKED_CAST")
-    class Factory @Inject constructor(
-        private val bookRepository: IBookRepository,
-        private val trackRepository: ITrackRepository,
-        private val prefsRepo: PrefsRepo,
-        private val cachedFileManager: ICachedFileManager,
-        private val librarySyncRepository: LibrarySyncRepository,
-        private val sharedPreferences: SharedPreferences,
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
-                return LibraryViewModel(
-                    bookRepository,
-                    trackRepository,
-                    prefsRepo,
-                    cachedFileManager,
-                    librarySyncRepository,
-                    sharedPreferences,
-                ) as T
-            } else {
-                throw IllegalArgumentException("Cannot instantiate $modelClass from LibraryViewModel.Factory")
+    class Factory
+        @Inject
+        constructor(
+            private val bookRepository: IBookRepository,
+            private val trackRepository: ITrackRepository,
+            private val prefsRepo: PrefsRepo,
+            private val cachedFileManager: ICachedFileManager,
+            private val librarySyncRepository: LibrarySyncRepository,
+            private val sharedPreferences: SharedPreferences,
+        ) : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
+                    return LibraryViewModel(
+                        bookRepository,
+                        trackRepository,
+                        prefsRepo,
+                        cachedFileManager,
+                        librarySyncRepository,
+                        sharedPreferences,
+                    ) as T
+                } else {
+                    throw IllegalArgumentException(
+                        "Cannot instantiate $modelClass from LibraryViewModel.Factory",
+                    )
+                }
             }
         }
-    }
 
     val isRefreshing = librarySyncRepository.isRefreshing
 
@@ -76,27 +79,30 @@ class LibraryViewModel(
     val isSearchActive: LiveData<Boolean>
         get() = _isSearchActive
 
-    val viewStyle = StringPreferenceLiveData(
-        KEY_LIBRARY_VIEW_STYLE,
-        prefsRepo.libraryBookViewStyle,
-        sharedPreferences
-    )
+    val viewStyle =
+        StringPreferenceLiveData(
+            KEY_LIBRARY_VIEW_STYLE,
+            prefsRepo.libraryBookViewStyle,
+            sharedPreferences,
+        )
 
     private var _isFilterShown = MutableLiveData(false)
     val isFilterShown: LiveData<Boolean>
         get() = _isFilterShown
 
-    val isSortDescending = BooleanPreferenceLiveData(
-        KEY_IS_LIBRARY_SORT_DESCENDING,
-        true,
-        sharedPreferences
-    )
+    val isSortDescending =
+        BooleanPreferenceLiveData(
+            KEY_IS_LIBRARY_SORT_DESCENDING,
+            true,
+            sharedPreferences,
+        )
 
-    val arePlayedAudiobooksHidden = BooleanPreferenceLiveData(
-        KEY_HIDE_PLAYED_AUDIOBOOKS,
-        false,
-        sharedPreferences
-    )
+    val arePlayedAudiobooksHidden =
+        BooleanPreferenceLiveData(
+            KEY_HIDE_PLAYED_AUDIOBOOKS,
+            false,
+            sharedPreferences,
+        )
 
     private val sortKey =
         StringPreferenceLiveData(KEY_BOOK_SORT_BY, SORT_KEY_TITLE, sharedPreferences)
@@ -105,52 +111,57 @@ class LibraryViewModel(
     private var prevBooks = emptyList<Audiobook>()
 
     private val allBooks = bookRepository.getAllBooks()
-    val books = QuintLiveDataAsync(
-        viewModelScope,
-        allBooks,
-        isSortDescending,
-        sortKey,
-        arePlayedAudiobooksHidden,
-        isOffline
-    ) { _books, _isDescending, _sortKey, _hidePlayed, _isOffline ->
-        if (_books.isNullOrEmpty()) {
-            return@QuintLiveDataAsync emptyList<Audiobook>()
-        }
+    val books =
+        QuintLiveDataAsync(
+            viewModelScope,
+            allBooks,
+            isSortDescending,
+            sortKey,
+            arePlayedAudiobooksHidden,
+            isOffline,
+        ) { _books, _isDescending, _sortKey, _hidePlayed, _isOffline ->
+            if (_books.isNullOrEmpty()) {
+                return@QuintLiveDataAsync emptyList<Audiobook>()
+            }
 
-        // Use defaults if provided null values
-        val desc = _isDescending ?: true
-        val key = _sortKey ?: SORT_KEY_TITLE
-        val hidePlayed = _hidePlayed ?: false
-        val offline = _isOffline ?: false
+            // Use defaults if provided null values
+            val desc = _isDescending ?: true
+            val key = _sortKey ?: SORT_KEY_TITLE
+            val hidePlayed = _hidePlayed ?: false
+            val offline = _isOffline ?: false
 
-        val results = _books.filter { (!offline || it.isCached && offline) && (!hidePlayed || hidePlayed && it.viewCount == 0L) }
-            .sortedWith(
-                Comparator { book1, book2 ->
-                    val descMultiplier = if (desc) 1 else -1
-                    return@Comparator descMultiplier * when (key) {
-                        SORT_KEY_AUTHOR -> book1.author.compareTo(book2.author)
-                        SORT_KEY_TITLE -> book1.titleSort.compareTo(book2.titleSort)
-                        SORT_KEY_PLAYS -> book2.viewedLeafCount.compareTo(book1.viewedLeafCount)
-                        SORT_KEY_DURATION -> book2.duration.compareTo(book1.duration)
-                        // Note: Reverse order for timestamps, because most recent should be at the top
-                        // of descending, even though the timestamp is larger
-                        SORT_KEY_DATE_ADDED -> book2.addedAt.compareTo(book1.addedAt)
-                        SORT_KEY_DATE_PLAYED -> book2.lastViewedAt.compareTo(book1.lastViewedAt)
-                        SORT_KEY_YEAR -> book2.year.compareTo(book1.year)
-                        else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
-                    }
+            val results =
+                _books.filter {
+                    (!offline || it.isCached && offline) && (!hidePlayed || hidePlayed && it.viewCount == 0L)
                 }
-            )
+                    .sortedWith(
+                        Comparator { book1, book2 ->
+                            val descMultiplier = if (desc) 1 else -1
+                            return@Comparator descMultiplier *
+                                when (key) {
+                                    SORT_KEY_AUTHOR -> book1.author.compareTo(book2.author)
+                                    SORT_KEY_TITLE -> book1.titleSort.compareTo(book2.titleSort)
+                                    SORT_KEY_PLAYS -> book2.viewedLeafCount.compareTo(book1.viewedLeafCount)
+                                    SORT_KEY_DURATION -> book2.duration.compareTo(book1.duration)
+                                    // Note: Reverse order for timestamps, because most recent should be at the top
+                                    // of descending, even though the timestamp is larger
+                                    SORT_KEY_DATE_ADDED -> book2.addedAt.compareTo(book1.addedAt)
+                                    SORT_KEY_DATE_PLAYED -> book2.lastViewedAt.compareTo(book1.lastViewedAt)
+                                    SORT_KEY_YEAR -> book2.year.compareTo(book1.year)
+                                    else -> throw NoWhenBranchMatchedException("Unknown sort key: $key")
+                                }
+                        },
+                    )
 
-        // If nothing has changed, return prevBooks
-        if (prevBooks.map { it.id } == results.map { it.id }) {
-            return@QuintLiveDataAsync prevBooks
+            // If nothing has changed, return prevBooks
+            if (prevBooks.map { it.id } == results.map { it.id }) {
+                return@QuintLiveDataAsync prevBooks
+            }
+
+            prevBooks = results
+
+            return@QuintLiveDataAsync results
         }
-
-        prevBooks = results
-
-        return@QuintLiveDataAsync results
-    }
 
     private var _messageForUser = MutableLiveData<Event<String>>()
     val messageForUser: LiveData<Event<String>>
@@ -172,14 +183,15 @@ class LibraryViewModel(
     val tracks: LiveData<List<MediaItemTrack>>
         get() = _tracks
 
-    private val cacheStatus = tracks.map {
-        when {
-            it.isEmpty() -> NOT_CACHED
-            it.all { track -> track.cached } -> CACHED
-            it.any { track -> !track.cached } -> NOT_CACHED
-            else -> NOT_CACHED
+    private val cacheStatus =
+        tracks.map {
+            when {
+                it.isEmpty() -> NOT_CACHED
+                it.all { track -> track.cached } -> CACHED
+                it.any { track -> !track.cached } -> NOT_CACHED
+                else -> NOT_CACHED
+            }
         }
-    }
 
     fun setSearchActive(isSearchActive: Boolean) {
         _isSearchActive.postValue(isSearchActive)
@@ -194,30 +206,32 @@ class LibraryViewModel(
             bookRepository.search(query).observeOnce(
                 Observer {
                     _searchResults.postValue(it)
-                }
+                },
             )
         }
     }
 
-    private val serverConnectionObserver = Observer<Boolean> { isConnectedToServer ->
-        if (isConnectedToServer) {
-            viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-                val millisSinceLastRefresh =
-                    System.currentTimeMillis() - prefsRepo.lastRefreshTimeStamp
-                val minutesSinceLastRefresh = millisSinceLastRefresh / 1000 / 60
-                val bookCount = bookRepository.getBookCount()
-                val shouldRefresh =
-                    minutesSinceLastRefresh > prefsRepo.refreshRateMinutes || bookCount == 0
-                Timber.i(
-                    """$minutesSinceLastRefresh minutes since last libraryrefresh,
-                    |${prefsRepo.refreshRateMinutes} needed""".trimMargin()
-                )
-                if (shouldRefresh) {
-                    refreshData()
+    private val serverConnectionObserver =
+        Observer<Boolean> { isConnectedToServer ->
+            if (isConnectedToServer) {
+                viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
+                    val millisSinceLastRefresh =
+                        System.currentTimeMillis() - prefsRepo.lastRefreshTimeStamp
+                    val minutesSinceLastRefresh = millisSinceLastRefresh / 1000 / 60
+                    val bookCount = bookRepository.getBookCount()
+                    val shouldRefresh =
+                        minutesSinceLastRefresh > prefsRepo.refreshRateMinutes || bookCount == 0
+                    Timber.i(
+                        """$minutesSinceLastRefresh minutes since last libraryrefresh,
+                    |${prefsRepo.refreshRateMinutes} needed
+                        """.trimMargin(),
+                    )
+                    if (shouldRefresh) {
+                        refreshData()
+                    }
                 }
             }
         }
-    }
 
     fun disableOfflineMode() {
         prefsRepo.offlineMode = false
@@ -233,22 +247,24 @@ class LibraryViewModel(
 
         // Calculate space required
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            val tracks = try {
-                trackRepository.loadAllTracksAsync()
-            } catch (e: Throwable) {
-                Timber.e("Failed to load tracks!")
-                emptyList<MediaItemTrack>()
-            }
+            val tracks =
+                try {
+                    trackRepository.loadAllTracksAsync()
+                } catch (e: Throwable) {
+                    Timber.e("Failed to load tracks!")
+                    emptyList<MediaItemTrack>()
+                }
             var bytesToBeUsed = 0L
             tracks.forEach { bytesToBeUsed += it.size }
             val downloadSize =
                 Formatter.formatFileSize(Injector.get().applicationContext(), bytesToBeUsed)
             val availableStorage =
                 Formatter.formatFileSize(Injector.get().applicationContext(), bytesAvailable)
-            val prompt = ResourceString(
-                stringRes = R.string.download_all_prompt,
-                placeHolderStrings = listOf(downloadSize, availableStorage)
-            )
+            val prompt =
+                ResourceString(
+                    stringRes = R.string.download_all_prompt,
+                    placeHolderStrings = listOf(downloadSize, availableStorage),
+                )
 
             showOptionsMenu(
                 prompt,
@@ -262,7 +278,7 @@ class LibraryViewModel(
                             else -> throw NoWhenBranchMatchedException()
                         }
                     }
-                }
+                },
             )
         }
 
@@ -276,15 +292,15 @@ class LibraryViewModel(
     private fun showOptionsMenu(
         title: FormattableString,
         options: List<FormattableString>,
-        listener: BottomChooserListener
+        listener: BottomChooserListener,
     ) {
         _bottomChooserState.postValue(
             BottomSheetChooser.BottomChooserState(
                 title = title,
                 options = options,
                 listener = listener,
-                shouldShow = true
-            )
+                shouldShow = true,
+            ),
         )
     }
 

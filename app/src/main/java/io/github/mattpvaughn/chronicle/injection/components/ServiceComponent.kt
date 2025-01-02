@@ -21,24 +21,43 @@ import kotlinx.coroutines.CoroutineScope
 @Component(dependencies = [AppComponent::class], modules = [ServiceModule::class])
 interface ServiceComponent {
     fun progressUpdater(): ProgressUpdater
+
     fun exoPlayer(): ExoPlayer
+
     fun mediaSession(): MediaSessionCompat
+
     fun pendingIntent(): PendingIntent
+
     fun sleepTimer(): SleepTimer
+
     fun localBroadcastManager(): LocalBroadcastManager
+
     fun notificationManager(): NotificationManagerCompat
+
     fun notificationBuilder(): NotificationBuilder
+
     fun becomingNoisyReceiver(): BecomingNoisyReceiver
+
     fun mediaSessionCallback(): AudiobookMediaSessionCallback
+
     fun mediaSource(): PlexMediaRepository
+
     fun mediaSessionConnector(): MediaSessionConnector
+
     fun serviceScope(): CoroutineScope
+
     fun serviceController(): ServiceController
+
     fun plexDataSourceFactory(): DefaultHttpDataSource.Factory
+
     fun packageValidator(): PackageValidator
+
     fun foregroundServiceController(): ForegroundServiceController
+
     fun trackListManager(): TrackListStateManager
+
     fun mediaController(): MediaControllerCompat
+
     fun plexMediaSource(): PlexMediaSource
 
     fun inject(mediaPlayerService: MediaPlayerService)

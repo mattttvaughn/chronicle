@@ -13,7 +13,9 @@ interface PlexLoginService {
     suspend fun postAuthPin(): OAuthResponse
 
     @GET("https://plex.tv/api/v2/pins/{id}.json")
-    suspend fun getAuthPin(@Path("id") id: Long): OAuthResponse
+    suspend fun getAuthPin(
+        @Path("id") id: Long,
+    ): OAuthResponse
 
     /** Fetches the users for the account associated with the auth token passed in via header */
     @GET("https://plex.tv/api/v2/home/users")
@@ -23,24 +25,26 @@ interface PlexLoginService {
     @POST("https://plex.tv/api/v2/home/users/{uuid}/switch")
     suspend fun pickUser(
         @Path("uuid") id: String,
-        @Query("pin") pin: String? = null
+        @Query("pin") pin: String? = null,
     ): PlexUser
 
     @GET("https://plex.tv/api/v2/resources")
     suspend fun resources(
         @Query("includeHttps") shouldIncludeHttps: Int = 1,
-        @Query("includeRelay") shouldIncludeRelay: Int = 1
+        @Query("includeRelay") shouldIncludeRelay: Int = 1,
     ): List<PlexServer>
 }
 
 interface PlexMediaService {
     /** A basic check used to tell whether a server is online. Returns a lightweight response */
     @GET("{url}/identity")
-    suspend fun checkServer(@Path("url", encoded = true) url: String): Response<PlexMediaContainer>
+    suspend fun checkServer(
+        @Path("url", encoded = true) url: String,
+    ): Response<PlexMediaContainer>
 
     @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_ALBUM")
     suspend fun retrieveAllAlbums(
-        @Path("libraryId") libraryId: String
+        @Path("libraryId") libraryId: String,
     ): PlexMediaContainerWrapper
 
     @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_ALBUM")
@@ -53,17 +57,19 @@ interface PlexMediaService {
     @GET("/library/metadata/{trackId}")
     suspend fun retrieveChapterInfo(
         @Path("trackId") trackId: Int,
-        @Query("includeChapters") includeChapters: Int = 1
+        @Query("includeChapters") includeChapters: Int = 1,
     ): PlexMediaContainerWrapper
 
     @GET("/library/metadata/{albumId}")
     suspend fun retrieveAlbum(
         @Path("albumId") albumId: Int,
-        @Query("includeChapters") includeChapters: Int = 1
+        @Query("includeChapters") includeChapters: Int = 1,
     ): PlexMediaContainerWrapper
 
     @GET("/library/metadata/{albumId}/children")
-    suspend fun retrieveTracksForAlbum(@Path("albumId") albumId: Int): PlexMediaContainerWrapper
+    suspend fun retrieveTracksForAlbum(
+        @Path("albumId") albumId: Int,
+    ): PlexMediaContainerWrapper
 
     @GET("/library/sections")
     suspend fun retrieveLibraries(): PlexMediaContainerWrapper
@@ -71,21 +77,21 @@ interface PlexMediaService {
     @GET("{url}")
     @Streaming
     suspend fun retrieveStreamByFilePath(
-        @Path(value = "url", encoded = true) url: String
+        @Path(value = "url", encoded = true) url: String,
     ): ResponseBody
 
     /** Sets a media item to "watched" in the server. Works for both tracks and albums */
     @GET("/:/scrobble")
     suspend fun watched(
         @Query("key") key: String,
-        @Query("identifier") identifier: String = "com.plexapp.plugins.library"
+        @Query("identifier") identifier: String = "com.plexapp.plugins.library",
     )
 
     /** Sets a media item to "unwatched" in the server. Works for both tracks and albums */
     @GET("/:/unscrobble")
     suspend fun unwatched(
         @Query("key") key: String,
-        @Query("identifier") identifier: String = "com.plexapp.plugins.library"
+        @Query("identifier") identifier: String = "com.plexapp.plugins.library",
     )
 
     /**
@@ -102,7 +108,7 @@ interface PlexMediaService {
         @Query("hasMDE") hasMde: Int,
         @Query("identifier") identifier: String = "com.plexapp.plugins.library",
         @Query("playbackTime") playbackTime: Long = 0L,
-        @Query("playQueueItemId") playQueueItemId: Long = 0L
+        @Query("playQueueItemId") playQueueItemId: Long = 0L,
     )
 
     /**
@@ -120,12 +126,14 @@ interface PlexMediaService {
         @Query("type") mediaType: String = MediaType.AUDIO_STRING,
         @Query("repeat") shouldRepeat: Boolean = false,
         @Query("own") isOwnedByUser: Boolean = true,
-        @Query("includeChapters") shouldIncludeChapters: Boolean = true
+        @Query("includeChapters") shouldIncludeChapters: Boolean = true,
     )
 
     /** Loads all [MediaType.TRACK]s available in the server */
     @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_TRACK")
-    suspend fun retrieveAllTracksInLibrary(@Path("libraryId") libraryId: String): PlexMediaContainerWrapper
+    suspend fun retrieveAllTracksInLibrary(
+        @Path("libraryId") libraryId: String,
+    ): PlexMediaContainerWrapper
 
     @GET("/library/sections/{libraryId}/all?type=$MEDIA_TYPE_TRACK")
     suspend fun retrieveTracksPaginated(

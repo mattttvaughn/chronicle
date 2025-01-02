@@ -17,32 +17,36 @@ import javax.inject.Singleton
  * TODO: use a more sophisticated method to prevent cheats
  */
 @Singleton
-class ChronicleBillingManager @Inject constructor(
-    applicationContext: Context,
-    private val prefsRepo: PrefsRepo,
-) {
+class ChronicleBillingManager
+    @Inject
+    constructor(
+        applicationContext: Context,
+        private val prefsRepo: PrefsRepo,
+    ) {
+        fun launchBillingFlow(activity: Activity) {
+            iapConnector.purchase(activity, PREMIUM_IAP_SKU)
+        }
 
-    fun launchBillingFlow(activity: Activity) {
-        iapConnector.purchase(activity, PREMIUM_IAP_SKU)
+        private val iapConnector =
+            IapConnector(
+                context = applicationContext,
+                nonConsumableKeys = listOf(PREMIUM_IAP_SKU),
+                enableLogging = BuildConfig.DEBUG,
+            ).apply {
+                addPurchaseListener(
+                    object : PurchaseServiceListener {
+                        override fun onPricesUpdated(iapKeyPrices: Map<String, DataWrappers.SkuDetails>) {
+                            // no-op
+                        }
+
+                        override fun onProductPurchased(purchaseInfo: DataWrappers.PurchaseInfo) {
+                            prefsRepo.premiumPurchaseToken = purchaseInfo.purchaseToken
+                        }
+
+                        override fun onProductRestored(purchaseInfo: DataWrappers.PurchaseInfo) {
+                            prefsRepo.premiumPurchaseToken = purchaseInfo.purchaseToken
+                        }
+                    },
+                )
+            }
     }
-
-    private val iapConnector = IapConnector(
-        context = applicationContext,
-        nonConsumableKeys = listOf(PREMIUM_IAP_SKU),
-        enableLogging = BuildConfig.DEBUG
-    ).apply {
-        addPurchaseListener(object : PurchaseServiceListener {
-            override fun onPricesUpdated(iapKeyPrices: Map<String, DataWrappers.SkuDetails>) {
-                // no-op
-            }
-
-            override fun onProductPurchased(purchaseInfo: DataWrappers.PurchaseInfo) {
-                prefsRepo.premiumPurchaseToken = purchaseInfo.purchaseToken
-            }
-
-            override fun onProductRestored(purchaseInfo: DataWrappers.PurchaseInfo) {
-                prefsRepo.premiumPurchaseToken = purchaseInfo.purchaseToken
-            }
-        })
-    }
-}

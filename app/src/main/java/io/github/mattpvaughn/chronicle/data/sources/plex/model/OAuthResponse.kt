@@ -7,5 +7,5 @@ data class OAuthResponse(
     val id: Long,
     val clientIdentifier: String,
     val code: String,
-    val authToken: String? = null
+    val authToken: String? = null,
 )

@@ -6,7 +6,9 @@ import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 
 /** A model for the "Media" element of a "Track" entity. Only requires a "Part" for our uses */
 @JsonClass(generateAdapter = true)
-data class Media(@Json(name = "Part") val part: List<Part> = emptyList())
+data class Media(
+    @Json(name = "Part") val part: List<Part> = emptyList(),
+)
 
 /** A model for the "Part" element of a "Media" entity. Only need the key for our uses */
 @JsonClass(generateAdapter = true)

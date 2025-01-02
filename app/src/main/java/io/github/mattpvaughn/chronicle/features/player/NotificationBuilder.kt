@@ -43,221 +43,245 @@ const val NOW_PLAYING_NOTIFICATION: Int = 0xb32229
 /** Helper class to encapsulate code for building notifications. */
 @ExperimentalCoroutinesApi
 @ServiceScope
-class NotificationBuilder @Inject constructor(
-    private val context: Context,
-    private val plexConfig: PlexConfig,
-    private val controller: MediaControllerCompat,
-    private val currentlyPlaying: CurrentlyPlaying,
-    private val prefsRepo: PrefsRepo
-) {
+class NotificationBuilder
+    @Inject
+    constructor(
+        private val context: Context,
+        private val plexConfig: PlexConfig,
+        private val controller: MediaControllerCompat,
+        private val currentlyPlaying: CurrentlyPlaying,
+        private val prefsRepo: PrefsRepo,
+    ) {
+        private val platformNotificationManager: NotificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    private val platformNotificationManager: NotificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        private val playAction =
+            NotificationCompat.Action(
+                R.drawable.exo_controls_play,
+                context.getString(R.string.notification_play),
+                MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PLAY),
+            )
+        private val pauseAction =
+            NotificationCompat.Action(
+                R.drawable.exo_controls_pause,
+                context.getString(R.string.notification_pause),
+                MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE),
+            )
 
-    private val playAction = NotificationCompat.Action(
-        R.drawable.exo_controls_play,
-        context.getString(R.string.notification_play),
-        MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PLAY)
-    )
-    private val pauseAction = NotificationCompat.Action(
-        R.drawable.exo_controls_pause,
-        context.getString(R.string.notification_pause),
-        MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE)
-    )
+        private val skipToNextAction =
+            NotificationCompat.Action(
+                R.drawable.ic_skip_next_white,
+                context.getString(R.string.skip_to_next),
+                makePendingIntent(mediaSkipToNextCode),
+            )
 
-    private val skipToNextAction = NotificationCompat.Action(
-        R.drawable.ic_skip_next_white,
-        context.getString(R.string.skip_to_next),
-        makePendingIntent(mediaSkipToNextCode)
-    )
+        private val skipToPreviousAction =
+            NotificationCompat.Action(
+                R.drawable.ic_skip_previous_white,
+                context.getString(R.string.skip_to_previous),
+                makePendingIntent(mediaSkipToPreviousCode),
+            )
 
-    private val skipToPreviousAction = NotificationCompat.Action(
-        R.drawable.ic_skip_previous_white,
-        context.getString(R.string.skip_to_previous),
-        makePendingIntent(mediaSkipToPreviousCode)
-    )
-
-    private fun makeJumpForwardsIcon(): Int {
-        return when (prefsRepo.jumpForwardSeconds) {
-            10L -> R.drawable.ic_forward_10_white
-            15L -> R.drawable.ic_forward_15_white
-            20L -> R.drawable.ic_forward_20_white
-            30L -> R.drawable.ic_forward_30_white
-            60L -> R.drawable.ic_forward_60_white
-            90L -> R.drawable.ic_forward_90_white
-            else -> R.drawable.ic_forward_30_white
+        private fun makeJumpForwardsIcon(): Int {
+            return when (prefsRepo.jumpForwardSeconds) {
+                10L -> R.drawable.ic_forward_10_white
+                15L -> R.drawable.ic_forward_15_white
+                20L -> R.drawable.ic_forward_20_white
+                30L -> R.drawable.ic_forward_30_white
+                60L -> R.drawable.ic_forward_60_white
+                90L -> R.drawable.ic_forward_90_white
+                else -> R.drawable.ic_forward_30_white
+            }
         }
-    }
 
-    private fun skipForwardsAction() = NotificationCompat.Action(
-        makeJumpForwardsIcon(),
-        context.getString(R.string.skip_forwards),
-        makePendingIntent(mediaSkipForwardCode)
-    )
+        private fun skipForwardsAction() =
+            NotificationCompat.Action(
+                makeJumpForwardsIcon(),
+                context.getString(R.string.skip_forwards),
+                makePendingIntent(mediaSkipForwardCode),
+            )
 
-    private fun makeJumpBackwardsIcon(): Int {
-        return when (prefsRepo.jumpBackwardSeconds) {
-            10L -> R.drawable.ic_replay_10_white
-            15L -> R.drawable.ic_replay_15_white
-            20L -> R.drawable.ic_replay_20_white
-            30L -> R.drawable.ic_replay_30_white
-            60L -> R.drawable.ic_replay_60_white
-            90L -> R.drawable.ic_replay_90_white
-            else -> R.drawable.ic_replay_10_white
+        private fun makeJumpBackwardsIcon(): Int {
+            return when (prefsRepo.jumpBackwardSeconds) {
+                10L -> R.drawable.ic_replay_10_white
+                15L -> R.drawable.ic_replay_15_white
+                20L -> R.drawable.ic_replay_20_white
+                30L -> R.drawable.ic_replay_30_white
+                60L -> R.drawable.ic_replay_60_white
+                90L -> R.drawable.ic_replay_90_white
+                else -> R.drawable.ic_replay_10_white
+            }
         }
-    }
 
-    private fun skipBackwardsAction() = NotificationCompat.Action(
-        makeJumpBackwardsIcon(),
-        context.getString(R.string.skip_backwards),
-        makePendingIntent(mediaSkipBackwardCode)
-    )
+        private fun skipBackwardsAction() =
+            NotificationCompat.Action(
+                makeJumpBackwardsIcon(),
+                context.getString(R.string.skip_backwards),
+                makePendingIntent(mediaSkipBackwardCode),
+            )
 
-    private fun makePendingIntent(keycode: Int): PendingIntent? {
-        val intent = Intent(Intent.ACTION_MEDIA_BUTTON)
-        intent.setPackage(context.packageName)
-        intent.component = ComponentName(
-            context.packageName,
-            MediaPlayerService::class.qualifiedName
-                ?: "io.github.mattpvaughn.chronicle.features.player.MediaPlayerService"
+        private fun makePendingIntent(keycode: Int): PendingIntent? {
+            val intent = Intent(Intent.ACTION_MEDIA_BUTTON)
+            intent.setPackage(context.packageName)
+            intent.component =
+                ComponentName(
+                    context.packageName,
+                    MediaPlayerService::class.qualifiedName
+                        ?: "io.github.mattpvaughn.chronicle.features.player.MediaPlayerService",
+                )
+            intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keycode))
+            return PendingIntent.getService(context, keycode, intent, PendingIntent.FLAG_IMMUTABLE)
+        }
+
+        private val stopPendingIntent = makePendingIntent(KEYCODE_MEDIA_STOP)
+
+        private val contentPendingIntent: PendingIntent
+
+        init {
+            val intent = Intent()
+            val activity =
+                context.packageManager.getPackageInfo(context.packageName, GET_ACTIVITIES)
+                    .activities.find { it.name.contains("MainActivity") }
+            intent.setPackage(context.packageName)
+            intent.putExtra(FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, true)
+            intent.component = ComponentName(context.packageName, activity?.name ?: "")
+            contentPendingIntent =
+                PendingIntent.getActivity(
+                    context,
+                    REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING,
+                    intent,
+                    PendingIntent.FLAG_IMMUTABLE,
+                )
+        }
+
+        var bookTitleBitmapPair: Pair<Int, Bitmap?>? = null
+
+        private var currentNotificationMetadata =
+            NotificationData(
+                bookId = NO_AUDIOBOOK_FOUND_ID,
+                trackId = ITrackRepository.TRACK_NOT_FOUND,
+                chapterId = EMPTY_CHAPTER.id,
+                playbackState = PlaybackStateCompat.STATE_NONE,
+            )
+
+        private data class NotificationData(
+            private val bookId: Int,
+            private val trackId: Int,
+            private val chapterId: Long,
+            private val playbackState: Int,
         )
-        intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keycode))
-        return PendingIntent.getService(context, keycode, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        private val currentID =
+            NotificationData(
+                bookId = currentlyPlaying.book.value.id,
+                trackId = currentlyPlaying.track.value.id,
+                chapterId = currentlyPlaying.chapter.value.id,
+                playbackState = PlaybackStateCompat.STATE_NONE,
+            )
+
+        /**
+         * Builds a notification representing the current playback state as representing by
+         * [CurrentlyPlaying] and the current [MediaSessionCompat]
+         *
+         * @return a notification representing the current playback state or null if one already exists
+         */
+        suspend fun buildNotification(sessionToken: MediaSessionCompat.Token): Notification? {
+            if (shouldCreateChannel()) {
+                createNowPlayingChannel()
+            }
+
+            val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
+            val isPlaying = controller.playbackState.isPlaying
+
+            if (BuildConfig.DEBUG) {
+                Timber.i(
+                    "Building notification! track=${currentlyPlaying.track.value.title}, index=${currentlyPlaying.track.value.index}",
+                )
+                Timber.i(
+                    "Building notification! chapter=${currentlyPlaying.chapter.value.title}, index=${currentlyPlaying.chapter.value.index}",
+                )
+                Timber.i(
+                    "Building notification! state=${controller.playbackState.stateName}, playing=$isPlaying",
+                )
+            }
+
+            builder.addAction(skipToPreviousAction)
+            builder.addAction(skipBackwardsAction())
+            if (isPlaying) {
+                builder.addAction(pauseAction)
+            } else {
+                builder.addAction(playAction)
+            }
+            builder.addAction(skipForwardsAction())
+            builder.addAction(skipToNextAction)
+
+            val mediaStyle =
+                MediaStyle()
+                    .setCancelButtonIntent(stopPendingIntent)
+                    .setMediaSession(sessionToken)
+                    .setShowActionsInCompactView(
+                        1,
+                        2,
+                        3,
+                    ) // not sure if skip to previous/next or jump backwards/forwards is preferred in CompactView
+                    .setShowCancelButton(true)
+
+            val smallIcon =
+                if (isPlaying) {
+                    R.drawable.ic_notification_icon_playing
+                } else {
+                    R.drawable.ic_notification_icon_paused
+                }
+
+            val chapterTitle = currentlyPlaying.chapter.value.title
+
+            // NOTE: As long as [MediaStyle.setMediaSession()] hijacks the notification,
+            // title/subtitle will be pulled directly from the session, ignoring below
+            val currentBook = currentlyPlaying.book.value
+            val titles =
+                if (chapterTitle.isNotEmpty()) {
+                    Pair(chapterTitle, currentBook.title)
+                } else {
+                    Pair(currentBook.title, currentBook.author)
+                }
+
+            // Only load bitmap when the book changes or the bitmap got recycled
+            if (bookTitleBitmapPair?.first != currentBook.id || bookTitleBitmapPair?.second?.isRecycled != false) {
+                val artUri = currentBook.thumb
+                Timber.i("Loading art uri: $artUri")
+                val largeIcon = plexConfig.getBitmapFromServer(artUri)
+                // ^^^ nullable, but null is expected value for book without artwork ^^^
+                bookTitleBitmapPair = Pair(currentBook.id, largeIcon)
+            }
+
+            return builder.setContentTitle(titles.first)
+                .setContentText(titles.second)
+                .setContentIntent(controller.sessionActivity)
+                .setDeleteIntent(stopPendingIntent)
+                .setOnlyAlertOnce(true)
+                .setSmallIcon(smallIcon)
+                .setLargeIcon(bookTitleBitmapPair?.second)
+                .setStyle(mediaStyle)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .build()
+        }
+
+        private fun shouldCreateChannel() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !nowPlayingChannelExists()
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        private fun nowPlayingChannelExists() = platformNotificationManager.getNotificationChannel(NOW_PLAYING_CHANNEL) != null
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        private fun createNowPlayingChannel() {
+            val notificationChannel =
+                NotificationChannel(
+                    NOW_PLAYING_CHANNEL,
+                    context.getString(R.string.notification_channel),
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = context.getString(R.string.notification_channel_description)
+                }
+
+            platformNotificationManager.createNotificationChannel(notificationChannel)
+        }
     }
-
-    private val stopPendingIntent = makePendingIntent(KEYCODE_MEDIA_STOP)
-
-    private val contentPendingIntent: PendingIntent
-
-    init {
-        val intent = Intent()
-        val activity = context.packageManager.getPackageInfo(context.packageName, GET_ACTIVITIES)
-            .activities.find { it.name.contains("MainActivity") }
-        intent.setPackage(context.packageName)
-        intent.putExtra(FLAG_OPEN_ACTIVITY_TO_CURRENTLY_PLAYING, true)
-        intent.component = ComponentName(context.packageName, activity?.name ?: "")
-        contentPendingIntent = PendingIntent.getActivity(
-            context,
-            REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
-    }
-
-    var bookTitleBitmapPair: Pair<Int, Bitmap?>? = null
-
-    private var currentNotificationMetadata = NotificationData(
-        bookId = NO_AUDIOBOOK_FOUND_ID,
-        trackId = ITrackRepository.TRACK_NOT_FOUND,
-        chapterId = EMPTY_CHAPTER.id,
-        playbackState = PlaybackStateCompat.STATE_NONE
-    )
-
-    private data class NotificationData(
-        private val bookId: Int,
-        private val trackId: Int,
-        private val chapterId: Long,
-        private val playbackState: Int
-    )
-
-    private val currentID = NotificationData(
-        bookId = currentlyPlaying.book.value.id,
-        trackId = currentlyPlaying.track.value.id,
-        chapterId = currentlyPlaying.chapter.value.id,
-        playbackState = PlaybackStateCompat.STATE_NONE
-    )
-
-    /**
-     * Builds a notification representing the current playback state as representing by
-     * [CurrentlyPlaying] and the current [MediaSessionCompat]
-     *
-     * @return a notification representing the current playback state or null if one already exists
-     */
-    suspend fun buildNotification(sessionToken: MediaSessionCompat.Token): Notification? {
-        if (shouldCreateChannel()) {
-            createNowPlayingChannel()
-        }
-
-        val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
-        val isPlaying = controller.playbackState.isPlaying
-
-        if (BuildConfig.DEBUG) {
-            Timber.i("Building notification! track=${currentlyPlaying.track.value.title}, index=${currentlyPlaying.track.value.index}")
-            Timber.i("Building notification! chapter=${currentlyPlaying.chapter.value.title}, index=${currentlyPlaying.chapter.value.index}")
-            Timber.i("Building notification! state=${controller.playbackState.stateName}, playing=$isPlaying")
-        }
-
-        builder.addAction(skipToPreviousAction)
-        builder.addAction(skipBackwardsAction())
-        if (isPlaying) {
-            builder.addAction(pauseAction)
-        } else {
-            builder.addAction(playAction)
-        }
-        builder.addAction(skipForwardsAction())
-        builder.addAction(skipToNextAction)
-
-        val mediaStyle = MediaStyle()
-            .setCancelButtonIntent(stopPendingIntent)
-            .setMediaSession(sessionToken)
-            .setShowActionsInCompactView(1, 2, 3) // not sure if skip to previous/next or jump backwards/forwards is preferred in CompactView
-            .setShowCancelButton(true)
-
-        val smallIcon = if (isPlaying) {
-            R.drawable.ic_notification_icon_playing
-        } else {
-            R.drawable.ic_notification_icon_paused
-        }
-
-        val chapterTitle = currentlyPlaying.chapter.value.title
-
-        // NOTE: As long as [MediaStyle.setMediaSession()] hijacks the notification,
-        // title/subtitle will be pulled directly from the session, ignoring below
-        val currentBook = currentlyPlaying.book.value
-        val titles = if (chapterTitle.isNotEmpty()) {
-            Pair(chapterTitle, currentBook.title)
-        } else {
-            Pair(currentBook.title, currentBook.author)
-        }
-
-        // Only load bitmap when the book changes or the bitmap got recycled
-        if (bookTitleBitmapPair?.first != currentBook.id || bookTitleBitmapPair?.second?.isRecycled != false) {
-            val artUri = currentBook.thumb
-            Timber.i("Loading art uri: $artUri")
-            val largeIcon = plexConfig.getBitmapFromServer(artUri)
-            // ^^^ nullable, but null is expected value for book without artwork ^^^
-            bookTitleBitmapPair = Pair(currentBook.id, largeIcon)
-        }
-
-        return builder.setContentTitle(titles.first)
-            .setContentText(titles.second)
-            .setContentIntent(controller.sessionActivity)
-            .setDeleteIntent(stopPendingIntent)
-            .setOnlyAlertOnce(true)
-            .setSmallIcon(smallIcon)
-            .setLargeIcon(bookTitleBitmapPair?.second)
-            .setStyle(mediaStyle)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .build()
-    }
-
-    private fun shouldCreateChannel() =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !nowPlayingChannelExists()
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun nowPlayingChannelExists() =
-        platformNotificationManager.getNotificationChannel(NOW_PLAYING_CHANNEL) != null
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun createNowPlayingChannel() {
-        val notificationChannel = NotificationChannel(
-            NOW_PLAYING_CHANNEL,
-            context.getString(R.string.notification_channel),
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = context.getString(R.string.notification_channel_description)
-        }
-
-        platformNotificationManager.createNotificationChannel(notificationChannel)
-    }
-}

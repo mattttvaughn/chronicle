@@ -17,7 +17,6 @@ import io.github.mattpvaughn.chronicle.databinding.OnboardingPlexChooseServerBin
 import javax.inject.Inject
 
 class ChooseServerFragment : Fragment() {
-
     companion object {
         @JvmStatic
         fun newInstance() = ChooseServerFragment()
@@ -41,23 +40,25 @@ class ChooseServerFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         super.onCreate(savedInstanceState)
 
         val binding = OnboardingPlexChooseServerBinding.inflate(inflater, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
 
-        viewModel = ViewModelProvider(
-            viewModelStore,
-            viewModelFactory
-        ).get(ChooseServerViewModel::class.java)
+        viewModel =
+            ViewModelProvider(
+                viewModelStore,
+                viewModelFactory,
+            ).get(ChooseServerViewModel::class.java)
 
-        serverAdapter = ServerListAdapter(
-            ServerClickListener { serverModel ->
-                viewModel.chooseServer(serverModel)
-            }
-        )
+        serverAdapter =
+            ServerListAdapter(
+                ServerClickListener { serverModel ->
+                    viewModel.chooseServer(serverModel)
+                },
+            )
 
         binding.serverList.adapter = serverAdapter
 
@@ -67,7 +68,7 @@ class ChooseServerFragment : Fragment() {
                 servers?.let {
                     serverAdapter.submitList(it)
                 }
-            }
+            },
         )
 
         viewModel.userMessage.observe(
@@ -77,7 +78,7 @@ class ChooseServerFragment : Fragment() {
                     return@Observer
                 }
                 Toast.makeText(requireContext(), it.getContentIfNotHandled(), LENGTH_SHORT).show()
-            }
+            },
         )
 
         binding.chooseServerViewModel = viewModel

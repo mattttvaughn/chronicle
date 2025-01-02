@@ -23,7 +23,6 @@ import io.github.mattpvaughn.chronicle.navigation.Navigator
 import javax.inject.Inject
 
 class HomeFragment : Fragment() {
-
     @Inject
     lateinit var viewModelFactory: HomeViewModel.Factory
 
@@ -48,9 +47,8 @@ class HomeFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
-
         val binding = FragmentHomeBinding.inflate(inflater, container, false)
 
         binding.lifecycleOwner = viewLifecycleOwner
@@ -63,11 +61,14 @@ class HomeFragment : Fragment() {
         binding.onDeckRecyclerview.itemAnimator?.changeDuration = 0
         binding.downloadedRecyclerview.adapter = makeAudiobookAdapter()
         binding.downloadedRecyclerview.itemAnimator?.changeDuration = 0
-        binding.searchResultsList.adapter = AudiobookSearchAdapter(object : AudiobookClick {
-            override fun onClick(audiobook: Audiobook) {
-                openAudiobookDetails(audiobook)
-            }
-        })
+        binding.searchResultsList.adapter =
+            AudiobookSearchAdapter(
+                object : AudiobookClick {
+                    override fun onClick(audiobook: Audiobook) {
+                        openAudiobookDetails(audiobook)
+                    }
+                },
+            )
 
         binding.swipeToRefresh.setOnRefreshListener {
             viewModel.refreshData()
@@ -77,7 +78,7 @@ class HomeFragment : Fragment() {
             viewLifecycleOwner,
             Observer {
                 binding.swipeToRefresh.isRefreshing = it
-            }
+            },
         )
 
         viewModel.messageForUser.observe(
@@ -86,7 +87,7 @@ class HomeFragment : Fragment() {
                 if (!it.hasBeenHandled) {
                     Toast.makeText(context, it.getContentIfNotHandled(), LENGTH_SHORT).show()
                 }
-            }
+            },
         )
 
         (activity as MainActivity).setSupportActionBar(binding.toolbar)
@@ -99,44 +100,52 @@ class HomeFragment : Fragment() {
             initialViewStyle = VIEW_STYLE_COVER_GRID,
             isVertical = false,
             isSquare = prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
-            audiobookClick = object : AudiobookClick {
-                override fun onClick(audiobook: Audiobook) {
-                    openAudiobookDetails(audiobook)
-                }
-            }
+            audiobookClick =
+                object : AudiobookClick {
+                    override fun onClick(audiobook: Audiobook) {
+                        openAudiobookDetails(audiobook)
+                    }
+                },
         )
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateOptionsMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         inflater.inflate(R.menu.home_menu, menu)
         val searchView = menu.findItem(R.id.search).actionView as SearchView
         val searchItem = menu.findItem(R.id.search) as MenuItem
 
-        searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                viewModel.setSearchActive(true)
-                return true
-            }
-
-            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                viewModel.setSearchActive(false)
-                return true
-            }
-        })
-
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                // Do nothing
-                return true
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                if (newText != null) {
-                    viewModel.search(newText)
+        searchItem.setOnActionExpandListener(
+            object : MenuItem.OnActionExpandListener {
+                override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                    viewModel.setSearchActive(true)
+                    return true
                 }
-                return true
-            }
-        })
+
+                override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+                    viewModel.setSearchActive(false)
+                    return true
+                }
+            },
+        )
+
+        searchView.setOnQueryTextListener(
+            object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    // Do nothing
+                    return true
+                }
+
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    if (newText != null) {
+                        viewModel.search(newText)
+                    }
+                    return true
+                }
+            },
+        )
     }
 
     fun openAudiobookDetails(audiobook: Audiobook) {

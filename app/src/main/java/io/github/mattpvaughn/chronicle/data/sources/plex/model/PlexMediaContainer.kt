@@ -7,7 +7,9 @@ import io.github.mattpvaughn.chronicle.data.model.Collection
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 
 @JsonClass(generateAdapter = true)
-data class PlexMediaContainerWrapper(@Json(name = "MediaContainer") val plexMediaContainer: PlexMediaContainer)
+data class PlexMediaContainerWrapper(
+    @Json(name = "MediaContainer") val plexMediaContainer: PlexMediaContainer,
+)
 
 @JsonClass(generateAdapter = true)
 data class PlexMediaContainer(
@@ -20,7 +22,7 @@ data class PlexMediaContainer(
     val devices: List<PlexServer> = emptyList(),
     val size: Long = 0,
     val totalSize: Long = 0,
-    val offset: Long = 0
+    val offset: Long = 0,
 )
 
 @JsonClass(generateAdapter = true)

@@ -6,7 +6,6 @@ import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 
 interface MediaSource {
-
     /** An ID uniquely representing a specific source. */
     val id: Long
 

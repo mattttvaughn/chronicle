@@ -18,7 +18,7 @@ import timber.log.Timber
 fun bindImageRounded(
     draweeView: SimpleDraweeView,
     src: String?,
-    serverConnected: Boolean
+    serverConnected: Boolean,
 ) {
     if ((draweeView.context as Activity).isDestroyed) {
         return
@@ -27,8 +27,9 @@ fun bindImageRounded(
     val imageSize =
         draweeView.resources.getDimension(R.dimen.currently_playing_artwork_max_size).toInt()
     val config = Injector.get().plexConfig()
-    val url = config.toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$src")
-        .toUri()
+    val url =
+        config.toServerString("photo/:/transcode?width=$imageSize&height=$imageSize&url=$src")
+            .toUri()
 
     // If no server is connected, don't bother fetching from server, just check cache
     val request = ImageRequest.fromUri(url)
@@ -41,7 +42,6 @@ fun bindImageRounded(
  * connecting the user to the server
  */
 class UrlQueryCacheKey(private val url: Uri?) : CacheKey {
-
     override fun containsUri(uri: Uri?): Boolean {
         Timber.i("Checking cache for image")
         return uri?.query?.contains(url?.query ?: "") ?: false
@@ -77,6 +77,9 @@ class UrlQueryCacheKey(private val url: Uri?) : CacheKey {
 // tag set on all outermost layouts in a data bound layout xml
 @RequiresApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 @BindingAdapter("specialTag")
-fun bindTag(view: View, o: Any) {
+fun bindTag(
+    view: View,
+    o: Any,
+) {
     view.tag = o
 }

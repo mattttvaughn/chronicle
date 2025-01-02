@@ -4,9 +4,9 @@ const val MEDIA_TYPE_ALBUM = 9
 const val MEDIA_TYPE_TRACK = 10
 const val APP_NAME = "Chronicle"
 
-/** ---- For android auto ---- */
-
-/** Declares that ContentStyle is supported */
+/**
+ * Declares that ContentStyle is supported
+ */
 const val CONTENT_STYLE_SUPPORTED = "android.media.browse.CONTENT_STYLE_SUPPORTED"
 
 /**

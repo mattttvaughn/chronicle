@@ -22,13 +22,14 @@ import org.junit.Rule
 import org.junit.Test
 
 class OnboardingActivityTest {
-
     @get:Rule
-    var activityRule = ActivityTestRule(
-        OnboardingActivity::class.java,
-        true, // initialTouchMode
-        false
-    )
+    var activityRule =
+        ActivityTestRule(
+            OnboardingActivity::class.java,
+            // initialTouchMode
+            true,
+            false,
+        )
 
     private lateinit var component: UITestAppComponent
 
@@ -41,20 +42,21 @@ class OnboardingActivityTest {
 
     @ExperimentalCoroutinesApi
     @Test
-    fun testNormalLoginFlow_noCredentialsStored() = runBlockingTest {
-        activityRule.launchActivity(null)
+    fun testNormalLoginFlow_noCredentialsStored() =
+        runBlockingTest {
+            activityRule.launchActivity(null)
 
-        onView(withId(R.id.plex_login_title)).check(matches(ViewMatchers.isDisplayed()))
+            onView(withId(R.id.plex_login_title)).check(matches(ViewMatchers.isDisplayed()))
 
-        onView(withId(R.id.username)).perform(typeText(VALID_USERNAME))
-        onView(withId(R.id.password)).perform(typeText(VALID_PASSWORD))
+            onView(withId(R.id.username)).perform(typeText(VALID_USERNAME))
+            onView(withId(R.id.password)).perform(typeText(VALID_PASSWORD))
 
-        onView(withId(R.id.login)).check(matches(isEnabled()))
-        onView(withId(R.id.login)).perform(click())
+            onView(withId(R.id.login)).check(matches(isEnabled()))
+            onView(withId(R.id.login)).perform(click())
 
-        // Ensure we navigate to chooseServerActivity
-        onView(withId(R.id.choose_server_title)).check(matches(ViewMatchers.isDisplayed()))
-    }
+            // Ensure we navigate to chooseServerActivity
+            onView(withId(R.id.choose_server_title)).check(matches(ViewMatchers.isDisplayed()))
+        }
 
     @Test
     fun testLoginFlow_authTokenStored() {

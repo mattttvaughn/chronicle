@@ -16,50 +16,66 @@ import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import javax.inject.Inject
 
 @ServiceScope
-class AudiobookPlaybackPreparer @Inject constructor(
-    private val mediaSource: PlexMediaRepository,
-    private val mediaSessionCallback: MediaSessionCompat.Callback
-) : MediaSessionConnector.PlaybackPreparer {
-
-    override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle?) {
-        mediaSource.whenReady {
-            if (playWhenReady) {
-                mediaSessionCallback.onPlayFromSearch(query, extras)
-            } else {
-                mediaSessionCallback.onPrepareFromSearch(query, extras)
+class AudiobookPlaybackPreparer
+    @Inject
+    constructor(
+        private val mediaSource: PlexMediaRepository,
+        private val mediaSessionCallback: MediaSessionCompat.Callback,
+    ) : MediaSessionConnector.PlaybackPreparer {
+        override fun onPrepareFromSearch(
+            query: String,
+            playWhenReady: Boolean,
+            extras: Bundle?,
+        ) {
+            mediaSource.whenReady {
+                if (playWhenReady) {
+                    mediaSessionCallback.onPlayFromSearch(query, extras)
+                } else {
+                    mediaSessionCallback.onPrepareFromSearch(query, extras)
+                }
             }
         }
-    }
 
-    override fun onCommand(
-        player: Player,
-        command: String,
-        extras: Bundle?,
-        cb: ResultReceiver?
-    ): Boolean {
-        // do nothing
-        return false
-    }
+        override fun onCommand(
+            player: Player,
+            command: String,
+            extras: Bundle?,
+            cb: ResultReceiver?,
+        ): Boolean {
+            // do nothing
+            return false
+        }
 
-    override fun getSupportedPrepareActions(): Long =
-        ACTION_PREPARE_FROM_MEDIA_ID or ACTION_PLAY_FROM_MEDIA_ID or
-            ACTION_PREPARE_FROM_SEARCH or ACTION_PLAY_FROM_SEARCH
+        override fun getSupportedPrepareActions(): Long =
+            ACTION_PREPARE_FROM_MEDIA_ID or ACTION_PLAY_FROM_MEDIA_ID or
+                ACTION_PREPARE_FROM_SEARCH or ACTION_PLAY_FROM_SEARCH
 
-    override fun onPrepareFromMediaId(bookId: String, playWhenReady: Boolean, extras: Bundle?) {
-        mediaSource.whenReady {
-            if (playWhenReady) {
-                mediaSessionCallback.onPlayFromMediaId(bookId, extras)
-            } else {
-                mediaSessionCallback.onPrepareFromMediaId(bookId, extras)
+        override fun onPrepareFromMediaId(
+            bookId: String,
+            playWhenReady: Boolean,
+            extras: Bundle?,
+        ) {
+            mediaSource.whenReady {
+                if (playWhenReady) {
+                    mediaSessionCallback.onPlayFromMediaId(bookId, extras)
+                } else {
+                    mediaSessionCallback.onPrepareFromMediaId(bookId, extras)
+                }
             }
         }
+
+        override fun onPrepareFromUri(
+            uri: Uri,
+            playWhenReady: Boolean,
+            extras: Bundle?,
+        ) = Unit
+
+        override fun onPrepare(playWhenReady: Boolean) = Unit
     }
 
-    override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle?) = Unit
-
-    override fun onPrepare(playWhenReady: Boolean) = Unit
-}
-
-fun buildPlaylist(tracks: List<MediaItemTrack>, plexConfig: PlexConfig): List<MediaMetadataCompat> {
+fun buildPlaylist(
+    tracks: List<MediaItemTrack>,
+    plexConfig: PlexConfig,
+): List<MediaMetadataCompat> {
     return tracks.map { track -> track.toMediaMetadata(plexConfig) }
 }

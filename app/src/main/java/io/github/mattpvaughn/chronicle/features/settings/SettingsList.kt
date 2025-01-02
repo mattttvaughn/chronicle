@@ -21,21 +21,23 @@ import io.github.mattpvaughn.chronicle.databinding.PreferenceItemTitleBinding
  * A view which shows
  */
 class SettingsList : FrameLayout {
-
     constructor(context: Context) : super(context, null)
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs, 0)
     constructor (context: Context, attrs: AttributeSet?, defStyle: Int) : super(
-        context, attrs, defStyle
+        context,
+        attrs,
+        defStyle,
     )
 
     private val prefsRepo = Injector.get().prefsRepo()
     private val prefAdapter = PreferencesListAdapter(prefsRepo)
 
-    private var list: RecyclerView = RecyclerView(context).apply {
-        adapter = prefAdapter
-        layoutManager = LinearLayoutManager(context)
-        layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
-    }
+    private var list: RecyclerView =
+        RecyclerView(context).apply {
+            adapter = prefAdapter
+            layoutManager = LinearLayoutManager(context)
+            layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
+        }
 
     fun setPreferences(prefs: List<PreferenceModel>) {
         prefAdapter.submitList(prefs)
@@ -47,8 +49,10 @@ class SettingsList : FrameLayout {
 
     class PreferencesListAdapter(private val prefsRepo: PrefsRepo) :
         ListAdapter<PreferenceModel, RecyclerView.ViewHolder>(PreferenceItemDiffCallback()) {
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        override fun onCreateViewHolder(
+            parent: ViewGroup,
+            viewType: Int,
+        ): RecyclerView.ViewHolder {
             return when (prefIntMap.filterValues { it == viewType }.keys.map { it }[0]) {
                 PreferenceType.CLICKABLE -> ClickablePreferenceViewHolder.from(parent)
                 PreferenceType.BOOLEAN -> SwitchPreferenceViewHolder.from(parent, prefsRepo)
@@ -58,7 +62,10 @@ class SettingsList : FrameLayout {
             }
         }
 
-        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        override fun onBindViewHolder(
+            holder: RecyclerView.ViewHolder,
+            position: Int,
+        ) {
             when (holder) {
                 is ClickablePreferenceViewHolder -> holder.bind(getItem(position))
                 is SwitchPreferenceViewHolder -> holder.bind(getItem(position))
@@ -89,7 +96,7 @@ class SettingsList : FrameLayout {
 
         class SwitchPreferenceViewHolder(
             val binding: PreferenceItemSwitchBinding,
-            private val prefsRepo: PrefsRepo
+            private val prefsRepo: PrefsRepo,
         ) : RecyclerView.ViewHolder(binding.root) {
             fun bind(preferenceModel: PreferenceModel) {
                 binding.model = preferenceModel
@@ -113,7 +120,7 @@ class SettingsList : FrameLayout {
             companion object {
                 fun from(
                     viewGroup: ViewGroup,
-                    prefsRepo: PrefsRepo
+                    prefsRepo: PrefsRepo,
                 ): SwitchPreferenceViewHolder {
                     val inflater = LayoutInflater.from(viewGroup.context)
                     val binding = PreferenceItemSwitchBinding.inflate(inflater, viewGroup, false)
@@ -140,13 +147,16 @@ class SettingsList : FrameLayout {
     }
 
     class PreferenceItemDiffCallback : DiffUtil.ItemCallback<PreferenceModel>() {
-        override fun areItemsTheSame(oldItem: PreferenceModel, newItem: PreferenceModel): Boolean {
+        override fun areItemsTheSame(
+            oldItem: PreferenceModel,
+            newItem: PreferenceModel,
+        ): Boolean {
             return oldItem.title == newItem.title
         }
 
         override fun areContentsTheSame(
             oldItem: PreferenceModel,
-            newItem: PreferenceModel
+            newItem: PreferenceModel,
         ): Boolean {
             return oldItem.title == newItem.title && oldItem.explanation == newItem.explanation
         }

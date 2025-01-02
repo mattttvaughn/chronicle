@@ -54,41 +54,44 @@ class SettingsViewModel(
     private val plexConfig: PlexConfig,
     private val workManager: WorkManager,
     private val plexPrefs: PlexPrefsRepo,
-    private val collectionsRepository: CollectionsRepository
+    private val collectionsRepository: CollectionsRepository,
 ) : ViewModel() {
-
     @Suppress("UNCHECKED_CAST")
-    class Factory @Inject constructor(
-        private val bookRepository: IBookRepository,
-        private val trackRepository: ITrackRepository,
-        private val prefsRepo: PrefsRepo,
-        private val mediaServiceConnection: MediaServiceConnection,
-        private val plexLoginRepo: IPlexLoginRepo,
-        private val cachedFileManager: ICachedFileManager,
-        private val plexConfig: PlexConfig,
-        private val workManager: WorkManager,
-        private val plexPrefs: PlexPrefsRepo,
-        private val collectionsRepository: CollectionsRepository
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-                return SettingsViewModel(
-                    bookRepository = bookRepository,
-                    trackRepository = trackRepository,
-                    mediaServiceConnection = mediaServiceConnection,
-                    prefsRepo = prefsRepo,
-                    plexLoginRepo = plexLoginRepo,
-                    cachedFileManager = cachedFileManager,
-                    plexConfig = plexConfig,
-                    workManager = workManager,
-                    plexPrefs = plexPrefs,
-                    collectionsRepository = collectionsRepository
-                ) as T
-            } else {
-                throw IllegalArgumentException("Cannot instantiate $modelClass from SettingsViewModel.Factory")
+    class Factory
+        @Inject
+        constructor(
+            private val bookRepository: IBookRepository,
+            private val trackRepository: ITrackRepository,
+            private val prefsRepo: PrefsRepo,
+            private val mediaServiceConnection: MediaServiceConnection,
+            private val plexLoginRepo: IPlexLoginRepo,
+            private val cachedFileManager: ICachedFileManager,
+            private val plexConfig: PlexConfig,
+            private val workManager: WorkManager,
+            private val plexPrefs: PlexPrefsRepo,
+            private val collectionsRepository: CollectionsRepository,
+        ) : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
+                    return SettingsViewModel(
+                        bookRepository = bookRepository,
+                        trackRepository = trackRepository,
+                        mediaServiceConnection = mediaServiceConnection,
+                        prefsRepo = prefsRepo,
+                        plexLoginRepo = plexLoginRepo,
+                        cachedFileManager = cachedFileManager,
+                        plexConfig = plexConfig,
+                        workManager = workManager,
+                        plexPrefs = plexPrefs,
+                        collectionsRepository = collectionsRepository,
+                    ) as T
+                } else {
+                    throw IllegalArgumentException(
+                        "Cannot instantiate $modelClass from SettingsViewModel.Factory",
+                    )
+                }
             }
         }
-    }
 
     private var _preferences = MutableLiveData(makePreferences())
     val preferences: LiveData<List<PreferenceModel>>
@@ -119,15 +122,15 @@ class SettingsViewModel(
     private fun showOptionsMenu(
         options: List<FormattableString>,
         title: FormattableString,
-        listener: BottomChooserListener
+        listener: BottomChooserListener,
     ) {
         _bottomChooserState.postValue(
             BottomChooserState(
                 options = options,
                 title = title,
                 listener = listener,
-                shouldShow = true
-            )
+                shouldShow = true,
+            ),
         )
     }
 
@@ -135,10 +138,11 @@ class SettingsViewModel(
     val upgradeToPremium: LiveData<Event<Unit>>
         get() = _upgradeToPremium
 
-    private val prefsListener = OnSharedPreferenceChangeListener { _, _ ->
-        // Rebuild the prefs list whenever any prefs change
-        _preferences.postValue(makePreferences())
-    }
+    private val prefsListener =
+        OnSharedPreferenceChangeListener { _, _ ->
+            // Rebuild the prefs list whenever any prefs change
+            _preferences.postValue(makePreferences())
+        }
 
     init {
         prefsRepo.registerPrefsListener(prefsListener)
@@ -153,586 +157,785 @@ class SettingsViewModel(
     }
 
     private fun makePreferences(): List<PreferenceModel> {
-        val list = mutableListOf(
-            PreferenceModel(
-                PreferenceType.TITLE,
-                FormattableString.from(R.string.settings_premium_upgrade_label)
-            ),
-            if (prefsRepo.isPremium) {
+        val list =
+            mutableListOf(
                 PreferenceModel(
-                    type = PreferenceType.CLICKABLE,
-                    title = FormattableString.from(R.string.settings_premium_unlocked_title),
-                    explanation = FormattableString.from(R.string.settings_premium_unlocked_explanation)
-                )
-            } else {
-                PreferenceModel(
-                    type = PreferenceType.CLICKABLE,
-                    title = FormattableString.from(R.string.settings_premium_upgrade_label),
-                    explanation = FormattableString.from(R.string.settings_premium_upgrade_explanation),
-                    click = object : PreferenceClick {
-                        override fun onClick() {
-                            startUpgradeToPremiumFlow()
-                        }
-                    }
-                )
-            },
-            PreferenceModel(
-                PreferenceType.TITLE,
-                FormattableString.from(R.string.settings_category_appearance)
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.ResourceString(
-                    stringRes = R.string.settings_book_cover_type_value,
-                    placeHolderStrings = listOf(prefsRepo.bookCoverStyle)
+                    PreferenceType.TITLE,
+                    FormattableString.from(R.string.settings_premium_upgrade_label),
                 ),
-                explanation = FormattableString.from(R.string.settings_book_cover_type_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        showOptionsMenu(
-                            options = listOf(
-                                FormattableString.from(R.string.settings_book_cover_type_rect),
-                                FormattableString.from(R.string.settings_book_cover_type_square)
+                if (prefsRepo.isPremium) {
+                    PreferenceModel(
+                        type = PreferenceType.CLICKABLE,
+                        title = FormattableString.from(R.string.settings_premium_unlocked_title),
+                        explanation =
+                            FormattableString.from(
+                                R.string.settings_premium_unlocked_explanation,
                             ),
-                            title = FormattableString.from(R.string.settings_book_cover_type_label),
-                            listener = object : BottomChooserItemListener() {
-                                override fun onItemClicked(formattableString: FormattableString) {
-                                    check(formattableString is FormattableString.ResourceString)
-
-                                    when (formattableString.stringRes) {
-                                        R.string.settings_book_cover_type_rect -> {
-                                            prefsRepo.bookCoverStyle = "Rectangle"
-                                        }
-                                        R.string.settings_book_cover_type_square -> {
-                                            prefsRepo.bookCoverStyle = "Square"
-                                        }
-                                        else -> throw NoWhenBranchMatchedException("Unknown book cover type")
-                                    }
-                                    setBottomSheetVisibility(false)
-                                }
-                            }
-                        )
-                    }
-                }
-            ),
-            PreferenceModel(
-                PreferenceType.TITLE,
-                FormattableString.from(R.string.settings_category_sync)
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.ResourceString(
-                    stringRes = R.string.settings_refresh_rate_value,
-                    // feels gross
-                    placeHolderStrings = listOf(
-                        when {
-                            prefsRepo.refreshRateMinutes == 0L -> {
-                                Injector.get()
-                                    .applicationContext().resources.getString(R.string.settings_refresh_rate_always)
-                            }
-                            prefsRepo.refreshRateMinutes < 60 -> {
-                                "${prefsRepo.refreshRateMinutes} " + Injector.get()
-                                    .applicationContext().resources.getString(R.string.minutes)
-                            }
-                            prefsRepo.refreshRateMinutes < 60 * 24 -> {
-                                "${prefsRepo.refreshRateMinutes / 60} " + Injector.get()
-                                    .applicationContext().resources.getString(R.string.hours)
-                            }
-                            prefsRepo.refreshRateMinutes <= 60 * 24 * 7 -> {
-                                "${prefsRepo.refreshRateMinutes / (60 * 24)} " + Injector.get()
-                                    .applicationContext().resources.getString(R.string.days)
-                            }
-                            prefsRepo.refreshRateMinutes > 60 * 24 * 7 -> {
-                                Injector.get()
-                                    .applicationContext().resources.getString(R.string.settings_refresh_rate_manual)
-                            }
-                            else -> throw NoWhenBranchMatchedException()
-                        }
                     )
-                ),
-                explanation = FormattableString.from(R.string.settings_refresh_rate_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        showOptionsMenu(
-                            options = listOf(
-                                FormattableString.from(R.string.settings_refresh_rate_always),
-                                FormattableString.from(R.string.settings_refresh_rate_15_minutes),
-                                FormattableString.from(R.string.settings_refresh_rate_1_hour),
-                                FormattableString.from(R.string.settings_refresh_rate_3_hours),
-                                FormattableString.from(R.string.settings_refresh_rate_6_hours),
-                                FormattableString.from(R.string.settings_refresh_rate_1_day),
-                                FormattableString.from(R.string.settings_refresh_rate_3_days),
-                                FormattableString.from(R.string.settings_refresh_rate_1_week),
-                                FormattableString.from(R.string.settings_refresh_rate_manual)
+                } else {
+                    PreferenceModel(
+                        type = PreferenceType.CLICKABLE,
+                        title = FormattableString.from(R.string.settings_premium_upgrade_label),
+                        explanation =
+                            FormattableString.from(
+                                R.string.settings_premium_upgrade_explanation,
                             ),
-                            title = FormattableString.from(R.string.settings_refresh_rate_title),
-                            listener = object : BottomChooserItemListener() {
-                                override fun onItemClicked(formattableString: FormattableString) {
-                                    check(formattableString is FormattableString.ResourceString)
-                                    when (formattableString.stringRes) {
-                                        R.string.settings_refresh_rate_always ->
-                                            prefsRepo.refreshRateMinutes =
-                                                0
-                                        R.string.settings_refresh_rate_15_minutes ->
-                                            prefsRepo.refreshRateMinutes =
-                                                15
-                                        R.string.settings_refresh_rate_1_hour ->
-                                            prefsRepo.refreshRateMinutes =
-                                                60
-                                        R.string.settings_refresh_rate_3_hours ->
-                                            prefsRepo.refreshRateMinutes =
-                                                180
-                                        R.string.settings_refresh_rate_6_hours ->
-                                            prefsRepo.refreshRateMinutes =
-                                                360
-                                        R.string.settings_refresh_rate_1_day ->
-                                            prefsRepo.refreshRateMinutes =
-                                                60 * 24
-                                        R.string.settings_refresh_rate_3_days ->
-                                            prefsRepo.refreshRateMinutes =
-                                                60 * 24 * 3
-                                        R.string.settings_refresh_rate_1_week ->
-                                            prefsRepo.refreshRateMinutes =
-                                                60 * 24 * 7
-                                        R.string.settings_refresh_rate_manual ->
-                                            prefsRepo.refreshRateMinutes =
-                                                Long.MAX_VALUE
-                                        else -> throw NoWhenBranchMatchedException("Unknown item: ${formattableString.stringRes}")
-                                    }
-                                    setBottomSheetVisibility(false)
+                        click =
+                            object : PreferenceClick {
+                                override fun onClick() {
+                                    startUpgradeToPremiumFlow()
                                 }
-                            }
-                        )
-                    }
-                }
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.ResourceString(
-                    stringRes = R.string.settings_sync_location_value,
-                    placeHolderStrings = listOf(
-                        Formatter.formatFileSize(
-                            Injector.get().applicationContext(),
-                            prefsRepo.cachedMediaDir.bytesAvailable()
-                        )
-                    )
-                ),
-                explanation = FormattableString.from(R.string.settings_sync_location_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        showOptionsMenu(
-                            options = Injector.get().externalDeviceDirs().map {
-                                FormattableString.ResourceString(
-                                    stringRes = R.string.settings_sync_space_available,
-                                    placeHolderStrings = listOf(
-                                        it.path,
-                                        Formatter.formatFileSize(
-                                            Injector.get().applicationContext(),
-                                            it.bytesAvailable()
-                                        )
-                                    )
-                                )
                             },
-                            title = FormattableString.from(R.string.settings_sync_location_title),
-                            listener = object : BottomChooserItemListener() {
-                                override fun onItemClicked(formattableString: FormattableString) {
-                                    check(formattableString is FormattableString.ResourceString)
-
-                                    val chosen = formattableString.placeHolderStrings[0]
-                                    val syncLoc = Injector.get().externalDeviceDirs().firstOrNull {
-                                        chosen.contains(it.path)
-                                    }
-                                    if (syncLoc != null) {
-                                        setSyncLocation(syncLoc)
-                                    }
-                                    setBottomSheetVisibility(false)
-                                }
-                            }
-                        )
-                    }
-                }
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_delete_synced_title),
-                explanation = FormattableString.from(R.string.settings_delete_synced_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        showOptionsMenu(
-                            options = listOf(FormattableString.yes, FormattableString.no),
-                            title = FormattableString.from(R.string.settings_delete_synced_confirm),
-                            listener = object : BottomChooserItemListener() {
-                                override fun onItemClicked(formattableString: FormattableString) {
-                                    when (formattableString) {
-                                        FormattableString.yes -> {
-                                            viewModelScope.launch {
-                                                val deletedFileCount =
-                                                    cachedFileManager.uncacheAllInLibrary()
-                                                showUserMessage(
-                                                    FormattableString.ResourceString(
-                                                        R.string.settings_delete_synced_response,
-                                                        placeHolderStrings = listOf(deletedFileCount.toString())
-                                                    )
+                    )
+                },
+                PreferenceModel(
+                    PreferenceType.TITLE,
+                    FormattableString.from(R.string.settings_category_appearance),
+                ),
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title =
+                        FormattableString.ResourceString(
+                            stringRes = R.string.settings_book_cover_type_value,
+                            placeHolderStrings = listOf(prefsRepo.bookCoverStyle),
+                        ),
+                    explanation =
+                        FormattableString.from(
+                            R.string.settings_book_cover_type_explanation,
+                        ),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                showOptionsMenu(
+                                    options =
+                                        listOf(
+                                            FormattableString.from(
+                                                R.string.settings_book_cover_type_rect,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_book_cover_type_square,
+                                            ),
+                                        ),
+                                    title =
+                                        FormattableString.from(
+                                            R.string.settings_book_cover_type_label,
+                                        ),
+                                    listener =
+                                        object : BottomChooserItemListener() {
+                                            override fun onItemClicked(formattableString: FormattableString) {
+                                                check(
+                                                    formattableString is FormattableString.ResourceString,
                                                 )
+
+                                                when (formattableString.stringRes) {
+                                                    R.string.settings_book_cover_type_rect -> {
+                                                        prefsRepo.bookCoverStyle = "Rectangle"
+                                                    }
+                                                    R.string.settings_book_cover_type_square -> {
+                                                        prefsRepo.bookCoverStyle = "Square"
+                                                    }
+                                                    else -> throw NoWhenBranchMatchedException(
+                                                        "Unknown book cover type",
+                                                    )
+                                                }
+                                                setBottomSheetVisibility(false)
                                             }
+                                        },
+                                )
+                            }
+                        },
+                ),
+                PreferenceModel(
+                    PreferenceType.TITLE,
+                    FormattableString.from(R.string.settings_category_sync),
+                ),
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title =
+                        FormattableString.ResourceString(
+                            stringRes = R.string.settings_refresh_rate_value,
+                            // feels gross
+                            placeHolderStrings =
+                                listOf(
+                                    when {
+                                        prefsRepo.refreshRateMinutes == 0L -> {
+                                            Injector.get()
+                                                .applicationContext().resources.getString(
+                                                    R.string.settings_refresh_rate_always,
+                                                )
                                         }
-                                        else -> {
-                                        } /* do nothing*/
-                                    }
-                                    setBottomSheetVisibility(false)
-                                }
+                                        prefsRepo.refreshRateMinutes < 60 -> {
+                                            "${prefsRepo.refreshRateMinutes} " +
+                                                Injector.get()
+                                                    .applicationContext().resources.getString(R.string.minutes)
+                                        }
+                                        prefsRepo.refreshRateMinutes < 60 * 24 -> {
+                                            "${prefsRepo.refreshRateMinutes / 60} " +
+                                                Injector.get()
+                                                    .applicationContext().resources.getString(R.string.hours)
+                                        }
+                                        prefsRepo.refreshRateMinutes <= 60 * 24 * 7 -> {
+                                            "${prefsRepo.refreshRateMinutes / (60 * 24)} " +
+                                                Injector.get()
+                                                    .applicationContext().resources.getString(R.string.days)
+                                        }
+                                        prefsRepo.refreshRateMinutes > 60 * 24 * 7 -> {
+                                            Injector.get()
+                                                .applicationContext().resources.getString(
+                                                    R.string.settings_refresh_rate_manual,
+                                                )
+                                        }
+                                        else -> throw NoWhenBranchMatchedException()
+                                    },
+                                ),
+                        ),
+                    explanation =
+                        FormattableString.from(
+                            R.string.settings_refresh_rate_explanation,
+                        ),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                showOptionsMenu(
+                                    options =
+                                        listOf(
+                                            FormattableString.from(
+                                                R.string.settings_refresh_rate_always,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_refresh_rate_15_minutes,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_refresh_rate_1_hour,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_refresh_rate_3_hours,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_refresh_rate_6_hours,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_refresh_rate_1_day,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_refresh_rate_3_days,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_refresh_rate_1_week,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_refresh_rate_manual,
+                                            ),
+                                        ),
+                                    title =
+                                        FormattableString.from(
+                                            R.string.settings_refresh_rate_title,
+                                        ),
+                                    listener =
+                                        object : BottomChooserItemListener() {
+                                            override fun onItemClicked(formattableString: FormattableString) {
+                                                check(
+                                                    formattableString is FormattableString.ResourceString,
+                                                )
+                                                when (formattableString.stringRes) {
+                                                    R.string.settings_refresh_rate_always ->
+                                                        prefsRepo.refreshRateMinutes =
+                                                            0
+                                                    R.string.settings_refresh_rate_15_minutes ->
+                                                        prefsRepo.refreshRateMinutes =
+                                                            15
+                                                    R.string.settings_refresh_rate_1_hour ->
+                                                        prefsRepo.refreshRateMinutes =
+                                                            60
+                                                    R.string.settings_refresh_rate_3_hours ->
+                                                        prefsRepo.refreshRateMinutes =
+                                                            180
+                                                    R.string.settings_refresh_rate_6_hours ->
+                                                        prefsRepo.refreshRateMinutes =
+                                                            360
+                                                    R.string.settings_refresh_rate_1_day ->
+                                                        prefsRepo.refreshRateMinutes =
+                                                            60 * 24
+                                                    R.string.settings_refresh_rate_3_days ->
+                                                        prefsRepo.refreshRateMinutes =
+                                                            60 * 24 * 3
+                                                    R.string.settings_refresh_rate_1_week ->
+                                                        prefsRepo.refreshRateMinutes =
+                                                            60 * 24 * 7
+                                                    R.string.settings_refresh_rate_manual ->
+                                                        prefsRepo.refreshRateMinutes =
+                                                            Long.MAX_VALUE
+                                                    else -> throw NoWhenBranchMatchedException(
+                                                        "Unknown item: ${formattableString.stringRes}",
+                                                    )
+                                                }
+                                                setBottomSheetVisibility(false)
+                                            }
+                                        },
+                                )
                             }
-                        )
-                    }
-                }
-            ),
-            PreferenceModel(
-                PreferenceType.BOOLEAN,
-                FormattableString.from(R.string.settings_offline_mode_title),
-                PrefsRepo.KEY_OFFLINE_MODE,
-                defaultValue = prefsRepo.offlineMode
-            ),
-            PreferenceModel(
-                PreferenceType.TITLE,
-                FormattableString.from(R.string.settings_category_playback)
-            ),
-            PreferenceModel(
-                PreferenceType.BOOLEAN,
-                FormattableString.from(R.string.settings_skip_silent_audio),
-                PrefsRepo.KEY_SKIP_SILENCE,
-                defaultValue = prefsRepo.skipSilence
-            ),
-            PreferenceModel(
-                PreferenceType.BOOLEAN,
-                FormattableString.from(R.string.settings_auto_rewind),
-                PrefsRepo.KEY_AUTO_REWIND_ENABLED,
-                FormattableString.from(R.string.settings_auto_rewind_explanation),
-                defaultValue = prefsRepo.autoRewind
-            ),
-            PreferenceModel(
-                type = PreferenceType.BOOLEAN,
-                title = FormattableString.from(R.string.settings_shake_to_snooze_title),
-                explanation = FormattableString.from(R.string.settings_shake_to_snooze_explanation),
-                key = PrefsRepo.KEY_SHAKE_TO_SNOOZE_ENABLED,
-                defaultValue = prefsRepo.shakeToSnooze
-            ),
-            PreferenceModel(
-                type = PreferenceType.BOOLEAN,
-                title = FormattableString.from(R.string.settings_pause_on_focus_lost_title),
-                explanation = FormattableString.from(R.string.settings_pause_on_focus_lost_explanation),
-                key = PrefsRepo.KEY_PAUSE_ON_FOCUS_LOST,
-                defaultValue = prefsRepo.pauseOnFocusLost
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.ResourceString(
-                    stringRes = R.string.settings_jump_forward_value,
-                    // feels gross
-                    placeHolderStrings = listOf(
-                        "${prefsRepo.jumpForwardSeconds} " + Injector.get()
-                            .applicationContext().resources.getString(R.string.seconds)
-                    )
+                        },
                 ),
-                explanation = FormattableString.from(R.string.settings_jump_forward_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        showOptionsMenu(
-                            options = listOf(
-                                FormattableString.from(R.string.settings_jump_10_seconds),
-                                FormattableString.from(R.string.settings_jump_15_seconds),
-                                FormattableString.from(R.string.settings_jump_20_seconds),
-                                FormattableString.from(R.string.settings_jump_30_seconds),
-                                FormattableString.from(R.string.settings_jump_60_seconds),
-                                FormattableString.from(R.string.settings_jump_90_seconds)
-                            ),
-                            title = FormattableString.from(R.string.settings_jump_forward_title),
-                            listener = object : BottomChooserItemListener() {
-                                override fun onItemClicked(formattableString: FormattableString) {
-                                    check(formattableString is FormattableString.ResourceString)
-                                    prefsRepo.jumpForwardSeconds = when (formattableString.stringRes) {
-                                        R.string.settings_jump_10_seconds -> 10L
-                                        R.string.settings_jump_15_seconds -> 15L
-                                        R.string.settings_jump_20_seconds -> 20L
-                                        R.string.settings_jump_30_seconds -> 30L
-                                        R.string.settings_jump_60_seconds -> 60L
-                                        R.string.settings_jump_90_seconds -> 90L
-                                        else -> 30L
-                                    }
-                                    setBottomSheetVisibility(false)
-                                }
-                            }
-                        )
-                    }
-                }
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.ResourceString(
-                    stringRes = R.string.settings_jump_backward_value,
-                    // feels gross
-                    placeHolderStrings = listOf(
-                        "${prefsRepo.jumpBackwardSeconds} " + Injector.get()
-                            .applicationContext().resources.getString(R.string.seconds)
-                    )
-                ),
-                explanation = FormattableString.from(R.string.settings_jump_backward_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        showOptionsMenu(
-                            options = listOf(
-                                FormattableString.from(R.string.settings_jump_10_seconds),
-                                FormattableString.from(R.string.settings_jump_15_seconds),
-                                FormattableString.from(R.string.settings_jump_20_seconds),
-                                FormattableString.from(R.string.settings_jump_30_seconds),
-                                FormattableString.from(R.string.settings_jump_60_seconds),
-                                FormattableString.from(R.string.settings_jump_90_seconds)
-                            ),
-                            title = FormattableString.from(R.string.settings_jump_backward_title),
-                            listener = object : BottomChooserItemListener() {
-                                override fun onItemClicked(formattableString: FormattableString) {
-                                    check(formattableString is FormattableString.ResourceString)
-                                    prefsRepo.jumpBackwardSeconds = when (formattableString.stringRes) {
-                                        R.string.settings_jump_10_seconds -> 10L
-                                        R.string.settings_jump_15_seconds -> 15L
-                                        R.string.settings_jump_20_seconds -> 20L
-                                        R.string.settings_jump_30_seconds -> 30L
-                                        R.string.settings_jump_60_seconds -> 60L
-                                        R.string.settings_jump_90_seconds -> 90L
-                                        else -> 10L
-                                    }
-                                    setBottomSheetVisibility(false)
-                                }
-                            }
-                        )
-                    }
-                }
-            ),
-            PreferenceModel(
-                PreferenceType.TITLE,
-                FormattableString.from(R.string.settings_category_account)
-            ),
-            PreferenceModel(
-                PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_change_library),
-                explanation = FormattableString.ResourceString(
-                    R.string.settings_current_library,
-                    listOf(plexPrefs.library?.name ?: "")
-                ),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        viewModelScope.launch {
-                            if (!cachedFileManager.hasUserCachedTracks()) {
-                                clearConfig(RETURN_TO_LIBRARY_CHOOSER)
-                                return@launch
-                            }
-                            showOptionsMenu(
-                                title = FormattableString.from(R.string.prompt_clear_downloads_allow_retain),
-                                options = listOf(FormattableString.yes, FormattableString.no),
-                                listener = object : BottomChooserItemListener() {
-                                    override fun onItemClicked(formattableString: FormattableString) {
-                                        check(formattableString is FormattableString.ResourceString)
-                                        if (formattableString.stringRes == R.string.yes) {
-                                            // Keep downloaded
-                                            clearConfig(
-                                                RETURN_TO_LIBRARY_CHOOSER,
-                                                clearDownloads = false
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title =
+                        FormattableString.ResourceString(
+                            stringRes = R.string.settings_sync_location_value,
+                            placeHolderStrings =
+                                listOf(
+                                    Formatter.formatFileSize(
+                                        Injector.get().applicationContext(),
+                                        prefsRepo.cachedMediaDir.bytesAvailable(),
+                                    ),
+                                ),
+                        ),
+                    explanation =
+                        FormattableString.from(
+                            R.string.settings_sync_location_explanation,
+                        ),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                showOptionsMenu(
+                                    options =
+                                        Injector.get().externalDeviceDirs().map {
+                                            FormattableString.ResourceString(
+                                                stringRes = R.string.settings_sync_space_available,
+                                                placeHolderStrings =
+                                                    listOf(
+                                                        it.path,
+                                                        Formatter.formatFileSize(
+                                                            Injector.get().applicationContext(),
+                                                            it.bytesAvailable(),
+                                                        ),
+                                                    ),
                                             )
-                                        } else {
-                                            // Delete downloaded
-                                            clearConfig(
-                                                RETURN_TO_LIBRARY_CHOOSER,
-                                                clearDownloads = true
-                                            )
-                                        }
-                                        setBottomSheetVisibility(false)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            ),
-            PreferenceModel(
-                PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_change_server),
-                explanation = FormattableString.ResourceString(
-                    R.string.settings_current_server,
-                    listOf(plexPrefs.server?.name ?: "")
-                ),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        viewModelScope.launch {
-                            if (!cachedFileManager.hasUserCachedTracks()) {
-                                clearConfig(RETURN_TO_SERVER_CHOOSER)
-                                return@launch
+                                        },
+                                    title =
+                                        FormattableString.from(
+                                            R.string.settings_sync_location_title,
+                                        ),
+                                    listener =
+                                        object : BottomChooserItemListener() {
+                                            override fun onItemClicked(formattableString: FormattableString) {
+                                                check(
+                                                    formattableString is FormattableString.ResourceString,
+                                                )
+
+                                                val chosen = formattableString.placeHolderStrings[0]
+                                                val syncLoc =
+                                                    Injector.get().externalDeviceDirs().firstOrNull {
+                                                        chosen.contains(it.path)
+                                                    }
+                                                if (syncLoc != null) {
+                                                    setSyncLocation(syncLoc)
+                                                }
+                                                setBottomSheetVisibility(false)
+                                            }
+                                        },
+                                )
                             }
-                            showOptionsMenu(
-                                title = FormattableString.from(R.string.settings_clear_downloads_warning),
-                                options = listOf(FormattableString.yes, FormattableString.no),
-                                listener = object : BottomChooserItemListener() {
-                                    override fun onItemClicked(formattableString: FormattableString) {
-                                        if (formattableString == FormattableString.yes) {
-                                            clearConfig(RETURN_TO_SERVER_CHOOSER)
-                                        }
-                                        setBottomSheetVisibility(false)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            ),
-            PreferenceModel(
-                PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_change_user),
-                explanation = FormattableString.ResourceString(
-                    R.string.settings_current_user,
-                    listOf(plexPrefs.user?.username ?: "")
+                        },
                 ),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        viewModelScope.launch {
-                            if (!cachedFileManager.hasUserCachedTracks()) {
-                                clearConfig(RETURN_TO_USER_CHOOSER)
-                                return@launch
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title = FormattableString.from(R.string.settings_delete_synced_title),
+                    explanation =
+                        FormattableString.from(
+                            R.string.settings_delete_synced_explanation,
+                        ),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                showOptionsMenu(
+                                    options = listOf(FormattableString.yes, FormattableString.no),
+                                    title =
+                                        FormattableString.from(
+                                            R.string.settings_delete_synced_confirm,
+                                        ),
+                                    listener =
+                                        object : BottomChooserItemListener() {
+                                            override fun onItemClicked(formattableString: FormattableString) {
+                                                when (formattableString) {
+                                                    FormattableString.yes -> {
+                                                        viewModelScope.launch {
+                                                            val deletedFileCount =
+                                                                cachedFileManager.uncacheAllInLibrary()
+                                                            showUserMessage(
+                                                                FormattableString.ResourceString(
+                                                                    R.string.settings_delete_synced_response,
+                                                                    placeHolderStrings =
+                                                                        listOf(
+                                                                            deletedFileCount.toString(),
+                                                                        ),
+                                                                ),
+                                                            )
+                                                        }
+                                                    }
+                                                    else -> {
+                                                    } // do nothing
+                                                }
+                                                setBottomSheetVisibility(false)
+                                            }
+                                        },
+                                )
                             }
-                            showOptionsMenu(
-                                title = FormattableString.from(R.string.settings_clear_downloads_warning),
-                                options = listOf(FormattableString.yes, FormattableString.no),
-                                listener = object : BottomChooserItemListener() {
-                                    override fun onItemClicked(formattableString: FormattableString) {
-                                        if (formattableString == FormattableString.yes) {
-                                            clearConfig(RETURN_TO_USER_CHOOSER)
-                                        }
-                                        setBottomSheetVisibility(false)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            ),
-            PreferenceModel(
-                PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_log_out),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        viewModelScope.launch {
-                            val logout = {
+                        },
+                ),
+                PreferenceModel(
+                    PreferenceType.BOOLEAN,
+                    FormattableString.from(R.string.settings_offline_mode_title),
+                    PrefsRepo.KEY_OFFLINE_MODE,
+                    defaultValue = prefsRepo.offlineMode,
+                ),
+                PreferenceModel(
+                    PreferenceType.TITLE,
+                    FormattableString.from(R.string.settings_category_playback),
+                ),
+                PreferenceModel(
+                    PreferenceType.BOOLEAN,
+                    FormattableString.from(R.string.settings_skip_silent_audio),
+                    PrefsRepo.KEY_SKIP_SILENCE,
+                    defaultValue = prefsRepo.skipSilence,
+                ),
+                PreferenceModel(
+                    PreferenceType.BOOLEAN,
+                    FormattableString.from(R.string.settings_auto_rewind),
+                    PrefsRepo.KEY_AUTO_REWIND_ENABLED,
+                    FormattableString.from(R.string.settings_auto_rewind_explanation),
+                    defaultValue = prefsRepo.autoRewind,
+                ),
+                PreferenceModel(
+                    type = PreferenceType.BOOLEAN,
+                    title = FormattableString.from(R.string.settings_shake_to_snooze_title),
+                    explanation =
+                        FormattableString.from(
+                            R.string.settings_shake_to_snooze_explanation,
+                        ),
+                    key = PrefsRepo.KEY_SHAKE_TO_SNOOZE_ENABLED,
+                    defaultValue = prefsRepo.shakeToSnooze,
+                ),
+                PreferenceModel(
+                    type = PreferenceType.BOOLEAN,
+                    title = FormattableString.from(R.string.settings_pause_on_focus_lost_title),
+                    explanation =
+                        FormattableString.from(
+                            R.string.settings_pause_on_focus_lost_explanation,
+                        ),
+                    key = PrefsRepo.KEY_PAUSE_ON_FOCUS_LOST,
+                    defaultValue = prefsRepo.pauseOnFocusLost,
+                ),
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title =
+                        FormattableString.ResourceString(
+                            stringRes = R.string.settings_jump_forward_value,
+                            // feels gross
+                            placeHolderStrings =
+                                listOf(
+                                    "${prefsRepo.jumpForwardSeconds} " +
+                                        Injector.get()
+                                            .applicationContext().resources.getString(R.string.seconds),
+                                ),
+                        ),
+                    explanation =
+                        FormattableString.from(
+                            R.string.settings_jump_forward_explanation,
+                        ),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                showOptionsMenu(
+                                    options =
+                                        listOf(
+                                            FormattableString.from(
+                                                R.string.settings_jump_10_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_15_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_20_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_30_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_60_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_90_seconds,
+                                            ),
+                                        ),
+                                    title =
+                                        FormattableString.from(
+                                            R.string.settings_jump_forward_title,
+                                        ),
+                                    listener =
+                                        object : BottomChooserItemListener() {
+                                            override fun onItemClicked(formattableString: FormattableString) {
+                                                check(
+                                                    formattableString is FormattableString.ResourceString,
+                                                )
+                                                prefsRepo.jumpForwardSeconds =
+                                                    when (formattableString.stringRes) {
+                                                        R.string.settings_jump_10_seconds -> 10L
+                                                        R.string.settings_jump_15_seconds -> 15L
+                                                        R.string.settings_jump_20_seconds -> 20L
+                                                        R.string.settings_jump_30_seconds -> 30L
+                                                        R.string.settings_jump_60_seconds -> 60L
+                                                        R.string.settings_jump_90_seconds -> 90L
+                                                        else -> 30L
+                                                    }
+                                                setBottomSheetVisibility(false)
+                                            }
+                                        },
+                                )
+                            }
+                        },
+                ),
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title =
+                        FormattableString.ResourceString(
+                            stringRes = R.string.settings_jump_backward_value,
+                            // feels gross
+                            placeHolderStrings =
+                                listOf(
+                                    "${prefsRepo.jumpBackwardSeconds} " +
+                                        Injector.get()
+                                            .applicationContext().resources.getString(R.string.seconds),
+                                ),
+                        ),
+                    explanation =
+                        FormattableString.from(
+                            R.string.settings_jump_backward_explanation,
+                        ),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                showOptionsMenu(
+                                    options =
+                                        listOf(
+                                            FormattableString.from(
+                                                R.string.settings_jump_10_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_15_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_20_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_30_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_60_seconds,
+                                            ),
+                                            FormattableString.from(
+                                                R.string.settings_jump_90_seconds,
+                                            ),
+                                        ),
+                                    title =
+                                        FormattableString.from(
+                                            R.string.settings_jump_backward_title,
+                                        ),
+                                    listener =
+                                        object : BottomChooserItemListener() {
+                                            override fun onItemClicked(formattableString: FormattableString) {
+                                                check(
+                                                    formattableString is FormattableString.ResourceString,
+                                                )
+                                                prefsRepo.jumpBackwardSeconds =
+                                                    when (formattableString.stringRes) {
+                                                        R.string.settings_jump_10_seconds -> 10L
+                                                        R.string.settings_jump_15_seconds -> 15L
+                                                        R.string.settings_jump_20_seconds -> 20L
+                                                        R.string.settings_jump_30_seconds -> 30L
+                                                        R.string.settings_jump_60_seconds -> 60L
+                                                        R.string.settings_jump_90_seconds -> 90L
+                                                        else -> 10L
+                                                    }
+                                                setBottomSheetVisibility(false)
+                                            }
+                                        },
+                                )
+                            }
+                        },
+                ),
+                PreferenceModel(
+                    PreferenceType.TITLE,
+                    FormattableString.from(R.string.settings_category_account),
+                ),
+                PreferenceModel(
+                    PreferenceType.CLICKABLE,
+                    title = FormattableString.from(R.string.settings_change_library),
+                    explanation =
+                        FormattableString.ResourceString(
+                            R.string.settings_current_library,
+                            listOf(plexPrefs.library?.name ?: ""),
+                        ),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
                                 viewModelScope.launch {
-                                    cachedFileManager.uncacheAllInLibrary()
-                                }
-                                plexConfig.clear()
-                                mediaServiceConnection.transportControls?.stop()
-                                clearConfig(RETURN_TO_LOGIN)
-                            }
-                            if (!cachedFileManager.hasUserCachedTracks()) {
-                                logout()
-                                return@launch
-                            }
-                            showOptionsMenu(
-                                title = FormattableString.from(R.string.settings_clear_downloads_warning),
-                                options = listOf(FormattableString.yes, FormattableString.no),
-                                listener = object : BottomChooserItemListener() {
-                                    override fun onItemClicked(formattableString: FormattableString) {
-                                        if (formattableString == FormattableString.yes) {
-                                            logout()
-                                        }
-                                        setBottomSheetVisibility(false)
+                                    if (!cachedFileManager.hasUserCachedTracks()) {
+                                        clearConfig(RETURN_TO_LIBRARY_CHOOSER)
+                                        return@launch
                                     }
+                                    showOptionsMenu(
+                                        title =
+                                            FormattableString.from(
+                                                R.string.prompt_clear_downloads_allow_retain,
+                                            ),
+                                        options =
+                                            listOf(
+                                                FormattableString.yes,
+                                                FormattableString.no,
+                                            ),
+                                        listener =
+                                            object : BottomChooserItemListener() {
+                                                override fun onItemClicked(formattableString: FormattableString) {
+                                                    check(
+                                                        formattableString is FormattableString.ResourceString,
+                                                    )
+                                                    if (formattableString.stringRes == R.string.yes) {
+                                                        // Keep downloaded
+                                                        clearConfig(
+                                                            RETURN_TO_LIBRARY_CHOOSER,
+                                                            clearDownloads = false,
+                                                        )
+                                                    } else {
+                                                        // Delete downloaded
+                                                        clearConfig(
+                                                            RETURN_TO_LIBRARY_CHOOSER,
+                                                            clearDownloads = true,
+                                                        )
+                                                    }
+                                                    setBottomSheetVisibility(false)
+                                                }
+                                            },
+                                    )
                                 }
-                            )
-                        }
-                        Timber.i("Logging out")
-                    }
-                }
-            ),
-            PreferenceModel(
-                PreferenceType.TITLE,
-                FormattableString.from(R.string.settings_category_etc)
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_subreddit_title),
-                explanation = FormattableString.from(R.string.settings_subreddit_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        _webLink.postEvent("https://www.reddit.com/r/ChronicleApp")
-                    }
-                }
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_github_title),
-                explanation = FormattableString.from(R.string.settings_github_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        _webLink.postEvent("https://github.com/mattttvaughn/chronicle")
-                    }
-                }
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_version_title),
-                explanation = FormattableString.from(BuildConfig.VERSION_NAME),
-            ),
-            PreferenceModel(
-                type = PreferenceType.CLICKABLE,
-                title = FormattableString.from(R.string.settings_licenses_title),
-                explanation = FormattableString.from(R.string.settings_licenses_explanation),
-                click = object : PreferenceClick {
-                    override fun onClick() {
-                        _showLicenseActivity.postValue(true)
-                    }
-                }
+                            }
+                        },
+                ),
+                PreferenceModel(
+                    PreferenceType.CLICKABLE,
+                    title = FormattableString.from(R.string.settings_change_server),
+                    explanation =
+                        FormattableString.ResourceString(
+                            R.string.settings_current_server,
+                            listOf(plexPrefs.server?.name ?: ""),
+                        ),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                viewModelScope.launch {
+                                    if (!cachedFileManager.hasUserCachedTracks()) {
+                                        clearConfig(RETURN_TO_SERVER_CHOOSER)
+                                        return@launch
+                                    }
+                                    showOptionsMenu(
+                                        title =
+                                            FormattableString.from(
+                                                R.string.settings_clear_downloads_warning,
+                                            ),
+                                        options =
+                                            listOf(
+                                                FormattableString.yes,
+                                                FormattableString.no,
+                                            ),
+                                        listener =
+                                            object : BottomChooserItemListener() {
+                                                override fun onItemClicked(formattableString: FormattableString) {
+                                                    if (formattableString == FormattableString.yes) {
+                                                        clearConfig(RETURN_TO_SERVER_CHOOSER)
+                                                    }
+                                                    setBottomSheetVisibility(false)
+                                                }
+                                            },
+                                    )
+                                }
+                            }
+                        },
+                ),
+                PreferenceModel(
+                    PreferenceType.CLICKABLE,
+                    title = FormattableString.from(R.string.settings_change_user),
+                    explanation =
+                        FormattableString.ResourceString(
+                            R.string.settings_current_user,
+                            listOf(plexPrefs.user?.username ?: ""),
+                        ),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                viewModelScope.launch {
+                                    if (!cachedFileManager.hasUserCachedTracks()) {
+                                        clearConfig(RETURN_TO_USER_CHOOSER)
+                                        return@launch
+                                    }
+                                    showOptionsMenu(
+                                        title =
+                                            FormattableString.from(
+                                                R.string.settings_clear_downloads_warning,
+                                            ),
+                                        options =
+                                            listOf(
+                                                FormattableString.yes,
+                                                FormattableString.no,
+                                            ),
+                                        listener =
+                                            object : BottomChooserItemListener() {
+                                                override fun onItemClicked(formattableString: FormattableString) {
+                                                    if (formattableString == FormattableString.yes) {
+                                                        clearConfig(RETURN_TO_USER_CHOOSER)
+                                                    }
+                                                    setBottomSheetVisibility(false)
+                                                }
+                                            },
+                                    )
+                                }
+                            }
+                        },
+                ),
+                PreferenceModel(
+                    PreferenceType.CLICKABLE,
+                    title = FormattableString.from(R.string.settings_log_out),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                viewModelScope.launch {
+                                    val logout = {
+                                        viewModelScope.launch {
+                                            cachedFileManager.uncacheAllInLibrary()
+                                        }
+                                        plexConfig.clear()
+                                        mediaServiceConnection.transportControls?.stop()
+                                        clearConfig(RETURN_TO_LOGIN)
+                                    }
+                                    if (!cachedFileManager.hasUserCachedTracks()) {
+                                        logout()
+                                        return@launch
+                                    }
+                                    showOptionsMenu(
+                                        title =
+                                            FormattableString.from(
+                                                R.string.settings_clear_downloads_warning,
+                                            ),
+                                        options =
+                                            listOf(
+                                                FormattableString.yes,
+                                                FormattableString.no,
+                                            ),
+                                        listener =
+                                            object : BottomChooserItemListener() {
+                                                override fun onItemClicked(formattableString: FormattableString) {
+                                                    if (formattableString == FormattableString.yes) {
+                                                        logout()
+                                                    }
+                                                    setBottomSheetVisibility(false)
+                                                }
+                                            },
+                                    )
+                                }
+                                Timber.i("Logging out")
+                            }
+                        },
+                ),
+                PreferenceModel(
+                    PreferenceType.TITLE,
+                    FormattableString.from(R.string.settings_category_etc),
+                ),
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title = FormattableString.from(R.string.settings_subreddit_title),
+                    explanation = FormattableString.from(R.string.settings_subreddit_explanation),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                _webLink.postEvent("https://www.reddit.com/r/ChronicleApp")
+                            }
+                        },
+                ),
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title = FormattableString.from(R.string.settings_github_title),
+                    explanation = FormattableString.from(R.string.settings_github_explanation),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                _webLink.postEvent("https://github.com/mattttvaughn/chronicle")
+                            }
+                        },
+                ),
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title = FormattableString.from(R.string.settings_version_title),
+                    explanation = FormattableString.from(BuildConfig.VERSION_NAME),
+                ),
+                PreferenceModel(
+                    type = PreferenceType.CLICKABLE,
+                    title = FormattableString.from(R.string.settings_licenses_title),
+                    explanation = FormattableString.from(R.string.settings_licenses_explanation),
+                    click =
+                        object : PreferenceClick {
+                            override fun onClick() {
+                                _showLicenseActivity.postValue(true)
+                            }
+                        },
+                ),
             )
-        )
 
         if (BuildConfig.DEBUG) {
             list.addAll(
                 listOf(
                     PreferenceModel(
                         PreferenceType.TITLE,
-                        FormattableString.from(string = "Developer options")
+                        FormattableString.from(string = "Developer options"),
                     ),
                     PreferenceModel(
                         PreferenceType.CLICKABLE,
                         FormattableString.from(string = "Clear shared prefs"),
-                        click = object : PreferenceClick {
-                            override fun onClick() {
-                                prefsRepo.clearAll()
-                            }
-                        }
+                        click =
+                            object : PreferenceClick {
+                                override fun onClick() {
+                                    prefsRepo.clearAll()
+                                }
+                            },
                     ),
                     PreferenceModel(
                         PreferenceType.CLICKABLE,
                         FormattableString.from(string = "Clear DB"),
-                        click = object : PreferenceClick {
-                            override fun onClick() {
-                                clearConfig(clearDownloads = false)
-                            }
-                        }
+                        click =
+                            object : PreferenceClick {
+                                override fun onClick() {
+                                    clearConfig(clearDownloads = false)
+                                }
+                            },
                     ),
                     PreferenceModel(
                         PreferenceType.CLICKABLE,
                         FormattableString.from(string = "Clear cached images"),
-                        click = object : PreferenceClick {
-                            override fun onClick() {
-                                viewModelScope.launch {
-                                    withContext(Dispatchers.IO) {
-                                        Fresco.getImagePipeline().clearCaches()
+                        click =
+                            object : PreferenceClick {
+                                override fun onClick() {
+                                    viewModelScope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            Fresco.getImagePipeline().clearCaches()
+                                        }
                                     }
                                 }
-                            }
-                        }
+                            },
                     ),
                     PreferenceModel(
                         PreferenceType.BOOLEAN,
                         FormattableString.from(string = "Disable local progress tracking"),
                         PrefsRepo.KEY_DEBUG_DISABLE_PROGRESS,
-                        defaultValue = false
-                    )
-                )
+                        defaultValue = false,
+                    ),
+                ),
             )
         }
 
@@ -748,8 +951,8 @@ class SettingsViewModel(
                             title = FormattableString.from(R.string.allow_auto),
                             explanation = FormattableString.from(R.string.allow_auto_explanation),
                             key = PrefsRepo.KEY_ALLOW_AUTO,
-                            defaultValue = prefsRepo.allowAuto
-                        )
+                            defaultValue = prefsRepo.allowAuto,
+                        ),
                     )
                 }
             }
@@ -770,7 +973,7 @@ class SettingsViewModel(
         workManager.beginUniqueWork(
             MoveSyncLocationWorker.WORKER_ID,
             ExistingWorkPolicy.REPLACE,
-            worker
+            worker,
         ).enqueue()
     }
 
@@ -779,7 +982,7 @@ class SettingsViewModel(
         RETURN_TO_SERVER_CHOOSER,
         RETURN_TO_LOGIN,
         RETURN_TO_USER_CHOOSER,
-        DO_NOT_NAVIGATE
+        DO_NOT_NAVIGATE,
     }
 
     /**
@@ -788,7 +991,7 @@ class SettingsViewModel(
      */
     private fun clearConfig(
         navigateTo: NavigationDestination = DO_NOT_NAVIGATE,
-        clearDownloads: Boolean = true
+        clearDownloads: Boolean = true,
     ) {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             if (clearDownloads) {

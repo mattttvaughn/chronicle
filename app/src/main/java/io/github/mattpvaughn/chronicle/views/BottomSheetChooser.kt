@@ -26,13 +26,12 @@ import io.github.mattpvaughn.chronicle.databinding.ViewBottomSheetChooserItemBin
  * in the future, but think about it first.
  */
 class BottomSheetChooser : FrameLayout {
-
     constructor(context: Context) : this(context, null)
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
     constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(
         context,
         attrs,
-        defStyle
+        defStyle,
     )
 
     fun setOptions(options: List<FormattableString>) {
@@ -61,6 +60,7 @@ class BottomSheetChooser : FrameLayout {
      */
     abstract class BottomChooserItemListener : BottomChooserListener {
         abstract override fun onItemClicked(formattableString: FormattableString)
+
         override fun onChooserClosed(wasBackgroundClicked: Boolean) {}
     }
 
@@ -76,10 +76,12 @@ class BottomSheetChooser : FrameLayout {
         fun onChooserClosed(wasBackgroundClicked: Boolean = false)
 
         companion object {
-            val emptyListener = object : BottomChooserListener {
-                override fun onItemClicked(formattableString: FormattableString) {}
-                override fun onChooserClosed(wasBackgroundClicked: Boolean) {}
-            }
+            val emptyListener =
+                object : BottomChooserListener {
+                    override fun onItemClicked(formattableString: FormattableString) {}
+
+                    override fun onChooserClosed(wasBackgroundClicked: Boolean) {}
+                }
         }
     }
 
@@ -94,7 +96,7 @@ class BottomSheetChooser : FrameLayout {
             ObjectAnimator.ofFloat(
                 binding.bottomSheetContainer,
                 "translationY",
-                measuredHeight.toFloat()
+                measuredHeight.toFloat(),
             )
                 .apply {
                     duration = animDuration
@@ -144,9 +146,12 @@ class BottomSheetChooser : FrameLayout {
 
     class OptionsListAdapter(private var listener: BottomChooserListener) :
         ListAdapter<FormattableString, OptionsListAdapter.OptionViewHolder>(
-            FormattableStringDiffUtilCallback()
+            FormattableStringDiffUtilCallback(),
         ) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OptionViewHolder {
+        override fun onCreateViewHolder(
+            parent: ViewGroup,
+            viewType: Int,
+        ): OptionViewHolder {
             return OptionViewHolder.from(parent)
         }
 
@@ -154,13 +159,19 @@ class BottomSheetChooser : FrameLayout {
             listener = _listener
         }
 
-        override fun onBindViewHolder(holder: OptionViewHolder, position: Int) {
+        override fun onBindViewHolder(
+            holder: OptionViewHolder,
+            position: Int,
+        ) {
             holder.bind(getItem(position), listener)
         }
 
         class OptionViewHolder(val binding: ViewBottomSheetChooserItemBinding) :
             RecyclerView.ViewHolder(binding.root) {
-            fun bind(option: FormattableString, listener: BottomChooserListener) {
+            fun bind(
+                option: FormattableString,
+                listener: BottomChooserListener,
+            ) {
                 binding.option = option
                 binding.listener = listener
                 binding.executePendingBindings()
@@ -180,14 +191,14 @@ class BottomSheetChooser : FrameLayout {
     class FormattableStringDiffUtilCallback : DiffUtil.ItemCallback<FormattableString>() {
         override fun areItemsTheSame(
             oldItem: FormattableString,
-            newItem: FormattableString
+            newItem: FormattableString,
         ): Boolean {
             return oldItem === newItem
         }
 
         override fun areContentsTheSame(
             oldItem: FormattableString,
-            newItem: FormattableString
+            newItem: FormattableString,
         ): Boolean {
             return oldItem == newItem
         }
@@ -197,15 +208,16 @@ class BottomSheetChooser : FrameLayout {
         val title: FormattableString,
         val options: List<FormattableString>,
         val listener: BottomChooserListener,
-        val shouldShow: Boolean
+        val shouldShow: Boolean,
     ) {
         companion object {
-            val EMPTY_BOTTOM_CHOOSER = BottomChooserState(
-                title = FormattableString.EMPTY_STRING,
-                options = emptyList(),
-                listener = BottomChooserListener.emptyListener,
-                shouldShow = false
-            )
+            val EMPTY_BOTTOM_CHOOSER =
+                BottomChooserState(
+                    title = FormattableString.EMPTY_STRING,
+                    options = emptyList(),
+                    listener = BottomChooserListener.emptyListener,
+                    shouldShow = false,
+                )
         }
     }
 
@@ -221,7 +233,7 @@ class BottomSheetChooser : FrameLayout {
 
         data class ResourceString(
             @StringRes val stringRes: Int,
-            val placeHolderStrings: List<String> = emptyList()
+            val placeHolderStrings: List<String> = emptyList(),
         ) : FormattableString() {
             override fun format(resources: Resources): String {
                 return resources.getString(this.stringRes, *this.placeHolderStrings.toTypedArray())
@@ -231,7 +243,9 @@ class BottomSheetChooser : FrameLayout {
         abstract fun format(resources: Resources): String
 
         companion object {
-            fun from(@StringRes stringRes: Int): FormattableString {
+            fun from(
+                @StringRes stringRes: Int,
+            ): FormattableString {
                 return ResourceString(stringRes)
             }
 

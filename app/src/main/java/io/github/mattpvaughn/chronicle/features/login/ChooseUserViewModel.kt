@@ -15,21 +15,22 @@ import javax.inject.Inject
 
 class ChooseUserViewModel(
     private val plexLoginService: PlexLoginService,
-    private val plexLoginRepo: IPlexLoginRepo
+    private val plexLoginRepo: IPlexLoginRepo,
 ) : ViewModel() {
-
-    class Factory @Inject constructor(
-        private val plexLoginService: PlexLoginService,
-        private val plexLoginRepo: IPlexLoginRepo
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(ChooseUserViewModel::class.java)) {
-                return ChooseUserViewModel(plexLoginService, plexLoginRepo) as T
+    class Factory
+        @Inject
+        constructor(
+            private val plexLoginService: PlexLoginService,
+            private val plexLoginRepo: IPlexLoginRepo,
+        ) : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(ChooseUserViewModel::class.java)) {
+                    return ChooseUserViewModel(plexLoginService, plexLoginRepo) as T
+                }
+                throw IllegalArgumentException("Unknown ViewHolder class")
             }
-            throw IllegalArgumentException("Unknown ViewHolder class")
         }
-    }
 
     private val _userMessage = MutableLiveData<Event<String>>()
     val userMessage: LiveData<Event<String>>
@@ -110,7 +111,10 @@ class ChooseUserViewModel(
         }
     }
 
-    private suspend fun submitPin(uuid: String, pin: String?) {
+    private suspend fun submitPin(
+        uuid: String,
+        pin: String?,
+    ) {
         try {
             _pinLoadingStatus.postValue(LoadingStatus.LOADING)
             val responseUser: PlexUser = plexLoginService.pickUser(uuid, pin)

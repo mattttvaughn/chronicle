@@ -37,7 +37,6 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @Module
 class ServiceModule(private val service: MediaPlayerService) {
-
     @Provides
     @ServiceScope
     fun service(): Service = service
@@ -56,17 +55,18 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun exoPlayer(): ExoPlayer = ExoPlayer.Builder(service).setLoadControl(
-        // increase buffer size across the board as ExoPlayer defaults are set for video
-        DefaultLoadControl.Builder().setBackBuffer(EXOPLAYER_BACK_BUFFER_DURATION_MILLIS, true)
-            .setBufferDurationsMs(
-                EXOPLAYER_MIN_BUFFER_DURATION_MILLIS,
-                EXOPLAYER_MAX_BUFFER_DURATION_MILLIS,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
-            )
-            .build()
-    ).build()
+    fun exoPlayer(): ExoPlayer =
+        ExoPlayer.Builder(service).setLoadControl(
+            // increase buffer size across the board as ExoPlayer defaults are set for video
+            DefaultLoadControl.Builder().setBackBuffer(EXOPLAYER_BACK_BUFFER_DURATION_MILLIS, true)
+                .setBufferDurationsMs(
+                    EXOPLAYER_MIN_BUFFER_DURATION_MILLIS,
+                    EXOPLAYER_MAX_BUFFER_DURATION_MILLIS,
+                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS,
+                )
+                .build(),
+        ).build()
 
     @Provides
     @ServiceScope
@@ -77,7 +77,7 @@ class ServiceModule(private val service: MediaPlayerService) {
                 service,
                 MainActivity.REQUEST_CODE_OPEN_APP_TO_CURRENTLY_PLAYING,
                 sessionIntent,
-                PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_IMMUTABLE,
             )
         }
 
@@ -86,7 +86,9 @@ class ServiceModule(private val service: MediaPlayerService) {
     fun mediaSession(launchActivityPendingIntent: PendingIntent): MediaSessionCompat =
         MediaSessionCompat(service, APP_NAME).apply {
             // Enable callbacks from MediaButtons and TransportControls
-            setFlags(FLAG_HANDLES_MEDIA_BUTTONS or FLAG_HANDLES_TRANSPORT_CONTROLS or FLAG_HANDLES_QUEUE_COMMANDS)
+            setFlags(
+                FLAG_HANDLES_MEDIA_BUTTONS or FLAG_HANDLES_TRANSPORT_CONTROLS or FLAG_HANDLES_QUEUE_COMMANDS,
+            )
             service.sessionToken = sessionToken
             setSessionActivity(launchActivityPendingIntent)
             setRatingType(RATING_NONE)
@@ -108,10 +110,11 @@ class ServiceModule(private val service: MediaPlayerService) {
     @Provides
     fun provideProgressUpdater(
         updater: SimpleProgressUpdater,
-        mediaControllerCompat: MediaControllerCompat
-    ): ProgressUpdater = updater.apply {
-        mediaController = mediaControllerCompat
-    }
+        mediaControllerCompat: MediaControllerCompat,
+    ): ProgressUpdater =
+        updater.apply {
+            mediaController = mediaControllerCompat
+        }
 
     @Provides
     @ServiceScope
@@ -119,8 +122,7 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun becomingNoisyReceiver(session: MediaSessionCompat) =
-        BecomingNoisyReceiver(service, session.sessionToken)
+    fun becomingNoisyReceiver(session: MediaSessionCompat) = BecomingNoisyReceiver(service, session.sessionToken)
 
     @Provides
     @ServiceScope
@@ -146,8 +148,8 @@ class ServiceModule(private val service: MediaPlayerService) {
                 "X-Plex-Token" to (
                     plexPrefs.server?.accessToken ?: plexPrefs.user?.authToken
                         ?: plexPrefs.accountAuthToken
-                    )
-            )
+                ),
+            ),
         )
 
         return dataSourceFactory
@@ -163,8 +165,7 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun mediaController(session: MediaSessionCompat) =
-        MediaControllerCompat(service, session.sessionToken)
+    fun mediaController(session: MediaSessionCompat) = MediaControllerCompat(service, session.sessionToken)
 
     @Provides
     @ServiceScope
@@ -177,7 +178,9 @@ class ServiceModule(private val service: MediaPlayerService) {
     @Provides
     @ServiceScope
     fun sensorManager(): SensorManager =
-        service.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        service.getSystemService(
+            Context.SENSOR_SERVICE,
+        ) as SensorManager
 
     @Provides
     @ServiceScope

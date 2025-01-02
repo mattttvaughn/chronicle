@@ -125,9 +125,9 @@ inline val MediaMetadataCompat.flag
 
 /**
  * Useful extensions for [MediaMetadataCompat.Builder].
+ *
+ * These do not have getters, so create a message for the error.
  */
-
-// These do not have getters, so create a message for the error.
 const val NO_GET = "Property does not have a 'get'"
 
 inline var MediaMetadataCompat.Builder.id: String
@@ -260,9 +260,10 @@ inline var MediaMetadataCompat.Builder.flag: Int
  * These keys are used by the ExoPlayer MediaSession extension when announcing metadata changes.
  */
 inline val MediaMetadataCompat.fullDescription: MediaDescriptionCompat
-    get() = description.also {
-        it.extras?.putAll(bundle)
-    }
+    get() =
+        description.also {
+            it.extras?.putAll(bundle)
+        }
 
 /**
  * Extension method for building an [ExtractorMediaSource] from a [MediaMetadataCompat] object.
@@ -275,7 +276,7 @@ fun MediaMetadataCompat.toMediaSource(dataSourceFactory: DataSource.Factory): Pr
             com.google.android.exoplayer2.MediaItem.Builder()
                 .setTag(fullDescription)
                 .setUri(mediaUri)
-                .build()
+                .build(),
         )
 }
 
@@ -301,15 +302,14 @@ fun MediaDescriptionCompat.toMediaMetadataCompat(): MediaMetadataCompat {
  */
 fun List<MediaMetadataCompat>.toMediaSource(
     plexPrefsRepo: PlexPrefsRepo,
-    dataSourceFactory: DataSource.Factory
+    dataSourceFactory: DataSource.Factory,
 ): ConcatenatingMediaSource {
-
     val concatenatingMediaSource = ConcatenatingMediaSource()
     forEach {
         Timber.i(
             "Media uri is: ${it.mediaUri}," +
                 "server auth token is ${plexPrefsRepo.server?.accessToken}," +
-                "user is ${plexPrefsRepo.accountAuthToken}"
+                "user is ${plexPrefsRepo.accountAuthToken}",
         )
         concatenatingMediaSource.addMediaSource(it.toMediaSource(dataSourceFactory))
     }

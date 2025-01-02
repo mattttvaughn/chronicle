@@ -35,7 +35,6 @@ import javax.inject.Inject
 
 /** TODO: refactor search to reuse code from Library + Home fragments */
 class CollectionsFragment : Fragment() {
-
     companion object {
         fun newInstance() = CollectionsFragment()
     }
@@ -61,7 +60,7 @@ class CollectionsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         Timber.i("Lib frag view create")
         val binding = FragmentCollectionsBinding.inflate(inflater, container, false)
@@ -69,18 +68,19 @@ class CollectionsFragment : Fragment() {
         binding.viewModel = viewModel
         binding.plexConfig = plexConfig
 
-        adapter = CollectionsAdapter(
-            prefsRepo.libraryBookViewStyle,
-            true,
-            prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
-            object : CollectionClick {
-                override fun onClick(collection: Collection) {
-                    openCollectionDetails(collection)
-                }
+        adapter =
+            CollectionsAdapter(
+                prefsRepo.libraryBookViewStyle,
+                true,
+                prefsRepo.bookCoverStyle == BOOK_COVER_STYLE_SQUARE,
+                object : CollectionClick {
+                    override fun onClick(collection: Collection) {
+                        openCollectionDetails(collection)
+                    }
+                },
+            ).apply {
+                stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
             }
-        ).apply {
-            stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
-        }
 
         binding.collectionsGrid.adapter = adapter
 
@@ -106,21 +106,22 @@ class CollectionsFragment : Fragment() {
             //
             // This operation is worst case O(n), which is bad for users with huge libraries
             lifecycleScope.launch {
-                val isNewList = withContext(Dispatchers.IO) {
-                    val currentList = adapter?.currentList ?: return@withContext true
-                    if (collections.size != currentList.size) {
-                        Timber.i("Updating: different size!")
-                        return@withContext true
-                    }
-                    // compare lists by id, faster than doing a full .equals() comparison
-                    for (index in collections.indices) {
-                        if (collections[index].id != currentList[index].id) {
-                            Timber.i("Updating: different ids!")
+                val isNewList =
+                    withContext(Dispatchers.IO) {
+                        val currentList = adapter?.currentList ?: return@withContext true
+                        if (collections.size != currentList.size) {
+                            Timber.i("Updating: different size!")
                             return@withContext true
                         }
+                        // compare lists by id, faster than doing a full .equals() comparison
+                        for (index in collections.indices) {
+                            if (collections[index].id != currentList[index].id) {
+                                Timber.i("Updating: different ids!")
+                                return@withContext true
+                            }
+                        }
+                        return@withContext false
                     }
-                    return@withContext false
-                }
                 if (isNewList) {
                     // submit an empty list to force a scroll-to-top, then when it is done, submit
                     // the real list
@@ -136,23 +137,28 @@ class CollectionsFragment : Fragment() {
 
         viewModel.viewStyle.observe(viewLifecycleOwner) { style ->
             Timber.i("View style is: $style")
-            val isGrid = when (style) {
-                VIEW_STYLE_COVER_GRID -> true
-                VIEW_STYLE_DETAILS_LIST, VIEW_STYLE_TEXT_LIST -> false
-                else -> throw IllegalStateException("Unknown view style")
-            }
-            binding.collectionsGrid.layoutManager = if (isGrid) {
-                GridLayoutManager(requireContext(), 3)
-            } else {
-                LinearLayoutManager(requireContext())
-            }
+            val isGrid =
+                when (style) {
+                    VIEW_STYLE_COVER_GRID -> true
+                    VIEW_STYLE_DETAILS_LIST, VIEW_STYLE_TEXT_LIST -> false
+                    else -> throw IllegalStateException("Unknown view style")
+                }
+            binding.collectionsGrid.layoutManager =
+                if (isGrid) {
+                    GridLayoutManager(requireContext(), 3)
+                } else {
+                    LinearLayoutManager(requireContext())
+                }
             adapter!!.viewStyle = style
         }
-        binding.searchResultsList.adapter = AudiobookSearchAdapter(object : LibraryFragment.AudiobookClick {
-            override fun onClick(audiobook: Audiobook) {
-                openAudiobookDetails(audiobook)
-            }
-        })
+        binding.searchResultsList.adapter =
+            AudiobookSearchAdapter(
+                object : LibraryFragment.AudiobookClick {
+                    override fun onClick(audiobook: Audiobook) {
+                        openAudiobookDetails(audiobook)
+                    }
+                },
+            )
 
         binding.swipeToRefresh.setOnRefreshListener {
             viewModel.refreshData()
@@ -186,36 +192,43 @@ class CollectionsFragment : Fragment() {
         setHasOptionsMenu(true)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateOptionsMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         inflater.inflate(R.menu.collections_menu, menu)
         val searchView = menu.findItem(R.id.search).actionView as SearchView
         val searchItem = menu.findItem(R.id.search) as MenuItem
 
-        searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                viewModel.setSearchActive(true)
-                return true
-            }
-
-            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                viewModel.setSearchActive(false)
-                return true
-            }
-        })
-
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                // Do nothing
-                return true
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                if (newText != null) {
-                    viewModel.search(newText)
+        searchItem.setOnActionExpandListener(
+            object : MenuItem.OnActionExpandListener {
+                override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                    viewModel.setSearchActive(true)
+                    return true
                 }
-                return true
-            }
-        })
+
+                override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+                    viewModel.setSearchActive(false)
+                    return true
+                }
+            },
+        )
+
+        searchView.setOnQueryTextListener(
+            object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    // Do nothing
+                    return true
+                }
+
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    if (newText != null) {
+                        viewModel.search(newText)
+                    }
+                    return true
+                }
+            },
+        )
     }
 
     override fun onAttach(context: Context) {
