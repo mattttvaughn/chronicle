@@ -180,7 +180,7 @@ class MainActivity : AppCompatActivity() {
             GestureDetector(
                 this,
                 object : GestureDetector.SimpleOnGestureListener() {
-                    override fun onScroll(
+                    fun onScroll(
                         e1: MotionEvent,
                         e2: MotionEvent,
                         distanceX: Float,

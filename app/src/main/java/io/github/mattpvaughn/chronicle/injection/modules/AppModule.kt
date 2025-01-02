@@ -8,7 +8,7 @@ import android.net.Uri
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.work.WorkManager
-import com.facebook.imagepipeline.backends.okhttp3.BuildConfig
+//import com.facebook.imagepipeline.backends.okhttp3.BuildConfig
 import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
 import com.facebook.imagepipeline.cache.DefaultCacheKeyFactory
 import com.facebook.imagepipeline.listener.BaseRequestListener
@@ -253,32 +253,33 @@ class AppModule(private val app: Application) {
                 }
             },
         )
-        .setRequestListeners(
-            if (BuildConfig.DEBUG) {
-                Collections.singleton(
-                    object : BaseRequestListener() {
-                        override fun onRequestSuccess(
-                            request: ImageRequest?,
-                            requestId: String?,
-                            isPrefetch: Boolean,
-                        ) {
-                            Timber.i("Image load success: $request")
-                            super.onRequestSuccess(request, requestId, isPrefetch)
-                        }
-
-                        override fun onRequestFailure(
-                            request: ImageRequest?,
-                            requestId: String?,
-                            throwable: Throwable?,
-                            isPrefetch: Boolean,
-                        ) {
-                            Timber.i("Image load failure: $request, $throwable")
-                            super.onRequestFailure(request, requestId, throwable, isPrefetch)
-                        }
-                    },
-                ).toSet()
-            } else {
-                emptySet()
-            },
-        ).build()
+//        .setRequestListeners(
+//            if (BuildConfig.DEBUG) {
+//                Collections.singleton(
+//                    object : BaseRequestListener() {
+//                        override fun onRequestSuccess(
+//                            request: ImageRequest?,
+//                            requestId: String?,
+//                            isPrefetch: Boolean,
+//                        ) {
+//                            Timber.i("Image load success: $request")
+//                            super.onRequestSuccess(request, requestId, isPrefetch)
+//                        }
+//
+//                        override fun onRequestFailure(
+//                            request: ImageRequest?,
+//                            requestId: String?,
+//                            throwable: Throwable?,
+//                            isPrefetch: Boolean,
+//                        ) {
+//                            Timber.i("Image load failure: $request, $throwable")
+//                            super.onRequestFailure(request, requestId, throwable, isPrefetch)
+//                        }
+//                    },
+//                ).toSet()
+//            } else {
+//                emptySet()
+//            },
+//        )
+        .build()
 }

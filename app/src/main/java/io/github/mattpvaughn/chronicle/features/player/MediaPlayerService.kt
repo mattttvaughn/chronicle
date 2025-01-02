@@ -684,7 +684,7 @@ class MediaPlayerService :
 
         // If playback ended, reset player before we copy its state
         if (prevPlayer?.playbackState == Player.STATE_ENDED) {
-            prevPlayer.stop(true)
+            prevPlayer.stop()
         }
 
         mediaSessionConnector.setPlayer(player)
@@ -699,7 +699,7 @@ class MediaPlayerService :
 
         // reset old player's state
         if (prevPlayer?.playbackState != Player.STATE_ENDED) {
-            prevPlayer?.stop(true)
+            prevPlayer?.stop()
         }
 
         invalidatePlaybackParams()

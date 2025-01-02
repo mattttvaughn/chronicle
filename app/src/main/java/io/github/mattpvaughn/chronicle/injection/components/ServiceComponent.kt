@@ -17,6 +17,7 @@ import io.github.mattpvaughn.chronicle.injection.scopes.ServiceScope
 import io.github.mattpvaughn.chronicle.util.PackageValidator
 import kotlinx.coroutines.CoroutineScope
 
+@OptIn(kotlin.time.ExperimentalTime::class)
 @ServiceScope
 @Component(dependencies = [AppComponent::class], modules = [ServiceModule::class])
 interface ServiceComponent {

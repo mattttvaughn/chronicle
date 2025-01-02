@@ -52,7 +52,8 @@ class DownloadNotificationWorker(
         )
     private val actionCancelAll =
         NotificationCompat.Action.Builder(
-            R.drawable.fetch_notification_cancel,
+            R.drawable.ic_broken_image,
+//            R.drawable.fetch_notification_cancel,
             cancelAllDesc,
             cancelAllPendingIntent,
         ).build()

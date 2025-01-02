@@ -262,8 +262,8 @@ class SharedPreferencesPrefsRepo
         override val isPremium: Boolean
             get() =
                 sharedPreferences.getBoolean(KEY_IS_PREMIUM, defaultIsPremium) ||
-                    BuildConfig.DEBUG ||
-                    BuildConfig.FREE_AS_IN_BEER
+                    BuildConfig.DEBUG
+//                        || BuildConfig.FREE_AS_IN_BEER
 
         private val defaultPremiumToken = NO_PREMIUM_TOKEN
         override var premiumPurchaseToken: String

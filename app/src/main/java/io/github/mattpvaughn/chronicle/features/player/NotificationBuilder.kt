@@ -57,13 +57,15 @@ class NotificationBuilder
 
         private val playAction =
             NotificationCompat.Action(
-                R.drawable.exo_controls_play,
+                R.drawable.ic_broken_image,
+//                R.drawable.exo_controls_play,
                 context.getString(R.string.notification_play),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PLAY),
             )
         private val pauseAction =
             NotificationCompat.Action(
-                R.drawable.exo_controls_pause,
+                R.drawable.ic_broken_image,
+//                R.drawable.exo_controls_pause,
                 context.getString(R.string.notification_pause),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE),
             )

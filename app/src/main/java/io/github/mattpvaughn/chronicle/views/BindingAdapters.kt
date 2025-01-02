@@ -42,9 +42,9 @@ fun bindImageRounded(
  * connecting the user to the server
  */
 class UrlQueryCacheKey(private val url: Uri?) : CacheKey {
-    override fun containsUri(uri: Uri?): Boolean {
+    override fun containsUri(uri: Uri): Boolean {
         Timber.i("Checking cache for image")
-        return uri?.query?.contains(url?.query ?: "") ?: false
+        return uri.query?.contains(url?.query ?: "") ?: false
     }
 
     // Seems to be primarily used for debugging
