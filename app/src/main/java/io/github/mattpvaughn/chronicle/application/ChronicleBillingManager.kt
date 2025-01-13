@@ -2,10 +2,7 @@ package io.github.mattpvaughn.chronicle.application
 
 import android.app.Activity
 import android.content.Context
-//import com.limurse.iap.BuildConfig
-import com.limurse.iap.DataWrappers
 import com.limurse.iap.IapConnector
-import com.limurse.iap.PurchaseServiceListener
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,7 +29,8 @@ class ChronicleBillingManager
                 context = applicationContext,
                 nonConsumableKeys = listOf(PREMIUM_IAP_SKU),
                 enableLogging = true,
-            )/*.apply {
+            )
+            /*.apply {
                 addPurchaseListener(
                     object : PurchaseServiceListener {
                         override fun onPricesUpdated(iapKeyPrices: Map<String, DataWrappers.SkuDetails>) {

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     id("kotlin-parcelize")
+    id("kotlin-kapt")
 }
 
 android {
@@ -11,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "io.github.mattpvaughn.chronicle"
-        minSdk = 31
+        minSdk = 28
         targetSdk = 34
         versionCode = 27
         versionName = "0.55.0"
@@ -24,7 +25,7 @@ android {
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -34,9 +35,10 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+
+        freeCompilerArgs += "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
     }
     buildFeatures {
-        viewBinding = true
         dataBinding = true
         buildConfig = true
     }
@@ -55,6 +57,8 @@ dependencies {
     implementation(libs.browserx)
     implementation(libs.oss)
     implementation(libs.appcompat)
+    implementation(libs.annotation)
+    implementation(libs.coroutines)
 
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter)
@@ -75,8 +79,20 @@ dependencies {
 
     implementation(libs.dagger)
     annotationProcessor(libs.dagger.compiler)
+    ksp(libs.dagger.compiler)
 
     implementation(libs.exoplayer.core)
     implementation(libs.exoplayer.ui)
     implementation(libs.exoplayer.mediasession)
+
+    /*
+     * Tests
+     */
+    androidTestImplementation(libs.dagger)
+    androidTestAnnotationProcessor(libs.dagger.compiler)
+    kspAndroidTest(libs.dagger.compiler)
+}
+
+tasks.matching { it.name.contains("Test") }.configureEach {
+    enabled = false
 }

@@ -31,7 +31,7 @@ interface HttpMediaSource : MediaSource {
     fun makeDownloadRequest(trackUrl: String): Request
 
     /** Makes a [LazyHeaders] with the needed HTTP headers */
-    fun makeGlideHeaders(): Object?
+    fun makeGlideHeaders(): Any?
 
     /** Appends a relative path (i.e. [MediaItemTrack.media]) to the media source's base url */
     fun toServerString(relativePathForResource: String): String

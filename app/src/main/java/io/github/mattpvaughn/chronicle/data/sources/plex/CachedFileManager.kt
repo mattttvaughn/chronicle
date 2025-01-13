@@ -282,6 +282,7 @@ class CachedFileManager
                     addAction(DownloadNotificationWorker.ACTION_CANCEL_BOOK_DOWNLOAD)
                     addAction(DownloadNotificationWorker.ACTION_CANCEL_ALL_DOWNLOADS)
                 },
+                Context.RECEIVER_NOT_EXPORTED,
             )
 
             // singleton so we can observe downloads always

@@ -28,7 +28,7 @@ class BecomingNoisyReceiver
 
         fun register() {
             if (!registered) {
-                context.registerReceiver(this, noisyIntentFilter)
+                context.registerReceiver(this, noisyIntentFilter, Context.RECEIVER_NOT_EXPORTED)
                 registered = true
             }
         }

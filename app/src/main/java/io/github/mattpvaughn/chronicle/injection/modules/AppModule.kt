@@ -8,10 +8,8 @@ import android.net.Uri
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.work.WorkManager
-//import com.facebook.imagepipeline.backends.okhttp3.BuildConfig
 import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
 import com.facebook.imagepipeline.cache.DefaultCacheKeyFactory
-import com.facebook.imagepipeline.listener.BaseRequestListener
 import com.facebook.imagepipeline.request.ImageRequest
 import com.squareup.moshi.Moshi
 import com.tonyodev.fetch2.Fetch

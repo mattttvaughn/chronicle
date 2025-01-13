@@ -1,13 +1,14 @@
 [versions]
 agp = "8.7.3"
 kotlin = "1.9.24"
+coroutines = "1.7.3"
 material = "1.9.0"
 room = "2.5.2"
 ksp = "1.9.24-1.0.20"
 glide = "4.11.0"
 fresco = "3.5.0"
 timber = "4.7.1"
-dagger = "2.45"
+dagger = "2.54"
 iapWrapper = "1.7.0"
 moshi = "1.15.2"
 exoplayer = "2.19.1"
@@ -21,6 +22,8 @@ okhttp3 = "4.10.0" # OUT OF DATE
 browserx = "1.8.0"
 oss = "17.1.0"
 appcompat = "1.7.0"
+annotation = "1.6.0"
+ktlint = "12.1.2"
 
 [libraries]
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
@@ -51,8 +54,11 @@ okhttp3-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor"
 browserx = { group = "androidx.browser", name = "browser", version.ref = "browserx" }
 oss = { group = "com.google.android.gms", name = "play-services-oss-licenses", version.ref = "oss" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
+coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
