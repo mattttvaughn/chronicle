@@ -86,11 +86,34 @@ dependencies {
     implementation(libs.exoplayer.mediasession)
 
     /*
-     * Tests
+     * Local Tests
+     */
+    testImplementation(libs.dagger)
+    testAnnotationProcessor(libs.dagger.compiler)
+    kspTest(libs.dagger.compiler)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.hamcrest)
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.androidx.arch.core.testing)
+
+    /*
+     * Instrumented Tests
      */
     androidTestImplementation(libs.dagger)
     androidTestAnnotationProcessor(libs.dagger.compiler)
     kspAndroidTest(libs.dagger.compiler)
+
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.mockk)
+    androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.espresso.contrib)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.ext.junit.ktx)
 }
 
 tasks.matching { it.name.contains("Test") }.configureEach {

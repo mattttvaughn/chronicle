@@ -326,11 +326,11 @@ class BookRepository
 
         override suspend fun updateProgress(
             bookId: Int,
-            lastViewedAt: Long,
+            currentTime: Long,
             progress: Long,
         ) {
             withContext(Dispatchers.IO) {
-                bookDao.updateProgress(bookId, lastViewedAt, progress)
+                bookDao.updateProgress(bookId, currentTime, progress)
             }
         }
 

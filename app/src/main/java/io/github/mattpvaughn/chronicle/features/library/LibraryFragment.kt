@@ -93,7 +93,7 @@ class LibraryFragment : Fragment() {
             checkNotNull(adapter) { "Adapter must not be null while view exists" }
 
             // If there are no previous books, submit normally
-            if (adapter!!.currentList.isNullOrEmpty()) {
+            if (adapter!!.currentList.isEmpty()) {
                 Timber.i("Updating book list: no previous books")
                 adapter!!.submitList(books)
                 return@observe

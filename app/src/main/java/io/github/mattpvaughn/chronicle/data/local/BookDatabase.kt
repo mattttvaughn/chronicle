@@ -35,43 +35,43 @@ fun getBookDatabase(context: Context): BookDatabase {
 
 val BOOK_MIGRATION_1_2 =
     object : Migration(1, 2) {
-        override fun migrate(database: SupportSQLiteDatabase) {
+        override fun migrate(db: SupportSQLiteDatabase) {
             // Do nothing lol
         }
     }
 
 val BOOK_MIGRATION_2_3 =
     object : Migration(2, 3) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE Audiobook ADD COLUMN chapters TEXT NOT NULL DEFAULT ''")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE Audiobook ADD COLUMN chapters TEXT NOT NULL DEFAULT ''")
         }
     }
 
 val BOOK_MIGRATION_3_4 =
     object : Migration(3, 4) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE Audiobook ADD COLUMN source BIGINT NOT NULL DEFAULT -1")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE Audiobook ADD COLUMN source BIGINT NOT NULL DEFAULT -1")
         }
     }
 
 val BOOK_MIGRATION_4_5 =
     object : Migration(4, 5) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE Audiobook ADD COLUMN progress BIGINT NOT NULL DEFAULT 0")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE Audiobook ADD COLUMN progress BIGINT NOT NULL DEFAULT 0")
         }
     }
 
 val BOOK_MIGRATION_5_6 =
     object : Migration(5, 6) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE Audiobook ADD COLUMN titleSort TEXT NOT NULL DEFAULT ''")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE Audiobook ADD COLUMN titleSort TEXT NOT NULL DEFAULT ''")
         }
     }
 
 val BOOK_MIGRATION_6_7 =
     object : Migration(6, 7) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL(
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
                 "ALTER TABLE Audiobook ADD COLUMN viewCount INTEGER NOT NULL DEFAULT 0",
             )
         }
@@ -79,8 +79,8 @@ val BOOK_MIGRATION_6_7 =
 
 val BOOK_MIGRATION_7_8 =
     object : Migration(7, 8) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE Audiobook ADD COLUMN year INTEGER NOT NULL DEFAULT 0")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE Audiobook ADD COLUMN year INTEGER NOT NULL DEFAULT 0")
         }
     }
 

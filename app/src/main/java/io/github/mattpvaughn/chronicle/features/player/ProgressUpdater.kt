@@ -134,7 +134,7 @@ class SimpleProgressUpdater
         override fun updateProgress(
             trackId: Int,
             playbackState: String,
-            trackProgress: Long,
+            progress: Long,
             forceNetworkUpdate: Boolean,
         ) {
             Timber.i("Updating progress")
@@ -153,7 +153,7 @@ class SimpleProgressUpdater
 
                 val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
                 val book = bookRepository.getAudiobookAsync(bookId)
-                val bookProgress = tracks.getTrackStartTime(track) + trackProgress
+                val bookProgress = tracks.getTrackStartTime(track) + progress
                 val bookDuration = tracks.getDuration()
 
                 currentlyPlaying.update(
@@ -167,7 +167,7 @@ class SimpleProgressUpdater
                     updateLocalProgress(
                         bookId = bookId,
                         currentTime = currentTime,
-                        trackProgress = trackProgress,
+                        trackProgress = progress,
                         trackId = trackId,
                         bookProgress = bookProgress,
                         tracks = tracks,
@@ -181,7 +181,7 @@ class SimpleProgressUpdater
                     updateNetworkProgress(
                         trackId,
                         playbackState,
-                        trackProgress,
+                        progress,
                         bookProgress,
                     )
                 }

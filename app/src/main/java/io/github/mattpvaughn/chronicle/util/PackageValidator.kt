@@ -36,7 +36,6 @@ import timber.log.Timber
 import java.io.IOException
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.*
 import kotlin.collections.LinkedHashMap
 
 /**
@@ -287,7 +286,7 @@ class PackageValidator(
         var eventType = parser.next()
         while (eventType != XmlResourceParser.END_TAG) {
             val isRelease = parser.getAttributeBooleanValue(null, "release", false)
-            val signature = parser.nextText().replace(WHITESPACE_REGEX, "").toLowerCase(Locale.ROOT)
+            val signature = parser.nextText().replace(WHITESPACE_REGEX, "").lowercase()
             callerSignatures += KnownSignature(signature, isRelease)
 
             eventType = parser.next()

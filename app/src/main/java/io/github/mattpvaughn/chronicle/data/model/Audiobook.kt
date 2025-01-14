@@ -19,7 +19,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @TypeConverters(ChapterListConverter::class)
 @Entity
-data class Audiobook constructor(
+data class Audiobook(
     @PrimaryKey
     val id: Int,
     /** Unique long representing a [MediaSource] in [SourceManager] */

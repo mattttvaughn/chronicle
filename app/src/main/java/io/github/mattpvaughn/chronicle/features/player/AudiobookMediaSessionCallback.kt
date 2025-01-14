@@ -293,7 +293,7 @@ class AudiobookMediaSessionCallback
                     withContext(Dispatchers.IO) {
                         trackRepository.getTracksForAudiobookAsync(bookId.toInt())
                     }
-                if (tracks.isNullOrEmpty()) {
+                if (tracks.isEmpty()) {
                     handlePlayBookWithNoTracks(bookId, tracks, extras, playWhenReady)
                     return@launch
                 }

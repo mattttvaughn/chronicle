@@ -178,7 +178,6 @@ class MediaPlayerService :
 
     var currentPlayer: Player? = null
 
-    @OptIn(InternalCoroutinesApi::class)
     override fun onCreate() {
         super.onCreate()
 

@@ -13,7 +13,7 @@ import io.github.mattpvaughn.chronicle.data.sources.plex.model.PlexDirectory
 
 @TypeConverters(CollectionIdConverter::class)
 @Entity
-data class Collection constructor(
+data class Collection(
     @PrimaryKey
     val id: Int,
     /** Unique long representing a [MediaSource] in [SourceManager] */
@@ -41,7 +41,7 @@ data class Collection constructor(
         val PLEX_COLLECTION_SORT_TYPE_CUSTOM = 2
     }
 
-    enum class SortType() {
+    enum class SortType {
         RELEASE_DATE,
         ALPHABETICAL,
         CUSTOM,

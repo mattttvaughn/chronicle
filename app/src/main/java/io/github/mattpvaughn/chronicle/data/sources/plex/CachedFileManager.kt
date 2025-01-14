@@ -409,6 +409,6 @@ class CachedFileManager
          * Migrates cached files from being named after the [MediaItemTrack.id] to being named after
          * the persistent part in [MediaItemTrack.media]
          */
-        private suspend fun migrateCachedFiles() {
+        private fun migrateCachedFiles() {
         }
     }

@@ -7,7 +7,7 @@ import androidx.room.TypeConverter
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
 
 @Entity
-data class Chapter constructor(
+data class Chapter(
     val title: String = "",
     @PrimaryKey
     val id: Long = 0L,

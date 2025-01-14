@@ -160,7 +160,7 @@ class MainActivityViewModel(
         mediaServiceConnection.playbackState.observeForever(playbackObserver)
     }
 
-    private suspend fun setAudiobook(trackId: Int) {
+    private fun setAudiobook(trackId: Int) {
         val previousAudiobookId = audiobook.value?.id ?: NO_AUDIOBOOK_FOUND_ID
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
             val bookId = trackRepository.getBookIdForTrack(trackId)

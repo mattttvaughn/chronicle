@@ -331,7 +331,7 @@ class DownloadNotificationWorker(
             bookDownloadGroups.mapNotNull { (bookId, trackDownloads) ->
                 val bookTitle = trackDownloads.firstOrNull()?.tag ?: return@mapNotNull null
                 val avgCompletion =
-                    trackDownloads.sumBy {
+                    trackDownloads.sumOf {
                         min(100, max(0, it.progress))
                     } / (trackDownloads.size)
 
@@ -389,7 +389,7 @@ class DownloadNotificationWorker(
                 b.firstOrNull()?.created ?: System.currentTimeMillis()
             }.take(5).mapNotNull { (_, downloads) ->
                 val bookName = downloads.getOrNull(0)?.tag
-                val progress = min(max(downloads.sumBy { it.progress } / (downloads.size), 0), 100)
+                val progress = min(max(downloads.sumOf { it.progress } / (downloads.size), 0), 100)
                 if (downloads.isNotEmpty() && bookName != null) {
                     applicationContext.getString(
                         R.string.download_starting,
