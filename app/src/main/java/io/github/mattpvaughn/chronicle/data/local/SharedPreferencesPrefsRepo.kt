@@ -162,8 +162,8 @@ interface PrefsRepo {
                 VIEW_STYLE_TEXT_LIST,
             )
 
-        const val BOOK_COVER_STYLE_RECT = "Rectangular"
         const val BOOK_COVER_STYLE_SQUARE = "Square"
+        const val BOOK_COVER_STYLE_RECT = "Rectangular"
     }
 }
 
@@ -196,7 +196,7 @@ class SharedPreferencesPrefsRepo
                     value.absolutePath,
                 ).apply()
 
-        private val defaultBookCoverStyle = "Rectangular"
+        private val defaultBookCoverStyle = "Square"
         override var bookCoverStyle: String
             get() = getString(KEY_BOOK_COVER_STYLE, defaultBookCoverStyle)
             set(value) = sharedPreferences.edit().putString(KEY_BOOK_COVER_STYLE, value).apply()

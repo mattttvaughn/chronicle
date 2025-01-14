@@ -210,10 +210,10 @@ class SettingsViewModel(
                                     options =
                                         listOf(
                                             FormattableString.from(
-                                                R.string.settings_book_cover_type_rect,
+                                                R.string.settings_book_cover_type_square,
                                             ),
                                             FormattableString.from(
-                                                R.string.settings_book_cover_type_square,
+                                                R.string.settings_book_cover_type_rect,
                                             ),
                                         ),
                                     title =
