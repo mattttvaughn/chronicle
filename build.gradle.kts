@@ -12,3 +12,10 @@ allprojects {
 ktlint {
     android.set(true)
 }
+
+tasks.register<Copy>("installGitHook") {
+    from(rootProject.file("pre-commit"))
+    into(rootProject.file(".git/hooks"))
+}
+
+tasks.getByPath(":app:preBuild").dependsOn(rootProject.tasks.named("installGitHook"))
