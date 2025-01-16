@@ -116,6 +116,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit.ktx)
 }
 
-tasks.matching { it.name.contains("Test") }.configureEach {
+tasks.matching { it.name.contains("DebugAndroidTest") }.configureEach {
     enabled = false
 }
