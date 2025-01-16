@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.ksp)
     id("kotlin-parcelize")
     id("kotlin-kapt")
+    id("com.google.android.gms.oss-licenses-plugin")
 }
 
 android {

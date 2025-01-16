@@ -9,6 +9,12 @@ allprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 }
 
+buildscript {
+    dependencies {
+        classpath(libs.oss.plugin)
+    }
+}
+
 ktlint {
     android.set(true)
 }

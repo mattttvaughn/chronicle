@@ -31,6 +31,7 @@ coreTesting = "2.2.0"
 espresso = "3.5.1"
 androidxTest = "1.5.0"
 androidxTestExt = "1.1.5"
+ossPlugin = "0.10.6"
 
 [libraries]
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
@@ -74,6 +75,7 @@ androidx-test-runner = { group = "androidx.test", name = "runner", version.ref =
 androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "androidxTest" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExt" }
 androidx-test-ext-junit-ktx = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "androidxTestExt" }
+oss-plugin = { group = "com.google.android.gms", name = "oss-licenses-plugin", version.ref = "ossPlugin" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
