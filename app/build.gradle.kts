@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "io.github.mattpvaughn.chronicle"
-        minSdk = 28
+        minSdk = 27
         targetSdk = 34
         versionCode = 27
         versionName = "0.55.0"
