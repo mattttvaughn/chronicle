@@ -76,11 +76,9 @@ dependencies {
 
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
-    annotationProcessor(libs.room.compiler)
     implementation(libs.room.ktx)
 
     implementation(libs.dagger)
-    annotationProcessor(libs.dagger.compiler)
     ksp(libs.dagger.compiler)
 
     implementation(libs.exoplayer.core)
@@ -91,7 +89,6 @@ dependencies {
      * Local Tests
      */
     testImplementation(libs.dagger)
-    testAnnotationProcessor(libs.dagger.compiler)
     kspTest(libs.dagger.compiler)
 
     testImplementation(libs.junit)
@@ -104,7 +101,6 @@ dependencies {
      * Instrumented Tests
      */
     androidTestImplementation(libs.dagger)
-    androidTestAnnotationProcessor(libs.dagger.compiler)
     kspAndroidTest(libs.dagger.compiler)
 
     androidTestImplementation(libs.junit)

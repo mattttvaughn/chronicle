@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Required to post notifications on Android 13+ (runtime permission still required at runtime) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-configuration android:name="com.android.vending.BILLING" />
 
@@ -36,7 +38,8 @@
         <service
             android:name="io.github.mattpvaughn.chronicle.features.player.MediaPlayerService"
             android:enabled="true"
-            android:exported="true">
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
                 <category android:name="android.intent.category.DEFAULT" />
