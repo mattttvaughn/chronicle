@@ -4,6 +4,7 @@
 
 # generated files
 build/
+tmp/
 captures/
 bin/
 gen/
