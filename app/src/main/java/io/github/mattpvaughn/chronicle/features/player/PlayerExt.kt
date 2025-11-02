@@ -2,7 +2,7 @@ package io.github.mattpvaughn.chronicle.features.player
 
 import android.view.Gravity
 import android.widget.Toast
-import com.google.android.exoplayer2.Player
+import androidx.media3.common.Player
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
@@ -31,7 +31,7 @@ fun Player.seekRelative(
         seekTo(currentPosition + durationMillis)
     } else {
         Timber.i("Seeking via trackliststatemanager")
-        trackListStateManager.updatePosition(currentWindowIndex, currentPosition)
+        trackListStateManager.updatePosition(currentMediaItemIndex, currentPosition)
         trackListStateManager.seekByRelative(durationMillis)
         seekTo(trackListStateManager.currentTrackIndex, trackListStateManager.currentTrackProgress)
     }

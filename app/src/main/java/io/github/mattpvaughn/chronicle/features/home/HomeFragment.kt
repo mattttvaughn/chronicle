@@ -5,7 +5,10 @@ import android.view.*
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import io.github.mattpvaughn.chronicle.R
@@ -41,7 +44,6 @@ class HomeFragment : Fragment() {
         (requireActivity() as MainActivity).activityComponent!!.inject(this)
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this, viewModelFactory).get(HomeViewModel::class.java)
-        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
@@ -95,6 +97,62 @@ class HomeFragment : Fragment() {
         return binding.root
     }
 
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(
+            object : MenuProvider {
+                override fun onCreateMenu(
+                    menu: Menu,
+                    menuInflater: MenuInflater,
+                ) {
+                    menuInflater.inflate(R.menu.home_menu, menu)
+                    val searchView = menu.findItem(R.id.search).actionView as SearchView
+                    val searchItem = menu.findItem(R.id.search)
+
+                    searchItem.setOnActionExpandListener(
+                        object : MenuItem.OnActionExpandListener {
+                            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                                viewModel.setSearchActive(true)
+                                return true
+                            }
+
+                            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+                                viewModel.setSearchActive(false)
+                                return true
+                            }
+                        },
+                    )
+
+                    searchView.setOnQueryTextListener(
+                        object : SearchView.OnQueryTextListener {
+                            override fun onQueryTextSubmit(query: String?): Boolean {
+                                return true
+                            }
+
+                            override fun onQueryTextChange(newText: String?): Boolean {
+                                if (newText != null) {
+                                    viewModel.search(newText)
+                                }
+                                return true
+                            }
+                        },
+                    )
+                }
+
+                override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                    return menuItem.itemId == R.id.search
+                }
+            },
+            viewLifecycleOwner,
+            Lifecycle.State.RESUMED,
+        )
+    }
+
     private fun makeAudiobookAdapter(): AudiobookAdapter {
         return AudiobookAdapter(
             initialViewStyle = VIEW_STYLE_COVER_GRID,
@@ -106,45 +164,6 @@ class HomeFragment : Fragment() {
                         openAudiobookDetails(audiobook)
                     }
                 },
-        )
-    }
-
-    override fun onCreateOptionsMenu(
-        menu: Menu,
-        inflater: MenuInflater,
-    ) {
-        inflater.inflate(R.menu.home_menu, menu)
-        val searchView = menu.findItem(R.id.search).actionView as SearchView
-        val searchItem = menu.findItem(R.id.search) as MenuItem
-
-        searchItem.setOnActionExpandListener(
-            object : MenuItem.OnActionExpandListener {
-                override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                    viewModel.setSearchActive(true)
-                    return true
-                }
-
-                override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                    viewModel.setSearchActive(false)
-                    return true
-                }
-            },
-        )
-
-        searchView.setOnQueryTextListener(
-            object : SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String?): Boolean {
-                    // Do nothing
-                    return true
-                }
-
-                override fun onQueryTextChange(newText: String?): Boolean {
-                    if (newText != null) {
-                        viewModel.search(newText)
-                    }
-                    return true
-                }
-            },
         )
     }
 

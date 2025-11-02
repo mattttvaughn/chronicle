@@ -124,20 +124,20 @@ class OnMediaChangedCallback
                     }
                     // Enables dismiss-on-swipe when paused- swiping triggers the delete
                     // intent on the notification to be called, which kills the service
-                    foregroundServiceController.stopForeground(false)
+                    foregroundServiceController.stopForegroundService(false)
                 }
                 STATE_STOPPED -> {
                     // If playback has ended, fully stop the service.
                     Timber.i("Playback has finished, stopping service!")
                     notificationManager.cancel(NOW_PLAYING_NOTIFICATION)
-                    foregroundServiceController.stopForeground(true)
+                    foregroundServiceController.stopForegroundService(true)
                     serviceController.stopService()
                 }
                 else -> {
                     // When not actively playing media, notification becomes cancellable on swipe and
                     // we stop listening for audio interruptions
                     becomingNoisyReceiver.unregister()
-                    foregroundServiceController.stopForeground(true)
+                    foregroundServiceController.stopForegroundService(true)
                 }
             }
         }

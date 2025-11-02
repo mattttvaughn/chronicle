@@ -5,12 +5,13 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -96,18 +97,15 @@ class LoginFragment : Fragment() {
                     val backButtonBitmap: Bitmap? =
                         if (backButton is BitmapDrawable) backButton.bitmap else null
 
+                    val toolbarColor = ContextCompat.getColor(requireContext(), R.color.colorPrimary)
+                    val colorSchemeParams =
+                        CustomTabColorSchemeParams.Builder()
+                            .setToolbarColor(toolbarColor)
+                            .build()
+
                     val customTabsIntentBuilder =
                         CustomTabsIntent.Builder()
-                            .setToolbarColor(
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                    resources.getColor(
-                                        R.color.colorPrimary,
-                                        requireActivity().theme,
-                                    )
-                                } else {
-                                    resources.getColor(R.color.colorPrimary)
-                                },
-                            )
+                            .setDefaultColorSchemeParams(colorSchemeParams)
                             .setShowTitle(true)
 
                     if (backButtonBitmap != null) {
@@ -125,6 +123,17 @@ class LoginFragment : Fragment() {
 
                     loginViewModel.setLaunched(true)
                     customTabsIntent.launchUrl(requireContext(), url)
+                }
+            },
+        )
+
+        loginViewModel.errorEvent.observe(
+            viewLifecycleOwner,
+            Observer { errorEvent ->
+                val error = errorEvent.getContentIfNotHandled()
+                if (error != null) {
+                    android.widget.Toast.makeText(requireContext(), error, android.widget.Toast.LENGTH_LONG).show()
+                    Timber.e("Login error: $error")
                 }
             },
         )

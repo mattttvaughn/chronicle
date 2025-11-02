@@ -8,7 +8,9 @@ import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
 import androidx.databinding.BindingAdapter
 import com.facebook.cache.common.CacheKey
-import com.facebook.drawee.view.SimpleDraweeView
+import com.facebook.drawee.backends.pipeline.Fresco
+import com.facebook.drawee.generic.GenericDraweeHierarchy
+import com.facebook.drawee.view.DraweeView
 import com.facebook.imagepipeline.request.ImageRequest
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.Injector
@@ -16,7 +18,7 @@ import timber.log.Timber
 
 @BindingAdapter(value = ["srcRounded", "serverConnected"], requireAll = true)
 fun bindImageRounded(
-    draweeView: SimpleDraweeView,
+    draweeView: DraweeView<GenericDraweeHierarchy>,
     src: String?,
     serverConnected: Boolean,
 ) {
@@ -33,7 +35,12 @@ fun bindImageRounded(
 
     // If no server is connected, don't bother fetching from server, just check cache
     val request = ImageRequest.fromUri(url)
-    draweeView.setImageRequest(request)
+    val controller =
+        Fresco.newDraweeControllerBuilder()
+            .setImageRequest(request)
+            .setOldController(draweeView.controller)
+            .build()
+    draweeView.controller = controller
 }
 
 /**

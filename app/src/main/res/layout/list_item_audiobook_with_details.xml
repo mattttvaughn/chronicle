@@ -77,7 +77,7 @@
                 android:translationZ="2dp"
                 android:visibility="@{audiobook.progress > 0L ? View.VISIBLE : View.GONE}" />
 
-            <com.facebook.drawee.view.SimpleDraweeView
+            <io.github.mattpvaughn.chronicle.views.ChronicleDraweeView
                 android:id="@+id/book_cover_img"
                 serverConnected="@{serverConnected}"
                 srcRounded="@{audiobook.thumb}"

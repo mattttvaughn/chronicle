@@ -29,7 +29,7 @@ fun bindImageDrawableSource(
     imageView.setImageResource(drawableRes)
 }
 
-@BindingAdapter("app:tint")
+@BindingAdapter("tint")
 fun bindTintResource(
     imageView: ImageView,
     @ColorRes colorRes: Int,

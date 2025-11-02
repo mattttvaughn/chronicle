@@ -1,11 +1,10 @@
 package io.github.mattpvaughn.chronicle.features.player
 
 import android.os.Handler
+import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.work.*
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import io.github.mattpvaughn.chronicle.data.local.IBookRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository
 import io.github.mattpvaughn.chronicle.data.local.ITrackRepository.Companion.TRACK_NOT_FOUND
@@ -77,17 +76,13 @@ class SimpleProgressUpdater
     ) : ProgressUpdater {
         var mediaController: MediaControllerCompat? = null
 
-        var mediaSessionConnector: MediaSessionConnector? = null
-
-        var player: Player? = null
-
         /** Frequency of progress updates */
         private val updateProgressFrequencyMs = 1000L
 
         /** Tracks the number of times [updateLocalProgress] has been called this session */
         private var tickCounter = 0L
 
-        private val handler = Handler()
+        private val handler = Handler(Looper.getMainLooper())
         private val updateProgressAction = { startRegularProgressUpdates() }
 
         /**

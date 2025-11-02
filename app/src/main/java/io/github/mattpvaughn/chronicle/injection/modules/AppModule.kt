@@ -8,10 +8,12 @@ import android.net.Uri
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.work.WorkManager
+import com.facebook.cache.common.CacheKey
 import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
 import com.facebook.imagepipeline.cache.DefaultCacheKeyFactory
 import com.facebook.imagepipeline.request.ImageRequest
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tonyodev.fetch2.Fetch
 import com.tonyodev.fetch2.FetchConfiguration
 import dagger.Module
@@ -165,9 +167,10 @@ class AppModule(private val app: Application) {
     @Singleton
     fun mediaRetrofit(
         @Named(OKHTTP_CLIENT_MEDIA) okHttpClient: OkHttpClient,
+        moshi: Moshi,
     ): Retrofit =
         Retrofit.Builder()
-            .addConverterFactory(MoshiConverterFactory.create())
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
             .client(okHttpClient)
             .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
             .build()
@@ -177,16 +180,20 @@ class AppModule(private val app: Application) {
     @Singleton
     fun loginRetrofit(
         @Named(OKHTTP_CLIENT_LOGIN) okHttpClient: OkHttpClient,
+        moshi: Moshi,
     ): Retrofit =
         Retrofit.Builder()
-            .addConverterFactory(MoshiConverterFactory.create())
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
             .client(okHttpClient)
             .baseUrl(PLACEHOLDER_URL) // this will be replaced by PlexInterceptor as needed
             .build()
 
     @Provides
     @Singleton
-    fun moshi(): Moshi = Moshi.Builder().build()
+    fun moshi(): Moshi = Moshi.Builder()
+        // Use Kotlin reflection adapter for Moshi since codegen is disabled
+        .add(KotlinJsonAdapterFactory())
+        .build()
 
     @Provides
     @Singleton
@@ -225,28 +232,28 @@ class AppModule(private val app: Application) {
         .setCacheKeyFactory(
             object : DefaultCacheKeyFactory() {
                 override fun getEncodedCacheKey(
-                    request: ImageRequest?,
-                    sourceUri: Uri?,
+                    request: ImageRequest,
+                    sourceUri: Uri,
                     callerContext: Any?,
-                ) = UrlQueryCacheKey(sourceUri)
+                ): CacheKey = UrlQueryCacheKey(sourceUri)
 
                 override fun getEncodedCacheKey(
-                    request: ImageRequest?,
+                    request: ImageRequest,
                     callerContext: Any?,
-                ) = UrlQueryCacheKey(request?.sourceUri)
+                ): CacheKey = UrlQueryCacheKey(request.sourceUri)
 
                 override fun getBitmapCacheKey(
-                    request: ImageRequest?,
+                    request: ImageRequest,
                     callerContext: Any?,
-                ) = UrlQueryCacheKey(request?.sourceUri)
+                ): CacheKey = UrlQueryCacheKey(request.sourceUri)
 
                 override fun getPostprocessedBitmapCacheKey(
-                    request: ImageRequest?,
+                    request: ImageRequest,
                     callerContext: Any?,
-                ) = UrlQueryCacheKey(request?.sourceUri)
+                ): CacheKey = UrlQueryCacheKey(request.sourceUri)
 
-                override fun getCacheKeySourceUri(sourceUri: Uri?): Uri {
-                    return sourceUri?.query?.toUri() ?: "".toUri()
+                protected override fun getCacheKeySourceUri(sourceUri: Uri): Uri {
+                    return sourceUri.query?.toUri() ?: "".toUri()
                 }
             },
         )

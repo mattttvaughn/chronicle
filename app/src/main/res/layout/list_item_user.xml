@@ -24,7 +24,7 @@
         android:orientation="vertical"
         tools:layout_width="100dp">
 
-        <com.facebook.drawee.view.SimpleDraweeView
+    <io.github.mattpvaughn.chronicle.views.ChronicleDraweeView
             android:id="@+id/user_thumb"
             android:layout_width="match_parent"
             fresco:placeholderImage="@drawable/ic_person_white"

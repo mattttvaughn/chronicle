@@ -64,7 +64,7 @@
                 android:background="@color/colorPrimaryDark"
                 android:elevation="1dp">
 
-                <com.facebook.drawee.view.SimpleDraweeView
+                <io.github.mattpvaughn.chronicle.views.ChronicleDraweeView
                     android:id="@+id/currently_playing_thumb"
                     serverConnected="@{plexConfig.isConnected()}"
                     srcRounded="@{viewModel.audiobook.thumb}"

@@ -61,7 +61,7 @@
                 android:src="@drawable/ic_not_played_dog_ear"
                 android:visibility="@{View.VISIBLE}" />
 
-            <com.facebook.drawee.view.SimpleDraweeView
+            <io.github.mattpvaughn.chronicle.views.ChronicleDraweeView
                 android:id="@+id/book_cover_img"
                 serverConnected="@{serverConnected}"
                 srcRounded="@{collection.thumb}"

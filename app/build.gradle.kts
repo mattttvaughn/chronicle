@@ -56,6 +56,14 @@ android {
     // 'kotlin-kapt' plugin above.
 }
 
+kapt {
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
+        arg("room.incremental", "true")
+        arg("room.expandProjection", "true")
+    }
+}
+
 dependencies {
     implementation(libs.material)
     implementation(libs.glide)
@@ -71,6 +79,7 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.annotation)
     implementation(libs.coroutines)
+    compileOnly(libs.facebook.infer.annotation)
 
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter)
@@ -92,9 +101,11 @@ dependencies {
     implementation(libs.dagger)
     kapt(libs.dagger.compiler)
 
-    implementation(libs.exoplayer.core)
-    implementation(libs.exoplayer.ui)
-    implementation(libs.exoplayer.mediasession)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+    implementation(libs.media3.session)
+    implementation(libs.media3.datasource)
+    implementation(libs.media3.cast)
 
     /*
      * Local Tests
@@ -125,7 +136,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit.ktx)
 }
 
-tasks.matching { it.name.contains("DebugAndroidTest") }.configureEach {
+tasks.matching { it.name.contains("DebugAndroidTest") && !it.name.contains("Lint") }.configureEach {
     enabled = false
 }
-

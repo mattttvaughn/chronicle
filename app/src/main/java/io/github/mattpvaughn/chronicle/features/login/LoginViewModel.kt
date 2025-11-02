@@ -28,6 +28,10 @@ class LoginViewModel(private val plexLoginRepo: IPlexLoginRepo) : ViewModel() {
     val authEvent: LiveData<Event<OAuthResponse?>>
         get() = _authEvent
 
+    private var _errorEvent = MutableLiveData<Event<String>>()
+    val errorEvent: LiveData<Event<String>>
+        get() = _errorEvent
+
     private var hasLaunched = false
 
     val isLoading =
@@ -37,8 +41,13 @@ class LoginViewModel(private val plexLoginRepo: IPlexLoginRepo) : ViewModel() {
 
     fun loginWithOAuth() {
         viewModelScope.launch(Injector.get().unhandledExceptionHandler()) {
-            val pin = plexLoginRepo.postOAuthPin()
-            _authEvent.postEvent(pin)
+            try {
+                val pin = plexLoginRepo.postOAuthPin()
+                _authEvent.postEvent(pin)
+            } catch (e: Exception) {
+                _errorEvent.postEvent("Login failed: ${e.message}")
+                timber.log.Timber.e(e, "OAuth login failed")
+            }
         }
     }
 

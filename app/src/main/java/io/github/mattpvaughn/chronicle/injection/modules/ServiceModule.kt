@@ -13,11 +13,10 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.MediaSessionCompat.*
 import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.google.android.exoplayer2.DefaultLoadControl
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
-import com.google.android.exoplayer2.util.Util
+import androidx.media3.common.util.Util
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.ExoPlayer
 import dagger.Module
 import dagger.Provides
 import io.github.mattpvaughn.chronicle.BuildConfig
@@ -85,9 +84,9 @@ class ServiceModule(private val service: MediaPlayerService) {
     @ServiceScope
     fun mediaSession(launchActivityPendingIntent: PendingIntent): MediaSessionCompat =
         MediaSessionCompat(service, APP_NAME).apply {
-            // Enable callbacks from MediaButtons and TransportControls
+            // Enable queue management; media buttons handled automatically on recent APIs
             setFlags(
-                FLAG_HANDLES_MEDIA_BUTTONS or FLAG_HANDLES_TRANSPORT_CONTROLS or FLAG_HANDLES_QUEUE_COMMANDS,
+                FLAG_HANDLES_QUEUE_COMMANDS,
             )
             service.sessionToken = sessionToken
             setSessionActivity(launchActivityPendingIntent)
@@ -119,10 +118,6 @@ class ServiceModule(private val service: MediaPlayerService) {
     @Provides
     @ServiceScope
     fun notificationManager(): NotificationManagerCompat = NotificationManagerCompat.from(service)
-
-    @Provides
-    @ServiceScope
-    fun mediaSessionConnector(session: MediaSessionCompat) = MediaSessionConnector(session)
 
     @Provides
     @ServiceScope

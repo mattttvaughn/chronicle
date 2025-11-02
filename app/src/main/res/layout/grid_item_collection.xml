@@ -52,7 +52,7 @@
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <com.facebook.drawee.view.SimpleDraweeView
+            <io.github.mattpvaughn.chronicle.views.ChronicleDraweeView
                 android:id="@+id/book_cover_img"
                 serverConnected="@{serverConnected}"
                 srcRounded="@{collection.thumb}"

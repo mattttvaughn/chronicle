@@ -2,6 +2,7 @@ package io.github.mattpvaughn.chronicle.features.player
 
 import android.app.Notification
 import android.app.PendingIntent
+import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -11,21 +12,24 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_MEDIA_STOP
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.Observer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.media.MediaBrowserServiceCompat
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.PlaybackException
-import com.google.android.exoplayer2.PlaybackParameters
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.audio.AudioAttributes
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Player
+import androidx.media3.common.Timeline
+import androidx.media3.exoplayer.ExoPlayer
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.R
 import io.github.mattpvaughn.chronicle.application.ChronicleApplication
@@ -48,6 +52,7 @@ import io.github.mattpvaughn.chronicle.features.player.SleepTimer.SleepTimerActi
 import io.github.mattpvaughn.chronicle.injection.components.DaggerServiceComponent
 import io.github.mattpvaughn.chronicle.injection.modules.ServiceModule
 import io.github.mattpvaughn.chronicle.util.PackageValidator
+import io.github.mattpvaughn.chronicle.util.ServiceUtils
 import kotlinx.coroutines.*
 import timber.log.Timber
 import javax.inject.Inject
@@ -87,12 +92,6 @@ class MediaPlayerService :
     lateinit var mediaController: MediaControllerCompat
 
     @Inject
-    lateinit var mediaSessionConnector: MediaSessionConnector
-
-    @Inject
-    lateinit var queueNavigator: QueueNavigator
-
-    @Inject
     lateinit var exoPlayer: ExoPlayer
 
     @Inject
@@ -109,9 +108,6 @@ class MediaPlayerService :
 
     @Inject
     lateinit var mediaSessionCallback: AudiobookMediaSessionCallback
-
-    @Inject
-    lateinit var playbackPreparer: AudiobookPlaybackPreparer
 
     @Inject
     lateinit var prefsRepo: PrefsRepo
@@ -170,7 +166,6 @@ class MediaPlayerService :
          * @see DefaultLoadControl.Builder.setBufferDurationsMs
          */
         val EXOPLAYER_MAX_BUFFER_DURATION_MILLIS: Int = 360.seconds.inWholeMilliseconds.toInt()
-
     }
 
     @Inject
@@ -203,6 +198,10 @@ class MediaPlayerService :
 
     var currentPlayer: Player? = null
 
+    private var sessionErrorMessage: String? = null
+    private var sessionCustomActions: List<PlaybackStateCompat.CustomAction> = emptyList()
+    private val timelineWindow = Timeline.Window()
+
     override fun onCreate() {
         super.onCreate()
 
@@ -212,9 +211,11 @@ class MediaPlayerService :
             .build()
             .inject(this)
 
+        ServiceUtils.notifyServiceStarted(this)
+
         Timber.i("Service created! $this")
 
-    updateAudioAttrs(exoPlayer)
+        updateAudioAttrs(exoPlayer)
 
         prefsRepo.registerPrefsListener(prefsListener)
 
@@ -223,22 +224,8 @@ class MediaPlayerService :
         mediaSession.setPlaybackState(PlaybackStateCompat.Builder().build())
         mediaSession.setCallback(mediaSessionCallback)
 
+        updateCustomActions()
         switchToPlayer(exoPlayer)
-        exoPlayer.addListener(playerEventListener)
-
-        mediaSessionConnector.setCustomActionProviders(
-            *makeCustomActionProviders(
-                trackListManager,
-                prefsRepo,
-                currentlyPlaying,
-                progressUpdater,
-            ),
-        )
-        mediaSessionConnector.setQueueNavigator(queueNavigator)
-        mediaSessionConnector.setPlaybackPreparer(playbackPreparer)
-        mediaSessionConnector.setMediaButtonEventHandler { _, mediaButtonEvent ->
-            mediaSessionCallback.onMediaButtonEvent(mediaButtonEvent)
-        }
 
         mediaController.registerCallback(onMediaChangedCallback)
 
@@ -264,12 +251,22 @@ class MediaPlayerService :
         exoPlayer.setAudioAttributes(
             AudioAttributes.Builder()
                 .setContentType(
-                    if (prefsRepo.pauseOnFocusLost) C.CONTENT_TYPE_SPEECH else C.CONTENT_TYPE_MUSIC,
+                    if (prefsRepo.pauseOnFocusLost) C.AUDIO_CONTENT_TYPE_SPEECH else C.AUDIO_CONTENT_TYPE_MUSIC,
                 )
                 .setUsage(C.USAGE_MEDIA)
                 .build(),
             true,
         )
+    }
+
+    private fun updateCustomActions() {
+        sessionCustomActions = buildCustomActions(prefsRepo)
+        updateSessionPlaybackState()
+    }
+
+    private fun setSessionCustomErrorMessage(message: String?) {
+        sessionErrorMessage = message
+        updateSessionPlaybackState()
     }
 
     override fun broadcastUpdate(
@@ -293,14 +290,11 @@ class MediaPlayerService :
                 if (intent != null) {
                     val durationMillis = intent.getLongExtra(ARG_SLEEP_TIMER_DURATION_MILLIS, 0L)
                     val action =
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            intent.getSerializableExtra(
-                                ARG_SLEEP_TIMER_ACTION,
-                                SleepTimerAction::class.java,
-                            )
-                        } else {
-                            intent.getSerializableExtra(ARG_SLEEP_TIMER_ACTION) as? SleepTimerAction
-                        }
+                        IntentCompat.getSerializableExtra(
+                            intent,
+                            ARG_SLEEP_TIMER_ACTION,
+                            SleepTimerAction::class.java,
+                        )
                     if (action != null) {
                         sleepTimer.handleAction(action, durationMillis)
                     }
@@ -318,6 +312,7 @@ class MediaPlayerService :
                     updateAudioAttrs(exoPlayer)
                 }
                 PrefsRepo.KEY_JUMP_FORWARD_SECONDS, PrefsRepo.KEY_JUMP_BACKWARD_SECONDS -> {
+                    updateCustomActions()
                     serviceScope.launch {
                         withContext(Dispatchers.IO) {
                             sessionToken?.let {
@@ -330,13 +325,14 @@ class MediaPlayerService :
             }
         }
 
-    private val serverChangedListener = Observer<PlexConfig.ConnectionState> {
-        if (mediaController.playbackState.isPrepared) {
-            // Only can change server when playback is prepared because otherwise we would be
-            // attempting to load data on a null/empty tracklist
-            onChangeConnection()
+    private val serverChangedListener =
+        Observer<PlexConfig.ConnectionState> {
+            if (mediaController.playbackState.isPrepared) {
+                // Only can change server when playback is prepared because otherwise we would be
+                // attempting to load data on a null/empty tracklist
+                onChangeConnection()
+            }
         }
-    }
 
     /**
      * Change the tracks in the player to refer to the new server url. Because [PlexConfig] is a
@@ -376,6 +372,92 @@ class MediaPlayerService :
         (currentPlayer as? ExoPlayer)?.skipSilenceEnabled = prefsRepo.skipSilence
     }
 
+    private fun updateSessionPlaybackState() {
+        val player = currentPlayer
+        val playbackState =
+            if (player != null) {
+                buildPlaybackState(player)
+            } else {
+                buildEmptyPlaybackState()
+            }
+        mediaSession.setPlaybackState(playbackState)
+    }
+
+    private fun buildPlaybackState(player: Player): PlaybackStateCompat {
+        val playbackState = mapPlayerState(player)
+        val playbackSpeed = player.playbackParameters.speed
+        val position = if (player.playbackState == Player.STATE_IDLE) 0L else player.currentPosition
+        val builder =
+            PlaybackStateCompat.Builder()
+                .setActions(basePlaybackActions())
+                .setBufferedPosition(player.bufferedPosition)
+                .setState(playbackState, position, playbackSpeed)
+
+        sessionCustomActions.forEach(builder::addCustomAction)
+        sessionErrorMessage?.let {
+            builder.setErrorMessage(PlaybackStateCompat.ERROR_CODE_APP_ERROR, it)
+        }
+
+        return builder.build()
+    }
+
+    private fun basePlaybackActions(): Long =
+        PlaybackStateCompat.ACTION_PLAY or
+            PlaybackStateCompat.ACTION_PLAY_PAUSE or
+            PlaybackStateCompat.ACTION_PAUSE or
+            PlaybackStateCompat.ACTION_STOP or
+            PlaybackStateCompat.ACTION_SEEK_TO or
+            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+            PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID or
+            PlaybackStateCompat.ACTION_PREPARE or
+            PlaybackStateCompat.ACTION_PREPARE_FROM_MEDIA_ID or
+            PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH or
+            PlaybackStateCompat.ACTION_PREPARE_FROM_SEARCH or
+            PlaybackStateCompat.ACTION_SET_PLAYBACK_SPEED
+
+    private fun buildEmptyPlaybackState(): PlaybackStateCompat {
+        val builder =
+            PlaybackStateCompat.Builder()
+                .setActions(basePlaybackActions())
+                .setState(PlaybackStateCompat.STATE_NONE, 0L, 0f)
+        sessionCustomActions.forEach(builder::addCustomAction)
+        sessionErrorMessage?.let {
+            builder.setErrorMessage(PlaybackStateCompat.ERROR_CODE_APP_ERROR, it)
+        }
+        return builder.build()
+    }
+
+    private fun mapPlayerState(player: Player): Int =
+        when (player.playbackState) {
+            Player.STATE_IDLE -> PlaybackStateCompat.STATE_NONE
+            Player.STATE_BUFFERING -> PlaybackStateCompat.STATE_BUFFERING
+            Player.STATE_READY ->
+                if (player.playWhenReady) {
+                    PlaybackStateCompat.STATE_PLAYING
+                } else {
+                    PlaybackStateCompat.STATE_PAUSED
+                }
+            Player.STATE_ENDED -> PlaybackStateCompat.STATE_STOPPED
+            else -> PlaybackStateCompat.STATE_NONE
+        }
+
+    private fun updateSessionMetadataFromPlayer(player: Player) {
+        val description =
+            player.currentMediaItem?.localConfiguration?.tag as? MediaDescriptionCompat
+                ?: extractDescriptionFromTimeline(player)
+        description?.let { mediaSession.setMetadata(it.toMediaMetadataCompat()) }
+    }
+
+    private fun extractDescriptionFromTimeline(player: Player): MediaDescriptionCompat? {
+        val timeline = player.currentTimeline
+        if (timeline.isEmpty) {
+            return null
+        }
+        timeline.getWindow(player.currentMediaItemIndex, timelineWindow)
+        return timelineWindow.mediaItem?.localConfiguration?.tag as? MediaDescriptionCompat
+    }
+
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
 
@@ -410,11 +492,12 @@ class MediaPlayerService :
             release()
             val intent = Intent(Intent.ACTION_MEDIA_BUTTON)
             intent.setPackage(packageName)
-            intent.component = ComponentName(
-                packageName,
-                MediaPlayerService::class.qualifiedName
-                    ?: "io.github.mattpvaughn.chronicle.features.player.MediaPlayerService",
-            )
+            intent.component =
+                ComponentName(
+                    packageName,
+                    MediaPlayerService::class.qualifiedName
+                        ?: "io.github.mattpvaughn.chronicle.features.player.MediaPlayerService",
+                )
             intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, 312202))
             // Allow the system to restart app past death on media button click. See onStartCommand
             setMediaButtonReceiver(
@@ -431,6 +514,9 @@ class MediaPlayerService :
         becomingNoisyReceiver.unregister()
         serviceJob.cancel()
 
+        exoPlayer.removeListener(playerEventListener)
+
+        ServiceUtils.notifyServiceStopped(this)
         super.onDestroy()
     }
 
@@ -444,7 +530,8 @@ class MediaPlayerService :
         Timber.i("Start command!")
 
         // Handle intents sent from notification clicks as media button events
-        val ke: KeyEvent? = intent?.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+        val ke: KeyEvent? =
+            intent?.let { IntentCompat.getParcelableExtra(it, Intent.EXTRA_KEY_EVENT, KeyEvent::class.java) }
         Timber.i("Key event: $ke")
         if (ke != null) {
             mediaSessionCallback.onMediaButtonEvent(intent)
@@ -567,95 +654,148 @@ class MediaPlayerService :
 
         val isClientLegal = packageValidator.isKnownCaller(clientPackageName, clientUid) || BuildConfig.DEBUG
 
-        val extras = Bundle().apply {
-            putBoolean(
-                CHRONICLE_MEDIA_SEARCH_SUPPORTED,
-                isClientLegal && prefsRepo.allowAuto && plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_FULLY,
-            )
-            mediaBrowserCompatStringField("EXTRA_MEDIA_SEARCH_SUPPORTED")?.let { putBoolean(it, true) }
-            mediaBrowserCompatStringField("EXTRA_SUGGESTED_PRESENTATION_DISPLAY_HINT")?.let { putBoolean(it, true) }
-            val focusKey = mediaBrowserCompatStringField("EXTRA_MEDIA_FOCUS")
-            val focusValue = mediaBrowserCompatIntField("FOCUS_FULL")
-            if (focusKey != null && focusValue != null) {
-                putInt(focusKey, focusValue)
+        val extras =
+            Bundle().apply {
+                putBoolean(
+                    CHRONICLE_MEDIA_SEARCH_SUPPORTED,
+                    isClientLegal && prefsRepo.allowAuto && plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_FULLY,
+                )
+                mediaBrowserCompatStringField("EXTRA_MEDIA_SEARCH_SUPPORTED")?.let { putBoolean(it, true) }
+                mediaBrowserCompatStringField("EXTRA_SUGGESTED_PRESENTATION_DISPLAY_HINT")?.let { putBoolean(it, true) }
+                val focusKey = mediaBrowserCompatStringField("EXTRA_MEDIA_FOCUS")
+                val focusValue = mediaBrowserCompatIntField("FOCUS_FULL")
+                if (focusKey != null && focusValue != null) {
+                    putInt(focusKey, focusValue)
+                }
             }
-        }
 
         return when {
             !prefsRepo.allowAuto -> {
-                mediaSessionConnector.setCustomErrorMessage(
+                setSessionCustomErrorMessage(
                     getString(R.string.auto_access_error_auto_is_disabled),
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
             !isClientLegal -> {
-                mediaSessionConnector.setCustomErrorMessage(
+                setSessionCustomErrorMessage(
                     getString(R.string.auto_access_error_invalid_client),
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
             plexLoginRepo.loginEvent.value?.peekContent() == NOT_LOGGED_IN -> {
-                mediaSessionConnector.setCustomErrorMessage(
+                setSessionCustomErrorMessage(
                     getString(R.string.auto_access_error_not_logged_in),
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
             plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_USER_CHOSEN -> {
-                mediaSessionConnector.setCustomErrorMessage(
+                setSessionCustomErrorMessage(
                     getString(R.string.auto_access_error_no_user_chosen),
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
             plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_SERVER_CHOSEN -> {
-                mediaSessionConnector.setCustomErrorMessage(
+                setSessionCustomErrorMessage(
                     getString(R.string.auto_access_error_no_server_chosen),
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
             plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_NO_LIBRARY_CHOSEN -> {
-                mediaSessionConnector.setCustomErrorMessage(
+                setSessionCustomErrorMessage(
                     getString(R.string.auto_access_error_no_library_chosen),
                 )
                 BrowserRoot(CHRONICLE_MEDIA_EMPTY_ROOT, extras)
             }
             else -> {
+                setSessionCustomErrorMessage(null)
                 BrowserRoot(CHRONICLE_MEDIA_ROOT_ID, extras)
             }
         }
     }
 
-    private val playerEventListener = object : Player.Listener {
-        override fun onPlayerError(error: PlaybackException) {
-            Timber.e("Exoplayer playback error: $error")
-            val errorIntent = Intent(ACTION_PLAYBACK_ERROR)
-            errorIntent.putExtra(PLAYBACK_ERROR_MESSAGE, error.message)
-            localBroadcastManager.sendBroadcast(errorIntent)
-        }
+    private val playerEventListener =
+        object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                Timber.e("Exoplayer playback error: $error")
+                val errorIntent = Intent(ACTION_PLAYBACK_ERROR)
+                errorIntent.putExtra(PLAYBACK_ERROR_MESSAGE, error.message)
+                localBroadcastManager.sendBroadcast(errorIntent)
+                setSessionCustomErrorMessage(error.message)
+                updateSessionPlaybackState()
+            }
 
-        override fun onPositionDiscontinuity(
-            oldPosition: Player.PositionInfo,
-            newPosition: Player.PositionInfo,
-            reason: Int,
-        ) {
-            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
-                    Timber.i("Playing next track")
-                    // Update track progress
-                    val trackId = mediaController.metadata.id
-                    if (trackId != null && trackId != TRACK_NOT_FOUND.toString()) {
-                        val plexState = PLEX_STATE_PLAYING
-                        withContext(Dispatchers.IO) {
-                            val bookId = trackRepository.getBookIdForTrack(trackId.toInt())
-                            val track = trackRepository.getTrackAsync(trackId.toInt())
-                            val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
+            override fun onPlayWhenReadyChanged(
+                playWhenReady: Boolean,
+                reason: Int,
+            ) {
+                updateSessionPlaybackState()
+            }
 
-                            if (tracks.getDuration() == tracks.getProgress()) {
-                                mediaController.transportControls.stop()
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                updateSessionPlaybackState()
+            }
+
+            override fun onMediaItemTransition(
+                mediaItem: MediaItem?,
+                reason: Int,
+            ) {
+                currentPlayer?.let {
+                    updateSessionMetadataFromPlayer(it)
+                    updateSessionPlaybackState()
+                }
+            }
+
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int,
+            ) {
+                serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+                    if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
+                        Timber.i("Playing next track")
+                        // Update track progress
+                        val trackId = mediaController.metadata.id
+                        if (trackId != null && trackId != TRACK_NOT_FOUND.toString()) {
+                            val plexState = PLEX_STATE_PLAYING
+                            withContext(Dispatchers.IO) {
+                                val bookId = trackRepository.getBookIdForTrack(trackId.toInt())
+                                val track = trackRepository.getTrackAsync(trackId.toInt())
+                                val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
+
+                                if (tracks.getDuration() == tracks.getProgress()) {
+                                    mediaController.transportControls.stop()
+                                }
+                                progressUpdater.updateProgress(
+                                    trackId.toInt(),
+                                    plexState,
+                                    track?.duration ?: 0L,
+                                    true,
+                                )
                             }
+                        }
+                    }
+                }
+                currentPlayer?.let { updateSessionMetadataFromPlayer(it) }
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState != Player.STATE_IDLE) {
+                    setSessionCustomErrorMessage(null)
+                }
+                updateSessionPlaybackState()
+                if (playbackState != Player.STATE_ENDED) {
+                    return
+                }
+                Timber.i("Player STATE ENDED")
+                serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+                    withContext(Dispatchers.IO) {
+                        // get track through tracklistmanager b/c metadata will be empty
+                        val activeTrack = trackListManager.trackList.getActiveTrack()
+                        if (activeTrack.id != MediaItemTrack.EMPTY_TRACK.id) {
                             progressUpdater.updateProgress(
-                                trackId.toInt(),
-                                plexState,
-                                track?.duration ?: 0L,
+                                activeTrack.id,
+                                PLEX_STATE_STOPPED,
+                                activeTrack.duration,
                                 true,
                             )
                         }
@@ -663,32 +803,6 @@ class MediaPlayerService :
                 }
             }
         }
-
-        override fun onPlaybackStateChanged(playbackState: Int) {
-            if (playbackState != Player.STATE_IDLE) {
-                // clear errors if playback is proceeding correctly
-                mediaSessionConnector.setCustomErrorMessage(null)
-            }
-            if (playbackState != Player.STATE_ENDED) {
-                return
-            }
-            Timber.i("Player STATE ENDED")
-            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                withContext(Dispatchers.IO) {
-                    // get track through tracklistmanager b/c metadata will be empty
-                    val activeTrack = trackListManager.trackList.getActiveTrack()
-                    if (activeTrack.id != MediaItemTrack.EMPTY_TRACK.id) {
-                        progressUpdater.updateProgress(
-                            activeTrack.id,
-                            PLEX_STATE_STOPPED,
-                            activeTrack.duration,
-                            true,
-                        )
-                    }
-                }
-            }
-        }
-    }
 
     private fun switchToPlayer(player: Player) {
         if (player == currentPlayer) {
@@ -699,32 +813,60 @@ class MediaPlayerService :
 
         val prevPlayer: Player? = currentPlayer
 
-        // If playback ended, reset player before we copy its state
+        prevPlayer?.removeListener(playerEventListener)
         if (prevPlayer?.playbackState == Player.STATE_ENDED) {
             prevPlayer.stop()
         }
 
-        mediaSessionConnector.setPlayer(player)
+        currentPlayer = player
         mediaSessionCallback.currentPlayer = player
 
         prevPlayer?.let {
-            player.seekTo(it.currentWindowIndex, it.currentPosition)
+            val previousIndex = it.currentMediaItemIndex
+            if (previousIndex != C.INDEX_UNSET) {
+                player.seekTo(previousIndex, it.currentPosition)
+            } else {
+                player.seekTo(it.currentPosition)
+            }
             player.playWhenReady = it.playWhenReady
         }
 
-        currentPlayer = player
+        player.addListener(playerEventListener)
 
-        // reset old player's state
-        if (prevPlayer?.playbackState != Player.STATE_ENDED) {
-            prevPlayer?.stop()
+        prevPlayer?.takeIf { it != player }?.let {
+            if (it.playbackState != Player.STATE_ENDED) {
+                it.stop()
+            }
+            it.clearMediaItems()
         }
 
+        updateSessionMetadataFromPlayer(player)
+        updateSessionPlaybackState()
         invalidatePlaybackParams()
     }
 
     override fun stopService() {
-        stopForeground(true)
+        stopForegroundCompat(removeNotification = true)
         stopSelf()
+    }
+
+    override fun stopForegroundService(removeNotification: Boolean) {
+        stopForegroundCompat(removeNotification)
+    }
+
+    private fun stopForegroundCompat(removeNotification: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val stopMode =
+                if (removeNotification) {
+                    Service.STOP_FOREGROUND_REMOVE
+                } else {
+                    Service.STOP_FOREGROUND_DETACH
+                }
+            stopForeground(stopMode)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(removeNotification)
+        }
     }
 }
 
@@ -738,5 +880,5 @@ interface ForegroundServiceController {
         notification: Notification,
     )
 
-    fun stopForeground(removeNotification: Boolean)
+    fun stopForegroundService(removeNotification: Boolean)
 }

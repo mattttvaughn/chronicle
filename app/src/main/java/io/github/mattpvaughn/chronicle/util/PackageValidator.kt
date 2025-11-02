@@ -18,12 +18,12 @@ package io.github.mattpvaughn.chronicle.util
 
 import android.Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE
 import android.Manifest.permission.MEDIA_CONTENT_CONTROL
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInfo.REQUESTED_PERMISSION_GRANTED
 import android.content.pm.PackageManager
 import android.content.res.XmlResourceParser
+import android.os.Build
 import android.os.Process
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Base64
@@ -200,12 +200,21 @@ class PackageValidator(
      *
      * @return [PackageInfo] for the package name or null if it's not found.
      */
-    @SuppressLint("PackageManagerGetSignatures")
     private fun getPackageInfo(callingPackage: String): PackageInfo? =
-        packageManager.getPackageInfo(
-            callingPackage,
-            PackageManager.GET_SIGNATURES or PackageManager.GET_PERMISSIONS,
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.getPackageInfo(
+                callingPackage,
+                PackageManager.PackageInfoFlags.of(
+                    (PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNING_CERTIFICATES).toLong(),
+                ),
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(
+                callingPackage,
+                PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNING_CERTIFICATES,
+            )
+        }
 
     /**
      * Gets the signature of a given package's [PackageInfo].
@@ -216,15 +225,31 @@ class PackageValidator(
      * If the app is not found, or if the app does not have exactly one signature, this method
      * returns `null` as the signature.
      */
-    private fun getSignature(packageInfo: PackageInfo): String? =
-        if (packageInfo.signatures == null || packageInfo.signatures.size != 1) {
+    private fun getSignature(packageInfo: PackageInfo): String? {
+        val signatures =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val signingInfo = packageInfo.signingInfo ?: return null
+                val signingSignatures =
+                    if (signingInfo.hasMultipleSigners()) {
+                        signingInfo.apkContentsSigners
+                    } else {
+                        signingInfo.signingCertificateHistory
+                    }
+                signingSignatures ?: emptyArray()
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.signatures
+            }
+
+        if (signatures == null || signatures.size != 1) {
             // Security best practices dictate that an app should be signed with exactly one (1)
             // signature. Because of this, if there are multiple signatures, reject it.
-            null
-        } else {
-            val certificate = packageInfo.signatures[0].toByteArray()
-            getSignatureSha256(certificate)
+            return null
         }
+
+        val certificate = signatures[0].toByteArray()
+        return getSignatureSha256(certificate)
+    }
 
     private fun buildCertificateWhitelist(parser: XmlResourceParser): Map<String, KnownCallerInfo> {
         val certificateWhitelist = LinkedHashMap<String, KnownCallerInfo>()

@@ -1,7 +1,7 @@
 package io.github.mattpvaughn.chronicle.data.sources.local
 
+import androidx.media3.datasource.DefaultDataSource
 import com.github.michaelbull.result.Result
-import com.google.android.exoplayer2.upstream.DefaultDataSource
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 import io.github.mattpvaughn.chronicle.data.sources.MediaSource

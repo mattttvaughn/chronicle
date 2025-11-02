@@ -2,55 +2,21 @@ package io.github.mattpvaughn.chronicle.features.player
 
 import android.os.Build
 import android.os.Build.VERSION_CODES.M
-import android.os.Bundle
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent.KEYCODE_MEDIA_NEXT
 import android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS
 import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD
 import android.view.KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector.CustomActionProvider
 import io.github.mattpvaughn.chronicle.R
-import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
 import io.github.mattpvaughn.chronicle.data.local.PrefsRepo
-import io.github.mattpvaughn.chronicle.features.currentlyplaying.CurrentlyPlaying
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 
-/**
- * The custom actions provided to [MediaSessionConnector.setCustomActionProviders()] for the app
- */
-@ExperimentalCoroutinesApi
-fun makeCustomActionProviders(
-    trackListStateManager: TrackListStateManager,
-    prefsRepo: PrefsRepo,
-    currentlyPlaying: CurrentlyPlaying,
-    progressUpdater: ProgressUpdater,
-): Array<CustomActionProvider> {
-    return arrayOf(
-        SimpleCustomActionProvider(
-            makeSkipBackward(prefsRepo),
-        ) { player: Player, _: String, _: Bundle? ->
-            player.seekRelative(
-                trackListStateManager,
-                prefsRepo.jumpBackwardSeconds * MILLIS_PER_SECOND * -1,
-            )
-        },
-        SimpleCustomActionProvider(
-            makeSkipForward(prefsRepo),
-        ) { player: Player, _: String, _: Bundle? ->
-            player.seekRelative(
-                trackListStateManager,
-                prefsRepo.jumpForwardSeconds * MILLIS_PER_SECOND,
-            )
-        },
-        SimpleCustomActionProvider(SKIP_TO_NEXT) { player: Player, _: String, _: Bundle? ->
-            player.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
-        },
-        SimpleCustomActionProvider(SKIP_TO_PREVIOUS) { player: Player, _: String, _: Bundle? ->
-            player.skipToPrevious(trackListStateManager, currentlyPlaying, progressUpdater)
-        },
+fun buildCustomActions(prefsRepo: PrefsRepo): List<PlaybackStateCompat.CustomAction> =
+    listOf(
+        makeSkipBackward(prefsRepo),
+        makeSkipForward(prefsRepo),
+        SKIP_TO_PREVIOUS,
+        SKIP_TO_NEXT,
     )
-}
 
 /** Threshold to decide whether to jump to the beginning of the current chapter or to the previous chapter. */
 const val SKIP_TO_PREVIOUS_CHAPTER_THRESHOLD_SECONDS = 30L
@@ -115,21 +81,3 @@ val mediaSkipForwardCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_SKIP_FO
 val mediaSkipBackwardCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_SKIP_BACKWARD else 273
 val mediaSkipToNextCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_NEXT else 87
 val mediaSkipToPreviousCode = if (Build.VERSION.SDK_INT >= M) KEYCODE_MEDIA_PREVIOUS else 88
-
-class SimpleCustomActionProvider(
-    private val customAction: PlaybackStateCompat.CustomAction,
-    private val action: (player: Player, action: String, extras: Bundle?) -> Unit,
-) : CustomActionProvider {
-    /** A simple custom action returns itself no matter what the playback state */
-    override fun getCustomAction(player: Player): PlaybackStateCompat.CustomAction {
-        return customAction
-    }
-
-    override fun onCustomAction(
-        player: Player,
-        action: String,
-        extras: Bundle?,
-    ) {
-        action(player, action, extras)
-    }
-}

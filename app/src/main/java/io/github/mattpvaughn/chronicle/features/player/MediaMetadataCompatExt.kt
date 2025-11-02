@@ -21,12 +21,12 @@ import android.net.Uri
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
-import com.google.android.exoplayer2.source.ConcatenatingMediaSource
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.upstream.DataSource
+import androidx.media3.datasource.DataSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexPrefsRepo
 import io.github.mattpvaughn.chronicle.util.toUri
 import timber.log.Timber
+import androidx.media3.common.MediaItem as Media3Item
 
 /** Useful extensions for [MediaMetadataCompat]. */
 inline val MediaMetadataCompat.id: String?
@@ -273,7 +273,7 @@ inline val MediaMetadataCompat.fullDescription: MediaDescriptionCompat
 fun MediaMetadataCompat.toMediaSource(dataSourceFactory: DataSource.Factory): ProgressiveMediaSource {
     return ProgressiveMediaSource.Factory(dataSourceFactory)
         .createMediaSource(
-            com.google.android.exoplayer2.MediaItem.Builder()
+            Media3Item.Builder()
                 .setTag(fullDescription)
                 .setUri(mediaUri)
                 .build(),
@@ -297,21 +297,19 @@ fun MediaDescriptionCompat.toMediaMetadataCompat(): MediaMetadataCompat {
 }
 
 /**
- * Extension method for building a [ConcatenatingMediaSource] given a [List]
+ * Extension method for building a playlist of [ProgressiveMediaSource] instances from a [List]
  * of [MediaMetadataCompat] objects.
  */
-fun List<MediaMetadataCompat>.toMediaSource(
+fun List<MediaMetadataCompat>.toMediaSources(
     plexPrefsRepo: PlexPrefsRepo,
     dataSourceFactory: DataSource.Factory,
-): ConcatenatingMediaSource {
-    val concatenatingMediaSource = ConcatenatingMediaSource()
-    forEach {
+): List<ProgressiveMediaSource> {
+    return map {
         Timber.i(
             "Media uri is: ${it.mediaUri}, server auth token is ${plexPrefsRepo.server?.accessToken}, user is ${plexPrefsRepo.accountAuthToken}",
         )
-        concatenatingMediaSource.addMediaSource(it.toMediaSource(dataSourceFactory))
+        it.toMediaSource(dataSourceFactory)
     }
-    return concatenatingMediaSource
 }
 
 /**

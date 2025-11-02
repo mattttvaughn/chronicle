@@ -269,7 +269,7 @@
                         android:orientation="vertical"
                         app:layout_constraintGuide_end="@dimen/screen_horizontal_padding" />
 
-                    <com.facebook.drawee.view.SimpleDraweeView
+                    <io.github.mattpvaughn.chronicle.views.ChronicleDraweeView
                         android:id="@+id/details_artwork"
                         serverConnected="@{plexConfig.isConnected()}"
                         srcRounded="@{viewModel.audiobook.thumb}"

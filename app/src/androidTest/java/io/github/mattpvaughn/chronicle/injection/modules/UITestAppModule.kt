@@ -9,6 +9,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.work.WorkManager
+import com.facebook.cache.common.CacheKey
 import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
 import com.facebook.imagepipeline.cache.DefaultCacheKeyFactory
 import com.facebook.imagepipeline.request.ImageRequest
@@ -239,28 +240,28 @@ class UITestAppModule(private val context: Context) {
         .setCacheKeyFactory(
             object : DefaultCacheKeyFactory() {
                 override fun getEncodedCacheKey(
-                    request: ImageRequest?,
-                    sourceUri: Uri?,
+                    request: ImageRequest,
+                    sourceUri: Uri,
                     callerContext: Any?,
-                ) = UrlQueryCacheKey(sourceUri)
+                ): CacheKey = UrlQueryCacheKey(sourceUri)
 
                 override fun getEncodedCacheKey(
-                    request: ImageRequest?,
+                    request: ImageRequest,
                     callerContext: Any?,
-                ) = UrlQueryCacheKey(request?.sourceUri)
+                ): CacheKey = UrlQueryCacheKey(request.sourceUri)
 
                 override fun getBitmapCacheKey(
-                    request: ImageRequest?,
+                    request: ImageRequest,
                     callerContext: Any?,
-                ) = UrlQueryCacheKey(request?.sourceUri)
+                ): CacheKey = UrlQueryCacheKey(request.sourceUri)
 
                 override fun getPostprocessedBitmapCacheKey(
-                    request: ImageRequest?,
+                    request: ImageRequest,
                     callerContext: Any?,
-                ) = UrlQueryCacheKey(request?.sourceUri)
+                ): CacheKey = UrlQueryCacheKey(request.sourceUri)
 
-                override fun getCacheKeySourceUri(sourceUri: Uri?): Uri {
-                    return sourceUri?.query?.toUri() ?: "".toUri()
+                protected override fun getCacheKeySourceUri(sourceUri: Uri): Uri {
+                    return sourceUri.query?.toUri() ?: "".toUri()
                 }
             },
         )

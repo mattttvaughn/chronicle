@@ -2,6 +2,7 @@ package io.github.mattpvaughn.chronicle.features.login
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.net.toUri
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -31,7 +32,7 @@ class UserListAdapter(val clickListener: UserClickListener) :
                 clickListener: UserClickListener,
             ) {
                 binding.user = user
-                binding.userThumb.setImageURI(user.thumb)
+                binding.userThumb.setImageURI(user.thumb?.toUri())
                 binding.clickListener = clickListener
                 binding.executePendingBindings()
             }

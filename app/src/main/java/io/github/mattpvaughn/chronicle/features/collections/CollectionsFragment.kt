@@ -7,7 +7,10 @@ import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -176,6 +179,55 @@ class CollectionsFragment : Fragment() {
 
         (activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
 
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(
+            object : MenuProvider {
+                override fun onCreateMenu(
+                    menu: Menu,
+                    menuInflater: MenuInflater,
+                ) {
+                    menuInflater.inflate(R.menu.collections_menu, menu)
+                    val searchView = menu.findItem(R.id.search).actionView as SearchView
+                    val searchItem = menu.findItem(R.id.search)
+
+                    searchItem.setOnActionExpandListener(
+                        object : MenuItem.OnActionExpandListener {
+                            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                                viewModel.setSearchActive(true)
+                                return true
+                            }
+
+                            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+                                viewModel.setSearchActive(false)
+                                return true
+                            }
+                        },
+                    )
+
+                    searchView.setOnQueryTextListener(
+                        object : SearchView.OnQueryTextListener {
+                            override fun onQueryTextSubmit(query: String?): Boolean {
+                                return true
+                            }
+
+                            override fun onQueryTextChange(newText: String?): Boolean {
+                                if (newText != null) {
+                                    viewModel.search(newText)
+                                }
+                                return true
+                            }
+                        },
+                    )
+                }
+
+                override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                    return menuItem.itemId == R.id.search
+                }
+            },
+            viewLifecycleOwner,
+            Lifecycle.State.RESUMED,
+        )
+
         return binding.root
     }
 
@@ -187,50 +239,6 @@ class CollectionsFragment : Fragment() {
         navigator.showDetails(audiobook.id, audiobook.title, audiobook.isCached)
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
-    }
-
-    override fun onCreateOptionsMenu(
-        menu: Menu,
-        inflater: MenuInflater,
-    ) {
-        inflater.inflate(R.menu.collections_menu, menu)
-        val searchView = menu.findItem(R.id.search).actionView as SearchView
-        val searchItem = menu.findItem(R.id.search) as MenuItem
-
-        searchItem.setOnActionExpandListener(
-            object : MenuItem.OnActionExpandListener {
-                override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                    viewModel.setSearchActive(true)
-                    return true
-                }
-
-                override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                    viewModel.setSearchActive(false)
-                    return true
-                }
-            },
-        )
-
-        searchView.setOnQueryTextListener(
-            object : SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String?): Boolean {
-                    // Do nothing
-                    return true
-                }
-
-                override fun onQueryTextChange(newText: String?): Boolean {
-                    if (newText != null) {
-                        viewModel.search(newText)
-                    }
-                    return true
-                }
-            },
-        )
-    }
-
     override fun onAttach(context: Context) {
         (activity as MainActivity).activityComponent!!.inject(this)
         super.onAttach(context)
@@ -240,15 +248,6 @@ class CollectionsFragment : Fragment() {
     override fun onDestroyView() {
         adapter = null
         super.onDestroyView()
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.search -> {
-            } // handled by listeners in onCreateView
-            else -> throw NoWhenBranchMatchedException("Unknown menu item selected!")
-        }
-        return super.onOptionsItemSelected(item)
     }
 
     interface CollectionClick {

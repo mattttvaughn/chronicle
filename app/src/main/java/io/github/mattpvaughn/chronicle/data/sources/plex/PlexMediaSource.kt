@@ -1,9 +1,9 @@
 package io.github.mattpvaughn.chronicle.data.sources.plex
 
 import android.content.Context
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
 import com.github.michaelbull.result.Result
-import com.google.android.exoplayer2.upstream.DefaultDataSource
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.tonyodev.fetch2.Request
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack

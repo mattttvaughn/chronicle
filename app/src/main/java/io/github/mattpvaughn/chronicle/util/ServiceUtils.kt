@@ -1,20 +1,23 @@
 package io.github.mattpvaughn.chronicle.util
 
-import android.app.ActivityManager
+import android.app.Service
 import android.content.Context
+import java.util.concurrent.ConcurrentHashMap
 
-/** Static functions for managing services */
+/** Static functions for tracking service state within the app process. */
 object ServiceUtils {
-    fun isServiceRunning(
-        context: Context,
-        serviceClass: Class<*>,
-    ): Boolean {
-        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
-            if (serviceClass.name == service.service.className) {
-                return true
-            }
-        }
-        return false
+    private val runningServices = ConcurrentHashMap<Class<*>, Boolean>()
+
+    fun notifyServiceStarted(service: Service) {
+        runningServices[service::class.java] = true
     }
+
+    fun notifyServiceStopped(service: Service) {
+        runningServices.remove(service::class.java)
+    }
+
+    fun isServiceRunning(
+        @Suppress("UNUSED_PARAMETER") context: Context,
+        serviceClass: Class<*>,
+    ): Boolean = runningServices[serviceClass] == true
 }

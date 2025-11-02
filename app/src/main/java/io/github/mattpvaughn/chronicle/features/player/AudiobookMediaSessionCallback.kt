@@ -8,13 +8,13 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.text.format.DateUtils
 import android.view.KeyEvent
 import android.view.KeyEvent.*
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.Observer
+import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.ExoPlayer
 import com.github.michaelbull.result.Ok
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.upstream.DefaultDataSource
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import io.github.mattpvaughn.chronicle.BuildConfig
 import io.github.mattpvaughn.chronicle.application.Injector
 import io.github.mattpvaughn.chronicle.application.MILLIS_PER_SECOND
@@ -52,7 +52,6 @@ class AudiobookMediaSessionCallback
         private val trackListStateManager: TrackListStateManager,
         private val foregroundServiceController: ForegroundServiceController,
         private val serviceController: ServiceController,
-        private val mediaSessionConnector: MediaSessionConnector,
         private val mediaSession: MediaSessionCompat,
         private val appContext: Context,
         private val currentlyPlaying: CurrentlyPlaying,
@@ -127,6 +126,14 @@ class AudiobookMediaSessionCallback
             }
         }
 
+        override fun onSkipToNext() {
+            skipToNext()
+        }
+
+        override fun onSkipToPrevious() {
+            skipToPrevious()
+        }
+
         private fun skipToNext() {
             currentPlayer.skipToNext(trackListStateManager, currentlyPlaying, progressUpdater)
         }
@@ -155,7 +162,7 @@ class AudiobookMediaSessionCallback
             if (mediaButtonEvent == null) {
                 return false
             }
-            val ke: KeyEvent? = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            val ke: KeyEvent? = IntentCompat.getParcelableExtra(mediaButtonEvent, Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
             Timber.i("Media button event: $ke")
             // Media button events usually come in either an "ACTION_DOWN" + "ACTION_UP" pair, or
             // as a single ACTION_DOWN. Just take ACTION_DOWNs
@@ -303,6 +310,15 @@ class AudiobookMediaSessionCallback
                 trackListStateManager.trackList = tracks
                 val metadataList = buildPlaylist(tracks, plexConfig)
 
+                val queueItems =
+                    metadataList.zip(tracks).map { (metadata, track) ->
+                        MediaSessionCompat.QueueItem(
+                            metadata.fullDescription,
+                            track.id.toLong(),
+                        )
+                    }
+                mediaSession.setQueue(queueItems)
+
                 check(
                     startingTrackId != ACTIVE_TRACK || startingTrackId.toInt() !in
                         tracks.map {
@@ -365,8 +381,9 @@ class AudiobookMediaSessionCallback
                 val factory = DefaultDataSource.Factory(appContext, dataSourceFactory)
                 when (player) {
                     is ExoPlayer -> {
-                        val mediaSource = metadataList.toMediaSource(plexPrefsRepo, factory)
-                        player.prepare(mediaSource)
+                        val mediaSources = metadataList.toMediaSources(plexPrefsRepo, factory)
+                        player.setMediaSources(mediaSources)
+                        player.prepare()
                     }
                     else -> throw NoWhenBranchMatchedException("Unknown media player")
                 }
@@ -376,6 +393,9 @@ class AudiobookMediaSessionCallback
                     tracks = tracks,
                     track = startingTrack,
                 )
+
+                mediaSession.setQueueTitle(book.title)
+                mediaSession.setMetadata(metadataList[startingTrackIndex])
 
                 player.seekTo(
                     trackListStateManager.currentTrackIndex,
@@ -479,7 +499,7 @@ class AudiobookMediaSessionCallback
             Timber.i("Stopping media playback")
             currentPlayer.stop()
             mediaSession.setPlaybackState(EMPTY_PLAYBACK_STATE)
-            foregroundServiceController.stopForeground(true)
+            foregroundServiceController.stopForegroundService(true)
             serviceController.stopService()
         }
     }

@@ -5,9 +5,8 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.ExoPlayer
 import dagger.Component
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaRepository
 import io.github.mattpvaughn.chronicle.data.sources.plex.PlexMediaSource
@@ -42,8 +41,6 @@ interface ServiceComponent {
     fun mediaSessionCallback(): AudiobookMediaSessionCallback
 
     fun mediaSource(): PlexMediaRepository
-
-    fun mediaSessionConnector(): MediaSessionConnector
 
     fun serviceScope(): CoroutineScope
 

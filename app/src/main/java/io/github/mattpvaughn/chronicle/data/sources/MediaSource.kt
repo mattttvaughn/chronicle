@@ -1,7 +1,7 @@
 package io.github.mattpvaughn.chronicle.data.sources
 
+import androidx.media3.datasource.DefaultDataSource
 import com.github.michaelbull.result.Result
-import com.google.android.exoplayer2.upstream.DefaultDataSource
 import io.github.mattpvaughn.chronicle.data.model.Audiobook
 import io.github.mattpvaughn.chronicle.data.model.MediaItemTrack
 
@@ -10,8 +10,8 @@ interface MediaSource {
     val id: Long
 
     /**
-     * Expose a [DefaultDataSourceFactory] which can transform a [List<MediaItemTrack>] into a
-     * [com.google.android.exoplayer2.source.ConcatenatingMediaSource]
+     * Expose a [DefaultDataSource.Factory] which can transform a [List<MediaItemTrack>] into a
+     * [androidx.media3.exoplayer.source.ConcatenatingMediaSource]
      */
     val dataSourceFactory: DefaultDataSource.Factory
 
