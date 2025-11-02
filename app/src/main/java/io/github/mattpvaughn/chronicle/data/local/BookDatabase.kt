@@ -84,7 +84,7 @@ val BOOK_MIGRATION_7_8 =
         }
     }
 
-@Database(entities = [Audiobook::class], version = 8, exportSchema = false)
+@Database(entities = [Audiobook::class], version = 8, exportSchema = true)
 abstract class BookDatabase : RoomDatabase() {
     abstract val bookDao: BookDao
 }

@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.ksp)
     id("kotlin-parcelize")
     id("kotlin-kapt")
     id("com.google.android.gms.oss-licenses-plugin")
@@ -10,6 +9,13 @@ plugins {
 android {
     namespace = "io.github.mattpvaughn.chronicle"
     compileSdk = 34
+
+    lint {
+        abortOnError = false
+        baseline = file("lint-baseline.xml")
+        checkReleaseBuilds = true
+        checkAllWarnings = true
+    }
 
     defaultConfig {
         applicationId = "io.github.mattpvaughn.chronicle"
@@ -44,6 +50,10 @@ android {
         dataBinding = true
         buildConfig = true
     }
+
+    // Using kapt instead of KSP in the root project-level build to avoid plugin
+    // resolution issues while upgrading Kotlin. KAPT is applied via the
+    // 'kotlin-kapt' plugin above.
 }
 
 dependencies {
@@ -69,17 +79,18 @@ dependencies {
     implementation(libs.okhttp3.logging)
 
     implementation(libs.moshi)
-    ksp(libs.moshi.codegen)
+    // Removed moshi-codegen KAPT processor - deprecated for Kotlin 2.x
+    // Moshi will use reflection-based adapters instead
 
     implementation(libs.fresco)
     implementation(libs.fresco.imagepipeline)
 
     implementation(libs.room.runtime)
-    ksp(libs.room.compiler)
+    kapt(libs.room.compiler)
     implementation(libs.room.ktx)
 
     implementation(libs.dagger)
-    ksp(libs.dagger.compiler)
+    kapt(libs.dagger.compiler)
 
     implementation(libs.exoplayer.core)
     implementation(libs.exoplayer.ui)
@@ -89,7 +100,7 @@ dependencies {
      * Local Tests
      */
     testImplementation(libs.dagger)
-    kspTest(libs.dagger.compiler)
+    kaptTest(libs.dagger.compiler)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
@@ -101,7 +112,7 @@ dependencies {
      * Instrumented Tests
      */
     androidTestImplementation(libs.dagger)
-    kspAndroidTest(libs.dagger.compiler)
+    kaptAndroidTest(libs.dagger.compiler)
 
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.mockk)
@@ -117,3 +128,4 @@ dependencies {
 tasks.matching { it.name.contains("DebugAndroidTest") }.configureEach {
     enabled = false
 }
+

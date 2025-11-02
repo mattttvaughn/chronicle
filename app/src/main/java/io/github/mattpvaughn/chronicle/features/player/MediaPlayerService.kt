@@ -2,7 +2,12 @@ package io.github.mattpvaughn.chronicle.features.player
 
 import android.app.Notification
 import android.app.PendingIntent
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
@@ -10,12 +15,15 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
-import android.view.KeyEvent.*
+import android.view.KeyEvent.KEYCODE_MEDIA_STOP
 import androidx.lifecycle.Observer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.media.MediaBrowserServiceCompat
-import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.C.*
+import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.PlaybackException
+import com.google.android.exoplayer2.PlaybackParameters
+import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import io.github.mattpvaughn.chronicle.BuildConfig
@@ -162,6 +170,7 @@ class MediaPlayerService :
          * @see DefaultLoadControl.Builder.setBufferDurationsMs
          */
         val EXOPLAYER_MAX_BUFFER_DURATION_MILLIS: Int = 360.seconds.inWholeMilliseconds.toInt()
+
     }
 
     @Inject
@@ -169,6 +178,22 @@ class MediaPlayerService :
 
     @Inject
     lateinit var progressUpdater: ProgressUpdater
+
+    private fun mediaBrowserCompatStringField(name: String): String? {
+        return runCatching { MediaBrowserCompat::class.java.getField(name).get(null) as? String }
+            .getOrElse {
+                runCatching {
+                    MediaBrowserCompat.MediaItem::class.java.getField(name).get(null) as? String
+                }.getOrNull()
+            }
+    }
+
+    private fun mediaBrowserCompatIntField(name: String): Int? {
+        return runCatching { MediaBrowserCompat::class.java.getField(name).getInt(null) }
+            .getOrElse {
+                runCatching { MediaBrowserCompat.MediaItem::class.java.getField(name).getInt(null) }.getOrNull()
+            }
+    }
 
     @Inject
     lateinit var mediaSource: PlexMediaRepository
@@ -189,13 +214,13 @@ class MediaPlayerService :
 
         Timber.i("Service created! $this")
 
-        updateAudioAttrs(exoPlayer = exoPlayer)
+    updateAudioAttrs(exoPlayer)
 
         prefsRepo.registerPrefsListener(prefsListener)
 
         serviceScope.launch(Injector.get().unhandledExceptionHandler()) { mediaSource.load() }
 
-        mediaSession.setPlaybackState(EMPTY_PLAYBACK_STATE)
+        mediaSession.setPlaybackState(PlaybackStateCompat.Builder().build())
         mediaSession.setCallback(mediaSessionCallback)
 
         switchToPlayer(exoPlayer)
@@ -218,13 +243,9 @@ class MediaPlayerService :
         mediaController.registerCallback(onMediaChangedCallback)
 
         // startForeground has to be called within 5 seconds of starting the service or the app
-        // will ANR (on Android 9.0 and above, maybe earlier). Even if we don't have
-        // full metadata here, should launch a notification with whatever it is we have...
+        // will ANR (on Android 9.0 and above, maybe earlier).
         serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-            val notification =
-                withContext(Dispatchers.IO) {
-                    notificationBuilder.buildNotification(mediaSession.sessionToken)
-                }
+            val notification = notificationBuilder.buildNotification(mediaSession.sessionToken)
             startForeground(NOW_PLAYING_NOTIFICATION, notification)
         }
 
@@ -234,10 +255,21 @@ class MediaPlayerService :
         )
 
         invalidatePlaybackParams()
-        (progressUpdater as SimpleProgressUpdater).mediaSessionConnector = mediaSessionConnector
         progressUpdater.startRegularProgressUpdates()
 
         plexConfig.connectionState.observeForever(serverChangedListener)
+    }
+
+    private fun updateAudioAttrs(exoPlayer: ExoPlayer) {
+        exoPlayer.setAudioAttributes(
+            AudioAttributes.Builder()
+                .setContentType(
+                    if (prefsRepo.pauseOnFocusLost) C.CONTENT_TYPE_SPEECH else C.CONTENT_TYPE_MUSIC,
+                )
+                .setUsage(C.USAGE_MEDIA)
+                .build(),
+            true,
+        )
     }
 
     override fun broadcastUpdate(
@@ -298,26 +330,13 @@ class MediaPlayerService :
             }
         }
 
-    private fun updateAudioAttrs(exoPlayer: ExoPlayer) {
-        exoPlayer.setAudioAttributes(
-            AudioAttributes.Builder()
-                .setContentType(
-                    if (prefsRepo.pauseOnFocusLost) AUDIO_CONTENT_TYPE_SPEECH else AUDIO_CONTENT_TYPE_MUSIC,
-                )
-                .setUsage(USAGE_MEDIA)
-                .build(),
-            true,
-        )
-    }
-
-    private val serverChangedListener =
-        Observer<PlexConfig.ConnectionState> {
-            if (mediaController.playbackState.isPrepared) {
-                // Only can change server when playback is prepared because otherwise we would be
-                // attempting to load data on a null/empty tracklist
-                onChangeConnection()
-            }
+    private val serverChangedListener = Observer<PlexConfig.ConnectionState> {
+        if (mediaController.playbackState.isPrepared) {
+            // Only can change server when playback is prepared because otherwise we would be
+            // attempting to load data on a null/empty tracklist
+            onChangeConnection()
         }
+    }
 
     /**
      * Change the tracks in the player to refer to the new server url. Because [PlexConfig] is a
@@ -344,7 +363,8 @@ class MediaPlayerService :
                 )
             }
             else -> {
-            } // if there isn't playback, there's nothing to change
+                // if there isn't playback, there's nothing to change
+            }
         }
     }
 
@@ -352,7 +372,7 @@ class MediaPlayerService :
         Timber.i(
             "Playback params: speed = ${prefsRepo.playbackSpeed}, skip silence = ${prefsRepo.skipSilence}",
         )
-        currentPlayer?.playbackParameters = PlaybackParameters(prefsRepo.playbackSpeed, 1.0f)
+        currentPlayer?.setPlaybackParameters(PlaybackParameters(prefsRepo.playbackSpeed, 1.0f))
         (currentPlayer as? ExoPlayer)?.skipSilenceEnabled = prefsRepo.skipSilence
     }
 
@@ -369,10 +389,11 @@ class MediaPlayerService :
         // Send one last update to local/remote servers that playback has stopped
         val trackId = mediaController.metadata.id
         if (trackId != null && trackId.toInt() != TRACK_NOT_FOUND) {
+            val finalPosition = currentPlayer?.currentPosition ?: 0L
             progressUpdater.updateProgress(
                 trackId.toInt(),
                 PLEX_STATE_STOPPED,
-                currentPlayer!!.currentPosition,
+                finalPosition,
                 true,
             )
         }
@@ -380,27 +401,26 @@ class MediaPlayerService :
         serviceJob.cancel()
 
         plexConfig.connectionState.removeObserver(serverChangedListener)
-
         prefsRepo.unregisterPrefsListener(prefsListener)
         localBroadcastManager.unregisterReceiver(sleepTimerBroadcastReceiver)
         sleepTimer.cancel()
+
         mediaSession.run {
             isActive = false
             release()
             val intent = Intent(Intent.ACTION_MEDIA_BUTTON)
             intent.setPackage(packageName)
-            intent.component =
-                ComponentName(
-                    packageName,
-                    MediaPlayerService::class.qualifiedName
-                        ?: "io.github.mattpvaughn.chronicle.features.player.MediaPlayerService",
-                )
-            intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(ACTION_DOWN, 312202))
+            intent.component = ComponentName(
+                packageName,
+                MediaPlayerService::class.qualifiedName
+                    ?: "io.github.mattpvaughn.chronicle.features.player.MediaPlayerService",
+            )
+            intent.putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, 312202))
             // Allow the system to restart app past death on media button click. See onStartCommand
             setMediaButtonReceiver(
                 PendingIntent.getService(
                     this@MediaPlayerService,
-                    KEYCODE_MEDIA_PLAY,
+                    KeyEvent.KEYCODE_MEDIA_PLAY,
                     intent,
                     PendingIntent.FLAG_IMMUTABLE,
                 ),
@@ -545,19 +565,21 @@ class MediaPlayerService :
     ): BrowserRoot? {
         Timber.i("Getting root!")
 
-        val isClientLegal =
-            packageValidator.isKnownCaller(clientPackageName, clientUid) || BuildConfig.DEBUG
+        val isClientLegal = packageValidator.isKnownCaller(clientPackageName, clientUid) || BuildConfig.DEBUG
 
-        val extras =
-            Bundle().apply {
-                putBoolean(
-                    CHRONICLE_MEDIA_SEARCH_SUPPORTED,
-                    isClientLegal && prefsRepo.allowAuto && plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_FULLY,
-                )
-                putBoolean(CONTENT_STYLE_SUPPORTED, true)
-                putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE)
-                putInt(CONTENT_STYLE_BROWSABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE)
+        val extras = Bundle().apply {
+            putBoolean(
+                CHRONICLE_MEDIA_SEARCH_SUPPORTED,
+                isClientLegal && prefsRepo.allowAuto && plexLoginRepo.loginEvent.value?.peekContent() == LOGGED_IN_FULLY,
+            )
+            mediaBrowserCompatStringField("EXTRA_MEDIA_SEARCH_SUPPORTED")?.let { putBoolean(it, true) }
+            mediaBrowserCompatStringField("EXTRA_SUGGESTED_PRESENTATION_DISPLAY_HINT")?.let { putBoolean(it, true) }
+            val focusKey = mediaBrowserCompatStringField("EXTRA_MEDIA_FOCUS")
+            val focusValue = mediaBrowserCompatIntField("FOCUS_FULL")
+            if (focusKey != null && focusValue != null) {
+                putInt(focusKey, focusValue)
             }
+        }
 
         return when {
             !prefsRepo.allowAuto -> {
@@ -602,68 +624,38 @@ class MediaPlayerService :
         }
     }
 
-    private val playerEventListener =
-        object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                Timber.e("Exoplayer playback error: $error")
-                val errorIntent = Intent(ACTION_PLAYBACK_ERROR)
-                errorIntent.putExtra(PLAYBACK_ERROR_MESSAGE, error.message)
-                localBroadcastManager.sendBroadcast(errorIntent)
-                super.onPlayerError(error)
-            }
+    private val playerEventListener = object : Player.Listener {
+        override fun onPlayerError(error: PlaybackException) {
+            Timber.e("Exoplayer playback error: $error")
+            val errorIntent = Intent(ACTION_PLAYBACK_ERROR)
+            errorIntent.putExtra(PLAYBACK_ERROR_MESSAGE, error.message)
+            localBroadcastManager.sendBroadcast(errorIntent)
+        }
 
-            override fun onPositionDiscontinuity(
-                oldPosition: Player.PositionInfo,
-                newPosition: Player.PositionInfo,
-                reason: Int,
-            ) {
-                super.onPositionDiscontinuity(oldPosition, newPosition, reason)
-                serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                    if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
-                        Timber.i("Playing next track")
-                        // Update track progress
-                        val trackId = mediaController.metadata.id
-                        if (trackId != null && trackId != TRACK_NOT_FOUND.toString()) {
-                            val plexState = PLEX_STATE_PLAYING
-                            withContext(Dispatchers.IO) {
-                                val bookId = trackRepository.getBookIdForTrack(trackId.toInt())
-                                val track = trackRepository.getTrackAsync(trackId.toInt())
-                                val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int,
+        ) {
+            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
+                    Timber.i("Playing next track")
+                    // Update track progress
+                    val trackId = mediaController.metadata.id
+                    if (trackId != null && trackId != TRACK_NOT_FOUND.toString()) {
+                        val plexState = PLEX_STATE_PLAYING
+                        withContext(Dispatchers.IO) {
+                            val bookId = trackRepository.getBookIdForTrack(trackId.toInt())
+                            val track = trackRepository.getTrackAsync(trackId.toInt())
+                            val tracks = trackRepository.getTracksForAudiobookAsync(bookId)
 
-                                if (tracks.getDuration() == tracks.getProgress()) {
-                                    mediaController.transportControls.stop()
-                                }
-                                progressUpdater.updateProgress(
-                                    trackId.toInt(),
-                                    plexState,
-                                    track?.duration ?: 0L,
-                                    true,
-                                )
+                            if (tracks.getDuration() == tracks.getProgress()) {
+                                mediaController.transportControls.stop()
                             }
-                        }
-                    }
-                }
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                super.onPlaybackStateChanged(playbackState)
-                if (playbackState != PlaybackStateCompat.STATE_ERROR) {
-                    // clear errors if playback is proceeding correctly
-                    mediaSessionConnector.setCustomErrorMessage(null)
-                }
-                if (playbackState != Player.STATE_ENDED) {
-                    return
-                }
-                Timber.i("Player STATE ENDED")
-                serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
-                    withContext(Dispatchers.IO) {
-                        // get track through tracklistmanager b/c metadata will be empty
-                        val activeTrack = trackListManager.trackList.getActiveTrack()
-                        if (activeTrack.id != MediaItemTrack.EMPTY_TRACK.id) {
                             progressUpdater.updateProgress(
-                                activeTrack.id,
-                                PLEX_STATE_STOPPED,
-                                activeTrack.duration,
+                                trackId.toInt(),
+                                plexState,
+                                track?.duration ?: 0L,
                                 true,
                             )
                         }
@@ -671,6 +663,32 @@ class MediaPlayerService :
                 }
             }
         }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState != Player.STATE_IDLE) {
+                // clear errors if playback is proceeding correctly
+                mediaSessionConnector.setCustomErrorMessage(null)
+            }
+            if (playbackState != Player.STATE_ENDED) {
+                return
+            }
+            Timber.i("Player STATE ENDED")
+            serviceScope.launch(Injector.get().unhandledExceptionHandler()) {
+                withContext(Dispatchers.IO) {
+                    // get track through tracklistmanager b/c metadata will be empty
+                    val activeTrack = trackListManager.trackList.getActiveTrack()
+                    if (activeTrack.id != MediaItemTrack.EMPTY_TRACK.id) {
+                        progressUpdater.updateProgress(
+                            activeTrack.id,
+                            PLEX_STATE_STOPPED,
+                            activeTrack.duration,
+                            true,
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     private fun switchToPlayer(player: Player) {
         if (player == currentPlayer) {

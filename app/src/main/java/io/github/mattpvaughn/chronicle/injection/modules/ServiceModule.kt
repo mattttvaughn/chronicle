@@ -122,11 +122,15 @@ class ServiceModule(private val service: MediaPlayerService) {
 
     @Provides
     @ServiceScope
-    fun becomingNoisyReceiver(session: MediaSessionCompat) = BecomingNoisyReceiver(service, session.sessionToken)
+    fun mediaSessionConnector(session: MediaSessionCompat) = MediaSessionConnector(session)
 
     @Provides
     @ServiceScope
-    fun mediaSessionConnector(session: MediaSessionCompat) = MediaSessionConnector(session)
+    fun mediaController(session: MediaSessionCompat) = MediaControllerCompat(service, session.sessionToken)
+
+    @Provides
+    @ServiceScope
+    fun becomingNoisyReceiver(session: MediaSessionCompat) = BecomingNoisyReceiver(service, session.sessionToken)
 
     @Provides
     @ServiceScope
@@ -162,10 +166,6 @@ class ServiceModule(private val service: MediaPlayerService) {
     @Provides
     @ServiceScope
     fun foregroundServiceController(): ForegroundServiceController = service
-
-    @Provides
-    @ServiceScope
-    fun mediaController(session: MediaSessionCompat) = MediaControllerCompat(service, session.sessionToken)
 
     @Provides
     @ServiceScope
