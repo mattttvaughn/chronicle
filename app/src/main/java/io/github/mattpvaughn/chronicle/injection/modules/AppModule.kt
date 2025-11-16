@@ -190,10 +190,11 @@ class AppModule(private val app: Application) {
 
     @Provides
     @Singleton
-    fun moshi(): Moshi = Moshi.Builder()
-        // Use Kotlin reflection adapter for Moshi since codegen is disabled
-        .add(KotlinJsonAdapterFactory())
-        .build()
+    fun moshi(): Moshi =
+        Moshi.Builder()
+            // Use Kotlin reflection adapter for Moshi since codegen is disabled
+            .add(KotlinJsonAdapterFactory())
+            .build()
 
     @Provides
     @Singleton
