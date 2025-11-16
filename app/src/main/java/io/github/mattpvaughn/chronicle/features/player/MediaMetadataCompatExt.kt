@@ -293,6 +293,7 @@ fun MediaDescriptionCompat.toMediaMetadataCompat(): MediaMetadataCompat {
     builder.displayTitle = this.title.toString()
     builder.displaySubtitle = this.subtitle.toString()
     builder.displayIconUri = this.iconUri.toString()
+    builder.id = this.mediaId.toString()
     return builder.build()
 }
 
