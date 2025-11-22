@@ -93,7 +93,7 @@ data class Audiobook(
             local: Audiobook,
             forceNetwork: Boolean = false,
         ): Audiobook {
-            return if (network.lastViewedAt > local.lastViewedAt || forceNetwork) {
+            return if (forceNetwork) {
                 network.copy(
                     duration = local.duration,
                     progress = local.progress,
@@ -103,12 +103,15 @@ data class Audiobook(
                     source = local.source,
                 )
             } else {
+                // Always preserve the highest progress value to prevent data loss
+                val preservedProgress = maxOf(network.progress, local.progress)
+                val preservedLastViewedAt = maxOf(network.lastViewedAt, local.lastViewedAt)
                 network.copy(
                     duration = local.duration,
-                    progress = local.progress,
+                    progress = preservedProgress,
                     source = local.source,
                     isCached = local.isCached,
-                    lastViewedAt = local.lastViewedAt,
+                    lastViewedAt = preservedLastViewedAt,
                     favorited = local.favorited,
                     chapters = local.chapters,
                 )
