@@ -79,14 +79,16 @@ data class MediaItemTrack(
             network: MediaItemTrack,
             local: MediaItemTrack,
             forceUseNetwork: Boolean = false,
-        ) = if (forceUseNetwork || network.lastViewedAt > local.lastViewedAt) {
-            Timber.i("Integrating network track: $network")
+        ) = if (forceUseNetwork) {
             network.copy(cached = local.cached)
         } else {
+            // Always preserve the highest progress value to prevent data loss
+            val preservedProgress = maxOf(network.progress, local.progress)
+            val preservedLastViewedAt = maxOf(network.lastViewedAt, local.lastViewedAt)
             network.copy(
                 cached = local.cached,
-                lastViewedAt = local.lastViewedAt,
-                progress = local.progress,
+                lastViewedAt = preservedLastViewedAt,
+                progress = preservedProgress,
             )
         }
 

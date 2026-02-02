@@ -8,6 +8,8 @@
     <!-- Required to post notifications on Android 13+ (runtime permission still required at runtime) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-configuration android:name="com.android.vending.BILLING" />
 
     <application

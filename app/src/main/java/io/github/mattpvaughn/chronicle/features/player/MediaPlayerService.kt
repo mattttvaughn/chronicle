@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
@@ -201,6 +202,7 @@ class MediaPlayerService :
     private var sessionErrorMessage: String? = null
     private var sessionCustomActions: List<PlaybackStateCompat.CustomAction> = emptyList()
     private val timelineWindow = Timeline.Window()
+    private var wifiLock: WifiManager.WifiLock? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -372,6 +374,25 @@ class MediaPlayerService :
         (currentPlayer as? ExoPlayer)?.skipSilenceEnabled = prefsRepo.skipSilence
     }
 
+    private fun acquireWifiLock() {
+        if (wifiLock == null) {
+            val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            @Suppress("DEPRECATION")
+            wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "Chronicle:WifiLock")
+        }
+        if (wifiLock?.isHeld == false) {
+            wifiLock?.acquire()
+            Timber.i("WiFi lock acquired")
+        }
+    }
+
+    private fun releaseWifiLock() {
+        if (wifiLock?.isHeld == true) {
+            wifiLock?.release()
+            Timber.i("WiFi lock released")
+        }
+    }
+
     private fun updateSessionPlaybackState() {
         val player = currentPlayer
         val playbackState =
@@ -461,13 +482,22 @@ class MediaPlayerService :
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
 
-        // Ensures that players will not block being removed as a foreground service
-        exoPlayer.stop()
-        exoPlayer.clearMediaItems()
+        // Save progress before any potential cleanup
+        // This ensures the user's listening position is preserved
+        progressUpdater.updateProgressWithoutParameters()
+
+        // For an audiobook app, we intentionally do NOT stop playback when the user
+        // swipes the app away. The foreground service will keep audio playing, which
+        // is the expected behavior for media apps. The user can stop playback via
+        // the notification controls if desired.
+        //
+        // Previously this method called exoPlayer.stop() and exoPlayer.clearMediaItems()
+        // which would abruptly stop playback without saving progress - this was a bug.
     }
 
     override fun onDestroy() {
         Timber.i("Service destroyed")
+        releaseWifiLock()
         // Send one last update to local/remote servers that playback has stopped
         val trackId = mediaController.metadata.id
         if (trackId != null && trackId.toInt() != TRACK_NOT_FOUND) {
@@ -733,6 +763,11 @@ class MediaPlayerService :
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updateSessionPlaybackState()
+                if (isPlaying) {
+                    acquireWifiLock()
+                } else {
+                    releaseWifiLock()
+                }
             }
 
             override fun onMediaItemTransition(

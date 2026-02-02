@@ -167,7 +167,7 @@ interface BookDao {
     ): List<Audiobook>
 
     @Query(
-        "UPDATE Audiobook SET lastViewedAt = :currentTime, progress = :progress WHERE lastViewedAt < :currentTime AND id = :bookId",
+        "UPDATE Audiobook SET lastViewedAt = :currentTime, progress = :progress WHERE id = :bookId",
     )
     fun updateProgress(
         bookId: Int,
